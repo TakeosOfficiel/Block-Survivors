@@ -22,6 +22,7 @@ import { RECOMPENSES } from './donnees/talents';
 import { PROGRESSION } from './donnees/progression';
 import type { IdSon } from './donnees/sons';
 import { Ombres } from './effets/ombres';
+import { BarresVie } from './effets/barresVie';
 import { ChiffresDegats } from './effets/chiffresDegats';
 import { Etiquette } from './effets/etiquette';
 import { Particules } from './effets/particules';
@@ -198,7 +199,8 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.projectilesJoueur = new ProjectilesJoueur(combat);
     this.orbites = new Orbites(combat);
     this.foudre = new Foudre(combat, scene);
-    this.invocations = new Invocations(combat, scene, textures);
+    this.invocations = new Invocations(combat, scene, textures, new BarresVie(scene, rendu.camera, CONFIG.armes.golems.capacite));
+    this.ennemis.definirAllies(this.invocations);
     this.arsenal = new Arsenal(combat, {
       balayages: this.balayages,
       projectiles: this.projectilesJoueur,

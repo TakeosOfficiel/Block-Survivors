@@ -14,6 +14,11 @@ const definitions = {
     cadenceCoups: 0.8,
     detection: 20,
     sonCoup: 'golem_coup',
+    sonBlessure: 'golem_blesse',
+    sonMort: 'golem_mort',
+    pv: 120,
+    armure: 2,
+    provocation: 7,   // il attire la horde loin du joueur
   },
   loup: {
     nom: 'Loup',
@@ -27,6 +32,10 @@ const definitions = {
     cadenceCoups: 0.6,
     detection: 16,
     sonCoup: 'loup_morsure',
+    sonBlessure: 'loup_blesse',
+    sonMort: 'loup_mort',
+    pv: 24,
+    provocation: 3,
   },
   vex: {
     nom: 'Vex',
@@ -40,6 +49,10 @@ const definitions = {
     cadenceCoups: 0.5,
     detection: 18,
     sonCoup: 'vex_charge',
+    sonBlessure: 'vex_blesse',
+    sonMort: 'vex_mort',
+    pv: 14,
+    provocation: 2,
     vol: 1.1,
   },
 } satisfies Record<string, DefinitionAllie>;

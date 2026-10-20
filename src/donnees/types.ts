@@ -351,6 +351,14 @@ export interface DefinitionAllie extends ApparenceEntite {
   readonly detection: number;    // distance de recherche d'une cible (blocs)
   /** Son de chaque coup porté. */
   readonly sonCoup: IdSon;
+  readonly sonBlessure: IdSon;
+  readonly sonMort: IdSon;
+  /** Points de vie : les ennemis au corps à corps l'attaquent, il peut mourir avant la fin. */
+  readonly pv: number;
+  /** Dégâts retirés à chaque coup reçu (au moins 1 dégât passe). */
+  readonly armure?: number;
+  /** Distance (blocs) à laquelle il détourne les ennemis du joueur. */
+  readonly provocation: number;
   /** Vole à cette hauteur (blocs) en traversant le décor (vex). */
   readonly vol?: number;
 }

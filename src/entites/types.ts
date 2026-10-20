@@ -1,5 +1,14 @@
 /** Contrats communs aux entités. */
+import type { Allie } from '../combat/invocations';
 import type { IdProjectile } from '../donnees/projectiles';
+
+/** Alliés invoqués que les ennemis peuvent prendre pour cible (voir Invocations). */
+export interface CiblesAllies {
+  provocateur(x: number, z: number, distanceJoueur: number): Allie | null;
+  vivant(a: Allie, id: number): boolean;
+  blesser(a: Allie, degats: number): void;
+  blesserZone(x: number, z: number, rayon: number, degats: number): void;
+}
 
 /** Tout ce qui contribue au compteur d'entités actives (joueur, pools d'ennemis…). */
 export interface SourceEntites {

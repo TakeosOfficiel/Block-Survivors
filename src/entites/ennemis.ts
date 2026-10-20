@@ -24,7 +24,8 @@ import type { Terrain } from '../monde/navigation';
 import { appliquerComportement, type ContexteComportement, type Vers } from './comportements';
 import { creerEnnemi, type Ennemi } from './ennemi';
 import type { Butin } from './butin';
-import type { SourceEntites } from './types';
+import type { CiblesAllies, SourceEntites } from './types';
+import type { Allie } from '../combat/invocations';
 
 /** Tout ce qu'il faut pour afficher un type d'ennemi. */
 interface RenduType {
@@ -59,6 +60,11 @@ export class Ennemis implements SourceEntites {
   /** Hauteur d'affichage des dégâts, par type (au-dessus de la tête). */
   private readonly hauteurs: Float32Array;
   private prochainId = 1;
+  /** Alliés invoqués (branchés après coup : ils dépendent du contexte de combat). */
+  private allies: CiblesAllies | null = null;
+  /** Allié visé par l'ennemi en cours de mise à jour, et contexte qui le blesse au lieu du joueur. */
+  private allieVise: Allie | null = null;
+  private contexteAllie: ContexteComportement | null = null;
 
   constructor(
     etat: EtatPartie,
@@ -90,6 +96,20 @@ export class Ennemis implements SourceEntites {
 
   get actifs(): number {
     return this.pool.nombre;
+  }
+
+  /** Les ennemis au corps à corps pourront s'en prendre aux alliés invoqués. */
+  definirAllies(allies: CiblesAllies): void {
+    this.allies = allies;
+    this.contexteAllie = {
+      cible: {
+        subirDegats: (degats) => {
+          if (this.allieVise) allies.blesser(this.allieVise, degats);
+          return true;
+        },
+      },
+      tireur: this.contexte.tireur,
+    };
   }
 
   /** Rendu du type (créé à la première demande). */
@@ -132,6 +152,7 @@ export class Ennemis implements SourceEntites {
     e.mort = -1;
     e.aExploser = false;
     e.voitJoueur = true;
+    e.cibleAllie = null;
     e.minuterieVue = Math.random() * PERIODE_VUE;  // étale les vérifications
     e.immunites.fill(0);
     reinitialiserAnimation(e.animation);
@@ -392,9 +413,16 @@ export class Ennemis implements SourceEntites {
     const distance = longueur(versX, versZ) || 1e-6;
     const dx = versX / distance;
     const dz = versZ / distance;
+    const auContact = def.comportement.type === 'melee';
     if ((e.minuterieVue -= dt) <= 0) {
       e.minuterieVue = PERIODE_VUE;
       e.voitJoueur = def.ignoreObstacles === true || carte.ligneDeVue(e.x, e.z, j.x, j.z);
+      // Un allié proche (plus que le joueur) attire les ennemis au corps à corps
+      if (auContact && this.allies) {
+        const a = this.allies.provocateur(e.x, e.z, distance);
+        e.cibleAllie = a;
+        e.cibleAllieId = a ? a.id : 0;
+      }
     }
     vers.dx = dx;
     vers.dz = dz;
@@ -407,13 +435,33 @@ export class Ennemis implements SourceEntites {
       vers.cheminZ = dz;
     }
 
+    // Cible : l'allié qui l'a attiré s'il vit encore, sinon le joueur
+    let contexte = this.contexte;
+    const a = e.cibleAllie;
+    if (a && this.allies && this.contexteAllie && this.allies.vivant(a, e.cibleAllieId)) {
+      const ax = a.x - e.x;
+      const az = a.z - e.z;
+      const d = longueur(ax, az) || 1e-6;
+      vers.dx = ax / d;
+      vers.dz = az / d;
+      vers.cheminX = vers.dx;
+      vers.cheminZ = vers.dz;
+      // La portée de contact est calculée pour le joueur : on compense la taille de l'allié
+      vers.distance = Math.max(0, d - (a.definition.rayon - JOUEUR_BASE.rayon));
+      this.allieVise = a;
+      contexte = this.contexteAllie;
+    } else {
+      e.cibleAllie = null;
+      this.allieVise = null;
+    }
+
     // Comportement (immobile si le joueur est mort)
     if (j.mort) {
       e.dirX = 0;
       e.dirZ = 0;
     } else {
       const mecheAvant = e.meche;
-      e.aExploser = appliquerComportement(e, this.contexte, dt, vers);
+      e.aExploser = appliquerComportement(e, contexte, dt, vers);
       if (mecheAvant === 0 && e.meche > 0) this.retours.son('meche');
     }
 
@@ -467,8 +515,8 @@ export class Ennemis implements SourceEntites {
       e.z = corrige.z;
     }
 
-    // Toujours tourné vers le joueur ; animation selon la marche effective
-    e.angle += ecartAngle(e.angle, Math.atan2(dx, dz)) * facteurLissage(g.vitesseRotation, dt);
+    // Toujours tourné vers sa cible ; animation selon la marche effective
+    e.angle += ecartAngle(e.angle, Math.atan2(vers.dx, vers.dz)) * facteurLissage(g.vitesseRotation, dt);
     e.vitesseSol = longueur(e.dirX, e.dirZ) * vitesse;
     // Un grand modèle fait de grands pas : cycle de marche ralenti d'autant
     avancerAnimation(e.animation, this.rendu(e.indexType).modele, dt, e.vitesseSol / (def.echelle ?? 1));
@@ -487,5 +535,6 @@ export class Ennemis implements SourceEntites {
     if (distance < c.rayon) {
       this.contexte.cible.subirDegats(Math.ceil(c.degats * (1 - distance / c.rayon)));
     }
+    this.allies?.blesserZone(e.x, e.z, c.rayon, c.degats);
   }
 }

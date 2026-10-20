@@ -13,7 +13,7 @@ import type { NiveauShaders } from '../options';
 const CLE_REPLI_WEBGL = 'block-survivors.repli-webgl';
 
 /** Objets qui ne projettent pas d'ombre (effets translucides, sol lointain). */
-const SANS_OMBRE_PORTEE = new Set(['ombres', 'balayage', 'foudre', 'exterieur', 'particules', 'chiffres', 'etiquette']);
+const SANS_OMBRE_PORTEE = new Set(['ombres', 'balayage', 'foudre', 'exterieur', 'particules', 'chiffres', 'etiquette', 'barres-vie']);
 
 export class Rendu {
   readonly renderer: WebGPURenderer;

@@ -2,6 +2,7 @@
 import { IDS_ARMES } from '../donnees/armes';
 import { ENNEMIS, IDS_ENNEMIS } from '../donnees/ennemis';
 import type { DefinitionEnnemi } from '../donnees/types';
+import type { Allie } from '../combat/invocations';
 import { creerEtatAnimation, type EtatAnimation } from '../modeles/animation';
 
 export interface Ennemi {
@@ -28,6 +29,9 @@ export interface Ennemi {
   /** Ligne de vue directe vers le joueur (sinon : suit le champ de flux). */
   voitJoueur: boolean;
   minuterieVue: number;         // s avant de revérifier la ligne de vue
+  /** Allié invoqué qui l'a attiré (corps à corps), et son identifiant pour le reconnaître. */
+  cibleAllie: Allie | null;
+  cibleAllieId: number;
   /** Par arme (index dans IDS_ARMES) : temps de jeu avant lequel elle ne peut plus le toucher. */
   immunites: Float32Array;
   animation: EtatAnimation;
@@ -45,6 +49,8 @@ export function creerEnnemi(): Ennemi {
     aExploser: false,
     voitJoueur: true,
     minuterieVue: 0,
+    cibleAllie: null,
+    cibleAllieId: 0,
     immunites: new Float32Array(IDS_ARMES.length),
     animation: creerEtatAnimation(),
   };

@@ -31,6 +31,13 @@ const definitions = {
   vex_invocation: { categorie: 'armes', chemin: 'mob/evocation_illager/prepare_summon', hachage: 'e792be7a228007d8a782b0d6caf9da9ebf77a86b', volume: 0.35, hauteur: [1, 1.1], intervalleMin: 0.5, simultanes: 1 },
   vex_charge: { categorie: 'armes', chemin: 'mob/vex/charge1', hachage: 'e4208f313e7c1431d9e04c80974fa4ed4a783275', volume: 0.2, hauteur: [0.9, 1.2], intervalleMin: 0.15, simultanes: 2 },
 
+  golem_blesse: { categorie: 'armes', chemin: 'mob/irongolem/hit1', hachage: '9d528a24b3aaf8e4210b570316ef4fe125f813d8', volume: 0.25, hauteur: [0.8, 1], intervalleMin: 0.2, simultanes: 2 },
+  golem_mort: { categorie: 'armes', chemin: 'mob/irongolem/death', hachage: 'aa6c662548316c68591a63f568be1f997d162ef1', volume: 0.5, hauteur: [1, 1], intervalleMin: 0.3, simultanes: 1 },
+  loup_blesse: { categorie: 'armes', chemin: 'mob/wolf/hurt1', hachage: 'a08590d43a21ee739bd7b9be85b4a81564e6f74a', volume: 0.25, hauteur: [0.9, 1.2], intervalleMin: 0.15, simultanes: 2 },
+  loup_mort: { categorie: 'armes', chemin: 'mob/wolf/death', hachage: '945dab2b484c34f108e1ea8eebca5e5e2a9e6424', volume: 0.4, hauteur: [0.9, 1.1], intervalleMin: 0.2, simultanes: 2 },
+  vex_blesse: { categorie: 'armes', chemin: 'mob/vex/hurt1', hachage: '909ded09c154faea85e71d5456921be64cbdcd49', volume: 0.2, hauteur: [0.9, 1.2], intervalleMin: 0.15, simultanes: 2 },
+  vex_mort: { categorie: 'armes', chemin: 'mob/vex/death1', hachage: 'd33b4c2a9bcaa175655a69f9b0a425bf1c136b71', volume: 0.3, hauteur: [0.9, 1.1], intervalleMin: 0.2, simultanes: 2 },
+
   // --- Ennemis ---
   meche: { categorie: 'creatures', chemin: 'random/fuse', hachage: 'b9a550ba1e028c027557572aeb928b760864efe4', volume: 0.5, hauteur: [0.9, 1.1], intervalleMin: 0.2, simultanes: 2 },
   boss: { categorie: 'creatures', chemin: 'mob/wither/spawn', hachage: '52049ed59e074474287b5dfee00477ce571b3385', volume: 0.45, hauteur: [1, 1], intervalleMin: 1, simultanes: 1 },

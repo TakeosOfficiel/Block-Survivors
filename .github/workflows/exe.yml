@@ -22,6 +22,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # historique complet : tags des anciennes versions
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -35,6 +37,17 @@ jobs:
         with:
           name: BlockSurvivors
           path: release/BlockSurvivors.exe
+      - name: Tags des versions publiées avant le suivi des versions
+        shell: bash
+        run: |
+          while read -r tag commit; do
+            git rev-parse -q --verify "refs/tags/$tag" >/dev/null || git push origin "$commit:refs/tags/$tag"
+          done <<'FIN'
+          v0.2.0 749af87972ec65828c6c7fa42e511d4c0e2b91a8
+          v0.3.0 4e06a10c64ff42686d195b947fa7be0362d10435
+          v0.4.0 b499706d294ea7dae873ccb503f2d35add57b513
+          v0.5.0 77a02def97fe433de3e18c842f4d44b34baaa6ca
+          FIN
       - name: Publier la release de la version et « derniere-version »
         shell: bash
         env:

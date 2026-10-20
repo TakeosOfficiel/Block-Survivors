@@ -10,7 +10,7 @@ const serveur = await createServer();
 await serveur.listen();
 const url = serveur.resolvedUrls?.local[0] ?? 'http://localhost:5173/';
 
-const fenetre = spawn(electron, ['.'], {
+const fenetre = spawn(electron, ['.', ...process.argv.slice(2)], {
   stdio: 'inherit',
   env: { ...process.env, BLOCK_SURVIVORS_URL: url },
 });

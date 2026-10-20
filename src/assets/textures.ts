@@ -20,6 +20,7 @@ export interface BilanTextures {
 export class BibliothequeTextures {
   private readonly textures = new Map<CheminTexture, THREE.Texture>();
   private readonly origines = new Map<CheminTexture, IdSourceTexture>();
+  private readonly urls = new Map<CheminTexture, string>();
   private readonly manquantes: CheminTexture[] = [];
 
   /** Charge toutes les textures demandées en parallèle. */
@@ -37,6 +38,7 @@ export class BibliothequeTextures {
         if (resultat) {
           this.textures.set(chemin, creerTexture(resultat.image));
           this.origines.set(chemin, resultat.source);
+          this.urls.set(chemin, resultat.image.src);
         } else {
           this.manquantes.push(chemin);
         }
@@ -48,6 +50,11 @@ export class BibliothequeTextures {
   /** Texture prête à l'emploi, ou null si elle n'a pu être chargée. */
   obtenir(chemin: CheminTexture): THREE.Texture | null {
     return this.textures.get(chemin) ?? null;
+  }
+
+  /** Adresse d'où la texture a été chargée (pour l'interface HTML), ou null. */
+  url(chemin: CheminTexture): string | null {
+    return this.urls.get(chemin) ?? null;
   }
 
   /** Copie de la texture répétée `repetitions` fois sur chaque axe (même image, pour les grandes surfaces). */

@@ -1,16 +1,20 @@
 /** Caméra de jeu : vue de dessus inclinée, suivi du joueur et zoom molette. */
-import type * as THREE from 'three';
+import * as THREE from 'three';
 import { CONFIG } from '../config';
 import type { Entrees } from '../controles/entrees';
+import type { DetecteurVisibilite } from '../entites/directeur';
 import type { EtatPartie } from '../etat';
 import { borner, facteurLissage } from '../utils/maths';
 
-export class CameraJeu {
+export class CameraJeu implements DetecteurVisibilite {
   private readonly camera: THREE.PerspectiveCamera;
   private readonly entrees: Entrees;
   private readonly etat: EtatPartie;
   private readonly sinInclinaison: number;
   private readonly cosInclinaison: number;
+  private readonly champ = new THREE.Frustum();
+  private readonly projection = new THREE.Matrix4();
+  private readonly sphere = new THREE.Sphere();
 
   private x: number;   // point suivi (lissé)
   private z: number;
@@ -54,11 +58,21 @@ export class CameraJeu {
     this.placer();
   }
 
+  /** Vrai si une sphère posée au sol en (x, z) apparaît à l'écran. */
+  estVisible(x: number, z: number, rayon: number): boolean {
+    this.sphere.center.set(x, 1, z);
+    this.sphere.radius = rayon;
+    return this.champ.intersectsSphere(this.sphere);
+  }
+
   private placer(): void {
     this.camera.position.set(
       this.x,
       CONFIG.camera.hauteurVisee + this.distance * this.sinInclinaison,
       this.z + this.distance * this.cosInclinaison,
     );
+    this.camera.updateMatrixWorld();
+    this.projection.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
+    this.champ.setFromProjectionMatrix(this.projection);
   }
 }

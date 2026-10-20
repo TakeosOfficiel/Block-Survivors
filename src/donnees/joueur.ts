@@ -2,6 +2,8 @@
 import type { DefinitionJoueur } from './types';
 
 export const JOUEUR_BASE: DefinitionJoueur = {
+  pv: 20,
+  invulnerabilite: 0.5,
   rayon: 0.4,
   vitesse: 5,
   reactivite: 25,

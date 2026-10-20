@@ -1,44 +1,46 @@
-/** Joueur : déplacement, collisions avec les bords, modèle animé et ombre. */
-import * as THREE from 'three';
+/** Joueur : déplacement, collisions avec les bords, vie, modèle animé. */
+import type * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG } from '../config';
 import type { Entrees } from '../controles/entrees';
 import { JOUEUR_BASE } from '../donnees/joueur';
 import { MODELES } from '../donnees/modeles';
+import type { Ombres } from '../effets/ombres';
 import type { EtatJoueur, EtatPartie } from '../etat';
+import { angleChute, avancerAnimation, calculerRotations, creerEtatAnimation } from '../modeles/animation';
+import { compilerModele, type ModeleCompile } from '../modeles/compilation';
+import { creerPoseModele, ModeleInstancie, type PoseModele } from '../modeles/rendu';
 import { ecartAngle, facteurLissage } from '../utils/maths';
-import { AnimateurModele } from './animateur';
-import { ModeleCubique } from './modeleCubique';
-import { creerOmbre } from './ombre';
-import type { SourceEntites } from './types';
+import type { CibleJoueur, SourceEntites } from './types';
 
-export class Joueur implements SourceEntites {
+export class Joueur implements SourceEntites, CibleJoueur {
   readonly actifs = 1;
+  /** Ignore tous les dégâts (debug). */
+  invincible = false;
 
   private readonly etat: EtatPartie;
   private readonly entrees: Entrees;
-  /** Suit la position ; le modèle à l'intérieur porte l'orientation, l'ombre reste à plat. */
-  private readonly conteneur = new THREE.Group();
-  private readonly modele: ModeleCubique;
-  private readonly animateur: AnimateurModele;
+  private readonly modele: ModeleCompile;
+  private readonly rendu: ModeleInstancie;
+  private readonly pose: PoseModele;
+  private readonly animation = creerEtatAnimation();
 
   constructor(etat: EtatPartie, entrees: Entrees, scene: THREE.Scene, textures: BibliothequeTextures) {
     this.etat = etat;
     this.entrees = entrees;
-
-    const definition = MODELES[JOUEUR_BASE.modele];
-    this.modele = new ModeleCubique(definition, textures.obtenir(JOUEUR_BASE.skin), JOUEUR_BASE.couleursSecours);
-    this.animateur = new AnimateurModele(this.modele, definition);
-
-    this.conteneur.name = 'joueur';
-    this.conteneur.add(this.modele.racine, creerOmbre(textures.obtenir(CONFIG.ombre.texture), JOUEUR_BASE.rayonOmbre));
-    scene.add(this.conteneur);
-    this.majVisuel(0);
+    this.modele = compilerModele(MODELES[JOUEUR_BASE.modele]);
+    this.rendu = new ModeleInstancie(this.modele, JOUEUR_BASE, textures.obtenir(JOUEUR_BASE.skin), 1, scene);
+    this.pose = creerPoseModele(this.modele);
   }
 
   /** Un pas de simulation. */
   maj(dt: number): void {
     const j = this.etat.joueur;
+    if (j.mort) {
+      j.tempsMort += dt;
+      return;
+    }
+    if (j.invulnerabilite > 0) j.invulnerabilite -= dt;
 
     // Direction voulue d'après le clavier
     let dx = (this.entrees.action('droite') ? 1 : 0) - (this.entrees.action('gauche') ? 1 : 0);
@@ -62,14 +64,44 @@ export class Joueur implements SourceEntites {
     if (norme > 0) {
       j.angle += ecartAngle(j.angle, Math.atan2(dx, dz)) * facteurLissage(JOUEUR_BASE.vitesseRotation, dt);
     }
+    avancerAnimation(this.animation, this.modele, dt, Math.hypot(j.vx, j.vz));
   }
 
-  /** Recopie l'état dans la scène et anime le modèle (dtJeu en temps de jeu). */
-  majVisuel(dtJeu: number): void {
+  subirDegats(degats: number): boolean {
     const j = this.etat.joueur;
-    this.conteneur.position.set(j.x, 0, j.z);
-    this.modele.racine.rotation.y = j.angle;
-    this.animateur.maj(dtJeu, Math.hypot(j.vx, j.vz));
+    if (j.mort || this.invincible || j.invulnerabilite > 0) return false;
+    j.pv = Math.max(0, j.pv - degats);
+    j.invulnerabilite = JOUEUR_BASE.invulnerabilite;
+    if (j.pv === 0) {
+      j.mort = true;
+      j.vx = 0;
+      j.vz = 0;
+    }
+    return true;
+  }
+
+  /** Recopie l'état dans la scène. */
+  majVisuel(ombres: Ombres): void {
+    const j = this.etat.joueur;
+    const pose = this.pose;
+    pose.x = j.x;
+    pose.z = j.z;
+    pose.angle = j.angle;
+    pose.inclinaison = j.mort ? angleChute(j.tempsMort, CONFIG.joueur.dureeMort) : 0;
+    calculerRotations(this.modele, this.animation, pose.rotations);
+
+    // Rouge pendant la blessure, comme en jeu
+    const blessure = CONFIG.surcouche.blessure;
+    const blesse = j.mort || j.invulnerabilite > JOUEUR_BASE.invulnerabilite - blessure.duree;
+    pose.surcouche[0] = blessure.couleur[0];
+    pose.surcouche[1] = blessure.couleur[1];
+    pose.surcouche[2] = blessure.couleur[2];
+    pose.surcouche[3] = blesse ? blessure.force : 0;
+
+    this.rendu.commencer();
+    this.rendu.ajouter(pose);
+    this.rendu.terminer();
+    ombres.ajouter(j.x, j.z, JOUEUR_BASE.rayonOmbre);
   }
 
   /** Maintient le joueur dans la zone jouable ; la vitesse contre un mur est annulée. */

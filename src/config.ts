@@ -64,6 +64,37 @@ export const CONFIG = {
     texture: 'misc/shadow',
     opacite: 0.45,
     hauteur: 0.01,           // décollement du sol (évite le z-fighting)
+    capacite: 1024,
+  },
+
+  // Surcouches de couleur des modèles (rouge de blessure, blanc du creeper qui gonfle)
+  surcouche: {
+    blessure: { couleur: [1, 0, 0], force: 0.35, duree: 0.3 },
+    flash: { couleur: [1, 1, 1], force: 0.7 },
+  },
+
+  ennemis: {
+    capacite: 600,           // ennemis simultanés au maximum (pool)
+    celluleGrille: 2,        // taille d'une cellule de la grille spatiale (blocs)
+    separation: 6,           // force de répulsion entre ennemis (1/s)
+    amortissementRecul: 6,   // décroissance du recul (1/s)
+    vitesseRotation: 10,     // orientation vers la direction de marche (1/s)
+    dureeMort: 0.6,          // chute sur le côté avant disparition (s)
+    essaisApparition: 16,    // tirages pour trouver un point hors champ
+    // Gonflement du creeper (valeurs du jeu)
+    gonflementLargeur: 0.4,
+    gonflementHauteur: 0.1,
+  },
+
+  projectiles: {
+    capacite: 256,
+  },
+
+  particules: {
+    capacite: 1024,
+    gravite: 14,
+    mort: { nombre: 10, vitesse: 2.5, taille: 0.18, duree: 0.7 },
+    explosion: { nombre: 70, vitesse: 8, taille: 0.45, duree: 1, couleurs: [0xffffff, 0xb0b0b0, 0xff9a2e] },
   },
 
   textures: {
@@ -86,6 +117,15 @@ export const CONFIG = {
   hud: {
     periodeFps: 0.5,         // fenêtre de mesure des FPS (s)
     dureeMessage: 3,         // durée d'affichage d'un message central (s)
+    coeurs: {
+      plein: 'gui/sprites/hud/heart/full',
+      moitie: 'gui/sprites/hud/heart/half',
+      conteneur: 'gui/sprites/hud/heart/container',
+    },
+  },
+
+  joueur: {
+    dureeMort: 0.6,          // chute sur le côté (s)
   },
 
   debug: {
@@ -93,6 +133,8 @@ export const CONFIG = {
     touchesOverlay: ['F3', 'Backquote'],   // Backquote = touche ² en AZERTY
     periodeRafraichissement: 0.25,         // rafraîchissement de l'overlay (s)
     vitessesTemps: [0.25, 0.5, 1, 2, 4, 8, 16],
+    distanceApparition: 7,                 // apparition manuelle autour du joueur (blocs)
+    frappe: { rayon: 4, degats: 8, recul: 8 },
   },
 } as const;
 

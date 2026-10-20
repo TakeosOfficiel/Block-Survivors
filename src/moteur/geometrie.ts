@@ -1,4 +1,4 @@
-/** Géométries de blocs et de modèles cubiques, UV mappées sur les textures vanilla. */
+/** Géométries de blocs, de modèles cubiques et de projectiles, UV mappées sur les textures vanilla. */
 import * as THREE from 'three';
 import type { CubeModele } from '../donnees/types';
 
@@ -34,7 +34,8 @@ export function creerGeometrieBloc(): THREE.BoxGeometry {
 
 /**
  * Boîte d'un modèle cubique, en blocs (1 px = 1/16), dont chaque face pointe
- * sur son rectangle du patron vanilla (voir donnees/modeles.ts).
+ * sur son rectangle du patron vanilla (voir donnees/modeles.ts). La boîte est
+ * décalée de `cube.centre` : son origine est l'articulation de la partie.
  * Le modèle regarde vers +Z : +Z = avant, −X = côté droit, +X = côté gauche.
  */
 export function creerGeometrieCube(
@@ -46,12 +47,14 @@ export function creerGeometrieCube(
   const geometrie = new THREE.BoxGeometry(l / PIXELS_PAR_BLOC, h / PIXELS_PAR_BLOC, p / PIXELS_PAR_BLOC);
 
   // [x, y, largeur, hauteur] en pixels, dans l'ordre des faces de BoxGeometry
+  const gauche = [u + p + l, v + p, p, h] as const;
+  const droite = [u, v + p, p, h] as const;
   const rectangles: readonly (readonly [number, number, number, number])[] = [
-    [u + p + l,     v + p, p, h],  // +X : côté gauche
-    [u,             v + p, p, h],  // −X : côté droit
-    [u + p,         v,     l, p],  // +Y : dessus
-    [u + p + l,     v,     l, p],  // −Y : dessous
-    [u + p,         v + p, l, h],  // +Z : avant
+    cube.miroir ? droite : gauche, // +X : côté gauche (en miroir, les côtés s'échangent)
+    cube.miroir ? gauche : droite, // −X : côté droit
+    [u + p, v, l, p],              // +Y : dessus
+    [u + p + l, v, l, p],          // −Y : dessous
+    [u + p, v + p, l, h],          // +Z : avant
     [u + 2 * p + l, v + p, l, h],  // −Z : arrière
   ];
 
@@ -61,11 +64,50 @@ export function creerGeometrieCube(
     const retourne = face === FACE.ny;
     for (let sommet = 0; sommet < 4; sommet++) {
       const i = face * 4 + sommet;
-      const colonne = x + uvs.getX(i) * largeur;
+      const su = cube.miroir ? 1 - uvs.getX(i) : uvs.getX(i);
+      const colonne = x + su * largeur;
       const ligne = y + (retourne ? uvs.getY(i) : 1 - uvs.getY(i)) * hauteur;  // 0 = haut de l'image
       uvs.setXY(i, colonne / largeurTexture, 1 - ligne / hauteurTexture);
     }
   });
   uvs.needsUpdate = true;
+
+  const [cx, cy, cz] = cube.centre;
+  geometrie.translate(cx / PIXELS_PAR_BLOC, cy / PIXELS_PAR_BLOC, cz / PIXELS_PAR_BLOC);
+  return geometrie;
+}
+
+/**
+ * Deux plans croisés le long de +Z (un vertical, un horizontal), comme les
+ * flèches en jeu. `uv` = rectangle de la vue de profil dans la texture (pixels).
+ */
+export function creerGeometrieCroisee(
+  longueur: number,
+  largeur: number,
+  [x, y, l, h]: readonly [number, number, number, number],
+  [largeurTexture, hauteurTexture]: readonly [number, number],
+): THREE.BufferGeometry {
+  const u0 = x / largeurTexture;
+  const u1 = (x + l) / largeurTexture;
+  const v0 = 1 - (y + h) / hauteurTexture;
+  const v1 = 1 - y / hauteurTexture;
+  const z0 = -longueur / 2;
+  const z1 = longueur / 2;
+  const e = largeur / 2;
+
+  // Plan vertical (x = 0) puis plan horizontal (y = 0) ; u va de l'arrière (−Z) à la pointe (+Z)
+  const positions = [
+    0, -e, z0,   0, -e, z1,   0, e, z1,   0, e, z0,
+    -e, 0, z0,   -e, 0, z1,   e, 0, z1,   e, 0, z0,
+  ];
+  const uvs = [
+    u0, v0,   u1, v0,   u1, v1,   u0, v1,
+    u0, v0,   u1, v0,   u1, v1,   u0, v1,
+  ];
+  const geometrie = new THREE.BufferGeometry();
+  geometrie.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometrie.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geometrie.setIndex([0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7]);
+  geometrie.computeVertexNormals();
   return geometrie;
 }

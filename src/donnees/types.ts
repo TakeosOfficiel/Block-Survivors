@@ -1,9 +1,11 @@
 /**
- * Types du contenu du jeu. Les tables de données (blocs, modèles, arènes…)
+ * Types du contenu du jeu. Les tables de données (blocs, modèles, ennemis…)
  * sont vérifiées contre ces types à la compilation.
  */
 import type { IdBloc } from './blocs';
+import type { IdEnnemi } from './ennemis';
 import type { IdModele } from './modeles';
+import type { IdProjectile } from './projectiles';
 
 /** Chemin d'une texture vanilla, relatif à assets/minecraft/textures/, sans « .png » (ex. « block/dirt »). */
 export type CheminTexture = string;
@@ -46,12 +48,24 @@ export interface CubeModele {
   readonly centre: Vec3;
   /** Coin haut-gauche du patron de la boîte dans la texture, en pixels. */
   readonly uv: readonly [number, number];
+  /** Patron retourné horizontalement (membre gauche des skins 64x32). */
+  readonly miroir?: boolean;
+  /** Pose de base (rad), appliquée dans l'ordre Z, Y, X comme en jeu. */
+  readonly rotation?: Vec3;
 }
+
+export type Axe = 'x' | 'y' | 'z';
 
 export interface MembreMarche {
   readonly partie: string;
-  readonly amplitude: number;   // rad à pleine vitesse
-  readonly dephasage: number;   // rad
+  readonly axe: Axe;
+  /** Rotation maximale (rad) à pleine allure ; le signe donne le sens. */
+  readonly amplitude: number;
+  readonly dephasage: number;
+  /** Multiplicateur de fréquence (1 par défaut). */
+  readonly frequence?: number;
+  /** |sin| au lieu de cos : mouvement toujours du même côté (pattes qui se lèvent). */
+  readonly absolu?: boolean;
 }
 
 export interface MembreRepos {
@@ -69,7 +83,7 @@ export interface DefinitionModele {
     readonly lissage: number;           // raideur de la transition marche ↔ arrêt (1/s)
     readonly membres: readonly MembreMarche[];
   };
-  /** Léger balancement permanent (respiration). */
+  /** Léger balancement permanent des bras (respiration). */
   readonly repos?: {
     readonly amplitude: number;   // rad
     readonly frequenceZ: number;  // rad/s
@@ -78,19 +92,113 @@ export interface DefinitionModele {
   };
 }
 
-// --------------------------------------------------------------------------
-// Joueur
-// --------------------------------------------------------------------------
-export interface DefinitionJoueur {
-  readonly rayon: number;            // rayon de collision (blocs)
-  readonly vitesse: number;          // blocs / seconde
-  readonly reactivite: number;       // rapidité d'atteinte de la vitesse cible (1/s)
-  readonly vitesseRotation: number;  // rapidité d'orientation vers la direction de marche (1/s)
+/** Apparence d'une entité : modèle, skin, couleurs de secours, ombre. */
+export interface ApparenceEntite {
   readonly modele: IdModele;
   readonly skin: CheminTexture;
   /** Couleur unie par partie du modèle si le skin est introuvable. */
   readonly couleursSecours: Readonly<Record<string, number>>;
-  readonly rayonOmbre: number;       // blocs
+  /** Couleur des parties absentes de `couleursSecours`. */
+  readonly couleurSecoursParDefaut?: number;
+  readonly rayonOmbre: number;     // blocs
+}
+
+// --------------------------------------------------------------------------
+// Joueur
+// --------------------------------------------------------------------------
+export interface DefinitionJoueur extends ApparenceEntite {
+  readonly pv: number;               // 20 = 10 cœurs
+  readonly invulnerabilite: number;  // s d'invulnérabilité après un coup
+  readonly rayon: number;            // rayon de collision (blocs)
+  readonly vitesse: number;          // blocs / seconde
+  readonly reactivite: number;       // rapidité d'atteinte de la vitesse cible (1/s)
+  readonly vitesseRotation: number;  // rapidité d'orientation vers la direction de marche (1/s)
+}
+
+// --------------------------------------------------------------------------
+// Ennemis
+// --------------------------------------------------------------------------
+/** Va au contact et frappe. */
+export interface ComportementMelee {
+  readonly type: 'melee';
+  readonly degats: number;
+  readonly portee: number;   // distance de frappe au-delà du contact (blocs)
+  readonly cadence: number;  // s entre deux coups
+}
+
+/** Garde ses distances et tire des projectiles. */
+export interface ComportementArcher {
+  readonly type: 'archer';
+  readonly projectile: IdProjectile;
+  readonly degats: number;
+  readonly distanceIdeale: number;
+  readonly portee: number;
+  readonly cadence: number;
+}
+
+/** S'approche, gonfle puis explose (annulé si le joueur s'éloigne). */
+export interface ComportementExplosif {
+  readonly type: 'explosif';
+  readonly distanceAmorcage: number;
+  readonly distanceAnnulation: number;
+  readonly duree: number;    // s de mèche
+  readonly rayon: number;    // rayon de l'explosion (blocs)
+  readonly degats: number;   // au centre, décroissant jusqu'au bord
+}
+
+export type ComportementEnnemi = ComportementMelee | ComportementArcher | ComportementExplosif;
+
+export interface DefinitionEnnemi extends ApparenceEntite {
+  readonly nom: string;
+  readonly pv: number;
+  readonly vitesse: number;   // blocs / seconde
+  readonly rayon: number;     // rayon de collision (blocs)
+  readonly comportement: ComportementEnnemi;
+  /** Couleur des particules à la mort. */
+  readonly couleurParticules: number;
+}
+
+// --------------------------------------------------------------------------
+// Projectiles
+// --------------------------------------------------------------------------
+export interface DefinitionProjectile {
+  readonly nom: string;
+  readonly texture: CheminTexture;
+  readonly tailleTexture: readonly [number, number];
+  /** Rectangle [x, y, largeur, hauteur] de la vue de profil dans la texture (pixels). */
+  readonly uv: readonly [number, number, number, number];
+  readonly longueur: number;   // blocs
+  readonly largeur: number;    // blocs
+  readonly vitesse: number;    // blocs / seconde
+  readonly duree: number;      // s avant disparition
+  readonly rayon: number;      // rayon de collision (blocs)
+  readonly hauteur: number;    // altitude de vol (blocs)
+  readonly couleurSecours: number;
+}
+
+// --------------------------------------------------------------------------
+// Apparitions
+// --------------------------------------------------------------------------
+/** Valeur interpolée linéairement entre le début et la fin de la montée en difficulté. */
+export interface Progression {
+  readonly debut: number;
+  readonly fin: number;
+}
+
+export interface DefinitionApparitions {
+  /** Durée (s) pour passer des valeurs « debut » aux valeurs « fin ». */
+  readonly dureeMontee: number;
+  readonly intervalle: Progression;        // s entre deux vagues d'apparition
+  readonly tailleGroupe: Progression;      // ennemis par vague
+  readonly maxSimultanes: Progression;
+  readonly multiplicateurPv: Progression;
+  readonly distanceMin: number;            // distance minimale au joueur (blocs)
+  readonly dispersionGroupe: number;       // rayon d'un groupe (blocs)
+  readonly ennemis: readonly {
+    readonly ennemi: IdEnnemi;
+    readonly depuis: number;               // s de jeu avant la première apparition
+    readonly poids: number;
+  }[];
 }
 
 // --------------------------------------------------------------------------

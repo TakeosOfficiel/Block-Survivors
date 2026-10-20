@@ -29,10 +29,12 @@ src/
   assets/               chargement des textures et liste des textures requises
   moteur/               rendu, boucle de jeu, caméra, géométries UV
   monde/                construction de l'arène en blocs
-  entites/              joueur, modèles cubiques, animation, ombre
+  entites/              joueur, ennemis et comportements, projectiles, directeur d'apparition
+  modeles/              modèles cubiques : compilation, animation, rendu instancié
+  effets/               ombres et particules (instanciées)
   controles/            clavier et molette
   ui/                   HUD, panneau debug, écran de chargement, styles
-  utils/                fonctions pures (maths, formatage)
+  utils/                fonctions pures, pool d'objets, grille spatiale
 ```
 
 Ajouter du contenu = ajouter une entrée dans `src/donnees/`. Chaque système
@@ -56,7 +58,8 @@ client. Les navigateurs refusent les PNG locaux en `file://` : utilise
 ## Debug
 
 `F3` ou `²` : FPS, entités, appels de dessin, textures, vitesse du temps
-(`-` / `+`), invincibilité (`I`), apparition d'un boss (`B`).
+(`-` / `+`), invincibilité (`I`), apparition de chaque ennemi, frappe de zone
+(`K`), apparition d'un boss (`B`).
 
 ---
 

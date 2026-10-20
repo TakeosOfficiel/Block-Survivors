@@ -18,6 +18,7 @@
   <div id="hud" class="texte-mc">
     <div id="hud-fps">FPS : --</div>
     <div id="hud-message"></div>
+    <div id="hud-coeurs"></div>
     <div id="hud-aide">ZQSD / WASD / Flèches : se déplacer · Molette : zoom · F3 ou ² : debug</div>
   </div>
 
@@ -25,10 +26,11 @@
   <div id="debug" class="cache texte-mc">
     <div class="ligne titre">Block Survivors — DEBUG</div>
     <div class="ligne">FPS : <span id="dbg-fps">--</span> (<span id="dbg-ms">--</span> ms / image)</div>
-    <div class="ligne">Entités actives : <span id="dbg-entites">0</span></div>
+    <div class="ligne">Entités actives : <span id="dbg-entites">0</span> · Particules : <span id="dbg-particules">0</span></div>
     <div class="ligne">Appels de dessin : <span id="dbg-appels">0</span> · Triangles : <span id="dbg-triangles">0</span></div>
     <div class="ligne">Textures : <span id="dbg-textures">0 / 0</span></div>
     <div class="ligne">Temps de jeu : <span id="dbg-temps">00:00</span></div>
+    <div class="ligne">PV : <span id="dbg-pv">0</span> · Ennemis tués : <span id="dbg-tues">0</span></div>
     <div class="ligne">Joueur X / Z : <span id="dbg-position">0 / 0</span></div>
     <div class="ligne">Distance caméra : <span id="dbg-zoom">0</span></div>
     <div class="ligne">
@@ -38,6 +40,10 @@
     </div>
     <div class="ligne">
       Invincibilité : <button id="dbg-invincible">OFF</button> <small>(touche I)</small>
+    </div>
+    <div class="ligne">Faire apparaître : <span id="dbg-apparitions"></span></div>
+    <div class="ligne">
+      <button id="dbg-frappe">Frappe de zone</button> <small>(touche K)</small>
     </div>
     <div class="ligne">
       <button id="dbg-boss">Faire apparaître un boss</button> <small>(touche B)</small>

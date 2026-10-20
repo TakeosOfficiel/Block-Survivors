@@ -1,10 +1,11 @@
 /**
  * Panneau debug (F3 ou ²) : mesures, vitesse du temps, invincibilité,
- * apparition immédiate d'un boss.
+ * apparition d'ennemis et de boss, frappe de zone.
  */
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG, SOURCES_TEXTURES } from '../config';
 import { BOSS } from '../donnees/boss';
+import { ENNEMIS, IDS_ENNEMIS, type IdEnnemi } from '../donnees/ennemis';
 import type { EtatPartie } from '../etat';
 import type { CameraJeu } from '../moteur/camera';
 import type { Rendu } from '../moteur/rendu';
@@ -13,7 +14,7 @@ import { borner } from '../utils/maths';
 import { element } from './dom';
 import type { Hud } from './hud';
 
-/** Ce que le panneau observe. */
+/** Ce que le panneau observe et les actions qu'il déclenche. */
 export interface SourcesDebug {
   readonly rendu: Rendu;
   readonly etat: EtatPartie;
@@ -21,6 +22,10 @@ export interface SourcesDebug {
   readonly camera: CameraJeu;
   readonly textures: BibliothequeTextures;
   compterEntites(): number;
+  compterParticules(): number;
+  definirInvincibilite(actif: boolean): void;
+  apparaitreEnnemi(id: IdEnnemi): void;
+  frapper(): void;
 }
 
 export class PanneauDebug {
@@ -30,25 +35,29 @@ export class PanneauDebug {
     fps: element('dbg-fps'),
     ms: element('dbg-ms'),
     entites: element('dbg-entites'),
+    particules: element('dbg-particules'),
     appels: element('dbg-appels'),
     triangles: element('dbg-triangles'),
     textures: element('dbg-textures'),
     temps: element('dbg-temps'),
+    pv: element('dbg-pv'),
+    tues: element('dbg-tues'),
     position: element('dbg-position'),
     zoom: element('dbg-zoom'),
     vitesse: element('dbg-vitesse'),
     ralentir: element<HTMLButtonElement>('dbg-ralentir'),
     accelerer: element<HTMLButtonElement>('dbg-accelerer'),
     invincible: element<HTMLButtonElement>('dbg-invincible'),
+    apparitions: element('dbg-apparitions'),
+    frappe: element<HTMLButtonElement>('dbg-frappe'),
     boss: element<HTMLButtonElement>('dbg-boss'),
   };
 
   private visible: boolean = CONFIG.debug.actifAuDemarrage;
+  private invincible = false;
   private indexVitesseTemps: number = CONFIG.debug.vitessesTemps.indexOf(1);
   private minuterie = 0;
 
-  /** Invincibilité du joueur. */
-  invincible = false;
   /** Multiplicateur du temps de simulation. */
   vitesseTemps = 1;
 
@@ -58,9 +67,18 @@ export class PanneauDebug {
     this.lierBouton(this.dom.ralentir, () => this.changerVitesseTemps(-1));
     this.lierBouton(this.dom.accelerer, () => this.changerVitesseTemps(1));
     this.lierBouton(this.dom.invincible, () => this.basculerInvincibilite());
+    this.lierBouton(this.dom.frappe, () => this.sources.frapper());
     this.lierBouton(this.dom.boss, () => this.apparitionBoss());
-    window.addEventListener('keydown', this.surTouche);
 
+    // Un bouton par type d'ennemi, généré depuis la table ENNEMIS
+    for (const id of IDS_ENNEMIS) {
+      const bouton = document.createElement('button');
+      bouton.textContent = ENNEMIS[id].nom;
+      this.lierBouton(bouton, () => this.sources.apparaitreEnnemi(id));
+      this.dom.apparitions.append(bouton);
+    }
+
+    window.addEventListener('keydown', this.surTouche);
     this.changerVitesseTemps(0);
     this.appliquerVisibilite();
   }
@@ -92,6 +110,7 @@ export class PanneauDebug {
     if (e.key === '+' || e.key === '=') this.changerVitesseTemps(1);
     else if (e.key === '-' || e.key === '_') this.changerVitesseTemps(-1);
     else if (e.code === 'KeyI') this.basculerInvincibilite();
+    else if (e.code === 'KeyK') this.sources.frapper();
     else if (e.code === 'KeyB') this.apparitionBoss();
   };
 
@@ -114,6 +133,7 @@ export class PanneauDebug {
 
   private basculerInvincibilite(): void {
     this.invincible = !this.invincible;
+    this.sources.definirInvincibilite(this.invincible);
     this.dom.invincible.textContent = this.invincible ? 'ON' : 'OFF';
     this.dom.invincible.classList.toggle('actif', this.invincible);
   }
@@ -135,10 +155,13 @@ export class PanneauDebug {
     this.dom.fps.textContent = String(hud.fps);
     this.dom.ms.textContent = hud.msParImage.toFixed(1);
     this.dom.entites.textContent = String(this.sources.compterEntites());
+    this.dom.particules.textContent = String(this.sources.compterParticules());
     this.dom.appels.textContent = String(infos.calls);
     this.dom.triangles.textContent = String(infos.triangles);
     this.dom.textures.textContent = `${bilan.chargees} / ${bilan.demandees}${detailSources ? ` (${detailSources})` : ''}`;
     this.dom.temps.textContent = formaterTemps(etat.tempsJeu);
+    this.dom.pv.textContent = `${etat.joueur.pv} / ${etat.joueur.pvMax}`;
+    this.dom.tues.textContent = String(etat.ennemisTues);
     this.dom.position.textContent = `${etat.joueur.x.toFixed(1)} / ${etat.joueur.z.toFixed(1)}`;
     this.dom.zoom.textContent = camera.distance.toFixed(1);
   }

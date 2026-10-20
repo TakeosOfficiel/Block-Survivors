@@ -67,7 +67,10 @@ export class ModeleInstancie {
     this.capacite = capacite;
     this.surcouche = creerAttributSurcouche(capacite);
 
-    const materiauSkin = skin ? creerMateriau({ map: skin }) : null;
+    // Découpe comme en jeu (rendu « entity cutout no cull ») : les pixels
+    // transparents (côtes du squelette, yeux de l'araignée) sont percés et
+    // l'intérieur reste visible à travers, au lieu d'apparaître en noir
+    const materiauSkin = skin ? creerMateriau({ map: skin, alphaTest: 0.5, side: THREE.DoubleSide }) : null;
     this.maillages = modele.parties.map((partie) => {
       const geometrie = creerGeometrieCube(partie.cube, modele.definition.tailleTexture);
       geometrie.setAttribute(NOM_ATTRIBUT_SURCOUCHE, this.surcouche);

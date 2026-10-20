@@ -45,6 +45,8 @@ export interface ModeleCompile {
   readonly repos: readonly MembreReposCompile[];
   readonly attaque: readonly MembreAttaqueCompile[];
   readonly tournoiement: readonly MembreTournoiementCompile[];
+  /** Hauteur du sommet du modèle en pose de base (blocs). */
+  readonly hauteur: number;
 }
 
 const INDEX_AXE: Record<Axe, number> = { x: 0, y: 1, z: 2 };
@@ -82,5 +84,6 @@ export function compilerModele(definition: DefinitionModele): ModeleCompile {
     repos: (definition.repos?.membres ?? []).map((m) => ({ partie: indexPartie(m.partie), signe: m.signe })),
     attaque: (definition.attaque?.membres ?? []).map((m) => ({ partie: indexPartie(m.partie), amplitude: m.amplitude })),
     tournoiement: (definition.tournoiement ?? []).map((m) => ({ partie: indexPartie(m.partie), vitesse: m.vitesse })),
+    hauteur: Math.max(...parties.map((p) => p.cube.pivot[1] + p.cube.centre[1] + p.cube.taille[1] / 2)) / PIXELS_PAR_BLOC,
   };
 }

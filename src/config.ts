@@ -130,6 +130,18 @@ export const CONFIG = {
     golems: { capacite: 8, distanceSuivi: 3 },
   },
 
+  // Chiffres des dégâts au-dessus des ennemis (option)
+  chiffresDegats: {
+    capacite: 160,          // chiffres affichés à la fois (le plus ancien laisse sa place)
+    chiffresMax: 6,
+    derive: 0.8,            // dérive latérale max (blocs/s)
+    ecart: 0.9,             // dispersion du point d'apparition (blocs)
+    dureePop: 0.15,         // s du grossissement initial
+    fondu: 0.35,            // dernière part de la vie en fondu
+    normal: { couleur: 0xffffff, taille: 0.38, montee: 1.1, pop: 0.3, duree: 0.8 },
+    critique: { couleur: 0xffc22a, taille: 0.62, montee: 1.4, pop: 0.8, duree: 1.1 },
+  },
+
   particules: {
     capacite: 1024,          // sprites vanilla simultanés (gerbes : donnees/particules.ts)
   },
@@ -186,6 +198,8 @@ export const CONFIG = {
   joueur: {
     dureeMort: 0.6,          // chute sur le côté (s)
     // Totem d'immortalité : résurrection à la mort
+    // Pseudo affiché au-dessus du joueur
+    etiquette: { hauteurTexte: 0.42, marge: 0.35 },
     totem: {
       pv: 0.5,               // part des PV maximum rendue
       protection: 3,         // s d'invincibilité après la résurrection

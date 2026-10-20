@@ -552,7 +552,11 @@ export interface DefinitionProgression {
 // --------------------------------------------------------------------------
 // Sons
 // --------------------------------------------------------------------------
+/** Famille de sons, chacune avec son curseur de volume dans les options. */
+export type CategorieSon = 'joueur' | 'armes' | 'creatures' | 'interface';
+
 export interface DefinitionSon {
+  readonly categorie: CategorieSon;
   /** Chemin vanilla relatif à assets/minecraft/sounds/, sans « .ogg ». */
   readonly chemin: string;
   /** Empreinte SHA-1 du fichier dans l'index d'assets (serveur de Mojang). */

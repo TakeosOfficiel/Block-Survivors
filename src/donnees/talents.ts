@@ -124,8 +124,6 @@ export const RECOMPENSES: DefinitionRecompenses = {
 
 /** Ce qui n'est pas disponible dès la première partie, et comment l'obtenir. */
 export const DEBLOCAGES: readonly DefinitionDeblocage[] = [
-  { type: 'personnage', id: 'archer', nom: 'Archère', condition: { type: 'survie', duree: 180 }, texte: 'Survivre 3:00' },
-  { type: 'personnage', id: 'mage', nom: 'Mage', condition: { type: 'boss', nombre: 1 }, texte: 'Vaincre un boss' },
   { type: 'arene', id: 'mine', nom: 'Mine souterraine', condition: { type: 'survie', duree: 300, arene: 'prairie' }, texte: 'Survivre 5:00 dans la Prairie' },
   { type: 'arene', id: 'nether', nom: 'Zone volcanique', condition: { type: 'survie', duree: 300, arene: 'mine' }, texte: 'Survivre 5:00 dans la Mine' },
 ];

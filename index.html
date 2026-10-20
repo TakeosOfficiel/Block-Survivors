@@ -16,6 +16,7 @@
 
   <!-- Menu principal : choix du personnage et de l'arène -->
   <div id="menu" class="fond-terre cache">
+    <button id="menu-profil" class="profil-puce" title="Pseudo et skin"><img id="menu-profil-visage" alt="" /><span id="menu-profil-pseudo"></span></button>
     <div id="menu-emeraudes" class="compteur-emeraudes" title="Émeraudes : gagnées en jouant, elles achètent des talents"></div>
     <div class="menu-entete">
       <h1 id="menu-titre" class="logo">Block Survivors</h1>
@@ -33,14 +34,38 @@
     </div>
     <div class="pile-boutons">
       <button id="menu-jouer" class="bouton-mc large">Jouer</button>
-      <button id="menu-talents" class="bouton-mc large">Talents…</button>
+      <div class="rangee-boutons">
+        <button id="menu-talents" class="bouton-mc">Talents…</button>
+        <button id="menu-profil-bouton" class="bouton-mc">Profil et skin…</button>
+      </div>
       <button id="menu-options" class="bouton-mc large">Options…</button>
       <button id="menu-quitter" class="bouton-mc large cache">Quitter le jeu</button>
     </div>
-    <div class="menu-aide">ZQSD / WASD / Flèches : se déplacer · Molette : zoom · Échap : pause · Entrée : jouer</div>
     <div class="pied pied-gauche">Block Survivors <span id="menu-version"></span> · <span id="menu-rendu"></span> · textures Minecraft 1.21.4</div>
     <a id="menu-mise-a-jour" class="mise-a-jour cache" target="_blank" rel="noopener">Nouvelle version disponible ! Cliquez pour la télécharger</a>
     <div class="pied pied-droite">Projet de fan, non affilié à Mojang</div>
+  </div>
+
+  <!-- Profil (menu) : pseudo et skin -->
+  <div id="profil" class="ecran fond-terre cache">
+    <h2 class="ecran-titre">Profil</h2>
+    <div class="profil-corps">
+      <div class="panneau-mc profil-apercu"><canvas id="profil-apercu" width="128" height="256"></canvas></div>
+      <div class="panneau-mc profil-reglages">
+        <label class="titre-panneau" for="profil-pseudo">Pseudo</label>
+        <input id="profil-pseudo" class="champ-mc" type="text" autocomplete="off" spellcheck="false" />
+        <div class="titre-panneau espace-avant">Skin</div>
+        <div id="profil-skins" class="profil-skins"></div>
+        <div class="rangee-boutons espace-avant">
+          <button id="profil-importer" class="bouton-mc">Importer un skin…</button>
+          <button id="profil-bras" class="bouton-mc">Bras</button>
+        </div>
+        <div id="profil-erreur" class="profil-erreur"></div>
+        <input id="profil-fichier" type="file" accept="image/png" class="cache" />
+      </div>
+    </div>
+    <div class="ecran-aide">La skin ne change que l'apparence : la classe garde ses armes et ses statistiques</div>
+    <button id="profil-fermer" class="bouton-mc large">Terminé</button>
   </div>
 
   <!-- Talents (menu) : deux arbres par personnage -->
@@ -63,9 +88,11 @@
         <input id="option-volume" type="range" min="0" max="100" step="5" />
         <span id="option-volume-texte">Volume</span>
       </label>
+      <div id="option-volumes" class="grille-curseurs"></div>
       <button id="option-fps" class="bouton-mc large">FPS</button>
       <button id="option-secousses" class="bouton-mc large">Secousses</button>
-      <button id="option-shaders" class="bouton-mc large">Shaders</button>
+      <button id="option-shaders" class="bouton-mc large">Ombres et vent</button>
+      <button id="option-degats" class="bouton-mc large">Chiffres des dégâts</button>
       <button id="options-fermer" class="bouton-mc large espace-avant">Terminé</button>
     </div>
   </div>

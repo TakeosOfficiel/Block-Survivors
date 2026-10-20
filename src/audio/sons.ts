@@ -9,6 +9,7 @@
  */
 import { SOURCES_SONS } from '../config';
 import { IDS_SONS, SONS, type IdSon } from '../donnees/sons';
+import type { CategorieSon } from '../donnees/types';
 import { borner } from '../utils/maths';
 
 /** Ce dont les systèmes du jeu ont besoin pour jouer un son. */
@@ -37,9 +38,11 @@ interface Canal {
 export class Sons implements LecteurSons {
   private readonly canaux = new Map<IdSon, Canal>();
   private volume: number;
+  private volumes: Readonly<Record<CategorieSon, number>>;
 
-  constructor(volume: number) {
+  constructor(volume: number, volumes: Readonly<Record<CategorieSon, number>>) {
     this.volume = volume;
+    this.volumes = volumes;
   }
 
   /** Lance le téléchargement de tous les sons (un élément par son). */
@@ -47,13 +50,16 @@ export class Sons implements LecteurSons {
     for (const id of IDS_SONS) this.canal(id);
   }
 
-  definirVolume(volume: number): void {
+  /** Volume général et volume de chaque famille de sons (0 à 1). */
+  definirVolumes(volume: number, volumes: Readonly<Record<CategorieSon, number>>): void {
     this.volume = borner(volume, 0, 1);
+    this.volumes = { ...volumes };
   }
 
   jouer(id: IdSon, hauteur = 1): void {
-    if (this.volume <= 0) return;
     const def = SONS[id];
+    const volume = this.volume * this.volumes[def.categorie];
+    if (volume <= 0) return;
     const canal = this.canal(id);
     if (canal.source >= SOURCES_SONS.length) return;
     const maintenant = performance.now() / 1000;
@@ -65,7 +71,7 @@ export class Sons implements LecteurSons {
     const element = canal.elements[canal.suivant];
     canal.suivant = (canal.suivant + 1) % def.simultanes;
     const [min, max] = def.hauteur;
-    element.volume = borner(def.volume * this.volume, 0, 1);
+    element.volume = borner(def.volume * volume, 0, 1);
     element.playbackRate = borner(hauteur * (min + Math.random() * (max - min)), 0.25, 4);
     element.currentTime = 0;
     // Refusé tant que l'utilisateur n'a pas interagi avec la page : sans gravité

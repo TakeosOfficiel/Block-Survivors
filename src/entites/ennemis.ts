@@ -53,6 +53,8 @@ export class Ennemis implements SourceEntites {
   private readonly grille: GrilleSpatiale;
   private readonly voisins = new Int32Array(64);
   private readonly rendus: RenduType[];
+  /** Hauteur d'affichage des dégâts, par type (au-dessus de la tête). */
+  private readonly hauteurs: Float32Array;
   private prochainId = 1;
 
   constructor(
@@ -81,6 +83,7 @@ export class Ennemis implements SourceEntites {
         pose: creerPoseModele(modele),
       };
     });
+    this.hauteurs = Float32Array.from(this.rendus, (r, i) => r.modele.hauteur * (ENNEMIS[IDS_ENNEMIS[i]].echelle ?? 1) + 0.3);
   }
 
   get actifs(): number {
@@ -196,10 +199,12 @@ export class Ennemis implements SourceEntites {
     const stats = this.etat.stats;
     // Coup critique (armes du joueur) : dégâts multipliés et étincelles du jeu
     const mods = this.etat.modificateurs;
-    if (arme >= 0 && Math.random() < mods.critique) {
+    const critique = arme >= 0 && Math.random() < mods.critique;
+    if (critique) {
       degats *= mods.degatsCritiques;
       this.particules.emettre(e.x, 1, e.z, GERBES.critique);
     }
+    if (arme >= 0) this.retours.degats(e.x, this.hauteurs[e.indexType], e.z, degats, critique);
     if (arme >= 0) stats.degatsParArme[arme] += Math.min(degats, e.pv);
     e.pv -= degats;
     e.blessure = CONFIG.surcouche.blessure.duree;

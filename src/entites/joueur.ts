@@ -7,6 +7,7 @@ import { JOUEUR_BASE } from '../donnees/joueur';
 import { MODELES } from '../donnees/modeles';
 import type { Ombres } from '../effets/ombres';
 import type { Retours } from '../effets/retours';
+import type { ApparenceEntite } from '../donnees/types';
 import type { EtatPartie } from '../etat';
 import type { CarteMonde, Point } from '../monde/carte';
 import { angleChute, avancerAnimation, calculerRotations, creerEtatAnimation, declencherAttaque } from '../modeles/animation';
@@ -38,15 +39,20 @@ export class Joueur implements SourceEntites, CibleJoueur {
     retours: Retours,
     scene: THREE.Scene,
     textures: BibliothequeTextures,
+    apparence: ApparenceEntite,
   ) {
     this.etat = etat;
     this.carte = carte;
     this.entrees = entrees;
     this.retours = retours;
-    const personnage = etat.personnage;
-    this.modele = compilerModele(MODELES[personnage.modele]);
-    this.rendu = new ModeleInstancie(this.modele, personnage, textures, 1, scene);
+    this.modele = compilerModele(MODELES[apparence.modele]);
+    this.rendu = new ModeleInstancie(this.modele, apparence, textures, 1, scene);
     this.pose = creerPoseModele(this.modele);
+  }
+
+  /** Sommet de la tête (blocs), pour l'étiquette du pseudo. */
+  get hauteur(): number {
+    return this.modele.hauteur;
   }
 
   /** Un pas de simulation. */

@@ -1,13 +1,22 @@
 /**
- * Écran des options (depuis le menu ou la pause) : volume, compteur de FPS,
- * secousses de l'écran. Chaque changement est appliqué et enregistré aussitôt.
+ * Écran des options (depuis le menu ou la pause) : volume général et volume
+ * de chaque famille de sons, compteur de FPS,
+ * secousses de l'écran, ombres et vent, chiffres des dégâts. Chaque changement est appliqué et enregistré aussitôt.
  */
-import { enregistrerOptions, NIVEAUX_SHADERS, type NiveauShaders, type Options } from '../options';
+import type { CategorieSon } from '../donnees/types';
+import { CATEGORIES_SONS, enregistrerOptions, NIVEAUX_SHADERS, type NiveauShaders, type Options } from '../options';
+
+const LIBELLES_CATEGORIES: Readonly<Record<CategorieSon, string>> = {
+  joueur: 'Joueur',
+  armes: 'Armes',
+  creatures: 'Créatures',
+  interface: 'Interface',
+};
 
 const LIBELLES_SHADERS: Readonly<Record<NiveauShaders, string>> = {
-  aucun: 'Désactivés',
-  legers: 'Légers',
-  complets: 'Complets',
+  aucun: 'NON',
+  legers: 'OUI',
+  complets: 'OUI (fines)',
 };
 
 import { element } from './dom';
@@ -16,9 +25,12 @@ export class PanneauOptions {
   private readonly racine = element('options');
   private readonly volume = element<HTMLInputElement>('option-volume');
   private readonly texteVolume = element('option-volume-texte');
+  /** Curseur et texte de chaque famille de sons. */
+  private readonly curseurs: { categorie: CategorieSon; entree: HTMLInputElement; texte: HTMLElement }[];
   private readonly boutonFps = element<HTMLButtonElement>('option-fps');
   private readonly boutonSecousses = element<HTMLButtonElement>('option-secousses');
   private readonly boutonShaders = element<HTMLButtonElement>('option-shaders');
+  private readonly boutonDegats = element<HTMLButtonElement>('option-degats');
   private readonly options: Options;
   private readonly appliquer: (options: Options) => void;
   private surFermeture: (() => void) | null = null;
@@ -32,6 +44,21 @@ export class PanneauOptions {
       this.options.volume = Number(this.volume.value) / 100;
       this.changer();
     });
+    // Un curseur par famille de sons, deux par rangée comme l'écran « Musique et sons » du jeu
+    this.curseurs = CATEGORIES_SONS.map((categorie) => {
+      const curseur = document.createElement('label');
+      curseur.className = 'curseur-mc';
+      const entree = document.createElement('input');
+      Object.assign(entree, { type: 'range', min: '0', max: '100', step: '5' });
+      const texte = document.createElement('span');
+      curseur.append(entree, texte);
+      entree.addEventListener('input', () => {
+        this.options.volumes[categorie] = Number(entree.value) / 100;
+        this.changer();
+      });
+      element('option-volumes').append(curseur);
+      return { categorie, entree, texte };
+    });
     this.boutonFps.addEventListener('click', () => {
       this.options.afficherFps = !this.options.afficherFps;
       this.changer();
@@ -43,6 +70,10 @@ export class PanneauOptions {
     this.boutonShaders.addEventListener('click', () => {
       const i = NIVEAUX_SHADERS.indexOf(this.options.shaders);
       this.options.shaders = NIVEAUX_SHADERS[(i + 1) % NIVEAUX_SHADERS.length];
+      this.changer();
+    });
+    this.boutonDegats.addEventListener('click', () => {
+      this.options.chiffresDegats = !this.options.chiffresDegats;
       this.changer();
     });
     element<HTMLButtonElement>('options-fermer').addEventListener('click', () => this.fermer());
@@ -80,10 +111,16 @@ export class PanneauOptions {
     const o = this.options;
     const pourcent = Math.round(o.volume * 100);
     this.volume.value = String(pourcent);
-    this.texteVolume.textContent = pourcent === 0 ? 'Sons : désactivés' : `Sons : ${pourcent} %`;
+    this.texteVolume.textContent = pourcent === 0 ? 'Volume général : désactivé' : `Volume général : ${pourcent} %`;
+    for (const { categorie, entree, texte } of this.curseurs) {
+      const p = Math.round(o.volumes[categorie] * 100);
+      entree.value = String(p);
+      texte.textContent = `${LIBELLES_CATEGORIES[categorie]} : ${p === 0 ? 'NON' : `${p} %`}`;
+    }
     this.boutonFps.textContent = `Compteur de FPS : ${o.afficherFps ? 'OUI' : 'NON'}`;
     this.boutonSecousses.textContent = `Secousses de l'écran : ${o.secousses ? 'OUI' : 'NON'}`;
-    this.boutonShaders.textContent = `Shaders : ${LIBELLES_SHADERS[o.shaders]}`;
+    this.boutonShaders.textContent = `Ombres et vent : ${LIBELLES_SHADERS[o.shaders]}`;
+    this.boutonDegats.textContent = `Chiffres des dégâts : ${o.chiffresDegats ? 'OUI' : 'NON'}`;
   }
 
   private readonly surTouche = (e: KeyboardEvent): void => {

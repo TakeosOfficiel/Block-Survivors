@@ -22,6 +22,8 @@ import { RECOMPENSES } from './donnees/talents';
 import { PROGRESSION } from './donnees/progression';
 import type { IdSon } from './donnees/sons';
 import { Ombres } from './effets/ombres';
+import { ChiffresDegats } from './effets/chiffresDegats';
+import { Etiquette } from './effets/etiquette';
 import { Particules } from './effets/particules';
 import { RenduProjectiles } from './effets/renduProjectiles';
 import type { Retours } from './effets/retours';
@@ -46,6 +48,7 @@ import type { Rendu } from './moteur/rendu';
 import { Ameliorations, type Carte } from './progression/ameliorations';
 import { gagnerXp } from './progression/niveaux';
 import type { Options } from './options';
+import { apparenceJoueur, type Profil } from './profil';
 import { cumulerModificateurs } from './progression/modificateurs';
 import { Passifs } from './progression/passifs';
 import type { Recompense, Sauvegarde } from './progression/sauvegarde';
@@ -64,6 +67,7 @@ export interface ServicesJeu {
   readonly options: Options;
   readonly panneauOptions: PanneauOptions;
   readonly sauvegarde: Sauvegarde;
+  readonly profil: Profil;
 }
 
 export class Jeu implements CallbacksBoucle, Retours {
@@ -85,6 +89,8 @@ export class Jeu implements CallbacksBoucle, Retours {
   // Effets
   private readonly ombres: Ombres;
   private readonly particules: Particules;
+  private readonly chiffres: ChiffresDegats;
+  private readonly etiquette: Etiquette;
   private readonly renduProjectiles: RenduProjectiles;
 
   // Entités
@@ -153,9 +159,12 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.ombres = new Ombres(textures.obtenir(CONFIG.ombre.texture), scene);
     this.particules = new Particules(scene, rendu.camera, textures, IDS_OBJETS.map((id) => OBJETS[id].icone));
     this.renduProjectiles = new RenduProjectiles(textures, scene);
+    this.chiffres = new ChiffresDegats(scene, rendu.camera);
 
     // Entités
-    this.joueur = new Joueur(this.etat, carte, this.entrees, this, scene, textures);
+    const apparence = apparenceJoueur(this.etat.personnage, services.profil);
+    this.joueur = new Joueur(this.etat, carte, this.entrees, this, scene, textures, apparence);
+    this.etiquette = new Etiquette(scene, services.profil.pseudo);
     this.projectilesEnnemis = new ProjectilesEnnemis(this.etat, carte, this.joueur);
     this.orbes = new Orbes(this.etat, this, scene, textures);
     this.objets = new Objets(this.etat, this.particules, this, scene, textures);
@@ -266,6 +275,7 @@ export class Jeu implements CallbacksBoucle, Retours {
   appliquerOptions(options: Options): void {
     this.hud.afficherFps = options.afficherFps;
     this.camera.secoussesActives = options.secousses;
+    this.chiffres.actif = options.chiffresDegats;
     this.vegetation.definirShaders(options.shaders !== 'aucun');
     this.rendu.definirShaders(options.shaders);
   }
@@ -278,6 +288,10 @@ export class Jeu implements CallbacksBoucle, Retours {
 
   secousse(force: number): void {
     this.camera.secouer(force);
+  }
+
+  degats(x: number, y: number, z: number, valeur: number, critique: boolean): void {
+    this.chiffres.ajouter(x, y, z, valeur, critique);
   }
 
   // --- CallbacksBoucle ---------------------------------------------------
@@ -300,6 +314,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.foudre.maj(dt);
     this.projectilesEnnemis.maj(dt);
     this.particules.maj(dt);
+    this.chiffres.maj(dt);
     this.traiterResurrection();
   }
 
@@ -317,6 +332,8 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.textures.majAnimations(performance.now() / 1000);
     this.ombres.commencer();
     this.joueur.majVisuel(this.ombres);
+    const j = this.etat.joueur;
+    this.etiquette.placer(j.x, this.joueur.hauteur, j.z, !j.mort);
     this.ennemis.majVisuel(this.ombres);
     this.invocations.majVisuel(this.ombres);
     this.ombres.terminer();
@@ -332,6 +349,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.balayages.majVisuel(dtJeu);
     this.foudre.majVisuel();
     this.particules.majVisuel();
+    this.chiffres.majVisuel();
     this.camera.majVisuel(dtJeu, dtReel);
     this.rendu.dessiner();
 

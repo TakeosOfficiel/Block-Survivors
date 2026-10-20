@@ -56,6 +56,13 @@ export class BibliothequeTextures {
     );
   }
 
+  /** Ajoute (ou remplace) une image fournie par le joueur, ex. sa skin importée. */
+  enregistrer(chemin: CheminTexture, image: HTMLImageElement): void {
+    this.textures.get(chemin)?.dispose();
+    this.textures.set(chemin, creerTexture(image));
+    this.urls.set(chemin, image.src);
+  }
+
   /** Texture prête à l'emploi, ou null si elle n'a pu être chargée. */
   obtenir(chemin: CheminTexture): THREE.Texture | null {
     return this.textures.get(chemin) ?? null;

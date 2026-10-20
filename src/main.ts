@@ -19,6 +19,8 @@ import { genererMonde } from './monde/generation';
 import { Rendu } from './moteur/rendu';
 import { chargerOptions } from './options';
 import { Sauvegarde } from './progression/sauvegarde';
+import { apparenceJoueur, chargerProfil, CHEMIN_SKIN_IMPORTE } from './profil';
+import { chargerImageSkin, EcranProfil } from './ui/ecranProfil';
 import { EcranChargement } from './ui/ecranChargement';
 import { EcranMenu } from './ui/ecranMenu';
 import { suivreEchelleInterface } from './ui/echelle';
@@ -40,7 +42,8 @@ async function demarrer(): Promise<void> {
   // Interface : police, sprites et sons, communs au menu et à la partie
   const options = chargerOptions();
   const sauvegarde = Sauvegarde.charger();
-  const sons = new Sons(options.volume);
+  const profil = chargerProfil();
+  const sons = new Sons(options.volume, options.volumes);
   sons.precharger();
   const textures = new BibliothequeTextures();
   ecran.etape('Chargement de l\'interface…');
@@ -49,6 +52,12 @@ async function demarrer(): Promise<void> {
     textures.charger(texturesInterface(), (faites, total) => ecran.progression(faites, total)),
   ]);
   appliquerHabillage(textures);
+  // Skin importée par le joueur : enregistrée comme une texture du jeu
+  if (profil.skinImporte) {
+    const image = await chargerImageSkin(profil.skinImporte);
+    if (image) textures.enregistrer(CHEMIN_SKIN_IMPORTE, image);
+    else if (profil.skin === 'importe') profil.skin = 'classe';
+  }
   document.getElementById('menu-rendu')?.replaceChildren(rendu.api);
   // Clic sur tout bouton de l'interface, comme en jeu
   document.addEventListener('click', (e) => {
@@ -57,7 +66,7 @@ async function demarrer(): Promise<void> {
 
   let jeu: Jeu | null = null;
   const panneauOptions = new PanneauOptions(options, (o) => {
-    sons.definirVolume(o.volume);
+    sons.definirVolumes(o.volume, o.volumes);
     jeu?.appliquerOptions(o);
   });
 
@@ -65,7 +74,7 @@ async function demarrer(): Promise<void> {
   let choix = choixDemande();
   if (!partieDemandee()) {
     ecran.masquer();
-    choix = await new EcranMenu(textures, choix, panneauOptions, sauvegarde).attendreChoix();
+    choix = await new EcranMenu(textures, choix, panneauOptions, sauvegarde, new EcranProfil(textures, profil)).attendreChoix();
     memoriserChoix(choix);
     ecran.afficher();
   }
@@ -75,11 +84,11 @@ async function demarrer(): Promise<void> {
   const monde = genererMonde(choix.arene);
   ecran.etape('Chargement des textures…');
   await textures.charger(
-    texturesRequises(choix.arene, monde, PERSONNAGES[choix.personnage]),
+    texturesRequises(choix.arene, monde, apparenceJoueur(PERSONNAGES[choix.personnage], profil)),
     (faites, total) => ecran.progression(faites, total),
   );
 
-  jeu = new Jeu(rendu, textures, monde, choix, { sons, options, panneauOptions, sauvegarde });
+  jeu = new Jeu(rendu, textures, monde, choix, { sons, options, panneauOptions, sauvegarde, profil });
   jeu.appliquerOptions(options);
   ecran.masquer();
   jeu.demarrer();

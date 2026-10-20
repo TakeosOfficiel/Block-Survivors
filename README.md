@@ -117,7 +117,8 @@ revient au menu.
 L'adresse peut aussi fixer le choix et sauter le menu :
 `index.html?personnage=archer&arene=mine&jouer=1`.
 
-Les armes peuvent porter des **coups critiques** (5 % de chance au départ,
+Chaque coup affiche ses **dégâts** au-dessus de l'ennemi (critiques plus gros
+et dorés ; désactivable dans les options). Les armes peuvent porter des **coups critiques** (5 % de chance au départ,
 dégâts ×1,5, étincelles du jeu) ; le bonus *Silex taillé* et certains talents
 les rendent plus fréquents ou plus forts.
 
@@ -137,9 +138,16 @@ rend toutes les émeraudes de l'arbre.
 | Archère | Tireuse d'élite (portée, critiques, arc renforcé, +1 projectile) · Rôdeuse (vitesse, collecte, relances, régénération) |
 | Mage | Pyromancien (zone, boules de feu renforcées, critiques) · Arcaniste (cadence, soins, relances, Éclairs dès le départ) |
 
-**Déblocages** : Archère en survivant 3:00, Mage en battant un boss, Mine en
-survivant 5:00 dans la Prairie, Nether en survivant 5:00 dans la Mine. Tout est
-sauvegardé dans le navigateur (`src/donnees/talents.ts` pour les réglages).
+**Déblocages** : les trois classes sont jouables d'emblée ; la Mine s'ouvre en
+survivant 5:00 dans la Prairie, le Nether en survivant 5:00 dans la Mine. Tout
+est sauvegardé dans le navigateur (`src/donnees/talents.ts` pour les réglages).
+
+## Profil
+
+« Profil et skin… » (ou la pastille en haut à gauche du menu) : **pseudo**,
+affiché au-dessus du personnage comme dans le jeu, et **skin** : celle de la
+classe, une des 9 skins par défaut du jeu, ou un PNG importé (64×64, format du
+jeu, HD acceptée), bras larges ou fins. La skin ne change que l'apparence.
 
 ## Personnages
 
@@ -164,13 +172,14 @@ placées ou dispersées, ambiance, et population d'ennemis par zone.
 ZQSD / WASD / flèches : se déplacer · molette : zoom · `1` `2` `3` ou clic :
 choisir une carte · `R` : relancer les cartes (3 fois par partie) · `Échap` : pause · `Entrée` : jouer (menu) ou rejouer (fin).
 
-La pause propose Reprendre, Options (volume des sons, compteur de FPS,
-secousses de l'écran, shaders), Recommencer, Menu
+La pause propose Reprendre, Options (volume général et volumes séparés
+joueur / armes / créatures / interface, compteur de FPS, secousses de l'écran,
+ombres et vent, chiffres des dégâts), Recommencer, Menu
 principal, et le bilan en cours.
 
-**Shaders** : *Désactivés* = rendu d'origine. *Légers* = ombres du soleil,
-feuillage et plantes (herbes, fleurs) qui ondulent au vent. *Complets* = idem
-avec des ombres plus fines. Les textures restent celles du jeu.
+**Ombres et vent** (actifs par défaut) : ombres du soleil, feuillage et
+plantes (herbes, fleurs) qui ondulent au vent ; *OUI (fines)* affine les
+ombres, *NON* revient au rendu d'origine. Les textures restent celles du jeu.
 
 
 

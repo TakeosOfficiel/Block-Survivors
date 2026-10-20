@@ -9,6 +9,11 @@ import type { ApparenceEntite } from '../donnees/types';
 
 const cache = new Map<string, string | null>();
 
+/** Oublie les visages déjà découpés (une skin a changé sous le même chemin). */
+export function oublierPortraits(): void {
+  cache.clear();
+}
+
 /** Adresse d'une image du visage (pixels d'origine), ou null si la skin manque. */
 export function portrait(textures: BibliothequeTextures, apparence: ApparenceEntite): string | null {
   const cle = `${apparence.modele}|${apparence.skin}`;

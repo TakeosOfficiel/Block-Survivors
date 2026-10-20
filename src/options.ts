@@ -3,14 +3,19 @@
  * peut être refusé (navigation privée, file:// sous certains navigateurs) :
  * on retombe alors sur les valeurs par défaut, sans erreur.
  */
+import type { CategorieSon } from './donnees/types';
 
 export interface Options {
-  /** Volume des sons, de 0 à 1. */
+  /** Volume général, de 0 à 1. */
   volume: number;
+  /** Volume de chaque famille de sons (multiplié par le général). */
+  volumes: Record<CategorieSon, number>;
   afficherFps: boolean;
   secousses: boolean;
-  /** Ombres, lueurs et occlusion ambiante. */
+  /** Ombres du soleil et végétation au vent. */
   shaders: NiveauShaders;
+  /** Chiffres des dégâts au-dessus des ennemis. */
+  chiffresDegats: boolean;
 }
 
 export type NiveauShaders = 'aucun' | 'legers' | 'complets';
@@ -18,22 +23,42 @@ export const NIVEAUX_SHADERS: readonly NiveauShaders[] = ['aucun', 'legers', 'co
 
 const CLE = 'block-survivors.options';
 
-const PAR_DEFAUT: Readonly<Options> = { volume: 0.7, afficherFps: false, secousses: true, shaders: 'legers' };
+export const CATEGORIES_SONS: readonly CategorieSon[] = ['joueur', 'armes', 'creatures', 'interface'];
+
+const PAR_DEFAUT: Readonly<Options> = {
+  volume: 0.7,
+  volumes: { joueur: 1, armes: 1, creatures: 1, interface: 1 },
+  afficherFps: false,
+  secousses: true,
+  shaders: 'legers',
+  chiffresDegats: true,
+};
+
+/**
+ * Version du format enregistré. En 2, les shaders (devenus ombres + vent, sans
+ * coût de changement) repartent activés pour tous, même désactivés avant.
+ */
+const VERSION = 2;
 
 export function chargerOptions(): Options {
-  const options = { ...PAR_DEFAUT };
-  const lu = lireStockage<Partial<Options>>(CLE);
+  const options = { ...PAR_DEFAUT, volumes: { ...PAR_DEFAUT.volumes } };
+  const lu = lireStockage<Partial<Options> & { version?: number }>(CLE);
   if (lu) {
     if (typeof lu.volume === 'number' && Number.isFinite(lu.volume)) options.volume = Math.min(1, Math.max(0, lu.volume));
+    for (const categorie of CATEGORIES_SONS) {
+      const v = lu.volumes?.[categorie];
+      if (typeof v === 'number' && Number.isFinite(v)) options.volumes[categorie] = Math.min(1, Math.max(0, v));
+    }
     if (typeof lu.afficherFps === 'boolean') options.afficherFps = lu.afficherFps;
     if (typeof lu.secousses === 'boolean') options.secousses = lu.secousses;
-    if (NIVEAUX_SHADERS.includes(lu.shaders as NiveauShaders)) options.shaders = lu.shaders as NiveauShaders;
+    if (lu.version === VERSION && NIVEAUX_SHADERS.includes(lu.shaders as NiveauShaders)) options.shaders = lu.shaders as NiveauShaders;
+    if (typeof lu.chiffresDegats === 'boolean') options.chiffresDegats = lu.chiffresDegats;
   }
   return options;
 }
 
 export function enregistrerOptions(options: Options): void {
-  ecrireStockage(CLE, options);
+  ecrireStockage(CLE, { ...options, version: VERSION });
 }
 
 export function lireStockage<T>(cle: string): T | null {

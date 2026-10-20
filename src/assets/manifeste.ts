@@ -12,7 +12,9 @@ import { ARENES } from '../donnees/arenes';
 import { IDS_PERSONNAGES, PERSONNAGES } from '../donnees/personnages';
 import { ARBRES, RECOMPENSES } from '../donnees/talents';
 import { IDS_PROJECTILES, PROJECTILES } from '../donnees/projectiles';
-import type { CheminTexture, DefinitionArene, DefinitionPersonnage } from '../donnees/types';
+import { SKINS_VANILLA } from '../donnees/skins';
+import type { ApparenceEntite, CheminTexture, DefinitionArene } from '../donnees/types';
+import { cheminSkinVanilla } from '../profil';
 import type { MondeGenere } from '../monde/generation';
 import { BarreBoss } from '../ui/barreBoss';
 import { SPRITES_INTERFACE } from '../ui/habillage';
@@ -26,6 +28,7 @@ export function texturesInterface(): Set<CheminTexture> {
   for (const arene of ARENES) chemins.add(arene.icone);
   chemins.add(CONFIG.hud.coeurs.plein);
   chemins.add(RECOMPENSES.icone);
+  for (const nom of SKINS_VANILLA) chemins.add(cheminSkinVanilla(nom, false)).add(cheminSkinVanilla(nom, true));
   for (const id of IDS_PERSONNAGES) {
     for (const arbre of ARBRES[id]) {
       chemins.add(arbre.icone);
@@ -38,7 +41,7 @@ export function texturesInterface(): Set<CheminTexture> {
 export function texturesRequises(
   arene: DefinitionArene,
   monde: MondeGenere,
-  personnage: DefinitionPersonnage,
+  personnage: ApparenceEntite,
 ): Set<CheminTexture> {
   const chemins = new Set<CheminTexture>();
   const ajouterBloc = (id: IdBloc) => {

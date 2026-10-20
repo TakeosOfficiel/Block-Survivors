@@ -16,6 +16,7 @@ import type { Sauvegarde } from '../progression/sauvegarde';
 import { libelleVersion, miseAJourDisponible, URL_TELECHARGEMENT } from '../version';
 import { caseImage } from './bilan';
 import { element } from './dom';
+import type { EcranProfil } from './ecranProfil';
 import { compteurEmeraudes, EcranTalents } from './ecranTalents';
 import type { PanneauOptions } from './panneauOptions';
 import { portrait } from './portraits';
@@ -33,15 +34,17 @@ export class EcranMenu {
   private readonly options: PanneauOptions;
   private readonly sauvegarde: Sauvegarde;
   private readonly talents: EcranTalents;
+  private readonly profil: EcranProfil;
   private personnage: IdPersonnage;
   private arene: DefinitionArene;
   private surJouer: ((choix: ChoixPartie) => void) | null = null;
 
-  constructor(textures: BibliothequeTextures, choix: ChoixPartie, options: PanneauOptions, sauvegarde: Sauvegarde) {
+  constructor(textures: BibliothequeTextures, choix: ChoixPartie, options: PanneauOptions, sauvegarde: Sauvegarde, profil: EcranProfil) {
     this.textures = textures;
     this.options = options;
     this.sauvegarde = sauvegarde;
     this.talents = new EcranTalents(textures, sauvegarde);
+    this.profil = profil;
     // Un choix mémorisé encore verrouillé revient au premier disponible
     this.personnage = sauvegarde.verrou('personnage', choix.personnage)
       ? IDS_PERSONNAGES.find((id) => !sauvegarde.verrou('personnage', id)) ?? choix.personnage
@@ -66,6 +69,9 @@ export class EcranMenu {
       this.talents.ouvrir(this.personnage, () => this.afficherEmeraudes());
     });
     this.afficherEmeraudes();
+    const ouvrirProfil = () => this.profil.ouvrir(PERSONNAGES[this.personnage], () => this.afficherProfil());
+    element<HTMLButtonElement>('menu-profil').addEventListener('click', ouvrirProfil);
+    element<HTMLButtonElement>('menu-profil-bouton').addEventListener('click', ouvrirProfil);
     if (bureau) {
       const quitter = element<HTMLButtonElement>('menu-quitter');
       quitter.classList.remove('cache');
@@ -93,7 +99,7 @@ export class EcranMenu {
   }
 
   private readonly surTouche = (e: KeyboardEvent): void => {
-    if (e.code !== 'Enter' || e.repeat || this.options.ouvert || this.talents.ouvert) return;
+    if (e.code !== 'Enter' || e.repeat || this.options.ouvert || this.talents.ouvert || this.profil.ouvert) return;
     e.preventDefault();
     this.jouer();
   };
@@ -102,7 +108,17 @@ export class EcranMenu {
     element('menu-emeraudes').replaceChildren(...compteurEmeraudes(this.textures, this.sauvegarde.emeraudes));
   }
 
+  /** Pastille du profil (visage de la skin jouée et pseudo). */
+  private afficherProfil(): void {
+    const visage = this.profil.visage(PERSONNAGES[this.personnage]);
+    const image = element<HTMLImageElement>('menu-profil-visage');
+    if (visage) image.src = visage;
+    else image.removeAttribute('src');
+    element('menu-profil-pseudo').textContent = this.profil.profil.pseudo || 'Sans pseudo';
+  }
+
   private marquerChoix(): void {
+    this.afficherProfil();
     for (const option of this.listePersonnages.children) {
       option.classList.toggle('choisie', (option as HTMLElement).dataset['id'] === this.personnage);
     }

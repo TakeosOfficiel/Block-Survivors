@@ -4,7 +4,7 @@
  * puis le grand bouton « Jouer » (ou Entrée).
  */
 import type { BibliothequeTextures } from '../assets/textures';
-import { CONFIG } from '../config';
+import { CONFIG, VERSION_MINECRAFT } from '../config';
 import { ACCROCHES } from '../donnees/accroches';
 import { ARENES } from '../donnees/arenes';
 import { ARMES } from '../donnees/armes';
@@ -72,6 +72,7 @@ export class EcranMenu {
 
     element('menu-accroche').textContent = ACCROCHES[Math.floor(Math.random() * ACCROCHES.length)];
     element('menu-version').textContent = libelleVersion();
+    element('menu-version-mc').textContent = VERSION_MINECRAFT;
     void miseAJourDisponible().then((publiee) => {
       if (!publiee) return;
       const lien = element<HTMLAnchorElement>('menu-mise-a-jour');

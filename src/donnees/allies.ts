@@ -64,7 +64,7 @@ const definitions = {
   esprit_blaze: {
     nom: 'Esprit de blaze',
     modele: 'blaze',
-    skin: 'entity/blaze',
+    skin: 'entity/blaze/blaze',
     couleursSecours: {},
     couleurSecoursParDefaut: 0xf0b030,
     rayonOmbre: 0.45,

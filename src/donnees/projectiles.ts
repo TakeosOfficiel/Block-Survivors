@@ -9,9 +9,11 @@ const definitions = {
     forme: 'croisee',
     texture: 'entity/projectiles/arrow',
     tailleTexture: [32, 32],
-    uv: [0, 0, 32, 5],      // vue de profil, en haut de la texture
-    longueur: 1,
-    largeur: 5 / 32,
+    // Vue de profil : 16 × 5 pixels en haut de la texture (la seconde moitié de
+    // la bande est la même flèche en miroir, que le jeu n'affiche pas)
+    uv: [0, 0, 16, 5],
+    longueur: 0.9,
+    largeur: 0.9 * 5 / 16,
     vitesse: 14,
     duree: 3,
     rayon: 0.2,

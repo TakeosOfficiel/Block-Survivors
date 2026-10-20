@@ -1,5 +1,5 @@
-# Construit l'application Windows (BlockSurvivors.exe, portable) à chaque push
-# et la publie deux fois :
+# Construit l'installateur Windows (BlockSurvivors-Setup-X.Y.Z.exe) à chaque push
+# et le publie deux fois :
 #   - release « vX.Y.Z » (version de package.json), notes tirées de CHANGELOG.md ;
 #     tant que le numéro ne change pas, elle suit le dernier commit de la version ;
 #   - release « derniere-version » : lien fixe vers la plus récente.
@@ -29,12 +29,16 @@ jobs:
       - run: npm ci
       - run: npm run build
       # Sous Windows, l'icône et les métadonnées peuvent être écrites dans l'exe
-      - run: npx electron-builder --win portable --publish never --config.win.signAndEditExecutable=true
+      # latest.yml et le .blockmap servent aux mises à jour automatiques du jeu installé
+      - run: npx electron-builder --win nsis --publish never --config.win.signAndEditExecutable=true
         shell: bash
       - uses: actions/upload-artifact@v4
         with:
           name: BlockSurvivors
-          path: release/BlockSurvivors.exe
+          path: |
+            release/BlockSurvivors-Setup-*.exe
+            release/BlockSurvivors-Setup-*.exe.blockmap
+            release/latest.yml
       - name: Publier la release de la version et « derniere-version »
         shell: bash
         env:
@@ -48,26 +52,28 @@ jobs:
           ' CHANGELOG.md > notes.md
           [ -s notes.md ] || echo "Version $VERSION." > notes.md
           printf '\n---\nConstruit depuis %s (%s).\n' "$GITHUB_REF_NAME" "${GITHUB_SHA::7}" >> notes.md
-          cp release/BlockSurvivors.exe "release/BlockSurvivors-v$VERSION.exe"
+          INSTALLATEUR="release/BlockSurvivors-Setup-$VERSION.exe"
 
           gh release delete "v$VERSION" --yes --cleanup-tag || true
-          gh release create "v$VERSION" "release/BlockSurvivors-v$VERSION.exe" \
+          gh release create "v$VERSION" "$INSTALLATEUR" \
             --target "$GITHUB_SHA" \
             --title "Block Survivors $VERSION" \
             --notes-file notes.md \
             --latest
 
           gh release delete derniere-version --yes --cleanup-tag || true
-          gh release create derniere-version release/BlockSurvivors.exe \
+          gh release create derniere-version "$INSTALLATEUR" \
             --prerelease \
             --target "$GITHUB_SHA" \
             --title "Block Survivors — dernière version ($VERSION)" \
             --notes-file notes.md
       # Dépôt public TakeosOfficiel/Block-Survivors-version : le code reste privé, mais
-      # les joueurs doivent pouvoir télécharger l'exe. On y publie donc la release
-      # « vX.Y.Z » avec l'exe, puis version.json, où le jeu lit le numéro de la
-      # dernière version pour prévenir les joueurs (l'exe d'abord : on n'annonce
-      # pas une version qu'on ne peut pas encore télécharger).
+      # les joueurs doivent pouvoir télécharger le jeu. On y publie donc la release
+      # « vX.Y.Z » avec l'installateur, son .blockmap et latest.yml : le jeu installé
+      # lit latest.yml de la dernière release pour se mettre à jour tout seul.
+      # Puis version.json, que lisent les anciens exe portables et la version
+      # navigateur (l'installateur d'abord : on n'annonce pas une version qu'on ne
+      # peut pas encore télécharger).
       # Sans le secret VERSION_TOKEN, l'étape ne fait rien.
       - name: Publier l'exe et le numéro de version sur le dépôt public
         shell: bash
@@ -82,7 +88,10 @@ jobs:
           awk '/^---$/ { exit } { print }' notes.md > notes-publiques.md
           [ -s notes-publiques.md ] || echo "Version $VERSION." > notes-publiques.md
           GH_TOKEN="$VERSION_TOKEN" gh release delete "v$VERSION" --repo "$DEPOT" --yes --cleanup-tag || true
-          GH_TOKEN="$VERSION_TOKEN" gh release create "v$VERSION" "release/BlockSurvivors-v$VERSION.exe" \
+          GH_TOKEN="$VERSION_TOKEN" gh release create "v$VERSION" \
+            "release/BlockSurvivors-Setup-$VERSION.exe" \
+            "release/BlockSurvivors-Setup-$VERSION.exe.blockmap" \
+            release/latest.yml \
             --repo "$DEPOT" \
             --title "Block Survivors $VERSION" \
             --notes-file notes-publiques.md \

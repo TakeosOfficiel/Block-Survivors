@@ -5,6 +5,20 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.22.0] — 2026-10-20
+
+Fini de retélécharger le jeu à chaque version : il se met à jour tout seul.
+
+### Nouveautés
+- Le jeu s'installe maintenant avec un installateur (`BlockSurvivors-Setup-0.22.0.exe`) : un double-clic, il s'installe, crée un raccourci sur le bureau et dans le menu Démarrer, puis se lance.
+- Mises à jour automatiques : quand une nouvelle version sort, le jeu la télécharge en arrière-plan. Un bouton apparaît sur l'accueil : « Version X prête ! Cliquez pour redémarrer le jeu et l'installer ». Sans clic, elle s'installe d'elle-même à la fermeture du jeu.
+
+### À savoir
+- Il faut télécharger l'installateur **une dernière fois** (l'ancien exe portable affiche le lien sur l'accueil). Ensuite, plus jamais.
+- Les sauvegardes (émeraudes, talents, profil, réglages) sont gardées.
+- À la première installation, Windows peut afficher « Windows a protégé votre ordinateur » : cliquer sur « Informations complémentaires » puis « Exécuter quand même ».
+- L'ancien `BlockSurvivors.exe` portable peut être supprimé après l'installation.
+
 ## [0.21.0] — 2026-10-20
 
 Une seule version : le travail des maps Minecraft (fait à côté) rejoint la refonte des classes.

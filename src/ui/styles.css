@@ -334,7 +334,7 @@ img { image-rendering: pixelated; }
 .mise-a-jour {
   position: fixed !important; top: 8px; left: 50%; transform: translateX(-50%);
   padding: 4px 12px;
-  color: var(--mc-jaune); text-decoration: none;
+  color: var(--mc-jaune); text-decoration: none; cursor: pointer;
   background: rgba(0, 0, 0, 0.6); border: 2px solid var(--mc-jaune);
   animation: pulsation-lien 0.8s ease-in-out infinite alternate;
 }

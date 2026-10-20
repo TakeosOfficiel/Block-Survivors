@@ -32,7 +32,14 @@ import type { PanneauOptions } from './panneauOptions';
 const NOMBRE = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 });
 
 /** Pont exposé par l'application de bureau (electron/preload.cjs) ; absent dans un navigateur. */
-const bureau = (window as { bureau?: { quitter(): void } }).bureau;
+const bureau = (window as {
+  bureau?: {
+    quitter(): void;
+    /** Absents des anciens exe portables, qui ne se mettent pas à jour seuls. */
+    surMiseAJourPrete?(rappel: (version: string) => void): void;
+    installerMiseAJour?(): void;
+  };
+}).bureau;
 
 export class EcranMenu {
   private readonly racine = element('menu');
@@ -73,13 +80,28 @@ export class EcranMenu {
     element('menu-accroche').textContent = ACCROCHES[Math.floor(Math.random() * ACCROCHES.length)];
     element('menu-version').textContent = libelleVersion();
     element('menu-version-mc').textContent = VERSION_MINECRAFT;
-    void miseAJourDisponible().then((publiee) => {
-      if (!publiee) return;
-      const lien = element<HTMLAnchorElement>('menu-mise-a-jour');
-      lien.href = publiee.telechargement;
-      lien.textContent = `Version ${publiee.version} disponible ! Cliquez pour la télécharger`;
-      lien.classList.remove('cache');
-    });
+    const lien = element<HTMLAnchorElement>('menu-mise-a-jour');
+    if (bureau?.surMiseAJourPrete && bureau.installerMiseAJour) {
+      // Application installée : la mise à jour se télécharge seule ; un clic redémarre le jeu dessus
+      const installer = bureau.installerMiseAJour;
+      bureau.surMiseAJourPrete((version) => {
+        lien.removeAttribute('href');
+        lien.textContent = `Version ${version} prête ! Cliquez pour redémarrer le jeu et l'installer`;
+        lien.classList.remove('cache');
+      });
+      lien.addEventListener('click', (e) => {
+        e.preventDefault();
+        installer();
+      });
+    } else {
+      // Navigateur ou ancien exe portable : lien vers la page de téléchargement
+      void miseAJourDisponible().then((publiee) => {
+        if (!publiee) return;
+        lien.href = publiee.telechargement;
+        lien.textContent = `Version ${publiee.version} disponible ! Cliquez pour la télécharger`;
+        lien.classList.remove('cache');
+      });
+    }
 
     // Passage aux nouveaux arbres : les émeraudes des anciens talents ont été rendues
     const rendu = sauvegarde.annoncerRemboursement();

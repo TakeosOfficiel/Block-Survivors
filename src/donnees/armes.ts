@@ -21,6 +21,9 @@
  *   nova       degats, cadence, zone (rayon final), recul, ralenti et duree (ralentissement)
  *   meteore    degats, cadence, nombre, portee (recherche du groupe), zone (rayon), duree (feu au sol), recul
  *   orbes      degats, cadence, nombre, portee, zone (rayon d'orbite), duree (d'orbite), vitesse (de vol)
+ *   ricochet   degats, cadence, nombre, vitesse, portee, perforation (rebonds), recul
+ *   pluie      degats (par flèche), cadence, nombre (zones), portee (recherche du groupe), zone (rayon), duree, recul
+ *   piege      degats, cadence, nombre (pièges en même temps), duree, zone (rayon), ralenti
  */
 import type { DefinitionArme, StatsArme } from './types';
 
@@ -239,6 +242,81 @@ const definitions = {
       { description: "Orbitent 1 s de plus et blessent au contact", modif: { duree: 1 } },
       { description: 'Lancées 20 % plus souvent', modif: { cadence: -0.8 } },
       { description: '+2 orbes', modif: { nombre: 2 } },
+    ],
+  },
+  salve: {
+    son: 'arbalete',
+    nom: 'Salve en éventail',
+    description: 'Tire une gerbe de flèches en éventail vers les ennemis.',
+    icone: 'item/crossbow_standby',
+    mecanique: { type: 'tir', projectile: 'fleche', dispersion: 0.26 },
+    stats: { ...BASE, degats: 7, cadence: 2.5, nombre: 5, vitesse: 20, portee: 9, perforation: 1, recul: 2 },
+    niveaux: [
+      { description: '+2 flèches', modif: { nombre: 2 } },
+      { description: 'Dégâts +3', modif: { degats: 3 } },
+      { description: 'Portée +3 blocs', modif: { portee: 3 } },
+      { description: 'Tire 20 % plus souvent', modif: { cadence: -0.5 } },
+      { description: '+2 flèches, elles traversent 1 ennemi de plus', modif: { nombre: 2, perforation: 1 } },
+    ],
+  },
+  pluie_fleches: {
+    son: 'arc',
+    nom: 'Pluie de flèches',
+    description: 'Des flèches tombent du ciel sur le plus gros groupe.',
+    icone: 'item/arrow',
+    mecanique: { type: 'pluie', image: 'item/arrow', impactsParSeconde: 7.5 },
+    stats: { ...BASE, degats: 6, cadence: 6, portee: 14, zone: 2.5, duree: 1.6, recul: 1 },
+    niveaux: [
+      { description: 'Rayon +0,5 bloc', modif: { zone: 0.5 } },
+      { description: 'Dégâts +3', modif: { degats: 3 } },
+      { description: 'Dure 0,8 s de plus', modif: { duree: 0.8 } },
+      { description: 'Tombe 20 % plus souvent', modif: { cadence: -1.2 } },
+      { description: '+1 zone', modif: { nombre: 1 } },
+    ],
+  },
+  fleche_ricochet: {
+    son: 'arc',
+    nom: 'Flèche ricocheuse',
+    description: "Une flèche spectrale rebondit d'ennemi en ennemi.",
+    icone: 'item/spectral_arrow',
+    mecanique: { type: 'ricochet', projectile: 'fleche_spectrale', perte: 0.15, distanceRebond: 5 },
+    stats: { ...BASE, degats: 12, cadence: 2, nombre: 1, vitesse: 22, portee: 12, perforation: 3, recul: 2 },
+    niveaux: [
+      { description: '+1 rebond', modif: { perforation: 1 } },
+      { description: 'Dégâts +5', modif: { degats: 5 } },
+      { description: '+1 rebond', modif: { perforation: 1 } },
+      { description: 'Tire 20 % plus souvent', modif: { cadence: -0.4 } },
+      { description: '+1 flèche', modif: { nombre: 1 } },
+    ],
+  },
+  fusee: {
+    son: 'fusee',
+    nom: 'Fusée explosive',
+    description: "Une fusée de feu d'artifice qui explose en gerbe colorée.",
+    icone: 'item/firework_rocket',
+    mecanique: { type: 'explosif', projectile: 'fusee', gerbe: 'artifice', son: 'artifice', eclatsAuRang: 6 },
+    stats: { ...BASE, degats: 18, cadence: 3.5, vitesse: 14, portee: 13, zone: 2, recul: 5 },
+    niveaux: [
+      { description: "Rayon d'explosion +0,5 bloc", modif: { zone: 0.5 } },
+      { description: 'Dégâts +8', modif: { degats: 8 } },
+      { description: '+1 fusée', modif: { nombre: 1 } },
+      { description: 'Tirée 20 % plus souvent', modif: { cadence: -0.7 } },
+      { description: "L'explosion se divise en 4 petites explosions", modif: {} },
+    ],
+  },
+  piege_ronces: {
+    son: 'ronces',
+    nom: 'Piège de ronces',
+    description: 'Pose des buissons de baies qui blessent et ralentissent.',
+    icone: 'item/sweet_berries',
+    mecanique: { type: 'piege', image: 'block/sweet_berry_bush_stage3', intervalle: 0.5, enracineAuRang: 6 },
+    stats: { ...BASE, degats: 4, cadence: 5, nombre: 3, duree: 8, zone: 1.5, ralenti: 0.4 },
+    niveaux: [
+      { description: '+1 piège en même temps', modif: { nombre: 1 } },
+      { description: 'Dégâts +3', modif: { degats: 3 } },
+      { description: 'Rayon +0,5 bloc, dure 4 s de plus', modif: { zone: 0.5, duree: 4 } },
+      { description: 'Posé 20 % plus souvent', modif: { cadence: -1 } },
+      { description: 'Ralentit de 55 % et enracine un instant à l\u2019entrée', modif: { ralenti: 0.15 } },
     ],
   },
   golems: {

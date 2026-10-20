@@ -14,6 +14,9 @@ import type { Heurts } from './heurts';
 import type { Meteores } from './meteores';
 import type { Novas } from './novas';
 import type { OrbesArcaniques } from './orbesArcaniques';
+import type { Pieges } from './pieges';
+import type { Pluies } from './pluies';
+import type { Ricochets } from './ricochets';
 import type { Tornades } from './tornades';
 import type { Tourbillons } from './tourbillons';
 import type { ContexteCombat } from './contexte';
@@ -39,6 +42,9 @@ export interface SystemesCombat {
   readonly novas: Novas;
   readonly meteores: Meteores;
   readonly orbesArcaniques: OrbesArcaniques;
+  readonly ricochets: Ricochets;
+  readonly pluies: Pluies;
+  readonly pieges: Pieges;
 }
 
 export class Arsenal {
@@ -169,6 +175,15 @@ export class Arsenal {
 
       case 'orbes':
         return this.systemes.orbesArcaniques.frapper(arme);
+
+      case 'ricochet':
+        return this.systemes.ricochets.frapper(arme);
+
+      case 'pluie':
+        return this.systemes.pluies.frapper(arme);
+
+      case 'piege':
+        return this.systemes.pieges.frapper(arme);
     }
   }
 }

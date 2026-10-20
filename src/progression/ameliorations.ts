@@ -69,6 +69,9 @@ const STATS_UTILES: Record<MecaniqueArme['type'], readonly (keyof StatsArme)[]> 
   nova: ['degats', 'cadence', 'zone', 'ralenti'],
   meteore: ['degats', 'cadence', 'nombre', 'zone', 'duree'],
   orbes: ['degats', 'cadence', 'nombre', 'duree'],
+  ricochet: ['degats', 'cadence', 'nombre', 'perforation'],
+  pluie: ['degats', 'cadence', 'nombre', 'zone', 'duree'],
+  piege: ['degats', 'cadence', 'nombre', 'zone', 'duree', 'ralenti'],
 };
 
 /** Modificateurs multiplicatifs (affichés en %) ; les autres sont des ajouts. */

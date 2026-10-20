@@ -69,6 +69,17 @@ const particules = {
     images: ['particle/enchanted_hit'], animation: 'fixe',
     taille: [0.15, 0.25], duree: [0.3, 0.5], gravite: 0, frottement: 0.5, gris: [1, 1], retrecit: true,
   },
+  // Étincelles de feu d'artifice (firework), de toutes les couleurs
+  artifice: {
+    images: serie('particle/spark_', 7, 0), animation: 'age',
+    taille: [0.15, 0.3], duree: [0.5, 1], gravite: 3, frottement: 0.5,
+    teintes: [0xff4040, 0x40ff60, 0x4080ff, 0xffe040, 0xff60ff, 0x60ffff],
+  },
+  // Lueur dorée de la flèche spectrale
+  spectrale: {
+    images: ['particle/glow'], animation: 'fixe',
+    taille: [0.12, 0.2], duree: [0.25, 0.4], gravite: 0, frottement: 0.6, teintes: [0xffe680], retrecit: true,
+  },
   // Lueur violette des orbes arcaniques
   arcane: {
     images: ['particle/glow'], animation: 'fixe',
@@ -151,6 +162,16 @@ const gerbes = {
   ],
   arcane: [{ particule: 'arcane', nombre: 1, vitesse: 0.2, dispersion: 0.05, montee: 0.2 }],
   impactArcane: [{ particule: 'arcane', nombre: 8, vitesse: 2.5, dispersion: 0.2, montee: 1.5 }],
+  // Archère : traînées et explosion d'artifice, flèche spectrale, impacts de la pluie, buissons
+  traineeArtifice: [{ particule: 'artifice', nombre: 1, vitesse: 0.4, dispersion: 0.05, montee: 0.2 }],
+  artifice: [
+    { particule: 'artifice', nombre: 26, vitesse: 6, dispersion: 0.3, montee: 4 },
+    { particule: 'explosion', nombre: 2, vitesse: 0, dispersion: 0.6, montee: 0 },
+  ],
+  petitArtifice: [{ particule: 'artifice', nombre: 10, vitesse: 4, dispersion: 0.2, montee: 3 }],
+  spectrale: [{ particule: 'spectrale', nombre: 1, vitesse: 0.1, dispersion: 0.05, montee: 0 }],
+  impactFleche: [{ particule: 'critique', nombre: 3, vitesse: 2, dispersion: 0.2, montee: 2 }],
+  ronces: [{ particule: 'morceau', nombre: 6, vitesse: 2, dispersion: 0.5, montee: 3 }],
   // États des ennemis (émis régulièrement tant qu'ils durent)
   brulure: [{ particule: 'flamme', nombre: 3, vitesse: 0.4, dispersion: 0.4, montee: 1 }],
   poison: [{ particule: 'effetPoison', nombre: 1, vitesse: 0.3, dispersion: 0.35, montee: 0.5 }],

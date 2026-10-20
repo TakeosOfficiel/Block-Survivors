@@ -325,7 +325,14 @@ export type MecaniqueArme =
   /** Objets qui tournent en permanence autour du joueur. */
   | { readonly type: 'orbite'; readonly projectile: IdProjectile }
   /** Projectile qui explose au premier ennemi touché. */
-  | { readonly type: 'explosif'; readonly projectile: IdProjectile }
+  /**
+   * Projectile qui explose au premier ennemi touché (`gerbe` et `son` de l'explosion, sinon ceux des
+   * boules de feu) ; dès le rang `eclatsAuRang`, l'explosion lance 4 petites explosions autour.
+   */
+  | {
+      readonly type: 'explosif'; readonly projectile: IdProjectile;
+      readonly gerbe?: IdGerbe; readonly son?: IdSon; readonly eclatsAuRang?: number;
+    }
   /** Éclairs qui frappent des ennemis au hasard autour du joueur. */
   | { readonly type: 'foudre'; readonly couleur: number }
   /** Alliés qui combattent seuls pendant un temps limité. */
@@ -354,7 +361,19 @@ export type MecaniqueArme =
    * Orbes (`texture`) qui tournent autour du joueur pendant la durée, puis foncent sur les ennemis ;
    * dès le rang `contactAuRang`, elles blessent au contact (`contact` × dégâts) pendant l'orbite.
    */
-  | { readonly type: 'orbes'; readonly texture: CheminTexture; readonly contactAuRang: number; readonly contact: number };
+  | { readonly type: 'orbes'; readonly texture: CheminTexture; readonly contactAuRang: number; readonly contact: number }
+  /**
+   * Flèche à tête chercheuse qui rebondit d'ennemi en ennemi (perforation = rebonds) dans un rayon de
+   * `distanceRebond` blocs, en perdant `perte` de ses dégâts à chaque rebond.
+   */
+  | { readonly type: 'ricochet'; readonly projectile: IdProjectile; readonly perte: number; readonly distanceRebond: number }
+  /** Flèches (`image`) qui tombent du ciel sur le plus gros groupe, `impactsParSeconde` pendant la durée. */
+  | { readonly type: 'pluie'; readonly image: CheminTexture; readonly impactsParSeconde: number }
+  /**
+   * Piège (buissons `image`) posé sous le joueur : blesse et ralentit toutes les `intervalle` s ;
+   * dès le rang `enracineAuRang`, il enracine un instant les ennemis qui y entrent.
+   */
+  | { readonly type: 'piege'; readonly image: CheminTexture; readonly intervalle: number; readonly enracineAuRang: number };
 
 export interface NiveauArme {
   /** Texte de la carte d'amélioration. */

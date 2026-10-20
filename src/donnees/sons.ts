@@ -30,6 +30,11 @@ const definitions = {
   tornade: { categorie: 'armes', chemin: 'mob/blaze/breathe1', hachage: 'f9e4ff760b11244522bce898a4a0ebab1dd4520e', volume: 0.45, hauteur: [0.8, 1], intervalleMin: 0.3, simultanes: 2 },
   nova: { categorie: 'armes', chemin: 'random/glass1', hachage: 'fa35a51bb74a4a6cf0c48161342db5a8577f13e5', volume: 0.4, hauteur: [0.9, 1.2], intervalleMin: 0.2, simultanes: 2 },
   orbes: { categorie: 'armes', chemin: 'block/amethyst/shimmer', hachage: 'a62c6054fe1ac8137b22f29959b562c0d821b6ed', volume: 0.6, hauteur: [0.9, 1.3], intervalleMin: 0.2, simultanes: 2 },
+  arbalete: { categorie: 'armes', chemin: 'item/crossbow/shoot1', hachage: 'c756a5998391027b765f39e0045ef41322d8bce7', volume: 0.35, hauteur: [0.9, 1.1], intervalleMin: 0.1, simultanes: 2 },
+  fusee: { categorie: 'armes', chemin: 'fireworks/launch1', hachage: '9d1ba828a27b2a6b5be6b97e4d6b554db885cb08', volume: 0.4, hauteur: [0.9, 1.1], intervalleMin: 0.1, simultanes: 2 },
+  artifice: { categorie: 'armes', chemin: 'fireworks/blast1', hachage: '71d9ad77da5febc1b2b7bd5916ca730c2b9ab6a8', volume: 0.45, hauteur: [0.9, 1.2], intervalleMin: 0.08, simultanes: 3 },
+  impact_fleche: { categorie: 'armes', chemin: 'random/bowhit1', hachage: '8648a8dcbe82c047b60d74783f7b1c9eb5826290', volume: 0.2, hauteur: [0.9, 1.3], intervalleMin: 0.06, simultanes: 3 },
+  ronces: { categorie: 'armes', chemin: 'block/sweet_berry_bush/place1', hachage: '5d7690eecfec6ee9ebd6e2731374747ae6b57c2f', volume: 0.5, hauteur: [0.9, 1.1], intervalleMin: 0.2, simultanes: 1 },
   explosion: { categorie: 'armes', chemin: 'random/explode1', hachage: 'fa85b9e7e54c36c9f9d0249ca739444b5e3bb66c', volume: 0.45, hauteur: [0.8, 1.1], intervalleMin: 0.08, simultanes: 3 },
 
   loup_aboiement: { categorie: 'armes', chemin: 'mob/wolf/bark1', hachage: '527618d2fbb9712950357c4d5e95cfb86ffee417', volume: 0.35, hauteur: [0.9, 1.2], intervalleMin: 0.3, simultanes: 2 },

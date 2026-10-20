@@ -5,6 +5,18 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.13.0] — 2026-10-20
+
+Refonte des classes, étape 5 : l'arsenal de l'Archère. Valeurs provisoires, à ajuster après les essais.
+
+### Nouveautés
+- L'Archère a son propre arsenal de 6 attaques, et ses cartes ne proposent plus que celles-ci : l'Arc et cinq nouvelles.
+- Salve en éventail : une gerbe de 5 flèches tirée à l'arbalète dans un cône, jusqu'à 9 flèches.
+- Pluie de flèches : des flèches tombent du ciel sur le plus gros groupe et restent plantées un instant dans le sol.
+- Flèche ricocheuse : une flèche spectrale lumineuse file vers un ennemi puis rebondit sur les suivants (jusqu'à 5 rebonds), en perdant 15 % de ses dégâts à chaque fois.
+- Fusée explosive : une fusée de feu d'artifice qui explose en gerbe d'étincelles de toutes les couleurs, avec le son du jeu ; au dernier rang, l'explosion se divise en 4 petites explosions.
+- Piège de ronces : des buissons de baies sucrées posés sous l'Archère blessent et ralentissent ceux qui les traversent (le plus ancien est remplacé quand ils sont tous posés) ; au dernier rang, ils enracinent un instant ceux qui y entrent.
+
 ## [0.12.0] — 2026-10-20
 
 Refonte des classes, étape 4 : l'arsenal du Mage. Valeurs provisoires, à ajuster après les essais.

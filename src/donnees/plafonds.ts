@@ -39,4 +39,7 @@ export const PROFITE_PROJECTILES: Readonly<Record<MecaniqueArme['type'], boolean
   nova: false,
   meteore: false,
   orbes: true,
+  ricochet: true,
+  pluie: false,
+  piege: false,
 };

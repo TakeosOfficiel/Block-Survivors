@@ -14,6 +14,9 @@ import { Heurts } from './combat/heurts';
 import { Meteores } from './combat/meteores';
 import { Novas } from './combat/novas';
 import { OrbesArcaniques } from './combat/orbesArcaniques';
+import { Pieges } from './combat/pieges';
+import { Pluies } from './combat/pluies';
+import { Ricochets } from './combat/ricochets';
 import { Tornades } from './combat/tornades';
 import { Tourbillons } from './combat/tourbillons';
 import type { ContexteCombat } from './combat/contexte';
@@ -123,6 +126,9 @@ export class Jeu implements CallbacksBoucle, Retours {
   private readonly novas: Novas;
   private readonly meteores: Meteores;
   private readonly orbesArcaniques: OrbesArcaniques;
+  private readonly ricochets: Ricochets;
+  private readonly pluies: Pluies;
+  private readonly pieges: Pieges;
   private readonly projectilesJoueur: ProjectilesJoueur;
   private readonly orbites: Orbites;
   private readonly foudre: Foudre;
@@ -228,6 +234,9 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.novas = new Novas(combat, textures, scene);
     this.meteores = new Meteores(combat, textures, scene);
     this.orbesArcaniques = new OrbesArcaniques(combat, textures, scene);
+    this.ricochets = new Ricochets(combat);
+    this.pluies = new Pluies(combat, textures, scene);
+    this.pieges = new Pieges(combat, textures, scene);
     this.arsenal = new Arsenal(combat, {
       balayages: this.balayages,
       projectiles: this.projectilesJoueur,
@@ -242,6 +251,9 @@ export class Jeu implements CallbacksBoucle, Retours {
       novas: this.novas,
       meteores: this.meteores,
       orbesArcaniques: this.orbesArcaniques,
+      ricochets: this.ricochets,
+      pluies: this.pluies,
+      pieges: this.pieges,
     });
     for (const id of this.etat.personnage.armesDepart) this.arsenal.ameliorer(id);
     for (const id of talents.armes) this.arsenal.ameliorer(id);
@@ -283,7 +295,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     }, textures.url(RECOMPENSES.icone));
 
     this.sourcesEntites = [
-      this.joueur, this.ennemis, this.projectilesEnnemis, this.projectilesJoueur, this.invocations, this.orbes, this.objets,
+      this.joueur, this.ennemis, this.projectilesEnnemis, this.projectilesJoueur, this.ricochets, this.invocations, this.orbes, this.objets,
     ];
 
     this.debug = new PanneauDebug({
@@ -378,6 +390,9 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.novas.maj(dt);
     this.meteores.maj(dt);
     this.orbesArcaniques.maj(dt);
+    this.ricochets.maj(dt);
+    this.pluies.maj(dt);
+    this.pieges.maj(dt);
     this.projectilesEnnemis.maj(dt);
     this.particules.maj(dt);
     this.chiffres.maj(dt);
@@ -409,6 +424,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.renduProjectiles.commencer();
     this.projectilesEnnemis.majVisuel(this.renduProjectiles);
     this.projectilesJoueur.majVisuel(this.renduProjectiles, this.etat.tempsJeu);
+    this.ricochets.majVisuel(this.renduProjectiles);
     this.orbites.majVisuel(this.arsenal.armes, this.renduProjectiles, this.etat.tempsJeu);
     this.renduProjectiles.terminer();
 
@@ -421,6 +437,8 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.tornades.majVisuel();
     this.novas.majVisuel();
     this.orbesArcaniques.majVisuel();
+    this.pluies.majVisuel();
+    this.pieges.majVisuel();
     this.particules.majVisuel();
     this.chiffres.majVisuel();
     this.camera.majVisuel(dtJeu, dtReel);

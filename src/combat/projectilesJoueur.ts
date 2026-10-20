@@ -6,7 +6,8 @@
 import { CONFIG } from '../config';
 import { GERBES } from '../donnees/particules';
 import { IDS_PROJECTILES, PROJECTILES, type IdProjectile } from '../donnees/projectiles';
-import type { DefinitionProjectile } from '../donnees/types';
+import type { IdSon } from '../donnees/sons';
+import type { DefinitionGerbe, DefinitionProjectile } from '../donnees/types';
 import { RenduProjectiles } from '../effets/renduProjectiles';
 import type { SourceEntites } from '../entites/types';
 import { Pool } from '../utils/pool';
@@ -36,6 +37,9 @@ interface ProjectileJoueur {
   recul: number;
   restants: number;         // ennemis encore traversables
   zone: number;             // rayon d'explosion (0 = n'explose pas)
+  gerbe: DefinitionGerbe;   // particules et son de l'explosion
+  sonExplosion: IdSon;
+  eclats: number;           // petites explosions lancées autour à l'explosion
   touches: Int32Array;      // id des ennemis déjà touchés (pendant cette phase)
   nbTouches: number;
   trainee: number;          // s avant la prochaine particule de traînée
@@ -47,7 +51,8 @@ export class ProjectilesJoueur implements SourceEntites {
   private readonly pool = new Pool<ProjectileJoueur>(CONFIG.projectiles.capacite, () => ({
     indexRendu: 0, indexArme: 0, definition: PROJECTILES[IDS_PROJECTILES[0]], retour: false, revient: false,
     x: 0, z: 0, dirX: 0, dirZ: 1, vitesse: 0, parcouru: 0, portee: 0, degats: 0, recul: 0,
-    restants: 1, zone: 0, touches: new Int32Array(MAX_TOUCHES), nbTouches: 0, trainee: 0,
+    restants: 1, zone: 0, gerbe: GERBES.explosionArme, sonExplosion: 'explosion', eclats: 0,
+    touches: new Int32Array(MAX_TOUCHES), nbTouches: 0, trainee: 0,
   }));
 
   constructor(contexte: ContexteCombat) {
@@ -80,6 +85,10 @@ export class ProjectilesJoueur implements SourceEntites {
     p.recul = s.recul;
     p.restants = mode === 'ligne' ? Math.max(1, s.perforation) : Infinity;
     p.zone = explose ? s.zone : 0;
+    const m = arme.definition.mecanique;
+    p.gerbe = m.type === 'explosif' && m.gerbe ? GERBES[m.gerbe] : GERBES.explosionArme;
+    p.sonExplosion = m.type === 'explosif' && m.son ? m.son : 'explosion';
+    p.eclats = m.type === 'explosif' && m.eclatsAuRang !== undefined && arme.rang >= m.eclatsAuRang ? CONFIG.projectiles.eclats.nombre : 0;
     p.nbTouches = 0;
     p.trainee = 0;
   }
@@ -167,12 +176,24 @@ export class ProjectilesJoueur implements SourceEntites {
   }
 
   private exploser(p: ProjectileJoueur): void {
-    const { ennemis, particules } = this.contexte;
-    const n = ennemis.chercher(p.x, p.z, p.zone, this.tampon);
-    for (let k = 0; k < n; k++) {
-      ennemis.blesser(ennemis.obtenir(this.tampon[k]), p.degats, p.x, p.z, p.recul, p.indexArme);
+    const particules = this.contexte.particules;
+    this.blesserZone(p.x, p.z, p.zone, p.degats, p.recul, p.indexArme);
+    particules.emettre(p.x, p.definition.hauteur, p.z, p.gerbe);
+    this.contexte.retours.son(p.sonExplosion, 1.3);
+    // Éclats : petites explosions tout autour (dernier rang de la Fusée explosive)
+    const e = CONFIG.projectiles.eclats;
+    for (let k = 0; k < p.eclats; k++) {
+      const a = (k / p.eclats) * Math.PI * 2 + Math.random();
+      const x = p.x + Math.sin(a) * e.distance;
+      const z = p.z + Math.cos(a) * e.distance;
+      this.blesserZone(x, z, p.zone * e.rayon, p.degats * e.degats, p.recul * 0.5, p.indexArme);
+      particules.emettre(x, p.definition.hauteur, z, GERBES.petitArtifice);
     }
-    particules.emettre(p.x, p.definition.hauteur, p.z, GERBES.explosionArme);
-    this.contexte.retours.son('explosion', 1.3);
+  }
+
+  private blesserZone(x: number, z: number, rayon: number, degats: number, recul: number, arme: number): void {
+    const ennemis = this.contexte.ennemis;
+    const n = ennemis.chercher(x, z, rayon, this.tampon);
+    for (let k = 0; k < n; k++) ennemis.blesser(ennemis.obtenir(this.tampon[k]), degats, x, z, recul, arme);
   }
 }

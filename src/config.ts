@@ -123,6 +123,8 @@ export const CONFIG = {
   projectiles: {
     capacite: 256,
     intervalleTrainee: 0.05,   // s entre deux particules de traînée
+    // Éclats de la Fusée explosive : nombre, distance (blocs), rayon et dégâts (parts de l'explosion)
+    eclats: { nombre: 4, distance: 1.6, rayon: 0.5, degats: 0.35 },
   },
 
   armes: {
@@ -149,6 +151,12 @@ export const CONFIG = {
     meteore: { capacite: 6, flammes: 10, imagesFeu: 20, duree: 0.6, hauteur: 9, departX: -4, departZ: -4, taille: 1.1, tic: 0.5, decalage: 0.3 },
     // Orbes arcaniques : vol max (s) après l'orbite, vitesse d'orbite (rad/s), contact (blocs, s)
     orbes: { capacite: 32, volMax: 3, periodeLueur: 0.08, vitesseOrbite: 3, rayonContact: 0.45, delaiContact: 0.5, hauteur: 1, taille: 0.32 },
+    // Flèche ricocheuse : rebonds au maximum (plafond), durée de vie max d'une flèche (s)
+    ricochet: { capacite: 24, rebondsMax: 6, vieMax: 4 },
+    // Pluie de flèches : chute (s) depuis `hauteur`, flèche plantée `plantee` s, rayon de chaque impact
+    pluie: { zones: 4, fleches: 96, chute: 0.25, hauteur: 7, plantee: 0.6, rayonImpact: 0.9, taille: 0.9 },
+    // Piège de ronces : buissons par piège, enracinement à l'entrée (s) et délai avant le suivant (s)
+    piege: { capacite: 12, buissons: 5, taille: 0.9, recherche: 12, enracinement: 0.5, delaiEnracinement: 3 },
   },
 
   // Chiffres des dégâts au-dessus des ennemis (option)

@@ -64,6 +64,38 @@ const definitions = {
     trainee: 'traineeFeu',
     couleurSecours: 0xff7a1a,
   },
+  // Flèche spectrale (Flèche ricocheuse) : même profil que la flèche, lumineuse
+  fleche_spectrale: {
+    nom: 'Flèche spectrale',
+    forme: 'croisee',
+    texture: 'entity/projectiles/spectral_arrow',
+    tailleTexture: [32, 32],
+    uv: [0, 0, 16, 5],
+    longueur: 0.9,
+    largeur: 0.9 * 5 / 16,
+    vitesse: 22,
+    duree: 3,
+    rayon: 0.25,
+    hauteur: 1.3,
+    trainee: 'spectrale',
+    couleurSecours: 0xf0d060,
+  },
+  // Fusée de feu d'artifice (Fusée explosive)
+  fusee: {
+    nom: "Fusée d'artifice",
+    forme: 'plat',
+    texture: 'item/firework_rocket',
+    tailleTexture: [16, 16],
+    uv: ICONE,
+    longueur: 0.9,
+    largeur: 0,
+    vitesse: 14,
+    duree: 3,
+    rayon: 0.4,
+    hauteur: 1.1,
+    trainee: 'traineeArtifice',
+    couleurSecours: 0xd04040,
+  },
   // Petite boule de feu tirée par les blazes
   boule_feu_blaze: {
     nom: 'Petite boule de feu',

@@ -5,6 +5,18 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.10.0] — 2026-10-20
+
+Refonte des classes, étape 2 : les états des ennemis. Ils serviront aux nouvelles attaques et aux talents ; on peut déjà les essayer depuis le panneau F3.
+
+### Nouveautés
+- Brûlure et poison : dégâts toutes les 0,5 s en cumuls (3 et 5 au maximum), chiffres orange ou verts, jamais critiques. Le mob vacille en orange (brûlure) ou se teinte de vert, avec flammes ou tourbillons d'effet de potion.
+- Ralentissement et enracinement : teinte bleue et particules de l'effet Lenteur. Un ennemi enraciné ne marche plus mais peut encore attaquer.
+- Étourdissement : ni marche ni attaque, étoiles magiques au-dessus de la tête.
+- Marque : les alliés invoqués font plus de dégâts à la cible, lueur dorée au-dessus d'elle.
+- Les boss résistent : ralentis moitié moins (25 % au plus), seulement ralentis au lieu d'être enracinés, jamais étourdis.
+- Panneau F3 : une rangée « États » pour infliger chaque état aux ennemis proches.
+
 ## [0.9.0] — 2026-10-20
 
 Refonte des classes, étape 1 : le socle. Les chiffres sont provisoires et seront ajustés après les essais.

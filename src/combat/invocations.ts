@@ -184,7 +184,7 @@ export class Invocations implements SourceEntites {
         }
         a.vitesseSol = def.vitesse;
       } else if (cible && a.minuterie <= 0) {
-        ennemis.blesser(cible, s.degats, a.x, a.z, s.recul, arme.index);
+        ennemis.blesser(cible, s.degats, a.x, a.z, s.recul, arme.index, 'allie');
         this.contexte.retours.son(def.sonCoup);
         declencherAttaque(a.animation, this.rendus[a.indexType].modele);
         a.minuterie = def.cadenceCoups;

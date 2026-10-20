@@ -23,7 +23,7 @@ import { PROGRESSION } from './donnees/progression';
 import type { IdSon } from './donnees/sons';
 import { Ombres } from './effets/ombres';
 import { BarresVie } from './effets/barresVie';
-import { ChiffresDegats } from './effets/chiffresDegats';
+import { ChiffresDegats, type StyleChiffre } from './effets/chiffresDegats';
 import { Etiquette } from './effets/etiquette';
 import { Particules } from './effets/particules';
 import { RenduProjectiles } from './effets/renduProjectiles';
@@ -56,7 +56,7 @@ import type { Recompense, Sauvegarde } from './progression/sauvegarde';
 import { formaterTemps } from './utils/format';
 import { remplirBilan } from './ui/bilan';
 import { CompteurDegats } from './ui/compteurDegats';
-import { PanneauDebug } from './ui/debug';
+import { PanneauDebug, type EtatDebug } from './ui/debug';
 import { EcranCartes } from './ui/ecranCartes';
 import { EcranFin } from './ui/ecranFin';
 import { EcranPause } from './ui/ecranPause';
@@ -120,6 +120,8 @@ export class Jeu implements CallbacksBoucle, Retours {
   private readonly ecranFin: EcranFin;
 
   private readonly debug: PanneauDebug;
+  /** Ennemis proches trouvés par le debug (tampon réutilisé). */
+  private readonly prochesDebug = new Int32Array(256);
   private readonly compteurDegats: CompteurDegats;
   private readonly panneauOptions: PanneauOptions;
   private readonly sourcesEntites: readonly SourceEntites[];
@@ -264,6 +266,7 @@ export class Jeu implements CallbacksBoucle, Retours {
       ameliorerArme: (id) => { this.arsenal.ameliorer(id); },
       ajouterBonus: (id) => this.ameliorations.appliquer({ type: 'passif', id }),
       poserObjet: (id) => this.objets.poser(id, this.etat.joueur.x + 1.5, this.etat.joueur.z),
+      infligerEtat: (etat) => this.infligerEtatAutour(etat),
       gagnerNiveau: () => gagnerXp(this.etat, this.etat.joueur.xpNiveau - this.etat.joueur.xp),
       apparaitreBoss: () => this.directeurBoss.forcer(),
       allerVersFin: () => { this.etat.tempsJeu = Math.max(this.etat.tempsJeu, PROGRESSION.dureePartie - 10); },
@@ -313,8 +316,8 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.camera.secouer(force);
   }
 
-  degats(x: number, y: number, z: number, valeur: number, critique: boolean): void {
-    this.chiffres.ajouter(x, y, z, valeur, critique);
+  degats(x: number, y: number, z: number, valeur: number, style: StyleChiffre): void {
+    this.chiffres.ajouter(x, y, z, valeur, style);
   }
 
   // --- CallbacksBoucle ---------------------------------------------------
@@ -483,6 +486,24 @@ export class Jeu implements CallbacksBoucle, Retours {
       if (this.terrain.carte.bloqueMarche(x, z)) continue;
       this.ennemis.apparaitre(id, x, z);
       return;
+    }
+  }
+
+  /** Debug : inflige un état à tous les ennemis proches. */
+  private infligerEtatAutour(etat: EtatDebug): void {
+    const c = CONFIG.debug.etats;
+    const j = this.etat.joueur;
+    const n = this.ennemis.chercher(j.x, j.z, c.rayon, this.prochesDebug);
+    for (let k = 0; k < n; k++) {
+      const e = this.ennemis.obtenir(this.prochesDebug[k]);
+      switch (etat) {
+        case 'brulure': this.ennemis.bruler(e, c.brulure.cumuls, c.brulure.degatsParSeconde, c.brulure.duree); break;
+        case 'poison': this.ennemis.empoisonner(e, c.poison.cumuls, c.poison.degatsParSeconde, c.poison.duree); break;
+        case 'ralenti': this.ennemis.ralentir(e, c.ralenti.part, c.ralenti.duree); break;
+        case 'enracine': this.ennemis.enraciner(e, c.enracine.duree); break;
+        case 'etourdi': this.ennemis.etourdir(e, c.etourdi.duree); break;
+        case 'marque': this.ennemis.marquer(e, c.marque.bonus, c.marque.duree); break;
+      }
     }
   }
 

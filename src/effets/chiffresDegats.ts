@@ -1,7 +1,8 @@
 /**
  * Chiffres des dégâts qui jaillissent au-dessus des ennemis touchés, comme
  * dans les MMO : blancs pour un coup normal, dorés et plus gros (avec un
- * « pop ») pour un coup critique. Police pixel du jeu, chaque chiffre est un
+ * « pop ») pour un coup critique, petits et orange ou verts pour les dégâts
+ * d'une brûlure ou d'un poison. Police pixel du jeu, chaque chiffre est un
  * carré d'un InstancedMesh tourné vers la caméra ; anneau de taille fixe : un
  * nouveau chiffre remplace le plus ancien quand tout est occupé.
  */
@@ -11,6 +12,8 @@ import { attribute, texture, uv, vec2, vec4 } from 'three/tsl';
 import { NOM_POLICE } from '../assets/police';
 import { CONFIG } from '../config';
 
+export type StyleChiffre = 'normal' | 'critique' | 'feu' | 'poison';
+
 interface Chiffre {
   actif: boolean;
   x: number; y: number; z: number;
@@ -18,7 +21,7 @@ interface Chiffre {
   derive: number;
   valeur: number;
   nbChiffres: number;
-  critique: boolean;
+  style: StyleChiffre;
   age: number;
 }
 
@@ -42,15 +45,19 @@ export class ChiffresDegats {
   private readonly camera: THREE.Camera;
   private readonly couleurs: THREE.InstancedBufferAttribute;
   private readonly cases: THREE.InstancedBufferAttribute;
-  /** Couleurs normale et critique, converties en linéaire. */
-  private readonly teinteNormale = new THREE.Color(CONFIG.chiffresDegats.normal.couleur);
-  private readonly teinteCritique = new THREE.Color(CONFIG.chiffresDegats.critique.couleur);
+  /** Couleur de chaque style, convertie en linéaire. */
+  private readonly teintes: Record<StyleChiffre, THREE.Color> = {
+    normal: new THREE.Color(CONFIG.chiffresDegats.normal.couleur),
+    critique: new THREE.Color(CONFIG.chiffresDegats.critique.couleur),
+    feu: new THREE.Color(CONFIG.chiffresDegats.feu.couleur),
+    poison: new THREE.Color(CONFIG.chiffresDegats.poison.couleur),
+  };
 
   constructor(scene: THREE.Scene, camera: THREE.Camera) {
     const c = CONFIG.chiffresDegats;
     this.camera = camera;
     this.chiffres = Array.from({ length: c.capacite }, () => ({
-      actif: false, x: 0, y: 0, z: 0, derive: 0, valeur: 0, nbChiffres: 1, critique: false, age: 0,
+      actif: false, x: 0, y: 0, z: 0, derive: 0, valeur: 0, nbChiffres: 1, style: 'normal', age: 0,
     }));
 
     const instances = c.capacite * c.chiffresMax;
@@ -77,7 +84,7 @@ export class ChiffresDegats {
     scene.add(this.maillage);
   }
 
-  ajouter(x: number, y: number, z: number, valeur: number, critique: boolean): void {
+  ajouter(x: number, y: number, z: number, valeur: number, style: StyleChiffre): void {
     if (!this.actif) return;
     const ch = this.chiffres[this.prochain];
     this.prochain = (this.prochain + 1) % this.chiffres.length;
@@ -90,7 +97,7 @@ export class ChiffresDegats {
     ch.derive = (Math.random() - 0.5) * CONFIG.chiffresDegats.derive;
     ch.valeur = Math.max(1, Math.round(valeur));
     ch.nbChiffres = Math.min(CONFIG.chiffresDegats.chiffresMax, String(ch.valeur).length);
-    ch.critique = critique;
+    ch.style = style;
     ch.age = 0;
   }
 
@@ -99,7 +106,7 @@ export class ChiffresDegats {
     for (const ch of this.chiffres) {
       if (!ch.actif) continue;
       ch.age += dt;
-      const style = ch.critique ? c.critique : c.normal;
+      const style = c[ch.style];
       if (ch.age >= style.duree) ch.actif = false;
     }
   }
@@ -113,14 +120,14 @@ export class ChiffresDegats {
     let n = 0;
     for (const ch of this.chiffres) {
       if (!ch.actif) continue;
-      const style = ch.critique ? c.critique : c.normal;
+      const style = c[ch.style];
       const t = ch.age / style.duree;
       // Montée qui ralentit, « pop » des critiques au début, fondu à la fin
       const montee = style.montee * (1 - (1 - t) * (1 - t));
       const pop = 1 + style.pop * Math.max(0, 1 - ch.age / c.dureePop);
       const taille = style.taille * pop;
       const alpha = t < 1 - c.fondu ? 1 : (1 - t) / c.fondu;
-      const couleur = ch.critique ? this.teinteCritique : this.teinteNormale;
+      const couleur = this.teintes[ch.style];
       const decalage = ch.derive * ch.age;
       // Chiffres centrés, de gauche à droite (valeur lue en base 10 depuis la droite)
       let reste = ch.valeur;

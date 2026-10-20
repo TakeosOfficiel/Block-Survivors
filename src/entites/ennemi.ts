@@ -5,6 +5,15 @@ import type { DefinitionEnnemi } from '../donnees/types';
 import type { Allie } from '../combat/invocations';
 import { creerEtatAnimation, type EtatAnimation } from '../modeles/animation';
 
+/** Brûlure ou poison : cumuls, dégâts par cumul et par seconde, temps restant. */
+export interface DegatsPeriodiques {
+  cumuls: number;
+  degatsParSeconde: number;
+  temps: number;                // s restantes (remises à neuf à chaque application)
+  tic: number;                  // s avant les prochains dégâts
+  arme: number;                 // index dans IDS_ARMES (−1 hors armes), crédité des dégâts
+}
+
 export interface Ennemi {
   id: number;                   // identifiant unique de l'apparition (les index du pool changent)
   indexType: number;            // index dans IDS_ENNEMIS
@@ -34,7 +43,35 @@ export interface Ennemi {
   cibleAllieId: number;
   /** Par arme (index dans IDS_ARMES) : temps de jeu avant lequel elle ne peut plus le toucher. */
   immunites: Float32Array;
+  // États (etats.ts)
+  brulure: DegatsPeriodiques;
+  poison: DegatsPeriodiques;
+  ralenti: number;              // part de vitesse perdue (0 à 1)
+  ralentiTemps: number;         // s restantes
+  enracine: number;             // s restantes sans pouvoir marcher
+  etourdi: number;              // s restantes sans marcher ni attaquer
+  marque: number;               // dégâts en plus subis des alliés (0,15 = +15 %)
+  marqueTemps: number;
+  /** s avant les prochaines particules d'état. */
+  minuterieEtats: number;
   animation: EtatAnimation;
+}
+
+function creerDegatsPeriodiques(): DegatsPeriodiques {
+  return { cumuls: 0, degatsParSeconde: 0, temps: 0, tic: 0, arme: -1 };
+}
+
+/** Efface tous les états (apparition). */
+export function effacerEtats(e: Ennemi): void {
+  e.brulure.cumuls = 0;
+  e.poison.cumuls = 0;
+  e.ralenti = 0;
+  e.ralentiTemps = 0;
+  e.enracine = 0;
+  e.etourdi = 0;
+  e.marque = 0;
+  e.marqueTemps = 0;
+  e.minuterieEtats = 0;
 }
 
 export function creerEnnemi(): Ennemi {
@@ -52,6 +89,9 @@ export function creerEnnemi(): Ennemi {
     cibleAllie: null,
     cibleAllieId: 0,
     immunites: new Float32Array(IDS_ARMES.length),
+    brulure: creerDegatsPeriodiques(),
+    poison: creerDegatsPeriodiques(),
+    ralenti: 0, ralentiTemps: 0, enracine: 0, etourdi: 0, marque: 0, marqueTemps: 0, minuterieEtats: 0,
     animation: creerEtatAnimation(),
   };
 }

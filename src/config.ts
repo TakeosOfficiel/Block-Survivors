@@ -140,6 +140,9 @@ export const CONFIG = {
     fondu: 0.35,            // dernière part de la vie en fondu
     normal: { couleur: 0xffffff, taille: 0.38, montee: 1.1, pop: 0.3, duree: 0.8 },
     critique: { couleur: 0xffc22a, taille: 0.62, montee: 1.4, pop: 0.8, duree: 1.1 },
+    // Dégâts des états : plus petits, aux couleurs de la brûlure et du poison
+    feu: { couleur: 0xff8a2a, taille: 0.3, montee: 0.8, pop: 0, duree: 0.7 },
+    poison: { couleur: 0x8fd45a, taille: 0.3, montee: 0.8, pop: 0, duree: 0.7 },
   },
 
   particules: {
@@ -215,6 +218,16 @@ export const CONFIG = {
     vitessesTemps: [0.25, 0.5, 1, 2, 4, 8, 16],
     distanceApparition: 7,                 // apparition manuelle autour du joueur (blocs)
     frappe: { rayon: 4, degats: 8, recul: 8 },
+    // États infligés aux ennemis proches (rayon en blocs, durées en s)
+    etats: {
+      rayon: 6,
+      brulure: { cumuls: 3, degatsParSeconde: 3, duree: 3 },
+      poison: { cumuls: 5, degatsParSeconde: 2, duree: 4 },
+      ralenti: { part: 0.4, duree: 3 },
+      enracine: { duree: 2 },
+      etourdi: { duree: 2 },
+      marque: { bonus: 0.25, duree: 4 },
+    },
   },
 } as const;
 

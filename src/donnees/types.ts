@@ -621,6 +621,19 @@ export interface DefinitionParticule {
   readonly retrecit?: boolean;
 }
 
+/** État d'un ennemi (etats.ts). */
+export interface DefinitionEtat {
+  /** Particules émises toutes les `periode` s tant qu'il dure. */
+  readonly gerbe: IdGerbe;
+  readonly periode: number;
+  /** Teinte du modèle (linéaire) et sa force. */
+  readonly couleur?: readonly [number, number, number];
+  readonly force?: number;
+  /** Dégâts par seconde : cumuls au maximum et intervalle entre deux dégâts (s). */
+  readonly cumulsMax?: number;
+  readonly tic?: number;
+}
+
 /** Une salve de particules d'un même type ; une gerbe en enchaîne plusieurs. */
 export interface SalveParticules {
   readonly particule: IdParticule;

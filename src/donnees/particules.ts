@@ -55,6 +55,25 @@ const particules = {
     images: ['particle/glint'], animation: 'fixe',
     taille: [0.2, 0.3], duree: [0.8, 1.3], gravite: -0.6, frottement: 0.4, gris: [1, 1],
   },
+  // Tourbillons des effets de potion (entity_effect), teintés à la couleur de l'effet
+  effetPoison: {
+    images: serie('particle/effect_', 7, 0), animation: 'age',
+    taille: [0.15, 0.25], duree: [0.6, 1], gravite: -1.2, frottement: 0.3, teintes: [0x87a363, 0x6f8f4a],
+  },
+  effetLenteur: {
+    images: serie('particle/effect_', 7, 0), animation: 'age',
+    taille: [0.15, 0.25], duree: [0.6, 1], gravite: -1.2, frottement: 0.3, teintes: [0x8bafe0, 0x6d8fc2],
+  },
+  // Étoiles magiques au-dessus d'un ennemi étourdi
+  etourdi: {
+    images: ['particle/enchanted_hit'], animation: 'fixe',
+    taille: [0.15, 0.25], duree: [0.3, 0.5], gravite: 0, frottement: 0.5, gris: [1, 1], retrecit: true,
+  },
+  // Lueur dorée au-dessus d'un ennemi marqué
+  marque: {
+    images: ['particle/glow'], animation: 'fixe',
+    taille: [0.2, 0.3], duree: [0.5, 0.7], gravite: -0.4, frottement: 0.5, teintes: [0xffd84a], retrecit: true,
+  },
   // Éclats d'un objet consommé : un quart de son icône pris au hasard
   morceau: {
     images: [], animation: 'morceau',
@@ -98,6 +117,12 @@ const gerbes = {
   niveau: [{ particule: 'joie', nombre: 16, vitesse: 1, dispersion: 0.8, montee: 1.5 }],
   totem: [{ particule: 'totem', nombre: 70, vitesse: 5, dispersion: 0.4, montee: 5 }],
   ramassage: [{ particule: 'morceau', nombre: 10, vitesse: 2.2, dispersion: 0.2, montee: 3 }],
+  // États des ennemis (émis régulièrement tant qu'ils durent)
+  brulure: [{ particule: 'flamme', nombre: 3, vitesse: 0.4, dispersion: 0.4, montee: 1 }],
+  poison: [{ particule: 'effetPoison', nombre: 1, vitesse: 0.3, dispersion: 0.35, montee: 0.5 }],
+  lenteur: [{ particule: 'effetLenteur', nombre: 1, vitesse: 0.3, dispersion: 0.35, montee: 0.5 }],
+  etourdi: [{ particule: 'etourdi', nombre: 3, vitesse: 1.5, dispersion: 0.2, montee: 0.4 }],
+  marque: [{ particule: 'marque', nombre: 1, vitesse: 0, dispersion: 0.15, montee: 0.3 }],
 } satisfies Record<string, DefinitionGerbe>;
 
 export type IdGerbe = keyof typeof gerbes;

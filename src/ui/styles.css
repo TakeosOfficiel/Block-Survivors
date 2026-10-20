@@ -1,0 +1,83 @@
+/* ==========================================================================
+   STYLES — interface du jeu
+   ========================================================================== */
+
+/* --- Base ---------------------------------------------------------------- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #78a7ff; }
+body {
+  font-family: "Courier New", Courier, monospace;
+  color: #fff;
+  user-select: none;
+  -webkit-user-select: none;
+}
+canvas { display: block; }
+.cache { display: none !important; }
+
+/* Ombre de texte façon Minecraft : décalage net, sans flou */
+.texte-mc { text-shadow: 2px 2px 0 #3f3f3f; }
+
+/* --- Écran de chargement ------------------------------------------------- */
+#chargement {
+  position: fixed; inset: 0; z-index: 10;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+  /* Fond de terre tuilé et assombri comme les menus Minecraft (image définie en TS).
+     Sans image, la couleur seule sert de secours. */
+  background-color: #404040;
+  background-size: 64px 64px;
+  background-blend-mode: multiply;
+  image-rendering: pixelated;
+  font-size: 18px;
+}
+.chargement-titre { font-size: 40px; font-weight: bold; letter-spacing: 2px; }
+.chargement-cadre {
+  width: min(420px, 80vw); height: 12px;
+  border: 2px solid #000;
+  background: #555;
+  box-shadow: inset 2px 2px 0 #333;
+}
+#chargement-barre { height: 100%; width: 0; background: #80ff20; }
+#chargement.erreur #chargement-texte { color: #ff5555; }
+
+/* --- HUD (non cliquable) ------------------------------------------------- */
+#hud { position: fixed; inset: 0; pointer-events: none; }
+#hud-fps {
+  position: absolute; top: 10px; right: 12px;
+  font-size: 18px; font-weight: bold;
+}
+#hud-aide {
+  position: absolute; bottom: 12px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 14px; white-space: nowrap; opacity: 0.85;
+}
+#hud-message {
+  position: absolute; top: 22%; left: 50%;
+  transform: translateX(-50%);
+  font-size: 20px; font-weight: bold; color: #ffff55;
+  white-space: nowrap;
+  opacity: 0; transition: opacity 0.25s;
+}
+#hud-message.visible { opacity: 1; }
+
+/* --- Panneau debug (inspiré de l'écran F3 de Minecraft) ------------------ */
+#debug {
+  position: fixed; top: 10px; left: 10px;
+  font-size: 14px; line-height: 1.4;
+}
+#debug .ligne {
+  display: table;
+  background: rgba(80, 80, 80, 0.6);
+  padding: 1px 6px; margin-bottom: 2px;
+}
+#debug .titre { color: #ffff55; }
+#debug small { color: #c0c0c0; }
+#debug button {
+  font: inherit; font-weight: bold; color: #fff;
+  text-shadow: 2px 2px 0 #3f3f3f;
+  background: #6f6f6f;
+  border: 2px solid #000;
+  box-shadow: inset 2px 2px 0 #a8a8a8, inset -2px -2px 0 #4a4a4a;
+  padding: 0 8px; margin: 1px 2px; cursor: pointer;
+}
+#debug button:hover { background: #7f89c4; }
+#debug button.actif { color: #55ff55; }

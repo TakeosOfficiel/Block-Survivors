@@ -1,0 +1,145 @@
+/**
+ * Panneau debug (F3 ou ²) : mesures, vitesse du temps, invincibilité,
+ * apparition immédiate d'un boss.
+ */
+import type { BibliothequeTextures } from '../assets/textures';
+import { CONFIG, SOURCES_TEXTURES } from '../config';
+import { BOSS } from '../donnees/boss';
+import type { EtatPartie } from '../etat';
+import type { CameraJeu } from '../moteur/camera';
+import type { Rendu } from '../moteur/rendu';
+import { formaterTemps } from '../utils/format';
+import { borner } from '../utils/maths';
+import { element } from './dom';
+import type { Hud } from './hud';
+
+/** Ce que le panneau observe. */
+export interface SourcesDebug {
+  readonly rendu: Rendu;
+  readonly etat: EtatPartie;
+  readonly hud: Hud;
+  readonly camera: CameraJeu;
+  readonly textures: BibliothequeTextures;
+  compterEntites(): number;
+}
+
+export class PanneauDebug {
+  private readonly sources: SourcesDebug;
+  private readonly dom = {
+    panneau: element('debug'),
+    fps: element('dbg-fps'),
+    ms: element('dbg-ms'),
+    entites: element('dbg-entites'),
+    appels: element('dbg-appels'),
+    triangles: element('dbg-triangles'),
+    textures: element('dbg-textures'),
+    temps: element('dbg-temps'),
+    position: element('dbg-position'),
+    zoom: element('dbg-zoom'),
+    vitesse: element('dbg-vitesse'),
+    ralentir: element<HTMLButtonElement>('dbg-ralentir'),
+    accelerer: element<HTMLButtonElement>('dbg-accelerer'),
+    invincible: element<HTMLButtonElement>('dbg-invincible'),
+    boss: element<HTMLButtonElement>('dbg-boss'),
+  };
+
+  private visible: boolean = CONFIG.debug.actifAuDemarrage;
+  private indexVitesseTemps: number = CONFIG.debug.vitessesTemps.indexOf(1);
+  private minuterie = 0;
+
+  /** Invincibilité du joueur. */
+  invincible = false;
+  /** Multiplicateur du temps de simulation. */
+  vitesseTemps = 1;
+
+  constructor(sources: SourcesDebug) {
+    this.sources = sources;
+
+    this.lierBouton(this.dom.ralentir, () => this.changerVitesseTemps(-1));
+    this.lierBouton(this.dom.accelerer, () => this.changerVitesseTemps(1));
+    this.lierBouton(this.dom.invincible, () => this.basculerInvincibilite());
+    this.lierBouton(this.dom.boss, () => this.apparitionBoss());
+    window.addEventListener('keydown', this.surTouche);
+
+    this.changerVitesseTemps(0);
+    this.appliquerVisibilite();
+  }
+
+  majVisuel(dtReel: number): void {
+    if (!this.visible) return;
+    this.minuterie += dtReel;
+    if (this.minuterie < CONFIG.debug.periodeRafraichissement) return;
+    this.minuterie = 0;
+    this.rafraichir();
+  }
+
+  /** Le bouton rend le focus après le clic : Espace/Entrée ne le redéclenchent pas. */
+  private lierBouton(bouton: HTMLButtonElement, action: () => void): void {
+    bouton.addEventListener('click', () => {
+      action();
+      bouton.blur();
+    });
+  }
+
+  private readonly surTouche = (e: KeyboardEvent): void => {
+    if ((CONFIG.debug.touchesOverlay as readonly string[]).includes(e.code)) {
+      e.preventDefault();
+      if (!e.repeat) this.basculer();
+      return;
+    }
+    // Raccourcis actifs seulement quand le panneau est ouvert
+    if (!this.visible || e.repeat) return;
+    if (e.key === '+' || e.key === '=') this.changerVitesseTemps(1);
+    else if (e.key === '-' || e.key === '_') this.changerVitesseTemps(-1);
+    else if (e.code === 'KeyI') this.basculerInvincibilite();
+    else if (e.code === 'KeyB') this.apparitionBoss();
+  };
+
+  private basculer(): void {
+    this.visible = !this.visible;
+    this.appliquerVisibilite();
+  }
+
+  private appliquerVisibilite(): void {
+    this.dom.panneau.classList.toggle('cache', !this.visible);
+    if (this.visible) this.rafraichir();
+  }
+
+  private changerVitesseTemps(sens: number): void {
+    const liste = CONFIG.debug.vitessesTemps;
+    this.indexVitesseTemps = borner(this.indexVitesseTemps + sens, 0, liste.length - 1);
+    this.vitesseTemps = liste[this.indexVitesseTemps];
+    this.dom.vitesse.textContent = `×${this.vitesseTemps}`;
+  }
+
+  private basculerInvincibilite(): void {
+    this.invincible = !this.invincible;
+    this.dom.invincible.textContent = this.invincible ? 'ON' : 'OFF';
+    this.dom.invincible.classList.toggle('actif', this.invincible);
+  }
+
+  /** Fait apparaître immédiatement le prochain boss de la table BOSS. */
+  private apparitionBoss(): void {
+    if (BOSS.length === 0) this.sources.hud.afficherMessage('Aucun boss déclaré dans la table BOSS');
+  }
+
+  private rafraichir(): void {
+    const { rendu, etat, hud, camera, textures } = this.sources;
+    const infos = rendu.renderer.info.render;
+    const bilan = textures.bilan;
+    const detailSources = SOURCES_TEXTURES
+      .filter((s) => bilan.parSource.has(s.id))
+      .map((s) => `${s.nom} ${bilan.parSource.get(s.id)}`)
+      .join(', ');
+
+    this.dom.fps.textContent = String(hud.fps);
+    this.dom.ms.textContent = hud.msParImage.toFixed(1);
+    this.dom.entites.textContent = String(this.sources.compterEntites());
+    this.dom.appels.textContent = String(infos.calls);
+    this.dom.triangles.textContent = String(infos.triangles);
+    this.dom.textures.textContent = `${bilan.chargees} / ${bilan.demandees}${detailSources ? ` (${detailSources})` : ''}`;
+    this.dom.temps.textContent = formaterTemps(etat.tempsJeu);
+    this.dom.position.textContent = `${etat.joueur.x.toFixed(1)} / ${etat.joueur.z.toFixed(1)}`;
+    this.dom.zoom.textContent = camera.distance.toFixed(1);
+  }
+}

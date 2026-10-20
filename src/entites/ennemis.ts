@@ -1,12 +1,14 @@
 /**
  * Ennemis : pool unique, déplacement générique (comportement + recul +
- * séparation), dégâts, mort et explosion. Rendu : un ModeleInstancie par type.
+ * séparation), dégâts, états (brûlure, poison, ralenti…), mort et explosion.
+ * Rendu : un ModeleInstancie par type.
  */
 import type * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG } from '../config';
 import { GERBES } from '../donnees/particules';
 import { ENNEMIS, IDS_ENNEMIS, type IdEnnemi } from '../donnees/ennemis';
+import { ETATS, RESISTANCE_BOSS } from '../donnees/etats';
 import { JOUEUR_BASE } from '../donnees/joueur';
 import { MODELES } from '../donnees/modeles';
 import type { Ombres } from '../effets/ombres';
@@ -22,10 +24,18 @@ import { Pool } from '../utils/pool';
 import type { Point } from '../monde/carte';
 import type { Terrain } from '../monde/navigation';
 import { appliquerComportement, type ContexteComportement, type Vers } from './comportements';
-import { creerEnnemi, type Ennemi } from './ennemi';
+import { creerEnnemi, effacerEtats, type DegatsPeriodiques, type Ennemi } from './ennemi';
 import type { Butin } from './butin';
 import type { CiblesAllies, SourceEntites } from './types';
+import type { ArmeEquipee } from '../combat/armeEquipee';
 import type { Allie } from '../combat/invocations';
+import { PLAFONDS } from '../donnees/plafonds';
+
+/**
+ * Origine d'un coup : arme du joueur, allié invoqué (profite de la marque),
+ * ou dégâts d'un état (jamais critiques, sans recul ni son de blessure).
+ */
+export type NatureCoup = 'arme' | 'allie' | 'brulure' | 'poison';
 
 /** Tout ce qu'il faut pour afficher un type d'ennemi. */
 interface RenduType {
@@ -53,6 +63,7 @@ export class Ennemis implements SourceEntites {
   private readonly pool = new Pool<Ennemi>(CONFIG.ennemis.capacite, creerEnnemi);
   private readonly grille: GrilleSpatiale;
   private readonly voisins = new Int32Array(64);
+  private readonly groupe = new Int32Array(64);
   /** Rendu par type ; seuls ceux de l'arène existent au départ (les autres à la première apparition). */
   private readonly rendus: (RenduType | null)[];
   private readonly scene: THREE.Scene;
@@ -157,6 +168,7 @@ export class Ennemis implements SourceEntites {
     e.cibleAllie = null;
     e.minuterieVue = Math.random() * PERIODE_VUE;  // étale les vérifications
     e.immunites.fill(0);
+    effacerEtats(e);
     reinitialiserAnimation(e.animation);
     return true;
   }
@@ -234,17 +246,23 @@ export class Ennemis implements SourceEntites {
    * Blesse l'ennemi et le repousse depuis (sourceX, sourceZ). `arme` (index
    * dans IDS_ARMES, −1 hors armes) crédite les dégâts dans les statistiques.
    */
-  blesser(e: Ennemi, degats: number, sourceX: number, sourceZ: number, recul: number, arme = -1): void {
+  blesser(e: Ennemi, degats: number, sourceX: number, sourceZ: number, recul: number, arme = -1, nature: NatureCoup = 'arme'): void {
     if (e.mort >= 0) return;
     const stats = this.etat.stats;
-    // Coup critique (armes du joueur) : dégâts multipliés et étincelles du jeu
+    const periodique = nature === 'brulure' || nature === 'poison';
+    if (nature === 'allie' && e.marqueTemps > 0) degats *= 1 + e.marque;
     const mods = this.etat.modificateurs;
-    const critique = arme >= 0 && Math.random() < mods.critique;
+    if (e.ralenti > 0 && !periodique) degats *= 1 + mods.degatsRalentis;
+    // Coup critique (armes du joueur) : dégâts multipliés et étincelles du jeu
+    const critique = arme >= 0 && !periodique && Math.random() < Math.min(PLAFONDS.critique, mods.critique);
     if (critique) {
       degats *= mods.degatsCritiques;
       this.particules.emettre(e.x, 1, e.z, GERBES.critique);
     }
-    if (arme >= 0) this.retours.degats(e.x, this.hauteurs[e.indexType], e.z, degats, critique);
+    if (arme >= 0) {
+      const style = nature === 'brulure' ? 'feu' : nature === 'poison' ? 'poison' : critique ? 'critique' : 'normal';
+      this.retours.degats(e.x, this.hauteurs[e.indexType], e.z, degats, style);
+    }
     if (arme >= 0) {
       stats.degatsParArme[arme] += Math.min(degats, e.pv);
       stats.coupsParArme[arme]++;
@@ -252,7 +270,8 @@ export class Ennemis implements SourceEntites {
       if (degats > stats.plusGrosCoupParArme[arme]) stats.plusGrosCoupParArme[arme] = degats;
     }
     e.pv -= degats;
-    e.blessure = CONFIG.surcouche.blessure.duree;
+    // Les dégâts d'un état ne font pas rougir : on garde la teinte de l'état
+    if (!periodique) e.blessure = CONFIG.surcouche.blessure.duree;
     const dx = e.x - sourceX;
     const dz = e.z - sourceZ;
     const d = longueur(dx, dz) || 1;
@@ -272,9 +291,140 @@ export class Ennemis implements SourceEntites {
       }
       this.butin.lacher(def, e.x, e.z);
       if (def.sons) this.retours.son(def.sons.mort, def.hauteurSons);
-    } else if (def.sons) {
+    } else if (def.sons && !periodique) {
       this.retours.son(def.sons.blessure, def.hauteurSons);
     }
+  }
+
+  /** Coup d'une arme du joueur : ses dégâts, puis le ralentissement et l'étourdissement de ses statistiques. */
+  toucher(e: Ennemi, arme: ArmeEquipee, sourceX: number, sourceZ: number, recul: number = arme.stats.recul): void {
+    const s = arme.stats;
+    this.blesser(e, s.degats, sourceX, sourceZ, recul, arme.index);
+    if (s.ralenti > 0) this.ralentir(e, s.ralenti, s.duree);
+    if (s.etourdi > 0) this.etourdir(e, s.etourdi);
+  }
+
+  /** Coupe l'attaque en préparation (mèche du creeper, arc bandé) et retarde la suivante. */
+  interrompre(e: Ennemi): void {
+    if (e.mort >= 0) return;
+    e.meche = 0;
+    e.minuterie = Math.max(e.minuterie, CONFIG.ennemis.interruption);
+  }
+
+  /**
+   * Centre du plus gros groupe d'ennemis à moins de `portee` de (x, z) : parmi
+   * quelques ennemis tirés au hasard, celui qui a le plus de voisins dans
+   * `rayon`. Écrit dans `sortie` ; faux s'il n'y a personne.
+   */
+  plusGrosGroupe(x: number, z: number, portee: number, rayon: number, sortie: Point): boolean {
+    let meilleur = -1;
+    for (let essai = 0; essai < CONFIG.ennemis.essaisGroupe; essai++) {
+      const e = this.auHasard(x, z, portee);
+      if (!e) return meilleur >= 0;
+      const voisins = this.chercher(e.x, e.z, rayon, this.groupe);
+      if (voisins > meilleur) {
+        meilleur = voisins;
+        sortie.x = e.x;
+        sortie.z = e.z;
+      }
+    }
+    return meilleur >= 0;
+  }
+
+  // --- États ---------------------------------------------------------------
+
+  /**
+   * Brûlure : `cumuls` de plus (plafonnés), durée remise à neuf ; les dégâts
+   * les plus forts l'emportent. Les talents renforcent dégâts, durée et cumuls.
+   */
+  bruler(e: Ennemi, cumuls: number, degatsParSeconde: number, duree: number, arme = -1, cumulsMax: number = ETATS.brulure.cumulsMax): void {
+    if (e.mort >= 0) return;
+    const m = this.etat.modificateurs;
+    appliquerPeriodique(
+      e.brulure, cumuls, degatsParSeconde * (1 + m.degatsBrulure), duree * (1 + m.dureeBrulure), arme,
+      cumulsMax + m.cumulsBrulure, ETATS.brulure.tic,
+    );
+  }
+
+  /** Poison : comme la brûlure, avec ses propres cumuls. */
+  empoisonner(e: Ennemi, cumuls: number, degatsParSeconde: number, duree: number, arme = -1, cumulsMax: number = ETATS.poison.cumulsMax): void {
+    if (e.mort >= 0) return;
+    const m = this.etat.modificateurs;
+    appliquerPeriodique(e.poison, cumuls, degatsParSeconde * (1 + m.degatsPoison), duree, arme, cumulsMax, ETATS.poison.tic);
+  }
+
+  /** Ralentit de `part` (0 à 1) ; le plus fort l'emporte. Un boss résiste. */
+  ralentir(e: Ennemi, part: number, duree: number): void {
+    if (e.mort >= 0) return;
+    duree *= 1 + this.etat.modificateurs.dureeRalenti;
+    if (e.definition.boss) part = Math.min(RESISTANCE_BOSS.ralentiMax, part * RESISTANCE_BOSS.ralenti);
+    this.appliquerRalenti(e, part, duree);
+  }
+
+  /** Immobilise sans empêcher d'attaquer ; un boss est seulement ralenti. */
+  enraciner(e: Ennemi, duree: number): void {
+    if (e.mort >= 0) return;
+    if (e.definition.boss) this.appliquerRalenti(e, RESISTANCE_BOSS.enracinement, duree);
+    else e.enracine = Math.max(e.enracine, duree);
+  }
+
+  /** Ni marche ni attaque ; sans effet sur un boss. */
+  etourdir(e: Ennemi, duree: number): void {
+    if (e.mort < 0 && !e.definition.boss) e.etourdi = Math.max(e.etourdi, duree);
+  }
+
+  /** Marque : les alliés invoqués lui font `bonus` de dégâts en plus (la plus forte l'emporte). */
+  marquer(e: Ennemi, bonus: number, duree: number): void {
+    if (e.mort >= 0) return;
+    if (bonus >= e.marque || e.marqueTemps <= 0) {
+      e.marque = bonus;
+      e.marqueTemps = Math.max(e.marqueTemps, duree);
+    }
+  }
+
+  private appliquerRalenti(e: Ennemi, part: number, duree: number): void {
+    if (part >= e.ralenti || e.ralentiTemps <= 0) {
+      e.ralenti = part;
+      e.ralentiTemps = Math.max(e.ralentiTemps, duree);
+    }
+  }
+
+  /** Durées des états, dégâts par seconde et particules. */
+  private majEtats(e: Ennemi, dt: number): void {
+    this.tiquer(e, e.brulure, ETATS.brulure.tic, 'brulure', dt);
+    this.tiquer(e, e.poison, ETATS.poison.tic, 'poison', dt);
+    if (e.mort >= 0) return;
+    if (e.ralentiTemps > 0 && (e.ralentiTemps -= dt) <= 0) e.ralenti = 0;
+    if (e.marqueTemps > 0 && (e.marqueTemps -= dt) <= 0) e.marque = 0;
+    if (e.enracine > 0) e.enracine -= dt;
+    if (e.etourdi > 0) e.etourdi -= dt;
+
+    if ((e.minuterieEtats -= dt) > 0) return;
+    e.minuterieEtats = ETATS.brulure.periode;
+    const h = this.hauteurs[e.indexType];
+    if (e.brulure.cumuls > 0) this.particules.emettre(e.x, h * 0.45, e.z, GERBES[ETATS.brulure.gerbe]);
+    else if (e.poison.cumuls > 0 && Math.random() < ETATS.brulure.periode / ETATS.poison.periode) {
+      this.particules.emettre(e.x, h * 0.5, e.z, GERBES[ETATS.poison.gerbe]);
+    }
+    if ((e.ralentiTemps > 0 || e.enracine > 0) && Math.random() < ETATS.brulure.periode / ETATS.ralenti.periode) {
+      this.particules.emettre(e.x, h * 0.5, e.z, GERBES[ETATS.ralenti.gerbe]);
+    }
+    if (e.etourdi > 0) this.particules.emettre(e.x, h - 0.1, e.z, GERBES[ETATS.etourdi.gerbe]);
+    if (e.marqueTemps > 0 && Math.random() < ETATS.brulure.periode / ETATS.marque.periode) {
+      this.particules.emettre(e.x, h - 0.1, e.z, GERBES[ETATS.marque.gerbe]);
+    }
+  }
+
+  /** Dégâts d'une brûlure ou d'un poison à chaque intervalle, jusqu'à la fin de sa durée. */
+  private tiquer(e: Ennemi, p: DegatsPeriodiques, intervalle: number, nature: NatureCoup, dt: number): void {
+    if (p.cumuls === 0) return;
+    p.temps -= dt;
+    p.tic -= dt;
+    if (p.tic <= 0) {
+      p.tic += intervalle;
+      this.blesser(e, p.degatsParSeconde * p.cumuls * intervalle, e.x, e.z, 0, p.arme, nature);
+    }
+    if (p.temps <= 0) p.cumuls = 0;
   }
 
   /** Fin de partie gagnée : toute la horde tombe, sans butin ni statistiques. */
@@ -320,6 +470,7 @@ export class Ennemis implements SourceEntites {
     //    ses index sont valides, seuls des ajouts ont pu avoir lieu depuis)
     for (let i = 0; i < n; i++) {
       const e = elements[i];
+      if (e.mort < 0) this.majEtats(e, dt);
       if (e.mort >= 0) {
         e.mort += dt;
         e.vitesseSol = 0;
@@ -382,6 +533,13 @@ export class Ennemis implements SourceEntites {
           pose.surcouche[2] = flash.couleur[2];
           pose.surcouche[3] = flash.force * borner(progression, 0.5, 1);
         }
+      }
+
+      // Teinte de l'état le plus visible (la brûlure vacille comme des flammes)
+      if (pose.surcouche[3] === 0 && e.mort < 0) {
+        if (e.brulure.cumuls > 0) teinter(pose, ETATS.brulure.couleur, ETATS.brulure.force * (0.75 + 0.25 * Math.sin(this.etat.tempsJeu * 23 + e.id)));
+        else if (e.poison.cumuls > 0) teinter(pose, ETATS.poison.couleur, ETATS.poison.force);
+        else if (e.ralentiTemps > 0 || e.enracine > 0) teinter(pose, ETATS.ralenti.couleur, ETATS.ralenti.force);
       }
 
       // Rouge pendant la blessure et la mort
@@ -461,14 +619,18 @@ export class Ennemis implements SourceEntites {
       this.allieVise = null;
     }
 
-    // Comportement (immobile si le joueur est mort)
-    if (j.mort) {
+    // Comportement (immobile si le joueur est mort ou s'il est étourdi ; enraciné, il attaque encore)
+    if (j.mort || e.etourdi > 0) {
       e.dirX = 0;
       e.dirZ = 0;
     } else {
       const mecheAvant = e.meche;
       e.aExploser = appliquerComportement(e, contexte, dt, vers);
       if (mecheAvant === 0 && e.meche > 0) this.retours.son('meche');
+      if (e.enracine > 0) {
+        e.dirX = 0;
+        e.dirZ = 0;
+      }
     }
 
     // Séparation : repousse doucement les ennemis qui se chevauchent
@@ -492,7 +654,7 @@ export class Ennemis implements SourceEntites {
     const kSeparation = Math.min(1, g.separation * dt);
 
     // Intégration : marche voulue (ralentie par le sol) + recul amorti + séparation
-    const vitesse = def.vitesse * (def.ignoreObstacles ? 1 : carte.vitesseSol(e.x, e.z, def.traverseToiles));
+    const vitesse = def.vitesse * (1 - e.ralenti) * (def.ignoreObstacles ? 1 : carte.vitesseSol(e.x, e.z, def.traverseToiles));
     e.x += (e.dirX * vitesse + e.vx) * dt + sepX * kSeparation;
     e.z += (e.dirZ * vitesse + e.vz) * dt + sepZ * kSeparation;
     const amorti = 1 - facteurLissage(g.amortissementRecul, dt);
@@ -544,4 +706,28 @@ export class Ennemis implements SourceEntites {
     }
     this.allies?.blesserZone(e.x, e.z, c.rayon, c.degats);
   }
+}
+
+/** Ajoute des cumuls (plafonnés) et remet la durée à neuf ; les dégâts les plus forts l'emportent. */
+function appliquerPeriodique(
+  p: DegatsPeriodiques, cumuls: number, degatsParSeconde: number, duree: number, arme: number, cumulsMax: number, intervalle: number,
+): void {
+  if (p.cumuls === 0) {
+    p.tic = intervalle;
+    p.temps = 0;
+    p.degatsParSeconde = 0;
+  }
+  p.cumuls = Math.min(cumulsMax, p.cumuls + cumuls);
+  p.temps = Math.max(p.temps, duree);
+  if (degatsParSeconde >= p.degatsParSeconde) {
+    p.degatsParSeconde = degatsParSeconde;
+    p.arme = arme;
+  }
+}
+
+function teinter(pose: PoseModele, couleur: readonly [number, number, number], force: number): void {
+  pose.surcouche[0] = couleur[0];
+  pose.surcouche[1] = couleur[1];
+  pose.surcouche[2] = couleur[2];
+  pose.surcouche[3] = force;
 }

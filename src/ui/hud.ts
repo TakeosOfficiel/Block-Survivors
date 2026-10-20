@@ -106,7 +106,7 @@ export class Hud implements AfficheurAlerte {
     const j = etat.joueur;
     this.tempsReel += dtReel;
     this.mesurerFps(dtBrut);
-    this.coeurs.afficher(j.pv, j.pvMax, dtReel);
+    this.coeurs.afficher(j.pv, j.pvMax, j.bouclier, dtReel);
     this.xp.afficher(j);
     this.capacites.afficher(arsenal, passifs);
     this.boss.afficher(ennemis.bossActif());

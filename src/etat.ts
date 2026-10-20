@@ -2,7 +2,8 @@
  * État d'une partie : source de vérité de la simulation.
  * Aucun objet three.js ni élément DOM ici.
  */
-import { IDS_ARMES } from './donnees/armes';
+import type { BonusArmeCumule } from './combat/armeEquipee';
+import { IDS_ARMES, type IdArme } from './donnees/armes';
 import { IDS_ENNEMIS } from './donnees/ennemis';
 import type { IdPersonnage } from './donnees/personnages';
 import { PERSONNAGES } from './donnees/personnages';
@@ -20,6 +21,7 @@ export interface EtatJoueur {
   pvMax: number;
   invulnerabilite: number;  // s restantes sans pouvoir être blessé (après un coup)
   protection: number;     // s d'invincibilité après une résurrection (totem)
+  bouclier: number;       // PV d'absorption (cœurs dorés), pris avant les PV
   viesUtilisees: number;  // totems déjà consommés
   mort: boolean;
   tempsMort: number;      // s écoulées depuis la mort
@@ -63,7 +65,14 @@ export interface EtatPartie {
   readonly stats: StatistiquesPartie;
   /** Bonus cumulés des passifs. */
   readonly modificateurs: Modificateurs;
+  /** Talents de l'arbre actif : bonus d'armes précises et mécaniques propres (avec leur rang). */
+  talents: TalentsPartie;
   readonly joueur: EtatJoueur;
+}
+
+export interface TalentsPartie {
+  readonly armes: Partial<Record<IdArme, BonusArmeCumule>>;
+  readonly mecaniques: Readonly<Record<string, number>>;
 }
 
 export function creerEtatPartie(arene: DefinitionArene, idPersonnage: IdPersonnage): EtatPartie {
@@ -91,12 +100,14 @@ export function creerEtatPartie(arene: DefinitionArene, idPersonnage: IdPersonna
       bossVaincus: 0,
     },
     modificateurs: creerModificateurs(),
+    talents: { armes: {}, mecaniques: {} },
     joueur: {
       x: arene.depart?.x ?? 0, z: arene.depart?.z ?? 0, vx: 0, vz: 0, angle: 0,
       pv: personnage.pv,
       pvMax: personnage.pv,
       invulnerabilite: 0,
       protection: 0,
+      bouclier: 0,
       viesUtilisees: 0,
       mort: false,
       tempsMort: 0,

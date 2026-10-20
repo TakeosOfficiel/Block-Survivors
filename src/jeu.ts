@@ -6,8 +6,20 @@
  */
 import type { LecteurSons } from './audio/sons';
 import type { BibliothequeTextures } from './assets/textures';
+import { cumulerBonusArmes } from './combat/armeEquipee';
 import { Arsenal } from './combat/arsenal';
 import { Balayages } from './combat/balayages';
+import { Chutes } from './combat/chutes';
+import { Fissures } from './combat/fissures';
+import { Heurts } from './combat/heurts';
+import { Meteores } from './combat/meteores';
+import { Novas } from './combat/novas';
+import { OrbesArcaniques } from './combat/orbesArcaniques';
+import { Pieges } from './combat/pieges';
+import { Pluies } from './combat/pluies';
+import { Ricochets } from './combat/ricochets';
+import { Tornades } from './combat/tornades';
+import { Tourbillons } from './combat/tourbillons';
 import type { ContexteCombat } from './combat/contexte';
 import { Foudre } from './combat/foudre';
 import { Invocations } from './combat/invocations';
@@ -23,7 +35,7 @@ import { PROGRESSION } from './donnees/progression';
 import type { IdSon } from './donnees/sons';
 import { Ombres } from './effets/ombres';
 import { BarresVie } from './effets/barresVie';
-import { ChiffresDegats } from './effets/chiffresDegats';
+import { ChiffresDegats, type StyleChiffre } from './effets/chiffresDegats';
 import { Etiquette } from './effets/etiquette';
 import { Particules } from './effets/particules';
 import { RenduProjectiles } from './effets/renduProjectiles';
@@ -56,7 +68,7 @@ import type { Recompense, Sauvegarde } from './progression/sauvegarde';
 import { formaterTemps } from './utils/format';
 import { remplirBilan } from './ui/bilan';
 import { CompteurDegats } from './ui/compteurDegats';
-import { PanneauDebug } from './ui/debug';
+import { PanneauDebug, type EtatDebug } from './ui/debug';
 import { EcranCartes } from './ui/ecranCartes';
 import { EcranFin } from './ui/ecranFin';
 import { EcranPause } from './ui/ecranPause';
@@ -107,6 +119,17 @@ export class Jeu implements CallbacksBoucle, Retours {
   // Combat du joueur
   private readonly arsenal: Arsenal;
   private readonly balayages: Balayages;
+  private readonly fissures: Fissures;
+  private readonly chutes: Chutes;
+  private readonly tourbillons: Tourbillons;
+  private readonly heurts: Heurts;
+  private readonly tornades: Tornades;
+  private readonly novas: Novas;
+  private readonly meteores: Meteores;
+  private readonly orbesArcaniques: OrbesArcaniques;
+  private readonly ricochets: Ricochets;
+  private readonly pluies: Pluies;
+  private readonly pieges: Pieges;
   private readonly projectilesJoueur: ProjectilesJoueur;
   private readonly orbites: Orbites;
   private readonly foudre: Foudre;
@@ -120,6 +143,8 @@ export class Jeu implements CallbacksBoucle, Retours {
   private readonly ecranFin: EcranFin;
 
   private readonly debug: PanneauDebug;
+  /** Ennemis proches trouvés par le debug (tampon réutilisé). */
+  private readonly prochesDebug = new Int32Array(256);
   private readonly compteurDegats: CompteurDegats;
   private readonly panneauOptions: PanneauOptions;
   private readonly sourcesEntites: readonly SourceEntites[];
@@ -155,6 +180,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.etat.joueur.pvMax += this.etat.modificateurs.pvMax;
     this.etat.joueur.pv = this.etat.joueur.pvMax;
     this.etat.relancesRestantes += talents.relances;
+    this.etat.talents = { armes: cumulerBonusArmes(talents.bonusArmes), mecaniques: talents.mecaniques };
 
     // Monde : blocs affichés, carte de collision, navigation des ennemis
     construireArene(arene, monde, textures, scene);
@@ -199,14 +225,37 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.projectilesJoueur = new ProjectilesJoueur(combat);
     this.orbites = new Orbites(combat);
     this.foudre = new Foudre(combat, scene);
-    this.invocations = new Invocations(combat, scene, textures, new BarresVie(scene, rendu.camera, CONFIG.armes.golems.capacite));
+    this.invocations = new Invocations(combat, scene, textures, new BarresVie(scene, rendu.camera, CONFIG.armes.golems.capacite), this.projectilesJoueur);
     this.ennemis.definirAllies(this.invocations);
+    this.projectilesEnnemis.definirEnnemis(this.ennemis);
+    this.fissures = new Fissures(combat, textures, scene);
+    this.chutes = new Chutes(combat, textures, scene, rendu.camera);
+    this.tourbillons = new Tourbillons(combat, textures, scene);
+    this.heurts = new Heurts(combat, this.projectilesEnnemis);
+    this.tornades = new Tornades(combat, textures, scene);
+    this.novas = new Novas(combat, textures, scene);
+    this.meteores = new Meteores(combat, textures, scene);
+    this.orbesArcaniques = new OrbesArcaniques(combat, textures, scene);
+    this.ricochets = new Ricochets(combat);
+    this.pluies = new Pluies(combat, textures, scene);
+    this.pieges = new Pieges(combat, textures, scene);
     this.arsenal = new Arsenal(combat, {
       balayages: this.balayages,
       projectiles: this.projectilesJoueur,
       orbites: this.orbites,
       foudre: this.foudre,
       invocations: this.invocations,
+      fissures: this.fissures,
+      chutes: this.chutes,
+      tourbillons: this.tourbillons,
+      heurts: this.heurts,
+      tornades: this.tornades,
+      novas: this.novas,
+      meteores: this.meteores,
+      orbesArcaniques: this.orbesArcaniques,
+      ricochets: this.ricochets,
+      pluies: this.pluies,
+      pieges: this.pieges,
     });
     for (const id of this.etat.personnage.armesDepart) this.arsenal.ameliorer(id);
     for (const id of talents.armes) this.arsenal.ameliorer(id);
@@ -248,7 +297,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     }, textures.url(RECOMPENSES.icone));
 
     this.sourcesEntites = [
-      this.joueur, this.ennemis, this.projectilesEnnemis, this.projectilesJoueur, this.invocations, this.orbes, this.objets,
+      this.joueur, this.ennemis, this.projectilesEnnemis, this.projectilesJoueur, this.ricochets, this.invocations, this.orbes, this.objets,
     ];
 
     this.debug = new PanneauDebug({
@@ -264,6 +313,7 @@ export class Jeu implements CallbacksBoucle, Retours {
       ameliorerArme: (id) => { this.arsenal.ameliorer(id); },
       ajouterBonus: (id) => this.ameliorations.appliquer({ type: 'passif', id }),
       poserObjet: (id) => this.objets.poser(id, this.etat.joueur.x + 1.5, this.etat.joueur.z),
+      infligerEtat: (etat) => this.infligerEtatAutour(etat),
       gagnerNiveau: () => gagnerXp(this.etat, this.etat.joueur.xpNiveau - this.etat.joueur.xp),
       apparaitreBoss: () => this.directeurBoss.forcer(),
       allerVersFin: () => { this.etat.tempsJeu = Math.max(this.etat.tempsJeu, PROGRESSION.dureePartie - 10); },
@@ -313,8 +363,8 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.camera.secouer(force);
   }
 
-  degats(x: number, y: number, z: number, valeur: number, critique: boolean): void {
-    this.chiffres.ajouter(x, y, z, valeur, critique);
+  degats(x: number, y: number, z: number, valeur: number, style: StyleChiffre): void {
+    this.chiffres.ajouter(x, y, z, valeur, style);
   }
 
   // --- CallbacksBoucle ---------------------------------------------------
@@ -335,6 +385,16 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.projectilesJoueur.maj(dt);
     this.invocations.maj(dt);
     this.foudre.maj(dt);
+    this.fissures.maj(dt);
+    this.chutes.maj(dt);
+    this.tourbillons.maj(dt);
+    this.tornades.maj(dt);
+    this.novas.maj(dt);
+    this.meteores.maj(dt);
+    this.orbesArcaniques.maj(dt);
+    this.ricochets.maj(dt);
+    this.pluies.maj(dt);
+    this.pieges.maj(dt);
     this.projectilesEnnemis.maj(dt);
     this.particules.maj(dt);
     this.chiffres.maj(dt);
@@ -359,11 +419,14 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.etiquette.placer(j.x, this.joueur.hauteur, j.z, !j.mort);
     this.ennemis.majVisuel(this.ombres);
     this.invocations.majVisuel(this.ombres);
+    this.chutes.majVisuel(this.ombres);
+    this.meteores.majVisuel(this.ombres);
     this.ombres.terminer();
 
     this.renduProjectiles.commencer();
     this.projectilesEnnemis.majVisuel(this.renduProjectiles);
     this.projectilesJoueur.majVisuel(this.renduProjectiles, this.etat.tempsJeu);
+    this.ricochets.majVisuel(this.renduProjectiles);
     this.orbites.majVisuel(this.arsenal.armes, this.renduProjectiles, this.etat.tempsJeu);
     this.renduProjectiles.terminer();
 
@@ -371,6 +434,13 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.objets.majVisuel(this.etat.tempsJeu);
     this.balayages.majVisuel(dtJeu);
     this.foudre.majVisuel();
+    this.fissures.majVisuel();
+    this.tourbillons.majVisuel();
+    this.tornades.majVisuel();
+    this.novas.majVisuel();
+    this.orbesArcaniques.majVisuel();
+    this.pluies.majVisuel();
+    this.pieges.majVisuel();
     this.particules.majVisuel();
     this.chiffres.majVisuel();
     this.camera.majVisuel(dtJeu, dtReel);
@@ -483,6 +553,24 @@ export class Jeu implements CallbacksBoucle, Retours {
       if (this.terrain.carte.bloqueMarche(x, z)) continue;
       this.ennemis.apparaitre(id, x, z);
       return;
+    }
+  }
+
+  /** Debug : inflige un état à tous les ennemis proches. */
+  private infligerEtatAutour(etat: EtatDebug): void {
+    const c = CONFIG.debug.etats;
+    const j = this.etat.joueur;
+    const n = this.ennemis.chercher(j.x, j.z, c.rayon, this.prochesDebug);
+    for (let k = 0; k < n; k++) {
+      const e = this.ennemis.obtenir(this.prochesDebug[k]);
+      switch (etat) {
+        case 'brulure': this.ennemis.bruler(e, c.brulure.cumuls, c.brulure.degatsParSeconde, c.brulure.duree); break;
+        case 'poison': this.ennemis.empoisonner(e, c.poison.cumuls, c.poison.degatsParSeconde, c.poison.duree); break;
+        case 'ralenti': this.ennemis.ralentir(e, c.ralenti.part, c.ralenti.duree); break;
+        case 'enracine': this.ennemis.enraciner(e, c.enracine.duree); break;
+        case 'etourdi': this.ennemis.etourdir(e, c.etourdi.duree); break;
+        case 'marque': this.ennemis.marquer(e, c.marque.bonus, c.marque.duree); break;
+      }
     }
   }
 

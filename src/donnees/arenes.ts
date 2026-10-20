@@ -4,6 +4,7 @@
  * Coordonnées en blocs, origine au centre (le joueur y démarre).
  */
 import { arenesImportees } from './arenesImportees';
+import type { IdBloc } from './blocs';
 import type { DefinitionArene } from './types';
 
 const prairie: DefinitionArene = {
@@ -196,3 +197,8 @@ const ARENES_DE_BASE: readonly DefinitionArene[] = [prairie, mine, nether];
 export const ARENES: readonly DefinitionArene[] = [...ARENES_DE_BASE, ...arenesImportees(ARENES_DE_BASE)];
 
 export const ARENE_PAR_DEFAUT = 'prairie';
+
+/** Bloc qui représente le sol de l'arène (blocs soulevés, éboulis) ; terre pour une map Minecraft. */
+export function blocDuSol(arene: DefinitionArene): IdBloc {
+  return arene.exterieur?.bloc ?? 'dirt';
+}

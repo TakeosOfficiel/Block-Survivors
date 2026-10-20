@@ -8,7 +8,7 @@ import { IDS_OBJETS, OBJETS } from '../donnees/objets';
 import { IDS_PARTICULES, PARTICULES } from '../donnees/particules';
 import { IDS_PASSIFS, PASSIFS } from '../donnees/passifs';
 import { PROGRESSION } from '../donnees/progression';
-import { ARENES } from '../donnees/arenes';
+import { ARENES, blocDuSol } from '../donnees/arenes';
 import { IDS_PERSONNAGES, PERSONNAGES } from '../donnees/personnages';
 import { ARBRES, RECOMPENSES } from '../donnees/talents';
 import { IDS_PROJECTILES, PROJECTILES } from '../donnees/projectiles';
@@ -31,13 +31,16 @@ export function texturesInterface(): Set<CheminTexture> {
   }
   for (const id of IDS_ARMES) chemins.add(ARMES[id].icone);
   for (const arene of ARENES) chemins.add(arene.icone);
-  chemins.add(CONFIG.hud.coeurs.plein);
+  chemins.add(CONFIG.hud.coeurs.plein).add(CONFIG.hud.coeurs.dore);
   chemins.add(RECOMPENSES.icone);
   for (const nom of SKINS_VANILLA) chemins.add(cheminSkinVanilla(nom, false)).add(cheminSkinVanilla(nom, true));
   for (const id of IDS_PERSONNAGES) {
     for (const arbre of ARBRES[id]) {
       chemins.add(arbre.icone);
-      for (const talent of arbre.talents) chemins.add(talent.icone);
+      for (const noeud of arbre.noeuds) {
+        chemins.add(noeud.icone);
+        for (const option of noeud.options ?? []) chemins.add(option.icone);
+      }
     }
   }
   return chemins;
@@ -55,7 +58,7 @@ export function texturesRequises(
   };
 
   for (const id of monde.blocs.keys()) ajouterBloc(id);
-  if (arene.exterieur) ajouterBloc(arene.exterieur.bloc);
+  ajouterBloc(blocDuSol(arene));
 
   chemins.add(personnage.skin);
   if (personnage.objetEnMain) chemins.add(personnage.objetEnMain);
@@ -67,11 +70,24 @@ export function texturesRequises(
   }
   for (const id of IDS_OBJETS) chemins.add(OBJETS[id].icone);
   for (const id of IDS_PROJECTILES) chemins.add(PROJECTILES[id].texture);
-  for (const id of IDS_ALLIES) chemins.add(ALLIES[id].skin);
+  for (const id of IDS_ALLIES) {
+    const allie = ALLIES[id];
+    chemins.add(allie.skin);
+    if (allie.blocs) {
+      for (const texture of allie.blocs.empilement) chemins.add(texture);
+      chemins.add(allie.blocs.racines);
+    }
+  }
   for (const id of IDS_ARMES) {
     const arme = ARMES[id];
     chemins.add(arme.icone);
-    if (arme.mecanique.type === 'balayage') for (const image of arme.mecanique.effet) chemins.add(image);
+    const m = arme.mecanique;
+    if (m.type === 'balayage' || m.type === 'tourbillon') for (const image of m.effet) chemins.add(image);
+    if (m.type === 'chute') chemins.add(m.image);
+    if (m.type === 'tornade' || m.type === 'orbes') chemins.add(m.texture);
+    if (m.type === 'nova') chemins.add(m.texture).add(m.sol);
+    if (m.type === 'meteore') chemins.add(m.texture).add(m.feu);
+    if (m.type === 'pluie' || m.type === 'piege') chemins.add(m.image);
   }
   chemins.add(CONFIG.ombre.texture);
   for (const id of IDS_PARTICULES) for (const image of PARTICULES[id].images) chemins.add(image);

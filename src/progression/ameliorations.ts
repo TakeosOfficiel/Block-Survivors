@@ -7,6 +7,7 @@ import { calculerStats, rangMax } from '../combat/armeEquipee';
 import type { Arsenal } from '../combat/arsenal';
 import { ARMES, IDS_ARMES, type IdArme } from '../donnees/armes';
 import { IDS_PASSIFS, PASSIFS, type IdPassif } from '../donnees/passifs';
+import { armeProposable } from '../donnees/personnages';
 import { PROGRESSION } from '../donnees/progression';
 import type { CheminTexture, MecaniqueArme, Modificateurs, StatsArme } from '../donnees/types';
 import type { EtatPartie } from '../etat';
@@ -47,6 +48,8 @@ const LIBELLES_STATS: Record<keyof StatsArme, { nom: string; unite: string }> = 
   duree: { nom: 'Durée', unite: ' s' },
   perforation: { nom: 'Perforation', unite: '' },
   recul: { nom: 'Recul', unite: '' },
+  ralenti: { nom: 'Ralentissement', unite: '' },
+  etourdi: { nom: 'Étourdissement', unite: ' s' },
 };
 
 /** Statistiques utiles à chaque mécanique (les autres ne sont pas affichées). */
@@ -58,6 +61,17 @@ const STATS_UTILES: Record<MecaniqueArme['type'], readonly (keyof StatsArme)[]> 
   explosif: ['degats', 'cadence', 'nombre', 'zone'],
   foudre: ['degats', 'cadence', 'nombre', 'zone'],
   invocation: ['degats', 'cadence', 'nombre', 'duree'],
+  fissure: ['degats', 'cadence', 'nombre', 'portee', 'ralenti'],
+  chute: ['degats', 'cadence', 'nombre', 'zone', 'ralenti'],
+  tourbillon: ['degats', 'cadence', 'zone', 'duree'],
+  heurt: ['degats', 'cadence', 'recul', 'etourdi'],
+  tornade: ['degats', 'cadence', 'nombre', 'duree', 'zone'],
+  nova: ['degats', 'cadence', 'zone', 'ralenti'],
+  meteore: ['degats', 'cadence', 'nombre', 'zone', 'duree'],
+  orbes: ['degats', 'cadence', 'nombre', 'duree'],
+  ricochet: ['degats', 'cadence', 'nombre', 'perforation'],
+  pluie: ['degats', 'cadence', 'nombre', 'zone', 'duree'],
+  piege: ['degats', 'cadence', 'nombre', 'zone', 'duree', 'ralenti'],
 };
 
 /** Modificateurs multiplicatifs (affichés en %) ; les autres sont des ajouts. */
@@ -67,6 +81,7 @@ const LIBELLES_MODIFICATEURS: Record<keyof Modificateurs, { nom: string; pourcen
   zone: { nom: 'Zone des armes', pourcentage: true, unite: '' },
   portee: { nom: 'Portée des armes', pourcentage: true, unite: '' },
   projectiles: { nom: 'Projectiles en plus', pourcentage: false, unite: '' },
+  allies: { nom: 'Alliés par invocation', pourcentage: false, unite: '' },
   vitesse: { nom: 'Vitesse', pourcentage: true, unite: '' },
   pvMax: { nom: 'Santé maximale', pourcentage: false, unite: ' PV' },
   armure: { nom: 'Dégâts reçus', pourcentage: false, unite: '' },
@@ -75,6 +90,25 @@ const LIBELLES_MODIFICATEURS: Record<keyof Modificateurs, { nom: string; pourcen
   collecte: { nom: 'Rayon de collecte', pourcentage: true, unite: '' },
   critique: { nom: 'Coups critiques', pourcentage: false, unite: '' },
   degatsCritiques: { nom: 'Dégâts critiques', pourcentage: false, unite: '' },
+  degatsMelee: { nom: 'Dégâts de mêlée', pourcentage: false, unite: '' },
+  zoneMelee: { nom: 'Rayon de mêlée', pourcentage: false, unite: '' },
+  degatsProjectiles: { nom: 'Dégâts des projectiles', pourcentage: false, unite: '' },
+  vitesseProjectiles: { nom: 'Vitesse des projectiles', pourcentage: false, unite: '' },
+  degatsFeu: { nom: 'Dégâts de feu', pourcentage: false, unite: '' },
+  cadenceFeu: { nom: 'Délai des armes de feu', pourcentage: false, unite: '' },
+  degatsAllies: { nom: 'Dégâts des alliés', pourcentage: false, unite: '' },
+  vitesseAllies: { nom: 'Vitesse des alliés', pourcentage: false, unite: '' },
+  pvAllies: { nom: 'PV des alliés', pourcentage: false, unite: '' },
+  dureeAllies: { nom: 'Durée des alliés', pourcentage: false, unite: ' s' },
+  recul: { nom: 'Recul', pourcentage: true, unite: '' },
+  degatsBrulure: { nom: 'Dégâts de brûlure', pourcentage: false, unite: '' },
+  dureeBrulure: { nom: 'Durée des brûlures', pourcentage: false, unite: '' },
+  cumulsBrulure: { nom: 'Cumuls de brûlure', pourcentage: false, unite: '' },
+  degatsPoison: { nom: 'Dégâts du poison', pourcentage: false, unite: '' },
+  dureeRalenti: { nom: 'Durée des ralentissements', pourcentage: false, unite: '' },
+  degatsRalentis: { nom: 'Dégâts contre les ralentis', pourcentage: false, unite: '' },
+  regenerationPart: { nom: 'Régénération', pourcentage: false, unite: '' },
+  soinsObjets: { nom: 'Soins des pommes', pourcentage: false, unite: '' },
 };
 
 const FORMAT = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 });
@@ -137,6 +171,7 @@ export class Ameliorations {
     const occupes = this.passifs.possedes.filter((p) => !PASSIFS[p.id].consommable).length;
     const placePassif = occupes < PROGRESSION.emplacementsPassifs;
     for (const id of IDS_ARMES) {
+      if (!armeProposable(this.etat.personnage, id)) continue;
       const rang = this.arsenal.rang(id);
       if (rang === 0 ? placeArme : rang < rangMax(ARMES[id])) liste.push({ type: 'arme', id });
     }
@@ -169,8 +204,9 @@ export class Ameliorations {
     const def = ARMES[id];
     const rang = this.arsenal.rang(id);
     const mods = this.etat.modificateurs;
-    const apres = calculerStats(def, rang + 1, mods, { ...def.stats });
-    const utiles = STATS_UTILES[def.mecanique.type];
+    const talent = this.etat.talents.armes[id] ?? null;
+    const apres = calculerStats(def, rang + 1, mods, { ...def.stats }, talent);
+    const utiles = def.statsAffichees ?? STATS_UTILES[def.mecanique.type];
     const amelioration: Amelioration = { type: 'arme', id };
 
     if (rang === 0) {
@@ -181,13 +217,13 @@ export class Ameliorations {
         icone: def.icone,
         etiquette: 'Nouvelle arme',
         description: def.description,
-        lignes: utiles.map((cle) => `${LIBELLES_STATS[cle].nom} : ${formaterStat(cle, apres[cle])}`),
+        lignes: utiles.map((cle) => `${def.libelles?.[cle] ?? LIBELLES_STATS[cle].nom} : ${formaterStat(cle, apres[cle])}`),
       };
     }
-    const avant = calculerStats(def, rang, mods, { ...def.stats });
+    const avant = calculerStats(def, rang, mods, { ...def.stats }, talent);
     const lignes = (Object.keys(LIBELLES_STATS) as (keyof StatsArme)[])
       .filter((cle) => Math.abs(apres[cle] - avant[cle]) > 1e-6)
-      .map((cle) => `${LIBELLES_STATS[cle].nom} : ${formaterStat(cle, avant[cle])} → ${formaterStat(cle, apres[cle])}`);
+      .map((cle) => `${def.libelles?.[cle] ?? LIBELLES_STATS[cle].nom} : ${formaterStat(cle, avant[cle])} → ${formaterStat(cle, apres[cle])}`);
     if (def.mecanique.type === 'retour' && rang + 1 === def.mecanique.loyaute) lignes.push('Revient : non → oui');
     return {
       amelioration,
@@ -247,6 +283,7 @@ export function decrireBonus(bonus: Partial<Modificateurs>): string[] {
 }
 
 function formaterStat(cle: keyof StatsArme, valeur: number): string {
+  if (cle === 'ralenti') return `${Math.round(valeur * 100)} %`;
   return `${FORMAT.format(valeur)}${LIBELLES_STATS[cle].unite}`;
 }
 

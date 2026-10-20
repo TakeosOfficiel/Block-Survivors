@@ -1,8 +1,9 @@
 /**
  * Panneau debug (F3 ou ²), compact : mesures, vitesse du temps, invincibilité,
  * frappe de zone, niveaux, boss ; rangées d'icônes pour faire apparaître
- * chaque ennemi, donner chaque arme ou bonus (exclusifs compris) et poser
- * chaque objet ; changement de personnage et d'arène.
+ * chaque ennemi, donner chaque arme ou bonus (exclusifs compris), poser
+ * chaque objet et infliger chaque état aux ennemis proches ; changement de
+ * personnage et d'arène.
  */
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG, SOURCES_TEXTURES } from '../config';
@@ -22,6 +23,17 @@ import { element } from './dom';
 import type { Hud } from './hud';
 import { portrait } from './portraits';
 
+/** États qu'on peut infliger aux ennemis proches pour les essayer. */
+export const ETATS_DEBUG = {
+  brulure: 'Brûler',
+  poison: 'Empoisonner',
+  ralenti: 'Ralentir',
+  enracine: 'Enraciner',
+  etourdi: 'Étourdir',
+  marque: 'Marquer',
+} as const;
+export type EtatDebug = keyof typeof ETATS_DEBUG;
+
 /** Ce que le panneau observe et les actions qu'il déclenche. */
 export interface SourcesDebug {
   readonly rendu: Rendu;
@@ -36,6 +48,7 @@ export interface SourcesDebug {
   ameliorerArme(id: IdArme): void;
   ajouterBonus(id: IdPassif): void;
   poserObjet(id: IdObjet): void;
+  infligerEtat(etat: EtatDebug): void;
   gagnerNiveau(): void;
   apparaitreBoss(): void;
   allerVersFin(): void;
@@ -70,6 +83,7 @@ export class PanneauDebug {
     armes: element('dbg-armes'),
     bonus: element('dbg-bonus'),
     objets: element('dbg-objets'),
+    etats: element('dbg-etats'),
     frappe: element<HTMLButtonElement>('dbg-frappe'),
     niveau: element<HTMLButtonElement>('dbg-niveau'),
     boss: element<HTMLButtonElement>('dbg-boss'),
@@ -118,6 +132,9 @@ export class PanneauDebug {
     for (const id of IDS_OBJETS) {
       const def = OBJETS[id];
       this.dom.objets.append(this.creerIcone(`${def.nom} : poser à côté`, textures.url(def.icone), () => this.sources.poserObjet(id)));
+    }
+    for (const etat of Object.keys(ETATS_DEBUG) as EtatDebug[]) {
+      this.dom.etats.append(this.creerBouton(ETATS_DEBUG[etat], () => this.sources.infligerEtat(etat)));
     }
     for (const id of IDS_PERSONNAGES) {
       const def = PERSONNAGES[id];

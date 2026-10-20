@@ -2,10 +2,12 @@
  * Barre de vie en cœurs, comme en jeu : sprites vanilla (conteneur, plein).
  * Chaque cœur se remplit pixel par pixel (7 colonnes intérieures), ce qui
  * rend visibles les petites régénérations ; les PV exacts s'affichent à côté.
+ * Le bouclier s'ajoute après, en cœurs dorés (effet Absorption du jeu).
  * Si les sprites sont introuvables, les cœurs sont dessinés en pixels.
  */
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG } from '../config';
+import { PLAFONDS } from '../donnees/plafonds';
 import { element } from './dom';
 
 const FORMAT = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 });
@@ -26,11 +28,14 @@ const MOTIF = [
 export class BarreCoeurs {
   private readonly conteneur = element('hud-coeurs');
   private readonly pleins: HTMLImageElement[] = [];
+  private readonly dores: HTMLImageElement[] = [];
   /** Colonnes de pixels remplies de chaque cœur (0 à 7), pour ne toucher le DOM qu'au changement. */
   private colonnes: number[] = [];
   private readonly texte = element('hud-pv');
   private readonly urlConteneur: string;
   private readonly urlPlein: string;
+  private readonly urlDore: string;
+  private bouclierAffiche = -1;
   private affiche = -1;
   private pvMaxAffiche = -1;
   private minuterieTremblement = 0;
@@ -40,17 +45,27 @@ export class BarreCoeurs {
     const sprites = CONFIG.hud.coeurs;
     this.urlConteneur = textures.url(sprites.conteneur) ?? dessinerCoeur('#1a1a1a', '#4a1010', 9);
     this.urlPlein = textures.url(sprites.plein) ?? dessinerCoeur(null, '#e01b1b', 9);
+    this.urlDore = textures.url(sprites.dore) ?? dessinerCoeur('#5a4a00', '#f0c820', 9);
   }
 
   /** Met à jour l'affichage (ne touche le DOM que si les PV ont changé, ou pour le tremblement). */
-  afficher(pv: number, pvMax: number, dt: number): void {
+  afficher(pv: number, pvMax: number, bouclier: number, dt: number): void {
     if (pvMax !== this.pvMaxAffiche) this.construire(pvMax);
     this.trembler(pv > 0 && pv <= CONFIG.hud.tremblement.seuilPv, dt);
-    // PV exacts au dixième (« 17,4 / 24 »)
+    // PV exacts au dixième (« 17,4 / 24 », « + 3 » de bouclier)
     const dixiemes = Math.ceil(pv * 10 - 1e-6);
-    if (dixiemes !== this.affiche) {
+    const bouclierDixiemes = Math.ceil(bouclier * 10 - 1e-6);
+    if (dixiemes !== this.affiche || bouclierDixiemes !== this.bouclierAffiche) {
       this.affiche = dixiemes;
-      this.texte.textContent = `${FORMAT.format(dixiemes / 10)} / ${FORMAT.format(pvMax)}`;
+      this.bouclierAffiche = bouclierDixiemes;
+      this.texte.textContent = `${FORMAT.format(dixiemes / 10)} / ${FORMAT.format(pvMax)}${bouclierDixiemes > 0 ? ` + ${FORMAT.format(bouclierDixiemes / 10)}` : ''}`;
+      for (let i = 0; i < this.dores.length; i++) {
+        const part = Math.min(1, Math.max(0, (bouclier - i * 2) / 2));
+        const image = this.dores[i];
+        const coeur = image.parentElement;
+        if (coeur) coeur.style.display = part > 0 ? '' : 'none';
+        image.style.clipPath = part >= 1 ? '' : `inset(0 ${((8 - Math.max(1, Math.round(part * 7))) / 9) * 100}% 0 0)`;
+      }
     }
     // Chaque cœur vaut 2 PV ; son intérieur fait 7 pixels de large (bords exclus)
     for (let i = 0; i < this.pleins.length; i++) {
@@ -104,6 +119,23 @@ export class BarreCoeurs {
       coeur.append(fond, plein);
       this.conteneur.append(coeur);
       this.pleins.push(plein);
+    }
+    // Cœurs dorés du bouclier, cachés tant qu'il est vide
+    this.dores.length = 0;
+    this.bouclierAffiche = -1;
+    for (let i = 0; i < Math.ceil((pvMax * PLAFONDS.bouclier) / 2); i++) {
+      const coeur = document.createElement('span');
+      coeur.className = 'coeur';
+      coeur.style.display = 'none';
+      const fond = document.createElement('img');
+      fond.src = this.urlConteneur;
+      fond.alt = '';
+      const dore = document.createElement('img');
+      dore.alt = '';
+      dore.src = this.urlDore;
+      coeur.append(fond, dore);
+      this.conteneur.append(coeur);
+      this.dores.push(dore);
     }
   }
 }

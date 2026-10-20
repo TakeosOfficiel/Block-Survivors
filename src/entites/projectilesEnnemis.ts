@@ -1,4 +1,8 @@
-/** Projectiles tirés par les ennemis (flèches) : pool, vol en ligne droite, collision avec le joueur. */
+/**
+ * Projectiles tirés par les ennemis (flèches) : pool, vol en ligne droite,
+ * collision avec le joueur. Un coup de bouclier peut les renvoyer : ils
+ * blessent alors les ennemis.
+ */
 import { CONFIG } from '../config';
 import { JOUEUR_BASE } from '../donnees/joueur';
 import { IDS_PROJECTILES, PROJECTILES, type IdProjectile } from '../donnees/projectiles';
@@ -6,6 +10,8 @@ import type { DefinitionProjectile } from '../donnees/types';
 import { RenduProjectiles } from '../effets/renduProjectiles';
 import type { EtatPartie } from '../etat';
 import type { CarteMonde } from '../monde/carte';
+import { ecartAngle, longueur } from '../utils/maths';
+import type { Ennemis } from './ennemis';
 import { Pool } from '../utils/pool';
 import type { CibleJoueur, SourceEntites, Tireur } from './types';
 
@@ -18,6 +24,9 @@ interface ProjectileEnnemi {
   vz: number;
   vie: number;
   degats: number;
+  /** Renvoyé par le joueur : il blesse les ennemis, au nom de l'arme `arme`. */
+  renvoye: boolean;
+  arme: number;
 }
 
 export class ProjectilesEnnemis implements SourceEntites, Tireur {
@@ -25,8 +34,10 @@ export class ProjectilesEnnemis implements SourceEntites, Tireur {
   private readonly carte: CarteMonde;
   private readonly cible: CibleJoueur;
   private readonly pool = new Pool<ProjectileEnnemi>(CONFIG.projectiles.capacite, () => ({
-    indexRendu: 0, definition: PROJECTILES[IDS_PROJECTILES[0]], x: 0, z: 0, vx: 0, vz: 0, vie: 0, degats: 0,
+    indexRendu: 0, definition: PROJECTILES[IDS_PROJECTILES[0]], x: 0, z: 0, vx: 0, vz: 0, vie: 0, degats: 0, renvoye: false, arme: -1,
   }));
+  private ennemis: Ennemis | null = null;
+  private readonly touches = new Int32Array(4);
 
   constructor(etat: EtatPartie, carte: CarteMonde, cible: CibleJoueur) {
     this.etat = etat;
@@ -36,6 +47,36 @@ export class ProjectilesEnnemis implements SourceEntites, Tireur {
 
   get actifs(): number {
     return this.pool.nombre;
+  }
+
+  /** Les projectiles renvoyés blessent ces ennemis. */
+  definirEnnemis(ennemis: Ennemis): void {
+    this.ennemis = ennemis;
+  }
+
+  /**
+   * Renvoie les projectiles du cône (sommet en x, z ; demi-angle en rad ;
+   * longueur `portee`) : ils repartent vers l'avant et blessent les ennemis
+   * de `degats`. Renvoie leur nombre.
+   */
+  renvoyer(x: number, z: number, angle: number, demiAngle: number, portee: number, degats: number, arme: number): number {
+    let n = 0;
+    for (let i = 0; i < this.pool.nombre; i++) {
+      const p = this.pool.elements[i];
+      const dx = p.x - x;
+      const dz = p.z - z;
+      const d = longueur(dx, dz);
+      if (p.renvoye || d > portee || (d > 0.3 && Math.abs(ecartAngle(angle, Math.atan2(dx, dz))) > demiAngle)) continue;
+      const vitesse = p.definition.vitesse * 1.2;
+      p.vx = Math.sin(angle) * vitesse;
+      p.vz = Math.cos(angle) * vitesse;
+      p.vie = p.definition.duree;
+      p.degats = degats;
+      p.renvoye = true;
+      p.arme = arme;
+      n++;
+    }
+    return n;
   }
 
   tirer(type: IdProjectile, x: number, z: number, dirX: number, dirZ: number, degats: number): void {
@@ -50,6 +91,8 @@ export class ProjectilesEnnemis implements SourceEntites, Tireur {
     p.vz = dirZ * def.vitesse;
     p.vie = def.duree;
     p.degats = degats;
+    p.renvoye = false;
+    p.arme = -1;
   }
 
   maj(dt: number): void {
@@ -61,7 +104,7 @@ export class ProjectilesEnnemis implements SourceEntites, Tireur {
       const p = this.pool.elements[i];
       p.vie -= dt;
 
-      // Par pas courts, le décor avant le joueur : une flèche ne frappe jamais à travers un mur
+      // Par pas courts, le décor avant la cible : un projectile ne frappe jamais à travers un mur
       const portee = p.definition.rayon + JOUEUR_BASE.rayon;
       const nbPas = Math.max(1, Math.ceil(Math.hypot(p.vx, p.vz) * dt / pasCollision));
       let fini = p.vie <= 0;
@@ -73,11 +116,19 @@ export class ProjectilesEnnemis implements SourceEntites, Tireur {
           fini = true;
           break;
         }
-        const dx = p.x - j.x;
-        const dz = p.z - j.z;
-        if (!j.mort && dx * dx + dz * dz < portee * portee) {
-          this.cible.subirDegats(p.degats);
-          fini = true;
+        if (p.renvoye) {
+          // Renvoyé : blesse le premier ennemi rencontré
+          if (this.ennemis && this.ennemis.chercher(p.x, p.z, p.definition.rayon, this.touches) > 0) {
+            this.ennemis.blesser(this.ennemis.obtenir(this.touches[0]), p.degats, p.x - p.vx, p.z - p.vz, 4, p.arme);
+            fini = true;
+          }
+        } else {
+          const dx = p.x - j.x;
+          const dz = p.z - j.z;
+          if (!j.mort && dx * dx + dz * dz < portee * portee) {
+            this.cible.subirDegats(p.degats);
+            fini = true;
+          }
         }
       }
       if (fini) this.pool.liberer(i);

@@ -10,13 +10,26 @@
  *   orbite     degats, cadence (délai avant de retoucher un ennemi), nombre, vitesse (rad/s), zone (rayon), recul
  *   explosif   degats, cadence, nombre, vitesse, portee, zone (rayon d'explosion), recul
  *   foudre     degats, cadence, nombre, portee (rayon de recherche), zone (rayon d'impact), recul
- *   invocation degats (par coup), cadence, nombre (alliés simultanés), duree, zone (allonge), recul
+ *   invocation degats (par coup), cadence, nombre (alliés par invocation), duree, zone (allonge), recul ;
+ *              le nombre présent est limité par le quota de l'allié (allies.ts)
+ *   fissure    degats, cadence, nombre (fissures en éventail), portee (longueur), zone (largeur), recul,
+ *              ralenti et duree (ralentissement des ennemis touchés)
+ *   chute      degats, cadence, nombre, portee (recherche du groupe), zone (rayon d'impact), recul, ralenti, duree
+ *   tourbillon degats (par frappe), cadence, zone (rayon), duree (de rotation), recul (négatif : aspire)
+ *   heurt      degats, cadence, zone (portée du cône), recul, etourdi
+ *   tornade    degats, cadence, nombre, duree, zone (rayon), recul (négatif : aspire)
+ *   nova       degats, cadence, zone (rayon final), recul, ralenti et duree (ralentissement)
+ *   meteore    degats, cadence, nombre, portee (recherche du groupe), zone (rayon), duree (feu au sol), recul
+ *   orbes      degats, cadence, nombre, portee, zone (rayon d'orbite), duree (d'orbite), vitesse (de vol)
+ *   ricochet   degats, cadence, nombre, vitesse, portee, perforation (rebonds), recul
+ *   pluie      degats (par flèche), cadence, nombre (zones), portee (recherche du groupe), zone (rayon), duree, recul
+ *   piege      degats, cadence, nombre (pièges en même temps), duree, zone (rayon), ralenti
  */
 import type { DefinitionArme, StatsArme } from './types';
 
 /** Statistiques neutres : chaque arme ne précise que ce qu'elle utilise. */
 const BASE: StatsArme = {
-  degats: 0, cadence: 1, nombre: 1, portee: 0, vitesse: 0, zone: 0, duree: 0, perforation: 1, recul: 0,
+  degats: 0, cadence: 1, nombre: 1, portee: 0, vitesse: 0, zone: 0, duree: 0, perforation: 1, recul: 0, ralenti: 0, etourdi: 0,
 };
 
 const definitions = {
@@ -25,6 +38,7 @@ const definitions = {
     nom: 'Épée en fer',
     description: "Frappe en arc de cercle l'ennemi le plus proche.",
     icone: 'item/iron_sword',
+    famille: 'melee',
     mecanique: {
       type: 'balayage',
       angle: 2.2,
@@ -44,6 +58,7 @@ const definitions = {
     nom: 'Arc',
     description: "Tire sur l'ennemi le plus proche.",
     icone: 'item/bow',
+    famille: 'projectile',
     mecanique: { type: 'tir', projectile: 'fleche', dispersion: 0.18 },
     stats: { ...BASE, degats: 10, cadence: 1.1, vitesse: 22, portee: 15, perforation: 2, recul: 3 },
     niveaux: [
@@ -73,6 +88,7 @@ const definitions = {
     nom: 'Haches tournoyantes',
     description: 'Des haches tournent autour de vous.',
     icone: 'item/iron_axe',
+    famille: 'melee',
     mecanique: { type: 'orbite', projectile: 'hache' },
     stats: { ...BASE, degats: 6, cadence: 0.6, nombre: 2, vitesse: 3.4, zone: 1.5, recul: 4 },
     niveaux: [
@@ -88,6 +104,7 @@ const definitions = {
     nom: 'Boules de feu',
     description: 'Explosent au contact et brûlent la zone.',
     icone: 'item/fire_charge',
+    famille: 'feu',
     mecanique: { type: 'explosif', projectile: 'boule_feu' },
     stats: { ...BASE, degats: 12, cadence: 2.2, vitesse: 10, portee: 13, zone: 2, recul: 6 },
     niveaux: [
@@ -113,18 +130,271 @@ const definitions = {
       { description: '+1 éclair', modif: { nombre: 1 } },
     ],
   },
+  onde_choc: {
+    son: 'fissure',
+    nom: 'Onde de choc',
+    description: 'Frappe le sol : une fissure soulève les blocs vers le plus gros groupe.',
+    icone: 'block/cracked_stone_bricks',
+    mecanique: { type: 'fissure', ecart: 0.5, vitesse: 14 },
+    stats: { ...BASE, degats: 14, cadence: 4, portee: 6, zone: 1.5, recul: 3, duree: 1 },
+    niveaux: [
+      { description: 'Dégâts +4', modif: { degats: 4 } },
+      { description: 'Fissure plus longue : +2 blocs', modif: { portee: 2 } },
+      { description: '+1 fissure en éventail', modif: { nombre: 1 } },
+      { description: 'Frappe 20 % plus souvent', modif: { cadence: -0.8 } },
+      { description: '+1 fissure ; les ennemis touchés sont ralentis de 30 % pendant 1 s', modif: { nombre: 1, ralenti: 0.3 } },
+    ],
+  },
+  lame_colossale: {
+    nom: 'Lame colossale',
+    description: "Une épée géante s'abat sur le plus gros groupe d'ennemis.",
+    icone: 'item/netherite_sword',
+    mecanique: { type: 'chute', image: 'item/netherite_sword', taille: 5 },
+    stats: { ...BASE, degats: 40, cadence: 7, portee: 10, zone: 2.5, recul: 9, duree: 2 },
+    niveaux: [
+      { description: 'Dégâts +15', modif: { degats: 15 } },
+      { description: "Rayon d'impact +0,7 bloc", modif: { zone: 0.7 } },
+      { description: 'Tombe 20 % plus souvent', modif: { cadence: -1.4 } },
+      { description: '+1 lame', modif: { nombre: 1 } },
+      { description: 'Dégâts +25 ; le sol fissuré ralentit de 20 % pendant 2 s', modif: { degats: 25, ralenti: 0.2 } },
+    ],
+  },
+  tourbillon_lames: {
+    nom: 'Tourbillon de lames',
+    description: 'Tourne sur lui-même et frappe tout autour, plusieurs fois.',
+    icone: 'item/golden_sword',
+    famille: 'melee',
+    mecanique: { type: 'tourbillon', intervalle: 0.3, effet: Array.from({ length: 8 }, (_, i) => `particle/sweep_${i}`) },
+    stats: { ...BASE, degats: 5, cadence: 5, zone: 2.2, duree: 1.2, recul: 2 },
+    niveaux: [
+      { description: 'Dégâts +3 par frappe', modif: { degats: 3 } },
+      { description: 'Rayon +0,5 bloc', modif: { zone: 0.5 } },
+      { description: 'Tourne 0,6 s de plus (2 frappes)', modif: { duree: 0.6 } },
+      { description: 'Tourne 20 % plus souvent', modif: { cadence: -1 } },
+      { description: 'Dégâts +3 ; aspire les ennemis vers lui', modif: { degats: 3, recul: -5 } },
+    ],
+  },
+  heurt_bouclier: {
+    son: 'bouclier',
+    nom: 'Heurt de bouclier',
+    description: 'Coup de bouclier devant lui : repousse fort et interrompt les attaques.',
+    icone: 'block/iron_trapdoor',
+    famille: 'melee',
+    mecanique: { type: 'heurt', angle: 1.6, renvoi: 6 },
+    stats: { ...BASE, degats: 8, cadence: 3, zone: 1.8, recul: 12 },
+    niveaux: [
+      { description: 'Repousse plus fort', modif: { recul: 6 } },
+      { description: 'Dégâts +6', modif: { degats: 6 } },
+      { description: 'Étourdit 0,5 s', modif: { etourdi: 0.5 } },
+      { description: 'Frappe 20 % plus souvent', modif: { cadence: -0.6 } },
+      { description: 'Dégâts +6 ; renvoie les projectiles ennemis', modif: { degats: 6 } },
+    ],
+  },
+  tornade_feu: {
+    son: 'tornade',
+    nom: 'Tornade de feu',
+    description: 'Une colonne de braises tourbillonne vers les ennemis et les aspire.',
+    icone: 'item/blaze_powder',
+    famille: 'feu',
+    mecanique: { type: 'tornade', texture: 'block/magma', vitesse: 3.5, intervalle: 0.4 },
+    stats: { ...BASE, degats: 6, cadence: 8, duree: 4, zone: 1.5, recul: -2 },
+    niveaux: [
+      { description: 'La tornade dure 2 s de plus', modif: { duree: 2 } },
+      { description: 'Dégâts +3', modif: { degats: 3 } },
+      { description: 'Rayon +0,4 bloc', modif: { zone: 0.4 } },
+      { description: 'Lancée 20 % plus souvent', modif: { cadence: -1.6 } },
+      { description: '+1 tornade', modif: { nombre: 1 } },
+    ],
+  },
+  nova_glace: {
+    son: 'nova',
+    nom: 'Nova de glace',
+    description: "Un anneau d'éclats de glace jaillit autour de lui, blesse et ralentit.",
+    icone: 'block/packed_ice',
+    mecanique: { type: 'nova', texture: 'block/packed_ice', expansion: 0.4, sol: 'block/powder_snow', solAuRang: 6, dureeSol: 2 },
+    stats: { ...BASE, degats: 10, cadence: 5, zone: 4, recul: 2, ralenti: 0.35, duree: 2 },
+    niveaux: [
+      { description: 'Rayon +1 bloc', modif: { zone: 1 } },
+      { description: 'Dégâts +6', modif: { degats: 6 } },
+      { description: 'Ralentit de 45 % pendant 2,5 s', modif: { ralenti: 0.1, duree: 0.5 } },
+      { description: 'Lancée 20 % plus souvent', modif: { cadence: -1 } },
+      { description: 'Dégâts +4 ; laisse de la neige poudreuse qui ralentit 2 s', modif: { degats: 4 } },
+    ],
+  },
+  meteore: {
+    son: 'boule_feu',
+    nom: 'Météore',
+    description: 'Un bloc de magma tombe sur un groupe et laisse le sol en feu.',
+    icone: 'block/magma',
+    famille: 'feu',
+    mecanique: { type: 'meteore', texture: 'block/magma', feu: 'block/fire_0', degatsSol: 0.15 },
+    stats: { ...BASE, degats: 35, cadence: 9, portee: 12, zone: 2.5, duree: 3, recul: 6 },
+    niveaux: [
+      { description: 'Dégâts +15', modif: { degats: 15 } },
+      { description: 'Le feu au sol dure 2 s de plus', modif: { duree: 2 } },
+      { description: "Rayon d'impact +0,5 bloc", modif: { zone: 0.5 } },
+      { description: 'Tombe 20 % plus souvent', modif: { cadence: -1.8 } },
+      { description: '+1 météore', modif: { nombre: 1 } },
+    ],
+  },
+  orbes_arcaniques: {
+    son: 'orbes',
+    nom: 'Orbes arcaniques',
+    description: "Des orbes d'améthyste tournent autour de lui puis foncent sur les ennemis.",
+    icone: 'item/amethyst_shard',
+    mecanique: { type: 'orbes', texture: 'block/amethyst_block', contactAuRang: 4, contact: 0.45 },
+    stats: { ...BASE, degats: 9, cadence: 4, nombre: 3, portee: 10, zone: 1.3, duree: 2, vitesse: 12 },
+    niveaux: [
+      { description: '+1 orbe', modif: { nombre: 1 } },
+      { description: 'Dégâts +4', modif: { degats: 4 } },
+      { description: "Orbitent 1 s de plus et blessent au contact", modif: { duree: 1 } },
+      { description: 'Lancées 20 % plus souvent', modif: { cadence: -0.8 } },
+      { description: '+2 orbes', modif: { nombre: 2 } },
+    ],
+  },
+  salve: {
+    son: 'arbalete',
+    nom: 'Salve en éventail',
+    description: 'Tire une gerbe de flèches en éventail vers les ennemis.',
+    icone: 'item/crossbow_standby',
+    famille: 'projectile',
+    mecanique: { type: 'tir', projectile: 'fleche', dispersion: 0.26 },
+    stats: { ...BASE, degats: 7, cadence: 2.5, nombre: 5, vitesse: 20, portee: 9, perforation: 1, recul: 2 },
+    niveaux: [
+      { description: '+2 flèches', modif: { nombre: 2 } },
+      { description: 'Dégâts +3', modif: { degats: 3 } },
+      { description: 'Portée +3 blocs', modif: { portee: 3 } },
+      { description: 'Tire 20 % plus souvent', modif: { cadence: -0.5 } },
+      { description: '+2 flèches, elles traversent 1 ennemi de plus', modif: { nombre: 2, perforation: 1 } },
+    ],
+  },
+  pluie_fleches: {
+    son: 'arc',
+    nom: 'Pluie de flèches',
+    description: 'Des flèches tombent du ciel sur le plus gros groupe.',
+    icone: 'item/arrow',
+    famille: 'projectile',
+    mecanique: { type: 'pluie', image: 'item/arrow', impactsParSeconde: 7.5 },
+    stats: { ...BASE, degats: 6, cadence: 6, portee: 14, zone: 2.5, duree: 1.6, recul: 1 },
+    niveaux: [
+      { description: 'Rayon +0,5 bloc', modif: { zone: 0.5 } },
+      { description: 'Dégâts +3', modif: { degats: 3 } },
+      { description: 'Dure 0,8 s de plus', modif: { duree: 0.8 } },
+      { description: 'Tombe 20 % plus souvent', modif: { cadence: -1.2 } },
+      { description: '+1 zone', modif: { nombre: 1 } },
+    ],
+  },
+  fleche_ricochet: {
+    son: 'arc',
+    nom: 'Flèche ricocheuse',
+    description: "Une flèche spectrale rebondit d'ennemi en ennemi.",
+    icone: 'item/spectral_arrow',
+    famille: 'projectile',
+    mecanique: { type: 'ricochet', projectile: 'fleche_spectrale', perte: 0.15, distanceRebond: 5 },
+    stats: { ...BASE, degats: 12, cadence: 2, nombre: 1, vitesse: 22, portee: 12, perforation: 3, recul: 2 },
+    niveaux: [
+      { description: '+1 rebond', modif: { perforation: 1 } },
+      { description: 'Dégâts +5', modif: { degats: 5 } },
+      { description: '+1 rebond', modif: { perforation: 1 } },
+      { description: 'Tire 20 % plus souvent', modif: { cadence: -0.4 } },
+      { description: '+1 flèche', modif: { nombre: 1 } },
+    ],
+  },
+  fusee: {
+    son: 'fusee',
+    nom: 'Fusée explosive',
+    description: "Une fusée de feu d'artifice qui explose en gerbe colorée.",
+    icone: 'item/firework_rocket',
+    famille: 'projectile',
+    mecanique: { type: 'explosif', projectile: 'fusee', gerbe: 'artifice', son: 'artifice', eclatsAuRang: 6 },
+    stats: { ...BASE, degats: 18, cadence: 3.5, vitesse: 14, portee: 13, zone: 2, recul: 5 },
+    niveaux: [
+      { description: "Rayon d'explosion +0,5 bloc", modif: { zone: 0.5 } },
+      { description: 'Dégâts +8', modif: { degats: 8 } },
+      { description: '+1 fusée', modif: { nombre: 1 } },
+      { description: 'Tirée 20 % plus souvent', modif: { cadence: -0.7 } },
+      { description: "L'explosion se divise en 4 petites explosions", modif: {} },
+    ],
+  },
+  piege_ronces: {
+    son: 'ronces',
+    nom: 'Piège de ronces',
+    description: 'Pose des buissons de baies qui blessent et ralentissent.',
+    icone: 'item/sweet_berries',
+    mecanique: { type: 'piege', image: 'block/sweet_berry_bush_stage3', intervalle: 0.5, enracineAuRang: 6 },
+    stats: { ...BASE, degats: 4, cadence: 5, nombre: 3, duree: 8, zone: 1.5, ralenti: 0.4 },
+    niveaux: [
+      { description: '+1 piège en même temps', modif: { nombre: 1 } },
+      { description: 'Dégâts +3', modif: { degats: 3 } },
+      { description: 'Rayon +0,5 bloc, dure 4 s de plus', modif: { zone: 0.5, duree: 4 } },
+      { description: 'Posé 20 % plus souvent', modif: { cadence: -1 } },
+      { description: 'Ralentit de 55 % et enracine un instant à l\u2019entrée', modif: { ralenti: 0.15 } },
+    ],
+  },
+  esprit_blaze: {
+    son: 'tornade',
+    nom: 'Esprit de blaze',
+    description: 'Un blaze allié flotte près de lui et tire des salves de boules de feu.',
+    icone: 'item/blaze_rod',
+    famille: 'allie',
+    mecanique: { type: 'invocation', allie: 'esprit_blaze', brulureAuRang: 6 },
+    stats: { ...BASE, degats: 6, cadence: 10, nombre: 1, duree: 12, portee: 10, vitesse: 14, recul: 1 },
+    niveaux: [
+      { description: '+1 blaze par invocation', modif: { nombre: 1 } },
+      { description: 'Dégâts +3', modif: { degats: 3 } },
+      { description: 'Les blazes restent 4 s de plus', modif: { duree: 4 } },
+      { description: 'Invoqués 20 % plus souvent', modif: { cadence: -2 } },
+      { description: '+1 blaze ; leurs tirs enflamment', modif: { nombre: 1 } },
+    ],
+  },
+  totem_racines: {
+    son: 'racines',
+    nom: 'Totem des racines',
+    description: 'Un totem de palétuvier planté dans la horde attire, ralentit et enracine.',
+    icone: 'block/mangrove_roots_side',
+    famille: 'allie',
+    mecanique: { type: 'invocation', allie: 'totem_racines' },
+    stats: { ...BASE, degats: 0, cadence: 10, nombre: 1, duree: 8, zone: 3, ralenti: 0.4 },
+    niveaux: [
+      { description: 'Rayon +0,7 bloc', modif: { zone: 0.7 } },
+      { description: 'Le totem reste 4 s de plus', modif: { duree: 4 } },
+      { description: 'Les racines blessent : 3 dégâts par seconde', modif: { degats: 1.5 } },
+      { description: 'Planté 20 % plus souvent', modif: { cadence: -2 } },
+      { description: '+1 totem', modif: { nombre: 1 } },
+    ],
+  },
+  esprit_protecteur: {
+    son: 'allay',
+    nom: 'Esprit protecteur',
+    description: 'Un allay le suit, lui donne un bouclier et soigne les alliés blessés.',
+    icone: 'block/amethyst_cluster',
+    mecanique: { type: 'invocation', allie: 'allay' },
+    // Dégâts = PV de bouclier donnés ; zone = part des PV soignée à un allié ; délai = entre deux soutiens
+    stats: { ...BASE, degats: 3, cadence: 10, nombre: 1, duree: 9999, zone: 0.15 },
+    libelles: { degats: 'Bouclier' },
+    statsAffichees: ['degats', 'cadence', 'nombre'],
+    niveaux: [
+      { description: '+1 PV de bouclier', modif: { degats: 1 } },
+      { description: 'Soigne les alliés de 10 % de plus', modif: { zone: 0.1 } },
+      { description: 'Soutien 20 % plus fréquent', modif: { cadence: -2 } },
+      { description: '+1 PV de bouclier', modif: { degats: 1 } },
+      { description: '+1 allay', modif: { nombre: 1 } },
+    ],
+  },
   golems: {
     son: 'golem_invocation',
     nom: 'Golem de fer',
     description: 'Invoque un golem qui écrase les ennemis.',
     icone: 'block/carved_pumpkin',
+    famille: 'allie',
     mecanique: { type: 'invocation', allie: 'golem_fer' },
-    stats: { ...BASE, degats: 30, cadence: 12, nombre: 1, duree: 15, zone: 1.4, recul: 10 },
+    // Revient toutes les 16 s et reste 10 s : permanent à partir du rang 5
+    stats: { ...BASE, degats: 30, cadence: 16, nombre: 1, duree: 10, zone: 1.4, recul: 10 },
     niveaux: [
-      { description: 'Le golem reste 5 s de plus', modif: { duree: 5 } },
+      { description: 'Le golem reste 3 s de plus', modif: { duree: 3 } },
       { description: 'Dégâts +10', modif: { degats: 10 } },
-      { description: '+1 golem', modif: { nombre: 1 } },
-      { description: 'Invoqué 25 % plus souvent', modif: { cadence: -3 } },
+      { description: 'Invoqué 20 % plus souvent', modif: { cadence: -3.2 } },
+      { description: 'Le golem reste 3 s de plus', modif: { duree: 3 } },
       { description: '+1 golem, dégâts +10', modif: { nombre: 1, degats: 10 } },
     ],
   },
@@ -133,14 +403,16 @@ const definitions = {
     nom: 'Meute de loups',
     description: 'Des loups apprivoisés traquent et mordent les ennemis.',
     icone: 'item/bone',
+    famille: 'allie',
     mecanique: { type: 'invocation', allie: 'loup' },
-    stats: { ...BASE, degats: 5, cadence: 3, nombre: 2, duree: 14, zone: 0.6, recul: 2 },
+    // 2 loups toutes les 7 s qui vivent 10 s : environ 3 présents au rang 1 (quota 6)
+    stats: { ...BASE, degats: 5, cadence: 7, nombre: 2, duree: 10, zone: 0.6, recul: 2 },
     niveaux: [
-      { description: '+1 loup', modif: { nombre: 1 } },
       { description: 'Dégâts +3', modif: { degats: 3 } },
-      { description: 'Les loups restent 6 s de plus', modif: { duree: 6 } },
-      { description: '+1 loup, dégâts +3', modif: { nombre: 1, degats: 3 } },
-      { description: '+2 loups', modif: { nombre: 2 } },
+      { description: '+1 loup par invocation', modif: { nombre: 1 } },
+      { description: 'Les loups restent 4 s de plus', modif: { duree: 4 } },
+      { description: 'Dégâts +3', modif: { degats: 3 } },
+      { description: '+1 loup par invocation, dégâts +3', modif: { nombre: 1, degats: 3 } },
     ],
   },
   vex: {
@@ -148,14 +420,16 @@ const definitions = {
     nom: 'Vex',
     description: 'Des esprits volants foncent sur les ennemis à travers le décor.',
     icone: 'item/echo_shard',
+    famille: 'allie',
     mecanique: { type: 'invocation', allie: 'vex' },
-    stats: { ...BASE, degats: 4, cadence: 4, nombre: 2, duree: 8, zone: 0.4, recul: 1 },
+    // 2 vex toutes les 6 s qui vivent 8 s : environ 3 présents au rang 1 (quota 6)
+    stats: { ...BASE, degats: 4, cadence: 6, nombre: 2, duree: 8, zone: 0.4, recul: 1 },
     niveaux: [
-      { description: '+1 vex', modif: { nombre: 1 } },
+      { description: '+1 vex par invocation', modif: { nombre: 1 } },
       { description: 'Dégâts +3', modif: { degats: 3 } },
-      { description: 'Invoqués 25 % plus souvent', modif: { cadence: -1 } },
-      { description: '+1 vex, restent 3 s de plus', modif: { nombre: 1, duree: 3 } },
-      { description: '+2 vex, dégâts +2', modif: { nombre: 2, degats: 2 } },
+      { description: 'Invoqués 25 % plus souvent', modif: { cadence: -1.5 } },
+      { description: 'Dégâts +2', modif: { degats: 2 } },
+      { description: '+1 vex par invocation, restent 3 s de plus', modif: { nombre: 1, duree: 3 } },
     ],
   },
 } satisfies Record<string, DefinitionArme>;

@@ -8,6 +8,17 @@ import type { MecaniqueArme } from '../donnees/types';
 import type { ArmeEquipee } from './armeEquipee';
 import { calculerStats, creerArmeEquipee, rangMax } from './armeEquipee';
 import type { Balayages } from './balayages';
+import type { Chutes } from './chutes';
+import type { Fissures } from './fissures';
+import type { Heurts } from './heurts';
+import type { Meteores } from './meteores';
+import type { Novas } from './novas';
+import type { OrbesArcaniques } from './orbesArcaniques';
+import type { Pieges } from './pieges';
+import type { Pluies } from './pluies';
+import type { Ricochets } from './ricochets';
+import type { Tornades } from './tornades';
+import type { Tourbillons } from './tourbillons';
 import type { ContexteCombat } from './contexte';
 import type { Foudre } from './foudre';
 import type { Invocations } from './invocations';
@@ -23,6 +34,17 @@ export interface SystemesCombat {
   readonly orbites: Orbites;
   readonly foudre: Foudre;
   readonly invocations: Invocations;
+  readonly fissures: Fissures;
+  readonly chutes: Chutes;
+  readonly tourbillons: Tourbillons;
+  readonly heurts: Heurts;
+  readonly tornades: Tornades;
+  readonly novas: Novas;
+  readonly meteores: Meteores;
+  readonly orbesArcaniques: OrbesArcaniques;
+  readonly ricochets: Ricochets;
+  readonly pluies: Pluies;
+  readonly pieges: Pieges;
 }
 
 export class Arsenal {
@@ -48,13 +70,13 @@ export class Arsenal {
     const modificateurs = this.contexte.etat.modificateurs;
     const existante = this.armes.find((a) => a.id === id);
     if (!existante) {
-      const arme = creerArmeEquipee(id, modificateurs);
+      const arme = creerArmeEquipee(id, modificateurs, this.contexte.etat.talents.armes[id] ?? null);
       this.armes.push(arme);
       this.contexte.etat.stats.acquisitionArme[arme.index] = this.contexte.etat.tempsJeu;
     } else {
       if (existante.rang >= rangMax(ARMES[id])) return false;
       existante.rang++;
-      calculerStats(existante.definition, existante.rang, modificateurs, existante.stats);
+      calculerStats(existante.definition, existante.rang, modificateurs, existante.stats, existante.talent);
     }
     this.version++;
     return true;
@@ -63,7 +85,7 @@ export class Arsenal {
   /** À appeler quand les modificateurs des passifs changent. */
   recalculer(): void {
     const modificateurs = this.contexte.etat.modificateurs;
-    for (const arme of this.armes) calculerStats(arme.definition, arme.rang, modificateurs, arme.stats);
+    for (const arme of this.armes) calculerStats(arme.definition, arme.rang, modificateurs, arme.stats, arme.talent);
     this.version++;
   }
 
@@ -123,12 +145,45 @@ export class Arsenal {
         return this.systemes.foudre.frapper(arme);
 
       case 'invocation':
-        // Au maximum d'alliés, on attend simplement la prochaine invocation
-        if (this.systemes.invocations.invoquer(arme) && arme.definition.son) this.contexte.retours.son(arme.definition.son);
+        // Au quota, l'invocation renouvelle les alliés présents (sans son)
+        if (this.systemes.invocations.invoquer(arme) > 0 && arme.definition.son) this.contexte.retours.son(arme.definition.son);
         return true;
 
       case 'orbite':
         return true;
+
+      case 'fissure':
+        return this.systemes.fissures.frapper(arme);
+
+      case 'chute':
+        return this.systemes.chutes.frapper(arme);
+
+      case 'tourbillon':
+        return this.systemes.tourbillons.frapper(arme);
+
+      case 'heurt':
+        return this.systemes.heurts.frapper(arme);
+
+      case 'tornade':
+        return this.systemes.tornades.frapper(arme);
+
+      case 'nova':
+        return this.systemes.novas.frapper(arme);
+
+      case 'meteore':
+        return this.systemes.meteores.frapper(arme);
+
+      case 'orbes':
+        return this.systemes.orbesArcaniques.frapper(arme);
+
+      case 'ricochet':
+        return this.systemes.ricochets.frapper(arme);
+
+      case 'pluie':
+        return this.systemes.pluies.frapper(arme);
+
+      case 'piege':
+        return this.systemes.pieges.frapper(arme);
     }
   }
 }

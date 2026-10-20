@@ -99,6 +99,8 @@ export const CONFIG = {
     capacite: 600,           // ennemis simultanés au maximum (pool)
     celluleGrille: 2,        // taille d'une cellule de la grille spatiale (blocs)
     separation: 6,           // force de répulsion entre ennemis (1/s)
+    interruption: 1,         // s avant l'attaque suivante d'un ennemi interrompu (coup de bouclier)
+    essaisGroupe: 12,        // ennemis examinés pour trouver le plus gros groupe
     amortissementRecul: 6,   // décroissance du recul (1/s)
     vitesseRotation: 10,     // orientation vers la direction de marche (1/s)
     dureeMort: 0.6,          // chute sur le côté avant disparition (s)
@@ -125,6 +127,8 @@ export const CONFIG = {
     // et projectile vu comme un petit cercle (il ne se glisse pas entre deux blocs en diagonale)
     pasCollision: 0.25,        // blocs
     rayonDecor: 0.1,           // blocs
+    // Éclats de la Fusée explosive : nombre, distance (blocs), rayon et dégâts (parts de l'explosion)
+    eclats: { nombre: 4, distance: 1.6, rayon: 0.5, degats: 0.35 },
   },
 
   armes: {
@@ -132,6 +136,34 @@ export const CONFIG = {
     dureeBalayage: 0.25,       // durée de l'effet de balayage (s)
     foudre: { hauteur: 18, segments: 10, largeur: 0.18, ecart: 0.7, duree: 0.25, capacite: 24 },
     golems: { capacite: 32, distanceSuivi: 3 },   // alliés invoqués (golems, loups, vex)
+    brulureTirs: 3,            // s de brûlure des tirs qui enflamment (blazes alliés)
+    // Alliés : distance de pose du totem, soin au plus une fois par allié toutes les `delaiSoin` s
+    invocations: { porteeTotem: 9, delaiSoin: 8, degatsBrulure: 3, racines: 6 },
+    // Onde de choc : blocs soulevés tous les `espacement` blocs, qui jaillissent puis s'enfoncent (s)
+    fissure: {
+      capacite: 12, blocs: 320, rayonGroupe: 2, depart: 1, espacement: 0.8, tailleBloc: 0.9,
+      montee: 0.08, descente: 0.25, dureeBloc: 0.7, immunite: 0.6,
+    },
+    // Lame colossale : chute (s) depuis `hauteur` blocs, plantée `tenue` s puis effacée en `fondu` s
+    chute: { capacite: 6, duree: 0.4, hauteur: 6, enfoncement: 0.12, tenue: 0.4, fondu: 0.3, decalage: 0.25 },
+    // Tourbillon de lames : vitesse de rotation (rad/s), déclenché si un ennemi est à zone × declenchement
+    tourbillon: { vitesseRotation: 12, declenchement: 1.3 },
+    // Heurt de bouclier : marge de recherche de cible et portée du renvoi des projectiles (blocs)
+    heurt: { marge: 1.2, porteeRenvoi: 1.5 },
+    // Tornade de feu : cubes par colonne, rotation (rad/s), hauteur (blocs), recherche de cible (blocs)
+    tornade: { capacite: 6, cubes: 14, portee: 10, recherche: 8, rotation: 7, hauteur: 2.6, periodeBraises: 0.12, imagesParSeconde: 2.5 },
+    // Nova de glace : éclats de l'anneau, dalles de neige, et leurs durées (s)
+    nova: { capacite: 4, eclats: 28, dalles: 16, immunite: 0.6, eclatsRestent: 0.35, periodeSol: 0.25, tailleEclat: 0.4, tailleDalle: 0.7 },
+    // Météore : chute en biais (départ décalé de departX/Z, depuis `hauteur`), flammes au sol animées
+    meteore: { capacite: 6, flammes: 10, imagesFeu: 20, duree: 0.6, hauteur: 9, departX: -4, departZ: -4, taille: 1.1, tic: 0.5, decalage: 0.3 },
+    // Orbes arcaniques : vol max (s) après l'orbite, vitesse d'orbite (rad/s), contact (blocs, s)
+    orbes: { capacite: 32, volMax: 3, periodeLueur: 0.08, vitesseOrbite: 3, rayonContact: 0.45, delaiContact: 0.5, hauteur: 1, taille: 0.32 },
+    // Flèche ricocheuse : rebonds au maximum (plafond), durée de vie max d'une flèche (s)
+    ricochet: { capacite: 24, rebondsMax: 6, vieMax: 4 },
+    // Pluie de flèches : chute (s) depuis `hauteur`, flèche plantée `plantee` s, rayon de chaque impact
+    pluie: { zones: 4, fleches: 96, chute: 0.25, hauteur: 7, plantee: 0.6, rayonImpact: 0.9, taille: 0.9 },
+    // Piège de ronces : buissons par piège, enracinement à l'entrée (s) et délai avant le suivant (s)
+    piege: { capacite: 12, buissons: 5, taille: 0.9, recherche: 12, enracinement: 0.5, delaiEnracinement: 3 },
   },
 
   // Chiffres des dégâts au-dessus des ennemis (option)
@@ -144,6 +176,9 @@ export const CONFIG = {
     fondu: 0.35,            // dernière part de la vie en fondu
     normal: { couleur: 0xffffff, taille: 0.38, montee: 1.1, pop: 0.3, duree: 0.8 },
     critique: { couleur: 0xffc22a, taille: 0.62, montee: 1.4, pop: 0.8, duree: 1.1 },
+    // Dégâts des états : plus petits, aux couleurs de la brûlure et du poison
+    feu: { couleur: 0xff8a2a, taille: 0.3, montee: 0.8, pop: 0, duree: 0.7 },
+    poison: { couleur: 0x8fd45a, taille: 0.3, montee: 0.8, pop: 0, duree: 0.7 },
   },
 
   particules: {
@@ -194,6 +229,7 @@ export const CONFIG = {
     },
     coeurs: {
       plein: 'gui/sprites/hud/heart/full',
+      dore: 'gui/sprites/hud/heart/absorbing_full',     // bouclier (effet Absorption)
       conteneur: 'gui/sprites/hud/heart/container',
     },
   },
@@ -219,6 +255,16 @@ export const CONFIG = {
     vitessesTemps: [0.25, 0.5, 1, 2, 4, 8, 16],
     distanceApparition: 7,                 // apparition manuelle autour du joueur (blocs)
     frappe: { rayon: 4, degats: 8, recul: 8 },
+    // États infligés aux ennemis proches (rayon en blocs, durées en s)
+    etats: {
+      rayon: 6,
+      brulure: { cumuls: 3, degatsParSeconde: 3, duree: 3 },
+      poison: { cumuls: 5, degatsParSeconde: 2, duree: 4 },
+      ralenti: { part: 0.4, duree: 3 },
+      enracine: { duree: 2 },
+      etourdi: { duree: 2 },
+      marque: { bonus: 0.25, duree: 4 },
+    },
   },
 } as const;
 

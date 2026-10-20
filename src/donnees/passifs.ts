@@ -112,7 +112,7 @@ const definitions = {
     description: 'Invocateur : chaque invocation amène un allié de plus.',
     icone: 'item/lead',
     exclusif: true,
-    niveaux: rangs(2, { description: '+1 allié invoqué (et +1 projectile)', modif: { projectiles: 1 } }),
+    niveaux: rangs(2, { description: '+1 allié par invocation', modif: { allies: 1 } }),
   },
   pacte: {
     nom: "Étoile du Nether",

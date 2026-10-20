@@ -5,7 +5,7 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
-## [À venir] — numéro fixé après la fusion avec main
+## [0.16.0] — 2026-10-20
 
 ### Nouveautés
 - Maps construites dans Minecraft : chaque fichier `.schem` (WorldEdit / FAWE) ou `.nbt` (bloc de structure) du dossier `cartes/` devient une arène. Première map : le **Jardin des champignons**.
@@ -13,16 +13,104 @@ Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections
 - La zone jouable est trouvée toute seule (le sol plat où l'on démarre, ou celui d'un panneau « depart ») ; le reste de la construction sert de décor autour de l'arène.
 
 ### Changements
-- Les arènes peuvent être rectangulaires.
-
-## [0.8.3] — 2026-10-20
-
-### Changements
 - Textures de Minecraft 26.3 (au lieu de 1.21.4).
+- Les arènes peuvent être rectangulaires.
 - Les squelettes et les blazes ne tirent plus à l'aveugle : si tu es caché, ils se déplacent pour te viser.
 
 ### Corrections
 - Les flèches ne traversent plus les murs, dans les deux sens : un muret d'un bloc protège désormais, et aucun tir ne passe dans un coin entre deux blocs ni ne saute un mur en temps accéléré.
+
+## [0.15.0] — 2026-10-20
+
+Refonte des classes, étape 7 : les nouveaux arbres de talents, première partie. Valeurs provisoires, à ajuster après les essais.
+
+### Nouveautés
+- Huit nouveaux arbres de talents (deux par classe), en graphe : chaque talent s'achète une fois relié à un talent complet au-dessus de lui, et des paliers ouvrent le bas de l'arbre (8 rangs achetés au-dessus, puis 18 pour les talents finaux).
+- Nouvel écran des talents : schéma de l'arbre avec liens de redstone qui s'allument, fiche du talent (effet, prérequis, coût, achat), et paliers affichés avec les rangs déjà achetés.
+- Les achats sont gardés dans les deux arbres d'une classe ; un seul arbre est utilisé en partie, à choisir sur l'écran des talents.
+- Talents à choix : l'achat débloque les deux options, une seule joue à la fois (changement gratuit).
+- Talents finaux : un seul actif par arbre, changeable gratuitement avant chaque partie.
+- Armes de départ : les talents qui offrent une arme au départ peuvent être désactivés, une seule arme en plus par arbre.
+- Talents déjà actifs en partie : bonus de dégâts par famille d'armes (mêlée, projectiles, feu, alliés), rayon de mêlée, recul, critiques, PV, armure, régénération en part des PV max, soins des pommes, brûlure (dégâts, durée, cumuls), poison, ralentissements, PV, vitesse et durée des alliés, bonus d'armes précises, rangs d'armes offerts au départ.
+- Les talents à mécanique propre (Frénésie, talents finaux…) sont déjà achetables et marqués « Effet en préparation » : ils arrivent dans la prochaine version.
+- Le résumé des talents du menu montre les talents actifs de l'arbre utilisé, talent final en évidence.
+
+### Changements
+- Les talents de l'ancienne version sont remboursés : toutes les émeraudes dépensées sont rendues, et un bandeau l'annonce sur l'accueil.
+
+## [0.14.0] — 2026-10-20
+
+Refonte des classes, étape 6 : l'arsenal de l'Invocateur. Les quatre classes ont maintenant chacune leur propre arsenal. Valeurs provisoires, à ajuster après les essais.
+
+### Nouveautés
+- L'Invocateur a son propre arsenal de 6 invocations, et ses cartes ne proposent plus que celles-ci : Meute de loups, Golem de fer, Vex, et trois nouvelles.
+- Esprit de blaze : des blazes alliés flottent à distance des ennemis et tirent des salves de 3 boules de feu ; au dernier rang, leurs tirs enflamment.
+- Totem des racines : un totem en bois de palétuvier, entouré de racines, se plante dans le plus gros groupe. Il attire les mobs, ralentit et enracine ceux qui y entrent (les racines blessent à partir du rang 4) ; quand les deux totems sont posés, le plus ancien est replanté sur le nouveau groupe.
+- Esprit protecteur : l'allay du jeu suit l'Invocateur et lui donne régulièrement du bouclier ; quand le bouclier est plein, il soigne l'allié le plus blessé.
+- Bouclier : des PV d'absorption, affichés en cœurs dorés après les cœurs (comme l'effet Absorption du jeu), perdus avant les PV. La réserve est limitée à 25 % des PV max.
+
+## [0.13.0] — 2026-10-20
+
+Refonte des classes, étape 5 : l'arsenal de l'Archère. Valeurs provisoires, à ajuster après les essais.
+
+### Nouveautés
+- L'Archère a son propre arsenal de 6 attaques, et ses cartes ne proposent plus que celles-ci : l'Arc et cinq nouvelles.
+- Salve en éventail : une gerbe de 5 flèches tirée à l'arbalète dans un cône, jusqu'à 9 flèches.
+- Pluie de flèches : des flèches tombent du ciel sur le plus gros groupe et restent plantées un instant dans le sol.
+- Flèche ricocheuse : une flèche spectrale lumineuse file vers un ennemi puis rebondit sur les suivants (jusqu'à 5 rebonds), en perdant 15 % de ses dégâts à chaque fois.
+- Fusée explosive : une fusée de feu d'artifice qui explose en gerbe d'étincelles de toutes les couleurs, avec le son du jeu ; au dernier rang, l'explosion se divise en 4 petites explosions.
+- Piège de ronces : des buissons de baies sucrées posés sous l'Archère blessent et ralentissent ceux qui les traversent (le plus ancien est remplacé quand ils sont tous posés) ; au dernier rang, ils enracinent un instant ceux qui y entrent.
+
+## [0.12.0] — 2026-10-20
+
+Refonte des classes, étape 4 : l'arsenal du Mage. Valeurs provisoires, à ajuster après les essais.
+
+### Nouveautés
+- Le Mage a son propre arsenal de 6 attaques, et ses cartes ne proposent plus que celles-ci : Boules de feu, Éclairs, et quatre nouvelles.
+- Tornade de feu : une colonne de cubes de magma tourbillonne vers les ennemis, les blesse et les aspire, en crachant des braises. Jusqu'à 2 tornades.
+- Nova de glace : un anneau d'éclats de glace jaillit autour du Mage, blesse et ralentit (45 % au rang 4). Au dernier rang, il laisse de la neige poudreuse qui ralentit ceux qui la traversent. Bruit de verre brisé.
+- Météore : un bloc de magma tombe en biais sur le plus gros groupe (son ombre annonce l'impact), puis le sol brûle avec le feu animé du jeu et blesse ceux qui restent dedans.
+- Orbes arcaniques : des cubes d'améthyste tournent autour du Mage puis foncent chacun sur un ennemi, en changeant de cible si la leur meurt. À partir du rang 4, ils blessent aussi au contact pendant l'orbite.
+
+### Changements
+- Boules de feu et Éclairs sont désormais réservés au Mage. L'Archère et l'Invocateur gardent les armes non réservées en attendant leur propre arsenal.
+
+## [0.11.0] — 2026-10-20
+
+Refonte des classes, étape 3 : l'arsenal du Guerrier. Valeurs provisoires, à ajuster après les essais.
+
+### Nouveautés
+- Le Guerrier a son propre arsenal de 7 attaques, et ses cartes ne proposent plus que celles-ci : Épée en fer, Haches tournoyantes, Trident, et quatre nouvelles.
+- Onde de choc : il frappe le sol, une fissure file vers le plus gros groupe et soulève les blocs du sol de l'arène, qui jaillissent puis retombent. Jusqu'à 3 fissures en éventail ; au dernier rang, les ennemis touchés sont ralentis.
+- Lame colossale : une épée en netherite géante tombe du ciel sur le plus gros groupe (son ombre annonce l'impact), avec éboulis, secousse et le son de l'enclume.
+- Tourbillon de lames : il tourne sur lui-même et frappe tout autour plusieurs fois, entouré de balayages ; au dernier rang, il aspire les ennemis.
+- Heurt de bouclier : coup de bouclier devant lui qui repousse fort et interrompt les attaques (la mèche du creeper repart de zéro) ; il étourdit à partir du rang 4 et renvoie les flèches ennemies contre leurs tireurs au dernier rang.
+
+### Changements
+- Haches tournoyantes et Trident sont désormais réservés au Guerrier. Les autres classes gardent les autres armes en attendant leur propre arsenal.
+
+## [0.10.0] — 2026-10-20
+
+Refonte des classes, étape 2 : les états des ennemis. Ils serviront aux nouvelles attaques et aux talents ; on peut déjà les essayer depuis le panneau F3.
+
+### Nouveautés
+- Brûlure et poison : dégâts toutes les 0,5 s en cumuls (3 et 5 au maximum), chiffres orange ou verts, jamais critiques. Le mob vacille en orange (brûlure) ou se teinte de vert, avec flammes ou tourbillons d'effet de potion.
+- Ralentissement et enracinement : teinte bleue et particules de l'effet Lenteur. Un ennemi enraciné ne marche plus mais peut encore attaquer.
+- Étourdissement : ni marche ni attaque, étoiles magiques au-dessus de la tête.
+- Marque : les alliés invoqués font plus de dégâts à la cible, lueur dorée au-dessus d'elle.
+- Les boss résistent : ralentis moitié moins (25 % au plus), seulement ralentis au lieu d'être enracinés, jamais étourdis.
+- Panneau F3 : une rangée « États » pour infliger chaque état aux ennemis proches.
+
+## [0.9.0] — 2026-10-20
+
+Refonte des classes, étape 1 : le socle. Les chiffres sont provisoires et seront ajustés après les essais.
+
+### Changements
+- Plafonds : délai des armes −50 % au maximum, +2 projectiles en plus par arme, 60 % de critiques, régénération limitée à 2 % des PV max par seconde, et l'armure retire au plus la moitié d'un coup.
+- « +1 projectile » ne s'applique plus qu'aux armes à projectiles (arc, trident, boules de feu, éclairs) : le Carquois n'ajoute plus de golem ni de hache.
+- Invocations : chaque type a son quota (6 loups, 6 vex, 2 golems), et aucun ne prend la place d'un autre. Chaque invocation fait apparaître un groupe ; au quota, elle renouvelle à la place la durée des alliés présents.
+- Appel de la meute et Hurlement donnent +1 allié par invocation (au lieu d'un projectile) ; un allié qui dépasserait le quota donne +10 % de dégâts à la place.
+- Loups, vex et golem rééquilibrés pour que la durée compte : le golem n'est plus permanent dès le rang 1.
 
 ## [0.8.2] — 2026-10-20
 

@@ -80,7 +80,7 @@ export class Objets {
       if ((o.x - j.x) ** 2 + (o.z - j.z) ** 2 > portee * portee) continue;
       const def = OBJETS[IDS_OBJETS[o.indexType]];
       const avant = j.pv;
-      j.pv = Math.min(j.pvMax, j.pv + def.soin);
+      j.pv = Math.min(j.pvMax, j.pv + def.soin * (1 + this.etat.modificateurs.soinsObjets));
       this.etat.stats.pvSoignes += j.pv - avant;
       this.retours.son('manger');
       this.particules.emettre(o.x, 0.8, o.z, GERBES.ramassage, def.icone);

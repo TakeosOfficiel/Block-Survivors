@@ -190,6 +190,13 @@ export interface DefinitionPersonnage extends ApparenceEntite {
   readonly pv: number;               // 20 = 10 cœurs
   readonly vitesse: number;          // blocs / seconde
   readonly armesDepart: readonly IdArme[];
+  /** Attaques de la classe : seules elles sont proposées en carte si l'arsenal est complet. */
+  readonly arsenal: readonly IdArme[];
+  /**
+   * Arsenal encore incomplet (refonte en cours) : la classe peut aussi tirer les
+   * armes qui n'appartiennent à aucun arsenal complet.
+   */
+  readonly arsenalComplet: boolean;
   /** Bonus permanents, ajoutés aux modificateurs dès le début. */
   readonly bonus: Partial<Modificateurs>;
   /** Bonus passifs exclusifs que seul ce personnage peut tirer. */
@@ -300,9 +307,11 @@ export interface StatsArme {
   readonly portee: number;       // blocs : recherche de cible, distance de vol
   readonly vitesse: number;      // blocs/s (orbite : rad/s)
   readonly zone: number;         // blocs : rayon de balayage, d'orbite, d'explosion, d'impact, d'allonge
-  readonly duree: number;        // s de vie (golems)
+  readonly duree: number;        // s de vie (golems), de rotation (tourbillon), de ralentissement
   readonly perforation: number;  // ennemis traversés avant de disparaître
-  readonly recul: number;        // blocs/s donnés aux ennemis touchés
+  readonly recul: number;        // blocs/s donnés aux ennemis touchés (négatif : les attire)
+  readonly ralenti: number;      // part de vitesse retirée aux ennemis touchés, pendant `duree` (0 : aucun)
+  readonly etourdi: number;      // s d'étourdissement des ennemis touchés (0 : aucun)
 }
 
 export type MecaniqueArme =
@@ -316,11 +325,55 @@ export type MecaniqueArme =
   /** Objets qui tournent en permanence autour du joueur. */
   | { readonly type: 'orbite'; readonly projectile: IdProjectile }
   /** Projectile qui explose au premier ennemi touché. */
-  | { readonly type: 'explosif'; readonly projectile: IdProjectile }
+  /**
+   * Projectile qui explose au premier ennemi touché (`gerbe` et `son` de l'explosion, sinon ceux des
+   * boules de feu) ; dès le rang `eclatsAuRang`, l'explosion lance 4 petites explosions autour.
+   */
+  | {
+      readonly type: 'explosif'; readonly projectile: IdProjectile;
+      readonly gerbe?: IdGerbe; readonly son?: IdSon; readonly eclatsAuRang?: number;
+    }
   /** Éclairs qui frappent des ennemis au hasard autour du joueur. */
   | { readonly type: 'foudre'; readonly couleur: number }
   /** Alliés qui combattent seuls pendant un temps limité. */
-  | { readonly type: 'invocation'; readonly allie: IdAllie };
+  | { readonly type: 'invocation'; readonly allie: IdAllie; readonly brulureAuRang?: number }
+  /** Fissures qui soulèvent les blocs du sol en ligne vers le plus gros groupe (`ecart` : rad entre fissures). */
+  | { readonly type: 'fissure'; readonly ecart: number; readonly vitesse: number }
+  /** Arme géante (`image`, `taille` blocs) qui tombe du ciel sur le plus gros groupe d'ennemis. */
+  | { readonly type: 'chute'; readonly image: CheminTexture; readonly taille: number }
+  /** Le joueur tourne sur lui-même et frappe tout autour toutes les `intervalle` s. */
+  | { readonly type: 'tourbillon'; readonly intervalle: number; readonly effet: readonly CheminTexture[] }
+  /** Coup de bouclier en cône : repousse et interrompt ; renvoie les projectiles dès le rang `renvoi`. */
+  | { readonly type: 'heurt'; readonly angle: number; readonly renvoi: number }
+  /** Colonne de cubes (`texture`) qui avance vers les ennemis et blesse autour d'elle toutes les `intervalle` s. */
+  | { readonly type: 'tornade'; readonly texture: CheminTexture; readonly vitesse: number; readonly intervalle: number }
+  /**
+   * Anneau d'éclats (`texture`) qui s'étend autour du joueur en `expansion` s ; dès le rang `solAuRang`,
+   * il laisse un sol (`sol`) qui ralentit pendant `dureeSol` s.
+   */
+  | {
+      readonly type: 'nova'; readonly texture: CheminTexture; readonly expansion: number;
+      readonly sol: CheminTexture; readonly solAuRang: number; readonly dureeSol: number;
+    }
+  /** Bloc (`texture`) qui tombe sur un groupe, puis feu au sol (`feu`) : `degatsSol` × dégâts toutes les 0,5 s. */
+  | { readonly type: 'meteore'; readonly texture: CheminTexture; readonly feu: CheminTexture; readonly degatsSol: number }
+  /**
+   * Orbes (`texture`) qui tournent autour du joueur pendant la durée, puis foncent sur les ennemis ;
+   * dès le rang `contactAuRang`, elles blessent au contact (`contact` × dégâts) pendant l'orbite.
+   */
+  | { readonly type: 'orbes'; readonly texture: CheminTexture; readonly contactAuRang: number; readonly contact: number }
+  /**
+   * Flèche à tête chercheuse qui rebondit d'ennemi en ennemi (perforation = rebonds) dans un rayon de
+   * `distanceRebond` blocs, en perdant `perte` de ses dégâts à chaque rebond.
+   */
+  | { readonly type: 'ricochet'; readonly projectile: IdProjectile; readonly perte: number; readonly distanceRebond: number }
+  /** Flèches (`image`) qui tombent du ciel sur le plus gros groupe, `impactsParSeconde` pendant la durée. */
+  | { readonly type: 'pluie'; readonly image: CheminTexture; readonly impactsParSeconde: number }
+  /**
+   * Piège (buissons `image`) posé sous le joueur : blesse et ralentit toutes les `intervalle` s ;
+   * dès le rang `enracineAuRang`, il enracine un instant les ennemis qui y entrent.
+   */
+  | { readonly type: 'piege'; readonly image: CheminTexture; readonly intervalle: number; readonly enracineAuRang: number };
 
 export interface NiveauArme {
   /** Texte de la carte d'amélioration. */
@@ -334,12 +387,18 @@ export interface DefinitionArme {
   readonly description: string;
   readonly icone: CheminTexture;
   readonly mecanique: MecaniqueArme;
+  /** Famille qui profite des bonus de talents (« +8 % dégâts de mêlée »…). */
+  readonly famille?: FamilleArme;
   /** Statistiques au rang 1. */
   readonly stats: StatsArme;
   /** Améliorations des rangs 2, 3… ; rang maximal = 1 + longueur. */
   readonly niveaux: readonly NiveauArme[];
   /** Son joué à chaque déclenchement. */
   readonly son?: IdSon;
+  /** Noms des statistiques sur les cartes, s'ils diffèrent (« Bouclier » au lieu de « Dégâts »). */
+  readonly libelles?: Partial<Record<keyof StatsArme, string>>;
+  /** Statistiques montrées sur les cartes, si elles diffèrent de celles de sa mécanique. */
+  readonly statsAffichees?: readonly (keyof StatsArme)[];
 }
 
 // --------------------------------------------------------------------------
@@ -357,12 +416,29 @@ export interface DefinitionAllie extends ApparenceEntite {
   readonly sonMort: IdSon;
   /** Points de vie : les ennemis au corps à corps l'attaquent, il peut mourir avant la fin. */
   readonly pv: number;
-  /** Dégâts retirés à chaque coup reçu (au moins 1 dégât passe). */
+  /** Dégâts retirés à chaque coup reçu (voir defense.ts). */
   readonly armure?: number;
+  /** Nombre maximal en même temps ; au-delà, une invocation renouvelle la durée d'un allié présent. */
+  readonly quota: number;
+  /** Profite des « +1 allié » permanents (Appel de la meute…) ; pas les golems. */
+  readonly renforts: boolean;
   /** Distance (blocs) à laquelle il détourne les ennemis du joueur. */
   readonly provocation: number;
   /** Vole à cette hauteur (blocs) en traversant le décor (vex). */
   readonly vol?: number;
+  /** Combat à distance : salves de `salve` projectiles écartés de `ecart` rad, à `distance` blocs de la cible. */
+  readonly tir?: { readonly projectile: IdProjectile; readonly salve: number; readonly ecart: number; readonly distance: number };
+  /** Soutien : ne combat pas, suit le joueur, lui donne du bouclier puis soigne les alliés blessés. */
+  readonly soutien?: boolean;
+  /**
+   * Immobile, posé sur le plus gros groupe ; toutes les `intervalle` s, ralentit et blesse autour de lui,
+   * et enracine `enracinement` s les ennemis qui entrent (une fois toutes les `delai` s).
+   */
+  readonly aura?: { readonly intervalle: number; readonly enracinement: number; readonly delai: number };
+  /** Dessiné en blocs empilés (`empilement`, de bas en haut) entourés de `racines`, au lieu de son modèle. */
+  readonly blocs?: { readonly empilement: readonly CheminTexture[]; readonly racines: CheminTexture };
+  /** Au quota, le plus ancien est replanté sur le nouveau groupe au lieu d'être renouvelé sur place. */
+  readonly remplacement?: boolean;
 }
 
 // --------------------------------------------------------------------------
@@ -523,15 +599,37 @@ export interface Modificateurs {
   cadence: number;       // < 1 : armes plus rapides
   zone: number;
   portee: number;
-  projectiles: number;   // projectiles, haches, éclairs, golems en plus
+  projectiles: number;   // projectiles en plus (armes qui en profitent, voir plafonds.ts)
+  allies: number;        // alliés en plus à chaque invocation
   vitesse: number;
   pvMax: number;
-  armure: number;        // dégâts retirés à chaque coup reçu (minimum 1 dégât)
+  armure: number;        // dégâts retirés à chaque coup reçu (voir defense.ts)
   regeneration: number;  // PV / s
   vies: number;          // totems d'immortalité : résurrections à la mort
   collecte: number;
   critique: number;      // chance de coup critique (0 à 1)
   degatsCritiques: number;  // multiplicateur des dégâts d'un coup critique
+  // Talents : bonus par famille d'armes (parts en plus, 0,04 = +4 %)
+  degatsMelee: number;
+  zoneMelee: number;
+  degatsProjectiles: number;
+  vitesseProjectiles: number;
+  degatsFeu: number;
+  cadenceFeu: number;       // ajouté au délai des armes de feu (négatif : plus rapides)
+  degatsAllies: number;
+  vitesseAllies: number;
+  pvAllies: number;
+  dureeAllies: number;      // s de vie en plus des alliés invoqués
+  recul: number;            // multiplicateur du recul des armes
+  // Talents : états et soins
+  degatsBrulure: number;    // parts en plus des dégâts de brûlure
+  dureeBrulure: number;
+  cumulsBrulure: number;    // cumuls en plus au maximum
+  degatsPoison: number;
+  dureeRalenti: number;     // parts en plus de la durée des ralentissements
+  degatsRalentis: number;   // dégâts en plus contre les ennemis ralentis
+  regenerationPart: number; // part des PV max rendue par seconde
+  soinsObjets: number;      // parts en plus des soins des pommes
 }
 
 export interface NiveauPassif {
@@ -621,6 +719,19 @@ export interface DefinitionParticule {
   readonly retrecit?: boolean;
 }
 
+/** État d'un ennemi (etats.ts). */
+export interface DefinitionEtat {
+  /** Particules émises toutes les `periode` s tant qu'il dure. */
+  readonly gerbe: IdGerbe;
+  readonly periode: number;
+  /** Teinte du modèle (linéaire) et sa force. */
+  readonly couleur?: readonly [number, number, number];
+  readonly force?: number;
+  /** Dégâts par seconde : cumuls au maximum et intervalle entre deux dégâts (s). */
+  readonly cumulsMax?: number;
+  readonly tic?: number;
+}
+
 /** Une salve de particules d'un même type ; une gerbe en enchaîne plusieurs. */
 export interface SalveParticules {
   readonly particule: IdParticule;
@@ -635,22 +746,63 @@ export type DefinitionGerbe = readonly SalveParticules[];
 // --------------------------------------------------------------------------
 // Progression entre les parties (talents, émeraudes, déblocages)
 // --------------------------------------------------------------------------
-export interface DefinitionTalent {
-  /** Identifiant stable (sauvegarde). */
-  readonly id: string;
+/** Famille d'armes, que certains talents renforcent toutes ensemble. */
+export type FamilleArme = 'melee' | 'projectile' | 'feu' | 'allie';
+
+/** Bonus d'un talent pour une arme précise, cumulé à chaque rang. */
+export interface BonusArmeTalent {
+  readonly arme: IdArme;
+  /** Ajouts aux statistiques de base de l'arme (avant les modificateurs). */
+  readonly ajout?: Partial<StatsArme>;
+  /** Parts en plus (0,1 = +10 %) des statistiques finales. */
+  readonly part?: Partial<StatsArme>;
+  /** Alliés invoqués par l'arme : PV et vitesse en plus (parts). */
+  readonly pv?: number;
+  readonly vitesse?: number;
+}
+
+/** Ce que fait un talent (ou une option d'un talent à choix), cumulé à chaque rang. */
+export interface EffetTalent {
+  readonly modif?: Partial<Modificateurs>;
+  readonly armes?: readonly BonusArmeTalent[];
+  /** Rangs offerts de cette arme au départ (une par rang). */
+  readonly rangsArme?: IdArme;
+  /** Commence avec cette arme, au rang du talent ; désactivable, une seule à la fois. */
+  readonly armeDepart?: IdArme;
+  readonly relances?: number;
+  /** Effet propre, géré par le combat (voir combat/talents.ts). */
+  readonly mecanique?: string;
+}
+
+export type TypeNoeud = 'bonus' | 'capacite' | 'choix' | 'final';
+export type BrancheArbre = 'tronc' | 'gauche' | 'centre' | 'droite' | 'libre';
+
+/** Une des deux options d'un talent à choix. */
+export interface OptionTalent extends EffetTalent {
   readonly nom: string;
   readonly icone: CheminTexture;
-  /** Rangée de l'arbre (0 = la plus basse), ouverte selon SEUILS_PALIERS. */
-  readonly palier: number;
-  /** Prix en émeraudes de chaque rang ; leur nombre donne le rang maximum. */
-  readonly couts: readonly number[];
-  /** Effet d'un rang, ex. « Dégâts +5 % ». */
   readonly effet: string;
-  /** Effets cumulés à chaque rang. */
-  readonly modif?: Partial<Modificateurs>;
-  /** Chaque rang donne un rang de cette arme dès le départ. */
-  readonly arme?: IdArme;
-  readonly relances?: number;
+}
+
+/** Un talent de l'arbre, à sa place (ligne 0 en haut, colonnes 0 à 6). */
+export interface NoeudTalent extends EffetTalent {
+  /** Identifiant stable (sauvegarde). */
+  readonly id: string;
+  readonly ligne: number;
+  readonly colonne: number;
+  readonly type: TypeNoeud;
+  readonly branche: BrancheArbre;
+  readonly nom: string;
+  readonly icone: CheminTexture;
+  /** Effet affiché (tous rangs, ex. « Dégâts +4 / 8 / 12 % »). */
+  readonly effet: string;
+  readonly rangMax: number;
+  /** Talents reliés au-dessus : il faut qu'un d'eux soit complet. Absent : racine ou talent libre. */
+  readonly prerequis?: readonly string[];
+  /** Relié à rien : s'ouvre avec son palier. */
+  readonly libre?: boolean;
+  /** Talent à choix : ses deux options (l'achat débloque les deux). */
+  readonly options?: readonly [OptionTalent, OptionTalent];
 }
 
 export interface DefinitionArbre {
@@ -658,7 +810,8 @@ export interface DefinitionArbre {
   readonly nom: string;
   readonly description: string;
   readonly icone: CheminTexture;
-  readonly talents: readonly DefinitionTalent[];
+  readonly branches: Partial<Record<BrancheArbre, string>>;
+  readonly noeuds: readonly NoeudTalent[];
 }
 
 export interface DefinitionRecompenses {

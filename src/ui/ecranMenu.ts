@@ -11,6 +11,7 @@ import { IDS_PERSONNAGES, PERSONNAGES, type IdPersonnage } from '../donnees/pers
 import type { DefinitionArene } from '../donnees/types';
 import type { ChoixPartie } from '../lancement';
 import { decrireBonus } from '../progression/ameliorations';
+import { libelleVersion, miseAJourDisponible, URL_TELECHARGEMENT } from '../version';
 import { caseImage } from './bilan';
 import { element } from './dom';
 import type { PanneauOptions } from './panneauOptions';
@@ -38,6 +39,13 @@ export class EcranMenu {
     this.arene = choix.arene;
 
     element('menu-accroche').textContent = ACCROCHES[Math.floor(Math.random() * ACCROCHES.length)];
+    element('menu-version').textContent = libelleVersion();
+    void miseAJourDisponible().then((disponible) => {
+      if (!disponible) return;
+      const lien = element<HTMLAnchorElement>('menu-mise-a-jour');
+      lien.href = URL_TELECHARGEMENT;
+      lien.classList.remove('cache');
+    });
     this.listePersonnages.append(...IDS_PERSONNAGES.map((id) => this.creerOptionPersonnage(id)));
     this.listeArenes.append(...ARENES.map((arene) => this.creerOptionArene(arene)));
     element<HTMLButtonElement>('menu-jouer').addEventListener('click', () => this.jouer());

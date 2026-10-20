@@ -71,6 +71,7 @@ const LIBELLES_MODIFICATEURS: Record<keyof Modificateurs, { nom: string; pourcen
   pvMax: { nom: 'Santé maximale', pourcentage: false, unite: ' PV' },
   armure: { nom: 'Dégâts reçus', pourcentage: false, unite: '' },
   regeneration: { nom: 'Régénération', pourcentage: false, unite: ' PV/s' },
+  vies: { nom: 'Vies en plus', pourcentage: false, unite: '' },
   collecte: { nom: 'Rayon de collecte', pourcentage: true, unite: '' },
 };
 

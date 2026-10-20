@@ -4,7 +4,7 @@ import type { Modificateurs } from '../donnees/types';
 export function creerModificateurs(): Modificateurs {
   return {
     degats: 1, cadence: 1, zone: 1, portee: 1, projectiles: 0,
-    vitesse: 1, pvMax: 0, armure: 0, regeneration: 0, collecte: 1,
+    vitesse: 1, pvMax: 0, armure: 0, regeneration: 0, collecte: 1, vies: 0,
   };
 }
 

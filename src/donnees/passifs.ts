@@ -81,10 +81,10 @@ const definitions = {
   },
   totem: {
     nom: "Totem d'immortalité",
-    description: 'Guerrier : plus de santé et une régénération accrue.',
+    description: 'Guerrier : à sa mort, le totem le ramène à la vie (puis disparaît).',
     icone: 'item/totem_of_undying',
     exclusif: true,
-    niveaux: rangs(3, { description: '+3 cœurs, +0,2 PV par seconde', modif: { pvMax: 6, regeneration: 0.2 } }),
+    niveaux: rangs(2, { description: '+1 vie : vous ressuscitez avec la moitié de vos PV', modif: { vies: 1 } }),
   },
   fleches_spectrales: {
     nom: 'Flèches spectrales',

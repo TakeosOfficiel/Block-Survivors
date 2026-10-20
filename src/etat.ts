@@ -18,7 +18,9 @@ export interface EtatJoueur {
   angle: number;          // orientation (rad), 0 = face vers +Z
   pv: number;
   pvMax: number;
-  invulnerabilite: number;  // s restantes sans pouvoir être blessé
+  invulnerabilite: number;  // s restantes sans pouvoir être blessé (après un coup)
+  protection: number;     // s d'invincibilité après une résurrection (totem)
+  viesUtilisees: number;  // totems déjà consommés
   mort: boolean;
   tempsMort: number;      // s écoulées depuis la mort
   niveau: number;
@@ -80,6 +82,8 @@ export function creerEtatPartie(arene: DefinitionArene, idPersonnage: IdPersonna
       pv: personnage.pv,
       pvMax: personnage.pv,
       invulnerabilite: 0,
+      protection: 0,
+      viesUtilisees: 0,
       mort: false,
       tempsMort: 0,
       niveau: 1,

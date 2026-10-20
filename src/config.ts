@@ -182,6 +182,15 @@ export const CONFIG = {
 
   joueur: {
     dureeMort: 0.6,          // chute sur le côté (s)
+    // Totem d'immortalité : résurrection à la mort
+    totem: {
+      pv: 0.5,               // part des PV maximum rendue
+      protection: 3,         // s d'invincibilité après la résurrection
+      rayonRecul: 6,         // les ennemis proches sont repoussés…
+      recul: 14,             // …avec cette force
+      icone: 'item/totem_of_undying',
+      particules: { nombre: 60, vitesse: 6, taille: 0.25, duree: 1.4, couleurs: [0xf4e04d, 0x7ed957, 0x3fae3f, 0xfff7a8] },
+    },
   },
 
   debug: {

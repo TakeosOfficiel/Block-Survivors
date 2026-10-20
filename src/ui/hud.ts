@@ -34,6 +34,9 @@ export class Hud implements AfficheurAlerte {
   private readonly elementChrono = element('hud-chrono');
   private readonly elementTues = element('hud-tues-nombre');
   private readonly elementVignette = element('vignette');
+  private readonly elementTotems = element('hud-totems');
+  private readonly elementNombreTotems = element('hud-totems-nombre');
+  private readonly elementAnimationTotem = element<HTMLImageElement>('hud-totem-anim');
   private readonly sources: SourcesHud;
   private readonly coeurs: BarreCoeurs;
   private readonly capacites: BarreCapacites;
@@ -47,6 +50,8 @@ export class Hud implements AfficheurAlerte {
   private secondeAffichee = -1;
   private tuesAffiches = -1;
   private opaciteVignette = 0;
+  private totemsAffiches = -1;
+  private viesUtiliseesVues = 0;
   private tempsReel = 0;
 
   /** Dernière mesure (lue aussi par le debug). */
@@ -63,6 +68,11 @@ export class Hud implements AfficheurAlerte {
     const image = element<HTMLImageElement>('hud-tues-icone');
     if (icone) image.src = icone;
     else image.classList.add('cache');
+    const totem = textures.url(CONFIG.joueur.totem.icone);
+    if (totem) {
+      element<HTMLImageElement>('hud-totems-icone').src = totem;
+      this.elementAnimationTotem.src = totem;
+    }
   }
 
   /** Affiche ou masque le compteur de FPS (option). */
@@ -100,6 +110,7 @@ export class Hud implements AfficheurAlerte {
       this.elementTues.textContent = String(etat.ennemisTues);
     }
     this.afficherVignette(etat);
+    this.afficherTotems(etat);
 
     if (this.minuterieMessage > 0) {
       this.minuterieMessage -= dtReel;
@@ -119,11 +130,29 @@ export class Hud implements AfficheurAlerte {
     this.elementChrono.classList.toggle('final', PROGRESSION.dureePartie - seconde <= CONFIG.hud.dernierCompteARebours);
   }
 
+  /** Totems restants, et animation du totem qui jaillit à chaque résurrection. */
+  private afficherTotems(etat: EtatPartie): void {
+    const j = etat.joueur;
+    const restants = Math.max(0, etat.modificateurs.vies - j.viesUtilisees);
+    if (restants !== this.totemsAffiches) {
+      this.totemsAffiches = restants;
+      this.elementTotems.classList.toggle('cache', restants === 0);
+      this.elementNombreTotems.textContent = `×${restants}`;
+    }
+    if (j.viesUtilisees !== this.viesUtiliseesVues) {
+      this.viesUtiliseesVues = j.viesUtilisees;
+      const anim = this.elementAnimationTotem;
+      anim.classList.remove('cache', 'joue');
+      void anim.offsetWidth;  // relance l'animation CSS
+      anim.classList.add('joue');
+    }
+  }
+
   /** Voile rouge : fort juste après un coup, pulsant quand la santé est basse. */
   private afficherVignette(etat: EtatPartie): void {
     const v = CONFIG.hud.vignette;
     const j = etat.joueur;
-    const blessure = j.mort ? 0 : Math.max(0, j.invulnerabilite / JOUEUR_BASE.invulnerabilite) * v.blessure;
+    const blessure = j.mort ? 0 : Math.min(1, Math.max(0, j.invulnerabilite / JOUEUR_BASE.invulnerabilite)) * v.blessure;
     const santeBasse = !j.mort && j.pv / j.pvMax <= v.seuilSanteBasse
       ? v.santeBasse * (0.6 + 0.4 * Math.sin(this.tempsReel * v.pulsation))
       : 0;

@@ -232,6 +232,20 @@ export class Ennemis implements SourceEntites {
     }
   }
 
+  /** Repousse sans les blesser les ennemis vivants dans un cercle (résurrection du joueur). */
+  repousser(x: number, z: number, rayon: number, force: number): void {
+    for (let i = 0; i < this.pool.nombre; i++) {
+      const e = this.pool.elements[i];
+      const dx = e.x - x;
+      const dz = e.z - z;
+      const d = longueur(dx, dz);
+      if (e.mort >= 0 || d > rayon + e.definition.rayon) continue;
+      const k = force * (1 - (e.definition.resistanceRecul ?? 0)) / (d || 1);
+      e.vx += dx * k;
+      e.vz += dz * k;
+    }
+  }
+
   /** Blesse tous les ennemis vivants dans un cercle. */
   frapperZone(x: number, z: number, rayon: number, degats: number, recul: number): void {
     for (let i = 0; i < this.pool.nombre; i++) {

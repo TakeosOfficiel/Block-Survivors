@@ -12,6 +12,7 @@ const definitions = {
   blessure_joueur: { chemin: 'damage/hit1', hachage: 'c43077ac1f9ceda7e9e1c152f839baf207833aa8', volume: 0.7, hauteur: [0.9, 1.1], intervalleMin: 0.1, simultanes: 2 },
   ramassage: { chemin: 'random/pop', hachage: 'd6ae1c04d0a7376a33d1df12e1b8057cfbab6bc2', volume: 0.4, hauteur: [0.8, 1.4], intervalleMin: 0.05, simultanes: 2 },
   manger: { chemin: 'random/burp', hachage: '389e837fa8c7f8f09499b43d8710489dfd8c53dd', volume: 0.5, hauteur: [0.9, 1.1], intervalleMin: 0.1, simultanes: 1 },
+  totem: { chemin: 'item/totem/use_totem', hachage: 'f3fa2f7ac95f0bd8419b9638b2e6b289265e4b18', volume: 0.7, hauteur: [1, 1], intervalleMin: 0.5, simultanes: 1 },
   victoire: { chemin: 'ui/toast/challenge_complete', hachage: 'bd01dff39a7bd1e0e7f6847f7aee981f157e4f94', volume: 0.6, hauteur: [1, 1], intervalleMin: 1, simultanes: 1 },
   clic: { chemin: 'random/click', hachage: '3455ca942556c7d5eac7dd5e458e7fb3bad564c9', volume: 0.35, hauteur: [1, 1], intervalleMin: 0.03, simultanes: 2 },
 

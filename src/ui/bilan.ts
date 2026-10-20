@@ -35,6 +35,7 @@ export function remplirBilan(
     ligne('Dégâts infligés', NOMBRE.format(degatsTotaux)),
     ligne('Dégâts subis', NOMBRE.format(s.degatsSubis)),
     ligne('PV soignés', NOMBRE.format(s.pvSoignes)),
+    ligne('Totems utilisés', String(etat.joueur.viesUtilisees)),
   );
 
   // Ennemis vaincus : visage et nombre, pour chaque type rencontré

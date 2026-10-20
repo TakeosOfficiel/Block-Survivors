@@ -18,8 +18,8 @@ import type { SourceEntites } from './types';
 interface Orbe {
   x: number;
   z: number;
-  vx: number;
-  vz: number;
+  vitesse: number;      // blocs/s, vers le joueur
+  aimantee: boolean;    // entrée une fois dans le rayon de collecte : suit le joueur jusqu'au bout
   valeur: number;
   phase: number;        // décale la pulsation et le flottement
 }
@@ -38,7 +38,7 @@ const couleur = new THREE.Color();
 export class Orbes implements SourceEntites, DepotXp {
   private readonly etat: EtatPartie;
   private readonly retours: Retours;
-  private readonly pool = new Pool<Orbe>(CONFIG.orbes.capacite, () => ({ x: 0, z: 0, vx: 0, vz: 0, valeur: 0, phase: 0 }));
+  private readonly pool = new Pool<Orbe>(CONFIG.orbes.capacite, () => ({ x: 0, z: 0, vitesse: 0, aimantee: false, valeur: 0, phase: 0 }));
   /** Un maillage par palier de taille (PROGRESSION.orbes). */
   private readonly maillages: THREE.InstancedMesh[];
   private readonly comptes: Int32Array;
@@ -82,8 +82,8 @@ export class Orbes implements SourceEntites, DepotXp {
     }
     o.x = x;
     o.z = z;
-    o.vx = 0;
-    o.vz = 0;
+    o.vitesse = 0;
+    o.aimantee = false;
     o.valeur = valeur;
     o.phase = Math.random() * 100;
   }
@@ -99,27 +99,21 @@ export class Orbes implements SourceEntites, DepotXp {
       const dx = j.x - o.x;
       const dz = j.z - o.z;
       const d = longueur(dx, dz);
-      if (d < c.distanceCollecte) {
+      if (d < rayon) o.aimantee = true;
+      if (!o.aimantee) continue;
+
+      // Guidage direct, de plus en plus rapide : toujours droit sur le joueur,
+      // jamais en orbite autour de lui (aucune vitesse latérale conservée)
+      o.vitesse = Math.min(c.vitesseMax, o.vitesse + c.attraction * dt);
+      const pas = o.vitesse * dt;
+      if (d < c.distanceCollecte || pas >= d) {
         gagnerXp(this.etat, o.valeur);
         this.retours.son('orbe');
         this.pool.liberer(i);
         continue;
       }
-      if (d < rayon) {
-        // Attirée de plus en plus vite vers le joueur
-        o.vx += (dx / d) * c.attraction * dt;
-        o.vz += (dz / d) * c.attraction * dt;
-        const v = longueur(o.vx, o.vz);
-        if (v > c.vitesseMax) {
-          o.vx *= c.vitesseMax / v;
-          o.vz *= c.vitesseMax / v;
-        }
-      } else {
-        o.vx *= 0.9;
-        o.vz *= 0.9;
-      }
-      o.x += o.vx * dt;
-      o.z += o.vz * dt;
+      o.x += (dx / d) * pas;
+      o.z += (dz / d) * pas;
     }
   }
 

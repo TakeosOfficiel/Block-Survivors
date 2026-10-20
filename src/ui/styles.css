@@ -268,6 +268,17 @@ img { image-rendering: pixelated; }
 .pied { position: fixed !important; bottom: 6px; color: var(--mc-blanc); }
 .pied-gauche { left: 8px; }
 .pied-droite { right: 8px; }
+#menu-version { color: var(--mc-gris); }
+/* Mise à jour disponible : bandeau jaune en haut, cliquable */
+.mise-a-jour {
+  position: fixed !important; top: 8px; left: 50%; transform: translateX(-50%);
+  padding: 4px 12px;
+  color: var(--mc-jaune); text-decoration: none;
+  background: rgba(0, 0, 0, 0.6); border: 2px solid var(--mc-jaune);
+  animation: pulsation-lien 0.8s ease-in-out infinite alternate;
+}
+.mise-a-jour:hover { color: var(--mc-blanc); border-color: var(--mc-blanc); }
+@keyframes pulsation-lien { to { opacity: 0.7; } }
 
 /* --- Écrans superposés (cartes, pause, options, fin) ------------------------ */
 .ecran {
@@ -374,6 +385,27 @@ img { image-rendering: pixelated; }
 }
 .coeur { position: relative; width: 27px; height: 27px; }
 .coeur img { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* Totems restants (vies en plus), à gauche des cœurs */
+#hud-totems {
+  position: absolute; bottom: 74px; left: calc(50% - 196px);
+  display: flex; align-items: center; gap: 2px;
+}
+#hud-totems img { width: 32px; height: 32px; }
+/* Totem qui jaillit au centre de l'écran à la résurrection, comme en jeu */
+#hud-totem-anim {
+  position: absolute; left: 50%; top: 45%;
+  width: 192px; height: 192px;
+  transform: translate(-50%, -50%);
+}
+#hud-totem-anim.joue { animation: totem 1.6s ease-out forwards; }
+@keyframes totem {
+  0% { transform: translate(-50%, 20%) scale(0.2) rotate(-30deg); opacity: 1; }
+  25% { transform: translate(-50%, -50%) scale(1.15) rotate(8deg); }
+  40% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+  75% { opacity: 1; }
+  100% { transform: translate(-50%, -60%) scale(1.05); opacity: 0; }
+}
 
 /* Barre d'expérience : sprites 182x5 agrandis ×2, niveau en vert au centre */
 #hud-xp {

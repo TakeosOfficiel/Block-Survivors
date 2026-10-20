@@ -57,6 +57,7 @@ export class Joueur implements SourceEntites, CibleJoueur {
       return;
     }
     if (j.invulnerabilite > 0) j.invulnerabilite -= dt;
+    if (j.protection > 0) j.protection -= dt;
     const mods = this.etat.modificateurs;
     if (mods.regeneration > 0) {
       const avant = j.pv;
@@ -107,7 +108,7 @@ export class Joueur implements SourceEntites, CibleJoueur {
 
   subirDegats(degats: number): boolean {
     const j = this.etat.joueur;
-    if (j.mort || this.invincible || j.invulnerabilite > 0 || this.etat.issue !== null) return false;
+    if (j.mort || this.invincible || j.invulnerabilite > 0 || j.protection > 0 || this.etat.issue !== null) return false;
     // L'armure retire des dégâts, mais un coup en fait toujours au moins 1
     const subis = Math.min(j.pv, Math.max(1, degats - this.etat.modificateurs.armure));
     j.pv -= subis;
@@ -115,12 +116,25 @@ export class Joueur implements SourceEntites, CibleJoueur {
     this.etat.stats.degatsSubis += subis;
     this.retours.son('blessure_joueur');
     this.retours.secousse(0.18 + Math.min(subis, 10) * 0.03);
-    if (j.pv === 0) {
+    if (j.pv === 0 && this.etat.modificateurs.vies > j.viesUtilisees) {
+      this.renaitre();
+    } else if (j.pv === 0) {
       j.mort = true;
       j.vx = 0;
       j.vz = 0;
     }
     return true;
+  }
+
+  /** Totem d'immortalité : consommé à la mort, il rend la moitié des PV et protège quelques secondes. */
+  private renaitre(): void {
+    const j = this.etat.joueur;
+    const t = CONFIG.joueur.totem;
+    j.viesUtilisees++;
+    j.pv = Math.max(1, Math.ceil(j.pvMax * t.pv));
+    j.protection = t.protection;
+    this.retours.son('totem');
+    this.retours.secousse(0.6);
   }
 
   /** Recopie l'état dans la scène. */

@@ -464,7 +464,7 @@ export interface DefinitionObjet {
 /**
  * Modificateurs globaux du joueur, cumulés depuis ses bonus passifs.
  * Multiplicateurs (neutre = 1) : degats, cadence, zone, portee, vitesse, collecte.
- * Ajouts (neutre = 0) : projectiles, pvMax, armure, regeneration.
+ * Ajouts (neutre = 0) : projectiles, pvMax, armure, regeneration, vies.
  */
 export interface Modificateurs {
   degats: number;
@@ -476,6 +476,7 @@ export interface Modificateurs {
   pvMax: number;
   armure: number;        // dégâts retirés à chaque coup reçu (minimum 1 dégât)
   regeneration: number;  // PV / s
+  vies: number;          // totems d'immortalité : résurrections à la mort
   collecte: number;
 }
 

@@ -103,6 +103,7 @@ export class Jeu implements CallbacksBoucle, Retours {
   private readonly debug: PanneauDebug;
   private readonly sourcesEntites: readonly SourceEntites[];
   private niveauAffiche = 1;
+  private viesTraitees = 0;
   /** s réelles écoulées depuis la fin de la partie (−1 tant qu'elle continue). */
   private minuterieFin = -1;
 
@@ -264,6 +265,17 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.foudre.maj(dt);
     this.projectilesEnnemis.maj(dt);
     this.particules.maj(dt);
+    this.traiterResurrection();
+  }
+
+  /** Après une résurrection (totem) : les ennemis proches sont repoussés, gerbe de particules. */
+  private traiterResurrection(): void {
+    const j = this.etat.joueur;
+    if (j.viesUtilisees === this.viesTraitees) return;
+    this.viesTraitees = j.viesUtilisees;
+    const t = CONFIG.joueur.totem;
+    this.ennemis.repousser(j.x, j.z, t.rayonRecul, t.recul);
+    this.particules.emettre(j.x, 1.2, j.z, t.particules, t.particules.couleurs);
   }
 
   afficher(dtJeu: number, dtReel: number, dtBrut: number): void {

@@ -133,7 +133,11 @@ export const CONFIG = {
   armes: {
     distanceRetour: 0.7,       // le trident disparaît à cette distance du joueur (blocs)
     dureeBalayage: 0.25,       // durée de l'effet de balayage (s)
-    foudre: { hauteur: 18, segments: 10, largeur: 0.18, ecart: 0.7, duree: 0.25, capacite: 24 },
+    foudre: {
+      hauteur: 18, segments: 10, largeur: 0.18, ecart: 0.7, duree: 0.25, capacite: 48,
+      // Talents : portée des arcs (blocs), Haute tension (part par rang), Conduction (voisins par rang, part)
+      porteeArc: 4, hauteTension: [0.3, 0.5], conduction: { voisins: [2, 3], degats: 0.6 },
+    },
     golems: { capacite: 32, distanceSuivi: 3 },   // alliés invoqués (golems, loups, vex)
     brulureTirs: 3,            // s de brûlure des tirs qui enflamment (blazes alliés)
     // Alliés : distance de pose du totem, soin au plus une fois par allié toutes les `delaiSoin` s
@@ -152,13 +156,30 @@ export const CONFIG = {
     // Heurt de bouclier : marge de recherche de cible et portée du renvoi des projectiles (blocs)
     heurt: { marge: 1.2, porteeRenvoi: 1.5 },
     // Tornade de feu : cubes par colonne, rotation (rad/s), hauteur (blocs), recherche de cible (blocs)
-    tornade: { capacite: 6, cubes: 14, portee: 10, recherche: 8, rotation: 7, hauteur: 2.6, periodeBraises: 0.12, imagesParSeconde: 2.5 },
+    tornade: {
+      capacite: 6, cubes: 14, portee: 10, recherche: 8, rotation: 7, hauteur: 2.6, periodeBraises: 0.12, imagesParSeconde: 2.5,
+      // Tempête de feu : zone en plus (part), durée en plus (s), marge de détection du météore (blocs)
+      magma: { zone: 0.5, duree: 2, marge: 0.5 },
+    },
     // Nova de glace : éclats de l'anneau, dalles de neige, et leurs durées (s)
-    nova: { capacite: 4, eclats: 28, dalles: 16, immunite: 0.6, eclatsRestent: 0.35, periodeSol: 0.25, tailleEclat: 0.4, tailleDalle: 0.7 },
+    nova: {
+      capacite: 4, eclats: 28, dalles: 16, immunite: 0.6, eclatsRestent: 0.35, periodeSol: 0.25, tailleEclat: 0.4, tailleDalle: 0.7,
+      // Zéro absolu : dégâts multipliés et enracinement (s) de la nova gelante
+      zeroAbsolu: { degats: 2, gel: 1 },
+    },
     // Météore : chute en biais (départ décalé de departX/Z, depuis `hauteur`), flammes au sol animées
-    meteore: { capacite: 6, flammes: 10, imagesFeu: 20, duree: 0.6, hauteur: 9, departX: -4, departZ: -4, taille: 1.1, tic: 0.5, decalage: 0.3 },
+    meteore: {
+      capacite: 18, flammes: 10, imagesFeu: 20, duree: 0.6, hauteur: 9, departX: -4, departZ: -4, taille: 1.1, tic: 0.5, decalage: 0.3,
+      // Talents : Pluie de feu (petits météores autour du groupe), Lave en fusion (feu au sol)
+      pluie: { nombre: 3, degats: 0.6, taille: 0.65, ecart: 1.8, decalage: 0.12 },
+      laveFusion: { duree: 2, degats: 0.2 },
+    },
     // Orbes arcaniques : vol max (s) après l'orbite, vitesse d'orbite (rad/s), contact (blocs, s)
-    orbes: { capacite: 32, volMax: 3, periodeLueur: 0.08, vitesseOrbite: 3, rayonContact: 0.45, delaiContact: 0.5, hauteur: 1, taille: 0.32 },
+    orbes: {
+      capacite: 32, volMax: 3, periodeLueur: 0.08, vitesseOrbite: 3, rayonContact: 0.45, delaiContact: 0.5, hauteur: 1, taille: 0.32,
+      // Talents : Orbes givrées (ralenti, s), Flux arcanique (part des dégâts au retour, par rang)
+      givrees: { ralenti: 0.3, duree: 1 }, flux: [0.5, 0.8],
+    },
     // Flèche ricocheuse : rebonds au maximum (plafond), durée de vie max d'une flèche (s)
     ricochet: { capacite: 24, rebondsMax: 6, vieMax: 4 },
     // Pluie de flèches : chute (s) depuis `hauteur`, flèche plantée `plantee` s, rayon de chaque impact

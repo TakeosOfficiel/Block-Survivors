@@ -190,6 +190,8 @@ const gerbes = {
   anneau: [{ particule: 'poussiere', nombre: 2, vitesse: 0.6, dispersion: 0.1, montee: 0.8 }],
   epines: [{ particule: 'critique', nombre: 3, vitesse: 3, dispersion: 0.15, montee: 2 }],
   repousse: [{ particule: 'poof', nombre: 2, vitesse: 2.5, dispersion: 0.1, montee: 0.3 }],
+  // Tornade de magma (Tempête de feu) : gouttes de lave
+  braisesMagma: [{ particule: 'lave', nombre: 2, vitesse: 3, dispersion: 0.5, montee: 4 }],
   // Nuage toxique : tourbillons verts de l'effet Poison
   nuage: [{ particule: 'effetPoison', nombre: 1, vitesse: 0.4, dispersion: 0.2, montee: 0.3 }],
 } satisfies Record<string, DefinitionGerbe>;

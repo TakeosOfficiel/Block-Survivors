@@ -110,8 +110,8 @@ export class Arsenal {
     }
   }
 
-  /** Déclenche l'arme ; faux si elle n'avait aucune cible. */
-  private declencher(arme: ArmeEquipee): boolean {
+  /** Déclenche l'arme ; faux si elle n'avait aucune cible (aussi appelé par l'Écho arcanique). */
+  declencher(arme: ArmeEquipee): boolean {
     const m = arme.definition.mecanique;
     const { etat, ennemis } = this.contexte;
     const j = etat.joueur;

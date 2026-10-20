@@ -91,7 +91,7 @@ export class ProjectilesJoueur implements SourceEntites {
     p.vitesse = s.vitesse;
     p.parcouru = 0;
     p.portee = s.portee;
-    p.degats = s.degats;
+    p.degats = s.degats * this.contexte.talents.facteurDeclenchement;
     p.indexArme = arme.index;
     p.recul = s.recul;
     // Une flèche perd une part de ses dégâts à chaque ennemi traversé (moins avec Perforation nette)

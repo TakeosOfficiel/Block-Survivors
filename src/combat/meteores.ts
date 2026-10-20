@@ -3,6 +3,8 @@
  * groupe d'ennemis (son ombre annonce l'impact) en laissant une traînée de
  * feu ; à l'impact, dégâts de zone, lave et fumée, puis le sol brûle (feu
  * vanilla animé) et blesse ceux qui s'y trouvent toutes les 0,5 s.
+ * Talents : Pluie de feu (3 petits météores), Lave en fusion (feu plus long et
+ * plus fort), Tempête de feu (un météore tombé dans une tornade la renforce).
  */
 import * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
@@ -24,6 +26,9 @@ interface Meteore {
   /** s depuis le lancer (négatif : attend son tour). */
   t: number;
   prochaineTrainee: number;
+  /** Part des dégâts (Pluie de feu, Écho) et taille (petits météores). */
+  facteur: number;
+  taille: number;
 }
 
 interface Feu {
@@ -33,6 +38,9 @@ interface Feu {
   temps: number;
   prochainTic: number;
   graine: number;
+  facteur: number;
+  zone: number;
+  duree: number;
 }
 
 const groupe: Point = { x: 0, z: 0 };
@@ -55,8 +63,8 @@ export class Meteores {
   constructor(contexte: ContexteCombat, textures: BibliothequeTextures, scene: THREE.Scene) {
     const c = CONFIG.armes.meteore;
     this.contexte = contexte;
-    this.meteores = new Pool<Meteore>(c.capacite, () => ({ arme: null, x: 0, z: 0, t: 0, prochaineTrainee: 0 }));
-    this.feux = new Pool<Feu>(c.capacite, () => ({ arme: null, x: 0, z: 0, temps: 0, prochainTic: 0, graine: 0 }));
+    this.meteores = new Pool<Meteore>(c.capacite, () => ({ arme: null, x: 0, z: 0, t: 0, prochaineTrainee: 0, facteur: 1, taille: 1 }));
+    this.feux = new Pool<Feu>(c.capacite, () => ({ arme: null, x: 0, z: 0, temps: 0, prochainTic: 0, graine: 0, facteur: 1, zone: 1, duree: 0 }));
     const m = IDS_ARMES.map((id) => ARMES[id].mecanique).find((mec) => mec.type === 'meteore');
     this.texture = m?.type === 'meteore' ? m.texture : 'block/magma';
     const feu = m?.type === 'meteore' ? m.feu : 'block/fire_0';
@@ -82,19 +90,39 @@ export class Meteores {
     const { etat, ennemis } = this.contexte;
     const j = etat.joueur;
     const s = arme.stats;
+    const c = CONFIG.armes.meteore;
+    const talents = this.contexte.talents;
+    const facteur = talents.facteurDeclenchement;
+    const pluie = talents.rang('pluie_feu') > 0;
     let lance = false;
     for (let k = 0; k < s.nombre; k++) {
       if (!ennemis.plusGrosGroupe(j.x, j.z, s.portee, s.zone, groupe)) break;
-      const m = this.meteores.acquerir();
-      if (!m) break;
-      m.arme = arme;
-      m.x = groupe.x;
-      m.z = groupe.z;
-      m.t = -k * CONFIG.armes.meteore.decalage;
-      m.prochaineTrainee = 0;
-      lance = true;
+      if (!pluie) {
+        lance = this.lancer(arme, groupe.x, groupe.z, -k * c.decalage, facteur, 1) || lance;
+        continue;
+      }
+      // Pluie de feu : 3 météores plus petits autour du groupe
+      for (let q = 0; q < c.pluie.nombre; q++) {
+        const a = Math.random() * Math.PI * 2;
+        const r = q === 0 ? 0 : c.pluie.ecart * (0.6 + Math.random() * 0.4);
+        const depart = -(k * c.pluie.nombre + q) * c.pluie.decalage;
+        lance = this.lancer(arme, groupe.x + Math.sin(a) * r, groupe.z + Math.cos(a) * r, depart, facteur * c.pluie.degats, c.pluie.taille) || lance;
+      }
     }
     return lance;
+  }
+
+  private lancer(arme: ArmeEquipee, x: number, z: number, depart: number, facteur: number, taille: number): boolean {
+    const m = this.meteores.acquerir();
+    if (!m) return false;
+    m.arme = arme;
+    m.x = x;
+    m.z = z;
+    m.t = depart;
+    m.prochaineTrainee = 0;
+    m.facteur = facteur;
+    m.taille = taille;
+    return true;
   }
 
   maj(dt: number): void {
@@ -119,20 +147,29 @@ export class Meteores {
         continue;
       }
       // Impact
-      const n = ennemis.chercher(m.x, m.z, arme.stats.zone, this.tampon);
-      for (let k = 0; k < n; k++) ennemis.toucher(ennemis.obtenir(this.tampon[k]), arme, m.x, m.z);
+      const talents = this.contexte.talents;
+      const zone = arme.stats.zone * m.taille;
+      const n = ennemis.chercher(m.x, m.z, zone, this.tampon);
+      for (let k = 0; k < n; k++) ennemis.toucher(ennemis.obtenir(this.tampon[k]), arme, m.x, m.z, arme.stats.recul, m.facteur);
+      // Tempête de feu : un météore tombé dans une tornade la change en tornade de magma
+      if (talents.rang('tempete_feu') > 0) talents.systemes.tornades.renforcer(m.x, m.z);
       particules.emettre(m.x, 0.4, m.z, GERBES.impactMeteore);
       particules.emettre(m.x, 0.4, m.z, GERBES.eboulis, this.texture);
       retours.son('explosion', 0.8);
       retours.secousse(0.3);
       const feu = this.feux.acquerir();
       if (feu) {
+        // Lave en fusion : le feu au sol dure plus et brûle plus fort
+        const lave = talents.rang('lave_fusion') > 0;
         feu.arme = arme;
         feu.x = m.x;
         feu.z = m.z;
         feu.temps = 0;
         feu.prochainTic = c.tic;
         feu.graine = Math.random() * 10;
+        feu.facteur = m.facteur * (lave ? 1 + c.laveFusion.degats : 1);
+        feu.zone = m.taille;
+        feu.duree = arme.stats.duree + (lave ? c.laveFusion.duree : 0);
       }
       m.arme = null;
       this.meteores.liberer(i);
@@ -143,7 +180,7 @@ export class Meteores {
       const arme = f.arme;
       const mec = arme?.definition.mecanique;
       f.temps += dt;
-      if (!arme || mec?.type !== 'meteore' || f.temps >= arme.stats.duree) {
+      if (!arme || mec?.type !== 'meteore' || f.temps >= f.duree) {
         f.arme = null;
         this.feux.liberer(i);
         continue;
@@ -151,8 +188,8 @@ export class Meteores {
       f.prochainTic -= dt;
       if (f.prochainTic <= 0) {
         f.prochainTic += c.tic;
-        const degats = arme.stats.degats * mec.degatsSol;
-        const n = ennemis.chercher(f.x, f.z, arme.stats.zone, this.tampon);
+        const degats = arme.stats.degats * mec.degatsSol * f.facteur;
+        const n = ennemis.chercher(f.x, f.z, arme.stats.zone * f.zone, this.tampon);
         for (let k = 0; k < n; k++) ennemis.blesser(ennemis.obtenir(this.tampon[k]), degats, f.x, f.z, 0, arme.index, 'brulure');
       }
     }
@@ -167,8 +204,8 @@ export class Meteores {
       // Chute en biais, accélérée ; l'ombre grandit sous le point d'impact
       const p = Math.min(1, m.t / c.duree);
       const reste = 1 - p * p;
-      this.blocs.ajouter(m.x + c.departX * reste, c.hauteur * reste + 0.5, m.z + c.departZ * reste, c.taille, m.t * 6, m.t * 4);
-      ombres.ajouter(m.x, m.z, m.arme.stats.zone * (0.3 + 0.7 * p));
+      this.blocs.ajouter(m.x + c.departX * reste, c.hauteur * reste + 0.5, m.z + c.departZ * reste, c.taille * m.taille, m.t * 6, m.t * 4);
+      ombres.ajouter(m.x, m.z, m.arme.stats.zone * m.taille * (0.3 + 0.7 * p));
     }
     this.blocs.terminer();
 
@@ -176,8 +213,8 @@ export class Meteores {
     for (let i = 0; i < this.feux.nombre; i++) {
       const f = this.feux.elements[i];
       if (!f.arme) continue;
-      const zone = f.arme.stats.zone;
-      const reste = f.arme.stats.duree - f.temps;
+      const zone = f.arme.stats.zone * f.zone;
+      const reste = f.duree - f.temps;
       const vie = Math.min(1, f.temps / 0.15, reste / 0.5);
       for (let k = 0; k < c.flammes; k++) {
         // Flammes réparties dans le disque (spirale), hauteur qui vacille

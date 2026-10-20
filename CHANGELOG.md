@@ -5,6 +5,15 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.18.0] — 2026-10-20
+
+Refonte des classes, étape 10 : les talents à mécanique propre du Mage. Valeurs provisoires, à ajuster après les essais.
+
+### Nouveautés
+- Pyromancien : Cœur de blaze (les Boules de feu enflamment), Cendres protectrices, Lave en fusion, Propagation, Brasier ou Fournaise, Tempête de feu (un météore tombé dans une tornade la change en tornade de magma), Embrasement (15 ennemis en feu explosent ensemble), Phénix (une fois par partie, retour à 40 % des PV dans une explosion de feu), Pluie de feu (3 petits météores).
+- Arcaniste : Résonance, Haute tension et Conduction (arcs électriques d'un ennemi à l'autre), Orbes givrées, Flux arcanique (les orbes repartent une fois), Surcharge, Accélération, Tempête d'orage (8 éclairs toutes les 20 s), Écho arcanique (un sort se répète à 60 %), Zéro absolu (une nova sur cinq gèle et fait double dégâts).
+- Ces talents ne sont plus marqués « Effet en préparation ».
+
 ## [0.17.0] — 2026-10-20
 
 Refonte des classes, étape 9 : les talents à mécanique propre de l'Archère. Valeurs provisoires, à ajuster après les essais.

@@ -468,6 +468,16 @@ export class Ennemis implements SourceEntites {
     if (p.temps <= 0) p.cumuls = 0;
   }
 
+  /** Index (pour `obtenir`) des ennemis vivants en feu ; renvoie leur nombre. */
+  brulants(sortie: Int32Array): number {
+    let n = 0;
+    for (let i = 0; i < this.pool.nombre && n < sortie.length; i++) {
+      const e = this.pool.elements[i];
+      if (e.mort < 0 && e.brulure.cumuls > 0) sortie[n++] = i;
+    }
+    return n;
+  }
+
   /** Fin de partie gagnée : toute la horde tombe, sans butin ni statistiques. */
   terrasserTous(): void {
     for (let i = 0; i < this.pool.nombre; i++) {

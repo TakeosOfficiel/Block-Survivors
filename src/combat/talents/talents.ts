@@ -112,6 +112,10 @@ export class Talents implements CrochetsTalents, CrochetsJoueur {
   porteeFlecheGeante = 0;
   /** Cette volée part aussi vers l'arrière (Vent arrière). */
   voleeArriere = false;
+  /** Part des dégâts du déclenchement en cours (Écho arcanique : 0,6), captée au lancer par les systèmes. */
+  facteurDeclenchement = 1;
+  /** La Nova en cours de lancer gèle (Zéro absolu). */
+  novaGel = false;
 
   constructor(etat: EtatPartie) {
     this.etat = etat;

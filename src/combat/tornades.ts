@@ -3,6 +3,8 @@
  * tourbillonne et avance vers l'ennemi le plus proche ; toutes les
  * `intervalle` secondes, elle blesse les ennemis dans son rayon et les aspire
  * vers son centre (recul négatif). Elle crache des braises et de la fumée.
+ * Talent Tempête de feu : un météore tombé dedans la change en tornade de
+ * magma, plus large et plus durable (`renforcer`).
  */
 import type * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
@@ -25,6 +27,11 @@ interface Tornade {
   temps: number;
   prochainCoup: number;
   prochainesBraises: number;
+  /** Part des dégâts (Écho arcanique), et tornade de magma (Tempête de feu) : zone et durée en plus. */
+  facteur: number;
+  magma: boolean;
+  zone: number;
+  duree: number;
 }
 
 export class Tornades {
@@ -36,7 +43,9 @@ export class Tornades {
   constructor(contexte: ContexteCombat, textures: BibliothequeTextures, scene: THREE.Scene) {
     const c = CONFIG.armes.tornade;
     this.contexte = contexte;
-    this.tornades = new Pool<Tornade>(c.capacite, () => ({ arme: null, x: 0, z: 0, dirX: 0, dirZ: 1, temps: 0, prochainCoup: 0, prochainesBraises: 0 }));
+    this.tornades = new Pool<Tornade>(c.capacite, () => ({
+      arme: null, x: 0, z: 0, dirX: 0, dirZ: 1, temps: 0, prochainCoup: 0, prochainesBraises: 0, facteur: 1, magma: false, zone: 1, duree: 0,
+    }));
     const m = IDS_ARMES.map((id) => ARMES[id].mecanique).find((mec) => mec.type === 'tornade');
     const texture = m?.type === 'tornade' ? m.texture : 'block/magma';
     textures.animer(texture, c.imagesParSeconde);
@@ -63,8 +72,27 @@ export class Tornades {
       t.temps = 0;
       t.prochainCoup = 0;
       t.prochainesBraises = 0;
+      t.facteur = this.contexte.talents.facteurDeclenchement;
+      t.magma = false;
+      t.zone = 1;
+      t.duree = s.duree;
     }
     return true;
+  }
+
+  /** Tempête de feu : les tornades touchées par un météore en (x, z) deviennent des tornades de magma. */
+  renforcer(x: number, z: number): void {
+    const c = CONFIG.armes.tornade.magma;
+    for (let i = 0; i < this.tornades.nombre; i++) {
+      const t = this.tornades.elements[i];
+      if (!t.arme || t.magma) continue;
+      const rayon = t.arme.stats.zone * t.zone + c.marge;
+      if ((t.x - x) ** 2 + (t.z - z) ** 2 > rayon * rayon) continue;
+      t.magma = true;
+      t.zone *= 1 + c.zone;
+      t.duree += c.duree;
+      this.contexte.particules.emettre(t.x, 1, t.z, GERBES.impactMeteore);
+    }
   }
 
   maj(dt: number): void {
@@ -75,7 +103,7 @@ export class Tornades {
       const arme = t.arme;
       const m = arme?.definition.mecanique;
       t.temps += dt;
-      if (!arme || m?.type !== 'tornade' || t.temps >= arme.stats.duree) {
+      if (!arme || m?.type !== 'tornade' || t.temps >= t.duree) {
         t.arme = null;
         this.tornades.liberer(i);
         continue;
@@ -100,13 +128,14 @@ export class Tornades {
       t.prochainCoup -= dt;
       if (t.prochainCoup <= 0) {
         t.prochainCoup += m.intervalle;
-        const n = ennemis.chercher(t.x, t.z, arme.stats.zone, this.tampon);
-        for (let k = 0; k < n; k++) ennemis.toucher(ennemis.obtenir(this.tampon[k]), arme, t.x, t.z);
+        const n = ennemis.chercher(t.x, t.z, arme.stats.zone * t.zone, this.tampon);
+        for (let k = 0; k < n; k++) ennemis.toucher(ennemis.obtenir(this.tampon[k]), arme, t.x, t.z, arme.stats.recul, t.facteur);
       }
       t.prochainesBraises -= dt;
       if (t.prochainesBraises <= 0) {
         t.prochainesBraises = c.periodeBraises;
         particules.emettre(t.x, 0.6, t.z, GERBES.tornade);
+        if (t.magma) particules.emettre(t.x, 1.2, t.z, GERBES.braisesMagma);
       }
     }
   }
@@ -117,9 +146,9 @@ export class Tornades {
     for (let i = 0; i < this.tornades.nombre; i++) {
       const t = this.tornades.elements[i];
       if (!t.arme) continue;
-      const largeur = t.arme.stats.zone / 1.5;
+      const largeur = (t.arme.stats.zone * t.zone) / 1.5;
       // Apparition et disparition en douceur
-      const reste = t.arme.stats.duree - t.temps;
+      const reste = t.duree - t.temps;
       const echelle = Math.min(1, t.temps / 0.25, reste / 0.35);
       // Colonne en spirale qui s'évase vers le haut
       for (let k = 0; k < c.cubes; k++) {

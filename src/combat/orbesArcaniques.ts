@@ -3,6 +3,8 @@
  * autour du joueur pendant la durée de l'arme (dès le rang `contactAuRang`,
  * ils blessent au contact), puis foncent chacun sur un ennemi, à tête
  * chercheuse : ils changent de cible si la leur meurt en route.
+ * Talents : Orbes givrées (ralentissent), Flux arcanique (un orbe revient une
+ * fois toucher un autre ennemi, plus faiblement).
  */
 import type * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
@@ -28,6 +30,9 @@ interface Orbe {
   cible: Ennemi | null;
   cibleId: number;
   prochaineLueur: number;
+  /** Part des dégâts (Écho, Flux arcanique) ; déjà revenu une fois (Flux arcanique). */
+  facteur: number;
+  revenu: boolean;
 }
 
 export class OrbesArcaniques {
@@ -40,7 +45,7 @@ export class OrbesArcaniques {
     const c = CONFIG.armes.orbes;
     this.contexte = contexte;
     this.orbes = new Pool<Orbe>(c.capacite, () => ({
-      arme: null, x: 0, z: 0, angle: 0, temps: 0, lance: false, cible: null, cibleId: 0, prochaineLueur: 0,
+      arme: null, x: 0, z: 0, angle: 0, temps: 0, lance: false, cible: null, cibleId: 0, prochaineLueur: 0, facteur: 1, revenu: false,
     }));
     const m = IDS_ARMES.map((id) => ARMES[id].mecanique).find((mec) => mec.type === 'orbes');
     this.cubes = new CubesTextures(scene, textures, m?.type === 'orbes' ? m.texture : 'block/amethyst_block', c.capacite, true, 'orbes');
@@ -63,6 +68,8 @@ export class OrbesArcaniques {
       o.cible = null;
       o.cibleId = 0;
       o.prochaineLueur = 0;
+      o.facteur = this.contexte.talents.facteurDeclenchement;
+      o.revenu = false;
       o.x = j.x + Math.sin(o.angle) * arme.stats.zone;
       o.z = j.z + Math.cos(o.angle) * arme.stats.zone;
     }
@@ -117,8 +124,19 @@ export class OrbesArcaniques {
       const dz = o.cible.z - o.z;
       const d = longueur(dx, dz);
       if (d <= o.cible.definition.rayon + c.rayonContact) {
-        ennemis.toucher(o.cible, arme, o.x, o.z);
+        const talents = this.contexte.talents;
+        ennemis.toucher(o.cible, arme, o.x, o.z, s.recul, o.facteur);
+        if (talents.rang('orbes_givrees') > 0) ennemis.ralentir(o.cible, c.givrees.ralenti, c.givrees.duree);
         particules.emettre(o.x, c.hauteur, o.z, GERBES.impactArcane);
+        // Flux arcanique : l'orbe repart une fois vers un autre ennemi, plus faible
+        const flux = talents.valeur('flux_arcanique', c.flux);
+        if (flux > 0 && !o.revenu) {
+          o.revenu = true;
+          o.facteur *= flux;
+          o.cible = ennemis.auHasard(o.x, o.z, s.portee);
+          o.cibleId = o.cible?.id ?? 0;
+          if (o.cible) continue;
+        }
         o.arme = null;
         this.orbes.liberer(i);
         continue;

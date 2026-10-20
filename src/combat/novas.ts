@@ -3,6 +3,7 @@
  * autour du joueur ; chaque ennemi touché par l'anneau est blessé et ralenti
  * (une fois par nova). Dès le rang `solAuRang`, la nova laisse de la neige
  * poudreuse qui ralentit les ennemis qui la traversent.
+ * Talent Zéro absolu : une nova sur cinq gèle (enracine) et fait double dégâts.
  */
 import type * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
@@ -26,6 +27,9 @@ interface Nova {
   prochainSol: number;
   /** Rotation des dalles de neige, tirée au lancer. */
   graine: number;
+  /** Part des dégâts (Écho, Zéro absolu) et gel des ennemis touchés (Zéro absolu). */
+  facteur: number;
+  gel: boolean;
 }
 
 export class Novas {
@@ -39,7 +43,7 @@ export class Novas {
   constructor(contexte: ContexteCombat, textures: BibliothequeTextures, scene: THREE.Scene) {
     const c = CONFIG.armes.nova;
     this.contexte = contexte;
-    this.novas = new Pool<Nova>(c.capacite, () => ({ arme: null, x: 0, z: 0, temps: 0, sol: false, prochainSol: 0, graine: 0 }));
+    this.novas = new Pool<Nova>(c.capacite, () => ({ arme: null, x: 0, z: 0, temps: 0, sol: false, prochainSol: 0, graine: 0, facteur: 1, gel: false }));
     const m = IDS_ARMES.map((id) => ARMES[id].mecanique).find((mec) => mec.type === 'nova');
     this.texture = m?.type === 'nova' ? m.texture : 'block/packed_ice';
     this.eclats = new CubesTextures(scene, textures, this.texture, c.capacite * c.eclats, false, 'nova');
@@ -61,6 +65,9 @@ export class Novas {
     n.sol = arme.rang >= m.solAuRang;
     n.prochainSol = 0;
     n.graine = Math.random() * 10;
+    const talents = this.contexte.talents;
+    n.gel = talents.novaGel;
+    n.facteur = talents.facteurDeclenchement * (n.gel ? CONFIG.armes.nova.zeroAbsolu.degats : 1);
     return true;
   }
 
@@ -85,7 +92,8 @@ export class Novas {
           const e = ennemis.obtenir(this.tampon[q]);
           if (e.immunites[arme.index] > etat.tempsJeu) continue;
           e.immunites[arme.index] = etat.tempsJeu + c.immunite;
-          ennemis.toucher(e, arme, n.x, n.z);
+          ennemis.toucher(e, arme, n.x, n.z, s.recul, n.facteur);
+          if (n.gel) ennemis.enraciner(e, c.zeroAbsolu.gel);
           particules.emettre(e.x, 0.8, e.z, GERBES.gel, this.texture);
         }
       } else if (n.sol) {

@@ -46,6 +46,8 @@ export interface Allie {
   angle: number;
   vie: number;              // s restantes
   pv: number;
+  pvMax: number;            // PV de la définition, avec les bonus des talents
+  vitesse: number;          // blocs/s, avec les bonus des talents
   blessure: number;         // s de surcouche rouge restantes
   minuterie: number;        // s avant le prochain coup, tir, soutien ou pulsation d'aura
   vitesseSol: number;
@@ -75,7 +77,7 @@ export class Invocations implements SourceEntites {
   private readonly tampon = new Int32Array(128);
   private readonly pool = new Pool<Allie>(CONFIG.armes.golems.capacite, () => ({
     id: 0, indexType: 0, definition: ALLIES[IDS_ALLIES[0]], arme: null,
-    x: 0, z: 0, angle: 0, vie: 0, pv: 1, blessure: 0, minuterie: 0, vitesseSol: 0, dernierSoin: -Infinity, animation: creerEtatAnimation(),
+    x: 0, z: 0, angle: 0, vie: 0, pv: 1, pvMax: 1, vitesse: 0, blessure: 0, minuterie: 0, vitesseSol: 0, dernierSoin: -Infinity, animation: creerEtatAnimation(),
   }));
   /** Rendu par type ; null pour un allié en blocs. */
   private readonly rendus: (RenduType | null)[];
@@ -192,7 +194,10 @@ export class Invocations implements SourceEntites {
     a.angle = j.angle;
     a.id = this.prochainId++;
     a.vie = arme.stats.duree;
-    a.pv = def.pv;
+    const mods = this.contexte.etat.modificateurs;
+    a.pvMax = def.pv * (1 + mods.pvAllies + (arme.talent?.pv ?? 0));
+    a.pv = a.pvMax;
+    a.vitesse = def.vitesse * (1 + mods.vitesseAllies + (arme.talent?.vitesse ?? 0));
     a.blessure = 0;
     a.minuterie = def.soutien ? 1 : 0;
     a.vitesseSol = 0;
@@ -284,11 +289,11 @@ export class Invocations implements SourceEntites {
     let blesse: Allie | null = null;
     for (let i = 0; i < this.pool.nombre; i++) {
       const b = this.pool.elements[i];
-      if (!b.arme || b.pv <= 0 || b.pv >= b.definition.pv || etat.tempsJeu - b.dernierSoin < CONFIG.armes.invocations.delaiSoin) continue;
-      if (!blesse || b.pv / b.definition.pv < blesse.pv / blesse.definition.pv) blesse = b;
+      if (!b.arme || b.pv <= 0 || b.pv >= b.pvMax || etat.tempsJeu - b.dernierSoin < CONFIG.armes.invocations.delaiSoin) continue;
+      if (!blesse || b.pv / b.pvMax < blesse.pv / blesse.pvMax) blesse = b;
     }
     if (!blesse) return;
-    blesse.pv = Math.min(blesse.definition.pv, blesse.pv + blesse.definition.pv * arme.stats.zone);
+    blesse.pv = Math.min(blesse.pvMax, blesse.pv + blesse.pvMax * arme.stats.zone);
     blesse.dernierSoin = etat.tempsJeu;
     particules.emettre(blesse.x, 1, blesse.z, GERBES.niveau);
   }
@@ -321,9 +326,9 @@ export class Invocations implements SourceEntites {
     versX /= distance;
     versZ /= distance;
     a.vitesseSol = 0;
-    if (distance > arret && def.vitesse > 0) {
-      const nx = a.x + versX * def.vitesse * dt;
-      const nz = a.z + versZ * def.vitesse * dt;
+    if (distance > arret && a.vitesse > 0) {
+      const nx = a.x + versX * a.vitesse * dt;
+      const nz = a.z + versZ * a.vitesse * dt;
       if (def.vol !== undefined) {
         // Volant : traverse le décor
         a.x = nx;
@@ -333,7 +338,7 @@ export class Invocations implements SourceEntites {
         a.x = corrige.x;
         a.z = corrige.z;
       }
-      a.vitesseSol = def.vitesse;
+      a.vitesseSol = a.vitesse;
     }
     a.angle += ecartAngle(a.angle, Math.atan2(versX, versZ)) * facteurLissage(10, dt);
     return distance;
@@ -398,7 +403,7 @@ export class Invocations implements SourceEntites {
       ombres.ajouter(a.x, a.z, a.definition.rayonOmbre);
       if (!rendu) {
         const hauteur = this.dessinerBlocs(a);
-        if (a.pv < a.definition.pv) this.barres.ajouter(a.x, hauteur + 0.35, a.z, a.pv / a.definition.pv);
+        if (a.pv < a.pvMax) this.barres.ajouter(a.x, hauteur + 0.35, a.z, a.pv / a.pvMax);
         continue;
       }
       const pose = rendu.pose;
@@ -415,7 +420,7 @@ export class Invocations implements SourceEntites {
       pose.surcouche[3] = a.blessure > 0 ? blessure.force : 0;
       rendu.instances.ajouter(pose);
       // Barre de vie dès la première blessure
-      if (a.pv < a.definition.pv) this.barres.ajouter(a.x, pose.y + rendu.modele.hauteur + 0.35, a.z, a.pv / a.definition.pv);
+      if (a.pv < a.pvMax) this.barres.ajouter(a.x, pose.y + rendu.modele.hauteur + 0.35, a.z, a.pv / a.pvMax);
     }
     for (let t = 0; t < this.rendus.length; t++) this.rendus[t]?.instances.terminer();
     for (const cubes of this.blocs.cubes.values()) cubes.terminer();

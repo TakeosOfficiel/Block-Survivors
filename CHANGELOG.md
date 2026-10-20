@@ -5,6 +5,24 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.15.0] — 2026-10-20
+
+Refonte des classes, étape 7 : les nouveaux arbres de talents, première partie. Valeurs provisoires, à ajuster après les essais.
+
+### Nouveautés
+- Huit nouveaux arbres de talents (deux par classe), en graphe : chaque talent s'achète une fois relié à un talent complet au-dessus de lui, et des paliers ouvrent le bas de l'arbre (8 rangs achetés au-dessus, puis 18 pour les talents finaux).
+- Nouvel écran des talents : schéma de l'arbre avec liens de redstone qui s'allument, fiche du talent (effet, prérequis, coût, achat), et paliers affichés avec les rangs déjà achetés.
+- Les achats sont gardés dans les deux arbres d'une classe ; un seul arbre est utilisé en partie, à choisir sur l'écran des talents.
+- Talents à choix : l'achat débloque les deux options, une seule joue à la fois (changement gratuit).
+- Talents finaux : un seul actif par arbre, changeable gratuitement avant chaque partie.
+- Armes de départ : les talents qui offrent une arme au départ peuvent être désactivés, une seule arme en plus par arbre.
+- Talents déjà actifs en partie : bonus de dégâts par famille d'armes (mêlée, projectiles, feu, alliés), rayon de mêlée, recul, critiques, PV, armure, régénération en part des PV max, soins des pommes, brûlure (dégâts, durée, cumuls), poison, ralentissements, PV, vitesse et durée des alliés, bonus d'armes précises, rangs d'armes offerts au départ.
+- Les talents à mécanique propre (Frénésie, talents finaux…) sont déjà achetables et marqués « Effet en préparation » : ils arrivent dans la prochaine version.
+- Le résumé des talents du menu montre les talents actifs de l'arbre utilisé, talent final en évidence.
+
+### Changements
+- Les talents de l'ancienne version sont remboursés : toutes les émeraudes dépensées sont rendues, et un bandeau l'annonce sur l'accueil.
+
 ## [0.14.0] — 2026-10-20
 
 Refonte des classes, étape 6 : l'arsenal de l'Invocateur. Les quatre classes ont maintenant chacune leur propre arsenal. Valeurs provisoires, à ajuster après les essais.

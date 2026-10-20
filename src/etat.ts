@@ -2,7 +2,8 @@
  * État d'une partie : source de vérité de la simulation.
  * Aucun objet three.js ni élément DOM ici.
  */
-import { IDS_ARMES } from './donnees/armes';
+import type { BonusArmeCumule } from './combat/armeEquipee';
+import { IDS_ARMES, type IdArme } from './donnees/armes';
 import { IDS_ENNEMIS } from './donnees/ennemis';
 import type { IdPersonnage } from './donnees/personnages';
 import { PERSONNAGES } from './donnees/personnages';
@@ -64,7 +65,14 @@ export interface EtatPartie {
   readonly stats: StatistiquesPartie;
   /** Bonus cumulés des passifs. */
   readonly modificateurs: Modificateurs;
+  /** Talents de l'arbre actif : bonus d'armes précises et mécaniques propres (avec leur rang). */
+  talents: TalentsPartie;
   readonly joueur: EtatJoueur;
+}
+
+export interface TalentsPartie {
+  readonly armes: Partial<Record<IdArme, BonusArmeCumule>>;
+  readonly mecaniques: Readonly<Record<string, number>>;
 }
 
 export function creerEtatPartie(arene: DefinitionArene, idPersonnage: IdPersonnage): EtatPartie {
@@ -92,6 +100,7 @@ export function creerEtatPartie(arene: DefinitionArene, idPersonnage: IdPersonna
       bossVaincus: 0,
     },
     modificateurs: creerModificateurs(),
+    talents: { armes: {}, mecaniques: {} },
     joueur: {
       x: 0, z: 0, vx: 0, vz: 0, angle: 0,
       pv: personnage.pv,

@@ -387,6 +387,8 @@ export interface DefinitionArme {
   readonly description: string;
   readonly icone: CheminTexture;
   readonly mecanique: MecaniqueArme;
+  /** Famille qui profite des bonus de talents (« +8 % dégâts de mêlée »…). */
+  readonly famille?: FamilleArme;
   /** Statistiques au rang 1. */
   readonly stats: StatsArme;
   /** Améliorations des rangs 2, 3… ; rang maximal = 1 + longueur. */
@@ -602,6 +604,27 @@ export interface Modificateurs {
   collecte: number;
   critique: number;      // chance de coup critique (0 à 1)
   degatsCritiques: number;  // multiplicateur des dégâts d'un coup critique
+  // Talents : bonus par famille d'armes (parts en plus, 0,04 = +4 %)
+  degatsMelee: number;
+  zoneMelee: number;
+  degatsProjectiles: number;
+  vitesseProjectiles: number;
+  degatsFeu: number;
+  cadenceFeu: number;       // ajouté au délai des armes de feu (négatif : plus rapides)
+  degatsAllies: number;
+  vitesseAllies: number;
+  pvAllies: number;
+  dureeAllies: number;      // s de vie en plus des alliés invoqués
+  recul: number;            // multiplicateur du recul des armes
+  // Talents : états et soins
+  degatsBrulure: number;    // parts en plus des dégâts de brûlure
+  dureeBrulure: number;
+  cumulsBrulure: number;    // cumuls en plus au maximum
+  degatsPoison: number;
+  dureeRalenti: number;     // parts en plus de la durée des ralentissements
+  degatsRalentis: number;   // dégâts en plus contre les ennemis ralentis
+  regenerationPart: number; // part des PV max rendue par seconde
+  soinsObjets: number;      // parts en plus des soins des pommes
 }
 
 export interface NiveauPassif {
@@ -718,22 +741,63 @@ export type DefinitionGerbe = readonly SalveParticules[];
 // --------------------------------------------------------------------------
 // Progression entre les parties (talents, émeraudes, déblocages)
 // --------------------------------------------------------------------------
-export interface DefinitionTalent {
-  /** Identifiant stable (sauvegarde). */
-  readonly id: string;
+/** Famille d'armes, que certains talents renforcent toutes ensemble. */
+export type FamilleArme = 'melee' | 'projectile' | 'feu' | 'allie';
+
+/** Bonus d'un talent pour une arme précise, cumulé à chaque rang. */
+export interface BonusArmeTalent {
+  readonly arme: IdArme;
+  /** Ajouts aux statistiques de base de l'arme (avant les modificateurs). */
+  readonly ajout?: Partial<StatsArme>;
+  /** Parts en plus (0,1 = +10 %) des statistiques finales. */
+  readonly part?: Partial<StatsArme>;
+  /** Alliés invoqués par l'arme : PV et vitesse en plus (parts). */
+  readonly pv?: number;
+  readonly vitesse?: number;
+}
+
+/** Ce que fait un talent (ou une option d'un talent à choix), cumulé à chaque rang. */
+export interface EffetTalent {
+  readonly modif?: Partial<Modificateurs>;
+  readonly armes?: readonly BonusArmeTalent[];
+  /** Rangs offerts de cette arme au départ (une par rang). */
+  readonly rangsArme?: IdArme;
+  /** Commence avec cette arme, au rang du talent ; désactivable, une seule à la fois. */
+  readonly armeDepart?: IdArme;
+  readonly relances?: number;
+  /** Effet propre, géré par le combat (voir combat/talents.ts). */
+  readonly mecanique?: string;
+}
+
+export type TypeNoeud = 'bonus' | 'capacite' | 'choix' | 'final';
+export type BrancheArbre = 'tronc' | 'gauche' | 'centre' | 'droite' | 'libre';
+
+/** Une des deux options d'un talent à choix. */
+export interface OptionTalent extends EffetTalent {
   readonly nom: string;
   readonly icone: CheminTexture;
-  /** Rangée de l'arbre (0 = la plus basse), ouverte selon SEUILS_PALIERS. */
-  readonly palier: number;
-  /** Prix en émeraudes de chaque rang ; leur nombre donne le rang maximum. */
-  readonly couts: readonly number[];
-  /** Effet d'un rang, ex. « Dégâts +5 % ». */
   readonly effet: string;
-  /** Effets cumulés à chaque rang. */
-  readonly modif?: Partial<Modificateurs>;
-  /** Chaque rang donne un rang de cette arme dès le départ. */
-  readonly arme?: IdArme;
-  readonly relances?: number;
+}
+
+/** Un talent de l'arbre, à sa place (ligne 0 en haut, colonnes 0 à 6). */
+export interface NoeudTalent extends EffetTalent {
+  /** Identifiant stable (sauvegarde). */
+  readonly id: string;
+  readonly ligne: number;
+  readonly colonne: number;
+  readonly type: TypeNoeud;
+  readonly branche: BrancheArbre;
+  readonly nom: string;
+  readonly icone: CheminTexture;
+  /** Effet affiché (tous rangs, ex. « Dégâts +4 / 8 / 12 % »). */
+  readonly effet: string;
+  readonly rangMax: number;
+  /** Talents reliés au-dessus : il faut qu'un d'eux soit complet. Absent : racine ou talent libre. */
+  readonly prerequis?: readonly string[];
+  /** Relié à rien : s'ouvre avec son palier. */
+  readonly libre?: boolean;
+  /** Talent à choix : ses deux options (l'achat débloque les deux). */
+  readonly options?: readonly [OptionTalent, OptionTalent];
 }
 
 export interface DefinitionArbre {
@@ -741,7 +805,8 @@ export interface DefinitionArbre {
   readonly nom: string;
   readonly description: string;
   readonly icone: CheminTexture;
-  readonly talents: readonly DefinitionTalent[];
+  readonly branches: Partial<Record<BrancheArbre, string>>;
+  readonly noeuds: readonly NoeudTalent[];
 }
 
 export interface DefinitionRecompenses {

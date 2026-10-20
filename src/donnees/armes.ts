@@ -38,6 +38,7 @@ const definitions = {
     nom: 'Épée en fer',
     description: "Frappe en arc de cercle l'ennemi le plus proche.",
     icone: 'item/iron_sword',
+    famille: 'melee',
     mecanique: {
       type: 'balayage',
       angle: 2.2,
@@ -57,6 +58,7 @@ const definitions = {
     nom: 'Arc',
     description: "Tire sur l'ennemi le plus proche.",
     icone: 'item/bow',
+    famille: 'projectile',
     mecanique: { type: 'tir', projectile: 'fleche', dispersion: 0.18 },
     stats: { ...BASE, degats: 10, cadence: 1.1, vitesse: 22, portee: 15, perforation: 2, recul: 3 },
     niveaux: [
@@ -86,6 +88,7 @@ const definitions = {
     nom: 'Haches tournoyantes',
     description: 'Des haches tournent autour de vous.',
     icone: 'item/iron_axe',
+    famille: 'melee',
     mecanique: { type: 'orbite', projectile: 'hache' },
     stats: { ...BASE, degats: 6, cadence: 0.6, nombre: 2, vitesse: 3.4, zone: 1.5, recul: 4 },
     niveaux: [
@@ -101,6 +104,7 @@ const definitions = {
     nom: 'Boules de feu',
     description: 'Explosent au contact et brûlent la zone.',
     icone: 'item/fire_charge',
+    famille: 'feu',
     mecanique: { type: 'explosif', projectile: 'boule_feu' },
     stats: { ...BASE, degats: 12, cadence: 2.2, vitesse: 10, portee: 13, zone: 2, recul: 6 },
     niveaux: [
@@ -159,6 +163,7 @@ const definitions = {
     nom: 'Tourbillon de lames',
     description: 'Tourne sur lui-même et frappe tout autour, plusieurs fois.',
     icone: 'item/golden_sword',
+    famille: 'melee',
     mecanique: { type: 'tourbillon', intervalle: 0.3, effet: Array.from({ length: 8 }, (_, i) => `particle/sweep_${i}`) },
     stats: { ...BASE, degats: 5, cadence: 5, zone: 2.2, duree: 1.2, recul: 2 },
     niveaux: [
@@ -174,6 +179,7 @@ const definitions = {
     nom: 'Heurt de bouclier',
     description: 'Coup de bouclier devant lui : repousse fort et interrompt les attaques.',
     icone: 'block/iron_trapdoor',
+    famille: 'melee',
     mecanique: { type: 'heurt', angle: 1.6, renvoi: 6 },
     stats: { ...BASE, degats: 8, cadence: 3, zone: 1.8, recul: 12 },
     niveaux: [
@@ -189,6 +195,7 @@ const definitions = {
     nom: 'Tornade de feu',
     description: 'Une colonne de braises tourbillonne vers les ennemis et les aspire.',
     icone: 'item/blaze_powder',
+    famille: 'feu',
     mecanique: { type: 'tornade', texture: 'block/magma', vitesse: 3.5, intervalle: 0.4 },
     stats: { ...BASE, degats: 6, cadence: 8, duree: 4, zone: 1.5, recul: -2 },
     niveaux: [
@@ -219,6 +226,7 @@ const definitions = {
     nom: 'Météore',
     description: 'Un bloc de magma tombe sur un groupe et laisse le sol en feu.',
     icone: 'block/magma',
+    famille: 'feu',
     mecanique: { type: 'meteore', texture: 'block/magma', feu: 'block/fire_0', degatsSol: 0.15 },
     stats: { ...BASE, degats: 35, cadence: 9, portee: 12, zone: 2.5, duree: 3, recul: 6 },
     niveaux: [
@@ -249,6 +257,7 @@ const definitions = {
     nom: 'Salve en éventail',
     description: 'Tire une gerbe de flèches en éventail vers les ennemis.',
     icone: 'item/crossbow_standby',
+    famille: 'projectile',
     mecanique: { type: 'tir', projectile: 'fleche', dispersion: 0.26 },
     stats: { ...BASE, degats: 7, cadence: 2.5, nombre: 5, vitesse: 20, portee: 9, perforation: 1, recul: 2 },
     niveaux: [
@@ -264,6 +273,7 @@ const definitions = {
     nom: 'Pluie de flèches',
     description: 'Des flèches tombent du ciel sur le plus gros groupe.',
     icone: 'item/arrow',
+    famille: 'projectile',
     mecanique: { type: 'pluie', image: 'item/arrow', impactsParSeconde: 7.5 },
     stats: { ...BASE, degats: 6, cadence: 6, portee: 14, zone: 2.5, duree: 1.6, recul: 1 },
     niveaux: [
@@ -279,6 +289,7 @@ const definitions = {
     nom: 'Flèche ricocheuse',
     description: "Une flèche spectrale rebondit d'ennemi en ennemi.",
     icone: 'item/spectral_arrow',
+    famille: 'projectile',
     mecanique: { type: 'ricochet', projectile: 'fleche_spectrale', perte: 0.15, distanceRebond: 5 },
     stats: { ...BASE, degats: 12, cadence: 2, nombre: 1, vitesse: 22, portee: 12, perforation: 3, recul: 2 },
     niveaux: [
@@ -294,6 +305,7 @@ const definitions = {
     nom: 'Fusée explosive',
     description: "Une fusée de feu d'artifice qui explose en gerbe colorée.",
     icone: 'item/firework_rocket',
+    famille: 'projectile',
     mecanique: { type: 'explosif', projectile: 'fusee', gerbe: 'artifice', son: 'artifice', eclatsAuRang: 6 },
     stats: { ...BASE, degats: 18, cadence: 3.5, vitesse: 14, portee: 13, zone: 2, recul: 5 },
     niveaux: [
@@ -324,6 +336,7 @@ const definitions = {
     nom: 'Esprit de blaze',
     description: 'Un blaze allié flotte près de lui et tire des salves de boules de feu.',
     icone: 'item/blaze_rod',
+    famille: 'allie',
     mecanique: { type: 'invocation', allie: 'esprit_blaze', brulureAuRang: 6 },
     stats: { ...BASE, degats: 6, cadence: 10, nombre: 1, duree: 12, portee: 10, vitesse: 14, recul: 1 },
     niveaux: [
@@ -339,6 +352,7 @@ const definitions = {
     nom: 'Totem des racines',
     description: 'Un totem de palétuvier planté dans la horde attire, ralentit et enracine.',
     icone: 'block/mangrove_roots_side',
+    famille: 'allie',
     mecanique: { type: 'invocation', allie: 'totem_racines' },
     stats: { ...BASE, degats: 0, cadence: 10, nombre: 1, duree: 8, zone: 3, ralenti: 0.4 },
     niveaux: [
@@ -372,6 +386,7 @@ const definitions = {
     nom: 'Golem de fer',
     description: 'Invoque un golem qui écrase les ennemis.',
     icone: 'block/carved_pumpkin',
+    famille: 'allie',
     mecanique: { type: 'invocation', allie: 'golem_fer' },
     // Revient toutes les 16 s et reste 10 s : permanent à partir du rang 5
     stats: { ...BASE, degats: 30, cadence: 16, nombre: 1, duree: 10, zone: 1.4, recul: 10 },
@@ -388,6 +403,7 @@ const definitions = {
     nom: 'Meute de loups',
     description: 'Des loups apprivoisés traquent et mordent les ennemis.',
     icone: 'item/bone',
+    famille: 'allie',
     mecanique: { type: 'invocation', allie: 'loup' },
     // 2 loups toutes les 7 s qui vivent 10 s : environ 3 présents au rang 1 (quota 6)
     stats: { ...BASE, degats: 5, cadence: 7, nombre: 2, duree: 10, zone: 0.6, recul: 2 },
@@ -404,6 +420,7 @@ const definitions = {
     nom: 'Vex',
     description: 'Des esprits volants foncent sur les ennemis à travers le décor.',
     icone: 'item/echo_shard',
+    famille: 'allie',
     mecanique: { type: 'invocation', allie: 'vex' },
     // 2 vex toutes les 6 s qui vivent 8 s : environ 3 présents au rang 1 (quota 6)
     stats: { ...BASE, degats: 4, cadence: 6, nombre: 2, duree: 8, zone: 0.4, recul: 1 },

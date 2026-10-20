@@ -67,9 +67,10 @@ export class Joueur implements SourceEntites, CibleJoueur {
     if (j.invulnerabilite > 0) j.invulnerabilite -= dt;
     if (j.protection > 0) j.protection -= dt;
     const mods = this.etat.modificateurs;
-    if (mods.regeneration > 0) {
+    if (mods.regeneration > 0 || mods.regenerationPart > 0) {
       const avant = j.pv;
-      const regeneration = Math.min(mods.regeneration, PLAFONDS.regeneration * j.pvMax);
+      // PV fixes des passifs et part des PV max des talents, dans le même plafond
+      const regeneration = Math.min(mods.regeneration + mods.regenerationPart * j.pvMax, PLAFONDS.regeneration * j.pvMax);
       j.pv = Math.min(j.pvMax, j.pv + regeneration * dt);
       this.etat.stats.pvSoignes += j.pv - avant;
     }

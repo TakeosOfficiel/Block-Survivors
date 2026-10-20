@@ -70,13 +70,13 @@ export class Arsenal {
     const modificateurs = this.contexte.etat.modificateurs;
     const existante = this.armes.find((a) => a.id === id);
     if (!existante) {
-      const arme = creerArmeEquipee(id, modificateurs);
+      const arme = creerArmeEquipee(id, modificateurs, this.contexte.etat.talents.armes[id] ?? null);
       this.armes.push(arme);
       this.contexte.etat.stats.acquisitionArme[arme.index] = this.contexte.etat.tempsJeu;
     } else {
       if (existante.rang >= rangMax(ARMES[id])) return false;
       existante.rang++;
-      calculerStats(existante.definition, existante.rang, modificateurs, existante.stats);
+      calculerStats(existante.definition, existante.rang, modificateurs, existante.stats, existante.talent);
     }
     this.version++;
     return true;
@@ -85,7 +85,7 @@ export class Arsenal {
   /** À appeler quand les modificateurs des passifs changent. */
   recalculer(): void {
     const modificateurs = this.contexte.etat.modificateurs;
-    for (const arme of this.armes) calculerStats(arme.definition, arme.rang, modificateurs, arme.stats);
+    for (const arme of this.armes) calculerStats(arme.definition, arme.rang, modificateurs, arme.stats, arme.talent);
     this.version++;
   }
 

@@ -6,6 +6,7 @@
  */
 import type { LecteurSons } from './audio/sons';
 import type { BibliothequeTextures } from './assets/textures';
+import { cumulerBonusArmes } from './combat/armeEquipee';
 import { Arsenal } from './combat/arsenal';
 import { Balayages } from './combat/balayages';
 import { Chutes } from './combat/chutes';
@@ -179,6 +180,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.etat.joueur.pvMax += this.etat.modificateurs.pvMax;
     this.etat.joueur.pv = this.etat.joueur.pvMax;
     this.etat.relancesRestantes += talents.relances;
+    this.etat.talents = { armes: cumulerBonusArmes(talents.bonusArmes), mecaniques: talents.mecaniques };
 
     // Monde : blocs affichés, carte de collision, navigation des ennemis
     construireArene(arene, monde, textures, scene);

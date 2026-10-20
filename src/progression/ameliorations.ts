@@ -90,6 +90,25 @@ const LIBELLES_MODIFICATEURS: Record<keyof Modificateurs, { nom: string; pourcen
   collecte: { nom: 'Rayon de collecte', pourcentage: true, unite: '' },
   critique: { nom: 'Coups critiques', pourcentage: false, unite: '' },
   degatsCritiques: { nom: 'Dégâts critiques', pourcentage: false, unite: '' },
+  degatsMelee: { nom: 'Dégâts de mêlée', pourcentage: false, unite: '' },
+  zoneMelee: { nom: 'Rayon de mêlée', pourcentage: false, unite: '' },
+  degatsProjectiles: { nom: 'Dégâts des projectiles', pourcentage: false, unite: '' },
+  vitesseProjectiles: { nom: 'Vitesse des projectiles', pourcentage: false, unite: '' },
+  degatsFeu: { nom: 'Dégâts de feu', pourcentage: false, unite: '' },
+  cadenceFeu: { nom: 'Délai des armes de feu', pourcentage: false, unite: '' },
+  degatsAllies: { nom: 'Dégâts des alliés', pourcentage: false, unite: '' },
+  vitesseAllies: { nom: 'Vitesse des alliés', pourcentage: false, unite: '' },
+  pvAllies: { nom: 'PV des alliés', pourcentage: false, unite: '' },
+  dureeAllies: { nom: 'Durée des alliés', pourcentage: false, unite: ' s' },
+  recul: { nom: 'Recul', pourcentage: true, unite: '' },
+  degatsBrulure: { nom: 'Dégâts de brûlure', pourcentage: false, unite: '' },
+  dureeBrulure: { nom: 'Durée des brûlures', pourcentage: false, unite: '' },
+  cumulsBrulure: { nom: 'Cumuls de brûlure', pourcentage: false, unite: '' },
+  degatsPoison: { nom: 'Dégâts du poison', pourcentage: false, unite: '' },
+  dureeRalenti: { nom: 'Durée des ralentissements', pourcentage: false, unite: '' },
+  degatsRalentis: { nom: 'Dégâts contre les ralentis', pourcentage: false, unite: '' },
+  regenerationPart: { nom: 'Régénération', pourcentage: false, unite: '' },
+  soinsObjets: { nom: 'Soins des pommes', pourcentage: false, unite: '' },
 };
 
 const FORMAT = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 });
@@ -185,7 +204,8 @@ export class Ameliorations {
     const def = ARMES[id];
     const rang = this.arsenal.rang(id);
     const mods = this.etat.modificateurs;
-    const apres = calculerStats(def, rang + 1, mods, { ...def.stats });
+    const talent = this.etat.talents.armes[id] ?? null;
+    const apres = calculerStats(def, rang + 1, mods, { ...def.stats }, talent);
     const utiles = def.statsAffichees ?? STATS_UTILES[def.mecanique.type];
     const amelioration: Amelioration = { type: 'arme', id };
 
@@ -200,7 +220,7 @@ export class Ameliorations {
         lignes: utiles.map((cle) => `${def.libelles?.[cle] ?? LIBELLES_STATS[cle].nom} : ${formaterStat(cle, apres[cle])}`),
       };
     }
-    const avant = calculerStats(def, rang, mods, { ...def.stats });
+    const avant = calculerStats(def, rang, mods, { ...def.stats }, talent);
     const lignes = (Object.keys(LIBELLES_STATS) as (keyof StatsArme)[])
       .filter((cle) => Math.abs(apres[cle] - avant[cle]) > 1e-6)
       .map((cle) => `${def.libelles?.[cle] ?? LIBELLES_STATS[cle].nom} : ${formaterStat(cle, avant[cle])} → ${formaterStat(cle, apres[cle])}`);

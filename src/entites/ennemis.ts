@@ -249,8 +249,9 @@ export class Ennemis implements SourceEntites {
     const stats = this.etat.stats;
     const periodique = nature === 'brulure' || nature === 'poison';
     if (nature === 'allie' && e.marqueTemps > 0) degats *= 1 + e.marque;
-    // Coup critique (armes du joueur) : dégâts multipliés et étincelles du jeu
     const mods = this.etat.modificateurs;
+    if (e.ralenti > 0 && !periodique) degats *= 1 + mods.degatsRalentis;
+    // Coup critique (armes du joueur) : dégâts multipliés et étincelles du jeu
     const critique = arme >= 0 && !periodique && Math.random() < Math.min(PLAFONDS.critique, mods.critique);
     if (critique) {
       degats *= mods.degatsCritiques;
@@ -330,19 +331,30 @@ export class Ennemis implements SourceEntites {
 
   // --- États ---------------------------------------------------------------
 
-  /** Brûlure : `cumuls` de plus (plafonnés), durée remise à neuf ; les dégâts les plus forts l'emportent. */
+  /**
+   * Brûlure : `cumuls` de plus (plafonnés), durée remise à neuf ; les dégâts
+   * les plus forts l'emportent. Les talents renforcent dégâts, durée et cumuls.
+   */
   bruler(e: Ennemi, cumuls: number, degatsParSeconde: number, duree: number, arme = -1, cumulsMax: number = ETATS.brulure.cumulsMax): void {
-    if (e.mort < 0) appliquerPeriodique(e.brulure, cumuls, degatsParSeconde, duree, arme, cumulsMax, ETATS.brulure.tic);
+    if (e.mort >= 0) return;
+    const m = this.etat.modificateurs;
+    appliquerPeriodique(
+      e.brulure, cumuls, degatsParSeconde * (1 + m.degatsBrulure), duree * (1 + m.dureeBrulure), arme,
+      cumulsMax + m.cumulsBrulure, ETATS.brulure.tic,
+    );
   }
 
   /** Poison : comme la brûlure, avec ses propres cumuls. */
   empoisonner(e: Ennemi, cumuls: number, degatsParSeconde: number, duree: number, arme = -1, cumulsMax: number = ETATS.poison.cumulsMax): void {
-    if (e.mort < 0) appliquerPeriodique(e.poison, cumuls, degatsParSeconde, duree, arme, cumulsMax, ETATS.poison.tic);
+    if (e.mort >= 0) return;
+    const m = this.etat.modificateurs;
+    appliquerPeriodique(e.poison, cumuls, degatsParSeconde * (1 + m.degatsPoison), duree, arme, cumulsMax, ETATS.poison.tic);
   }
 
   /** Ralentit de `part` (0 à 1) ; le plus fort l'emporte. Un boss résiste. */
   ralentir(e: Ennemi, part: number, duree: number): void {
     if (e.mort >= 0) return;
+    duree *= 1 + this.etat.modificateurs.dureeRalenti;
     if (e.definition.boss) part = Math.min(RESISTANCE_BOSS.ralentiMax, part * RESISTANCE_BOSS.ralenti);
     this.appliquerRalenti(e, part, duree);
   }

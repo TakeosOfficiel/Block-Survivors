@@ -37,7 +37,10 @@ export function texturesInterface(): Set<CheminTexture> {
   for (const id of IDS_PERSONNAGES) {
     for (const arbre of ARBRES[id]) {
       chemins.add(arbre.icone);
-      for (const talent of arbre.talents) chemins.add(talent.icone);
+      for (const noeud of arbre.noeuds) {
+        chemins.add(noeud.icone);
+        for (const option of noeud.options ?? []) chemins.add(option.icone);
+      }
     }
   }
   return chemins;

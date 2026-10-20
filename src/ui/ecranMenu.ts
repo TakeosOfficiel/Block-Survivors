@@ -80,6 +80,18 @@ export class EcranMenu {
       lien.classList.remove('cache');
     });
 
+    // Passage aux nouveaux arbres : les émeraudes des anciens talents ont été rendues
+    const rendu = sauvegarde.annoncerRemboursement();
+    if (rendu > 0) {
+      const bouton = element<HTMLButtonElement>('menu-remboursement');
+      bouton.textContent = `Nouveaux arbres de talents : ${rendu} émeraudes rendues. Cliquez pour les dépenser`;
+      bouton.classList.remove('cache');
+      bouton.addEventListener('click', () => {
+        bouton.classList.add('cache');
+        this.talents.ouvrir(this.personnage, () => this.rafraichir());
+      });
+    }
+
     this.listePersonnages.append(...IDS_PERSONNAGES.map((id) => this.creerBoutonClasse(id)));
     this.creerPseudo();
     element<HTMLButtonElement>('menu-jouer').addEventListener('click', () => this.jouer());
@@ -228,13 +240,17 @@ export class EcranMenu {
     const arbre = ARBRES[this.personnage][index];
     const points = this.sauvegarde.points(this.personnage, index);
     element('menu-arbre-titre').textContent = `Talents : ${arbre.nom} (${points} rang${points > 1 ? 's' : ''})`;
-    const achetes = arbre.talents.filter((t) => this.sauvegarde.rang(this.personnage, index, t) > 0);
-    element('menu-talents-actifs').replaceChildren(...(achetes.length > 0
-      ? achetes.map((t) => {
-        const rang = this.sauvegarde.rang(this.personnage, index, t);
-        const caseIcone = caseImage(this.textures.url(t.icone), t.nom);
-        caseIcone.title = `${t.nom} (${rang}/${t.couts.length}) : ${t.effet}`;
-        caseIcone.append(texte(String(rang), 'talent-rang'));
+    const p = this.personnage;
+    const actifs = arbre.noeuds.filter((n) => this.sauvegarde.actif(p, index, n));
+    element('menu-talents-actifs').replaceChildren(...(actifs.length > 0
+      ? actifs.map((n) => {
+        const rang = this.sauvegarde.rang(p, index, n);
+        const choix = n.options?.[this.sauvegarde.option(p, index, n)];
+        const nom = choix ? `${n.nom} : ${choix.nom}` : n.nom;
+        const caseIcone = caseImage(this.textures.url(choix?.icone ?? n.icone), nom);
+        caseIcone.title = `${nom} (${rang}/${n.rangMax}) : ${choix?.effet ?? n.effet}`;
+        caseIcone.classList.toggle('talent-final', n.type === 'final');
+        if (n.rangMax > 1) caseIcone.append(texte(String(rang), 'talent-rang'));
         return caseIcone;
       })
       : [texte('Aucun talent acheté : gagnez des émeraudes en jouant.', 'option-description')]));

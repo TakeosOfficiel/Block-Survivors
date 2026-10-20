@@ -41,9 +41,11 @@ export function texturesRequises(
   ajouterBloc(arene.exterieur.bloc);
 
   chemins.add(personnage.skin);
+  if (personnage.objetEnMain) chemins.add(personnage.objetEnMain);
   for (const id of IDS_ENNEMIS) {
     const ennemi = ENNEMIS[id];
     chemins.add(ennemi.skin);
+    if (ennemi.objetEnMain) chemins.add(ennemi.objetEnMain);
     if (ennemi.boss) for (const sprite of BarreBoss.sprites(ennemi.boss.couleurBarre)) chemins.add(sprite);
   }
   for (const id of IDS_OBJETS) chemins.add(OBJETS[id].icone);

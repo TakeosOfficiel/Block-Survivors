@@ -77,7 +77,7 @@ export class Ennemis implements SourceEntites {
       const modele = compilerModele(MODELES[def.modele]);
       return {
         modele,
-        instances: new ModeleInstancie(modele, def, textures.obtenir(def.skin), CONFIG.ennemis.capacite, scene),
+        instances: new ModeleInstancie(modele, def, textures, CONFIG.ennemis.capacite, scene),
         pose: creerPoseModele(modele),
         couleursMort: [0xffffff, 0xd8d8d8, def.couleurParticules],
       };

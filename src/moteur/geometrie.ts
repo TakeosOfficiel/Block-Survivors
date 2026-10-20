@@ -112,3 +112,65 @@ export function creerGeometrieCroisee(
   geometrie.computeVertexNormals();
   return geometrie;
 }
+
+/**
+ * Objet tenu en main, extrudé comme en jeu : le sprite 2D (pixels RGBA,
+ * `largeur` x `hauteur`) devient une plaque d'un pixel d'épaisseur — une face
+ * avant, une face arrière, et un petit rebord pour chaque pixel opaque au bord
+ * d'un pixel transparent, coloré par ce pixel.
+ *
+ * Repère : plaque dans le plan x = 0, centrée sur l'origine ; la droite du
+ * sprite va vers +Z, son haut vers +Y. `pixel` = taille d'un pixel en blocs.
+ */
+export function creerGeometrieObjet(
+  pixels: Uint8ClampedArray,
+  largeur: number,
+  hauteur: number,
+  pixel: number,
+): THREE.BufferGeometry {
+  const opaque = (x: number, y: number) =>
+    x >= 0 && y >= 0 && x < largeur && y < hauteur && pixels[(y * largeur + x) * 4 + 3] >= 128;
+  const positions: number[] = [];
+  const normales: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+  const e = pixel / 2;
+  const z = (colonne: number) => (colonne - largeur / 2) * pixel;
+  const y = (ligne: number) => (hauteur / 2 - ligne) * pixel;
+
+  /** Quadrilatère de 4 sommets [x, y, z] avec une normale et 4 UV. */
+  const quad = (sommets: readonly number[], normale: readonly number[], coords: readonly number[]) => {
+    const base = positions.length / 3;
+    positions.push(...sommets);
+    for (let k = 0; k < 4; k++) normales.push(...normale);
+    uvs.push(...coords);
+    indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+  };
+
+  // Faces avant (+X) et arrière (−X) : tout le sprite, la découpe se fait par alphaTest
+  const [z0, z1, y0, y1] = [z(0), z(largeur), y(hauteur), y(0)];
+  quad([e, y0, z1, e, y0, z0, e, y1, z0, e, y1, z1], [1, 0, 0], [1, 0, 0, 0, 0, 1, 1, 1]);
+  quad([-e, y0, z0, -e, y0, z1, -e, y1, z1, -e, y1, z0], [-1, 0, 0], [0, 0, 1, 0, 1, 1, 0, 1]);
+
+  // Rebords : UV ramenées au centre du pixel, qui colore toute la tranche
+  for (let ligne = 0; ligne < hauteur; ligne++) {
+    for (let colonne = 0; colonne < largeur; colonne++) {
+      if (!opaque(colonne, ligne)) continue;
+      const u = (colonne + 0.5) / largeur;
+      const v = 1 - (ligne + 0.5) / hauteur;
+      const c = [u, v, u, v, u, v, u, v];
+      const [za, zb, ya, yb] = [z(colonne), z(colonne + 1), y(ligne + 1), y(ligne)];
+      if (!opaque(colonne, ligne - 1)) quad([-e, yb, za, e, yb, za, e, yb, zb, -e, yb, zb], [0, 1, 0], c);
+      if (!opaque(colonne, ligne + 1)) quad([-e, ya, zb, e, ya, zb, e, ya, za, -e, ya, za], [0, -1, 0], c);
+      if (!opaque(colonne - 1, ligne)) quad([-e, ya, za, e, ya, za, e, yb, za, -e, yb, za], [0, 0, -1], c);
+      if (!opaque(colonne + 1, ligne)) quad([e, ya, zb, -e, ya, zb, -e, yb, zb, e, yb, zb], [0, 0, 1], c);
+    }
+  }
+
+  const geometrie = new THREE.BufferGeometry();
+  geometrie.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometrie.setAttribute('normal', new THREE.Float32BufferAttribute(normales, 3));
+  geometrie.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geometrie.setIndex(indices);
+  return geometrie;
+}

@@ -104,9 +104,22 @@ export interface MembreRepos {
   readonly signe: 1 | -1;       // 1 = côté droit, -1 = côté gauche
 }
 
+/** Où un modèle tient un objet : dans le repère d'une partie (son articulation pour origine). */
+export interface MainModele {
+  readonly partie: string;
+  /** Centre de l'objet, en pixels depuis l'articulation de la partie. */
+  readonly position: Vec3;
+  /** Rotation de l'objet (rad, ordre X, Y, Z) ; à 0, sa droite pointe vers +Z et son haut vers +Y. */
+  readonly rotation: Vec3;
+  /** Taille affichée du sprite de 16 pixels, en pixels de modèle. */
+  readonly taille: number;
+}
+
 export interface DefinitionModele {
   readonly tailleTexture: readonly [number, number];
   readonly parties: Readonly<Record<string, CubeModele>>;
+  /** Point d'attache d'un objet tenu (voir ApparenceEntite.objetEnMain). */
+  readonly main?: MainModele;
   /** Balancement des membres proportionnel à la vitesse au sol. */
   readonly marche?: {
     readonly frequence: number;         // rad de cycle par bloc parcouru
@@ -137,6 +150,8 @@ export interface ApparenceEntite {
   /** Couleur des parties absentes de `couleursSecours`. */
   readonly couleurSecoursParDefaut?: number;
   readonly rayonOmbre: number;     // blocs
+  /** Objet tenu en main (sprite d'objet vanilla), si le modèle a une main. */
+  readonly objetEnMain?: CheminTexture;
 }
 
 // --------------------------------------------------------------------------

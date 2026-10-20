@@ -4,8 +4,10 @@
  * ajoutent leur pose ; aucune allocation.
  */
 import * as THREE from 'three';
-import type { ApparenceEntite } from '../donnees/types';
-import { creerGeometrieCube } from '../moteur/geometrie';
+import { lirePixels } from '../assets/pixels';
+import type { BibliothequeTextures } from '../assets/textures';
+import type { ApparenceEntite, MainModele } from '../donnees/types';
+import { creerGeometrieCube, creerGeometrieObjet, PIXELS_PAR_BLOC } from '../moteur/geometrie';
 import { activerSurcouche, creerAttributSurcouche, NOM_ATTRIBUT_SURCOUCHE } from '../moteur/surcouche';
 import type { ModeleCompile } from './compilation';
 
@@ -48,21 +50,32 @@ const euler = new THREE.Euler(0, 0, 0, 'ZYX');
 const matriceRacine = new THREE.Matrix4();
 const matricePartie = new THREE.Matrix4();
 const matrice = new THREE.Matrix4();
+const matriceMain = new THREE.Matrix4();
+
+/** Objet tenu : un maillage instancié de plus, accroché à une partie du modèle. */
+interface ObjetTenu {
+  readonly maillage: THREE.InstancedMesh;
+  readonly partie: number;
+  /** Position et orientation de l'objet dans le repère de la partie. */
+  readonly local: THREE.Matrix4;
+}
 
 export class ModeleInstancie {
   private readonly modele: ModeleCompile;
   private readonly maillages: THREE.InstancedMesh[];
   private readonly surcouche: THREE.InstancedBufferAttribute;
+  private readonly objet: ObjetTenu | null;
   private readonly capacite: number;
   private compte = 0;
 
   constructor(
     modele: ModeleCompile,
     apparence: ApparenceEntite,
-    skin: THREE.Texture | null,
+    textures: BibliothequeTextures,
     capacite: number,
     scene: THREE.Scene,
   ) {
+    const skin = textures.obtenir(apparence.skin);
     this.modele = modele;
     this.capacite = capacite;
     this.surcouche = creerAttributSurcouche(capacite);
@@ -83,6 +96,40 @@ export class ModeleInstancie {
       scene.add(maillage);
       return maillage;
     });
+
+    const main = modele.definition.main;
+    const texture = apparence.objetEnMain ? textures.obtenir(apparence.objetEnMain) : null;
+    this.objet = main && texture ? this.creerObjet(main, texture, capacite, scene) : null;
+  }
+
+  private creerObjet(main: MainModele, texture: THREE.Texture, capacite: number, scene: THREE.Scene): ObjetTenu | null {
+    const image = texture.image as HTMLImageElement;
+    let pixels: ImageData;
+    try {
+      pixels = lirePixels(image);
+    } catch {
+      return null;  // image illisible (sans CORS) : pas d'objet plutôt qu'une erreur
+    }
+    const geometrie = creerGeometrieObjet(pixels.data, image.width, image.height, main.taille / image.width / PIXELS_PAR_BLOC);
+    geometrie.setAttribute(NOM_ATTRIBUT_SURCOUCHE, this.surcouche);
+    const maillage = new THREE.InstancedMesh(
+      geometrie,
+      creerMateriau({ map: texture, alphaTest: 0.5, side: THREE.DoubleSide }),
+      capacite,
+    );
+    maillage.name = 'objet en main';
+    maillage.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    maillage.frustumCulled = false;
+    maillage.count = 0;
+    scene.add(maillage);
+
+    const [x, y, z] = main.position;
+    const local = new THREE.Matrix4()
+      .makeRotationFromEuler(new THREE.Euler(main.rotation[0], main.rotation[1], main.rotation[2], 'XYZ'))
+      .setPosition(x / PIXELS_PAR_BLOC, y / PIXELS_PAR_BLOC, z / PIXELS_PAR_BLOC);
+    const partie = this.modele.parties.findIndex((p) => p.nom === main.partie);
+    if (partie < 0) throw new Error(`Partie « ${main.partie} » absente du modèle`);
+    return { maillage, partie, local };
   }
 
   /** À appeler avant d'ajouter les poses de l'image. */
@@ -108,7 +155,9 @@ export class ModeleInstancie {
       matricePartie.makeRotationFromEuler(euler).setPosition(pivot[0], pivot[1], pivot[2]);
       matrice.multiplyMatrices(matriceRacine, matricePartie);
       this.maillages[p].setMatrixAt(i, matrice);
+      if (this.objet?.partie === p) matriceMain.copy(matrice);
     }
+    if (this.objet) this.objet.maillage.setMatrixAt(i, matrice.multiplyMatrices(matriceMain, this.objet.local));
 
     const s = pose.surcouche;
     this.surcouche.setXYZW(i, s[0], s[1], s[2], s[3]);
@@ -120,6 +169,10 @@ export class ModeleInstancie {
       const maillage = this.maillages[p];
       maillage.count = this.compte;
       maillage.instanceMatrix.needsUpdate = true;
+    }
+    if (this.objet) {
+      this.objet.maillage.count = this.compte;
+      this.objet.maillage.instanceMatrix.needsUpdate = true;
     }
     this.surcouche.needsUpdate = true;
   }

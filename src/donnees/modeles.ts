@@ -12,7 +12,7 @@
  * Pour un skin 64x64 cela redonne exactement le layout standard
  * (tête : top(8,0) bottom(16,0) right(0,8) front(8,8) left(16,8) back(24,8), etc.).
  */
-import type { CubeModele, DefinitionModele, MembreMarche, MembreRepos } from './types';
+import type { CubeModele, DefinitionModele, MainModele, MembreMarche, MembreRepos } from './types';
 
 const DEMI_PI = Math.PI / 2;
 
@@ -21,6 +21,14 @@ const DEMI_PI = Math.PI / 2;
 // --------------------------------------------------------------------------
 const TETE: CubeModele = { taille: [8, 8, 8], pivot: [0, 24, 0], centre: [0, 4, 0], uv: [0, 0] };
 const CORPS: CubeModele = { taille: [8, 12, 4], pivot: [0, 24, 0], centre: [0, -6, 0], uv: [16, 16] };
+
+/**
+ * Main droite : l'objet est tenu au bout du bras droit, pointe vers l'avant.
+ * `x` = milieu du bras (−1 pour les bras de 4 pixels, 0 pour ceux de 2 ou 3).
+ */
+function mainDroite(x: number): MainModele {
+  return { partie: 'brasDroit', position: [x, -10, 6], rotation: [Math.PI / 4, 0, 0], taille: 12 };
+}
 
 // Valeurs de Minecraft : 0,6662 rad par pas d'animation, bras ×1, jambes ×1,4
 const MARCHE_BRAS: readonly MembreMarche[] = [
@@ -86,6 +94,7 @@ function marcheAraignee(): MembreMarche[] {
 const definitions = {
   // Joueur : 6 boîtes (tête 8x8x8, corps 8x12x4, bras et jambes 4x12x4), skin 64x64
   humanoide: {
+    main: mainDroite(-1),
     tailleTexture: [64, 64],
     parties: {
       tete: TETE,
@@ -103,6 +112,7 @@ const definitions = {
 
   // Joueur à bras fins (skins « slim », ex. Alex) : bras de 3 px
   humanoide_fin: {
+    main: mainDroite(-0.5),
     tailleTexture: [64, 64],
     parties: {
       tete: TETE,
@@ -120,6 +130,7 @@ const definitions = {
   // Zombie : image 64x64 mais seule la moitié haute est remplie (ancien layout) :
   // bras et jambe gauches = côté droit en miroir. Bras tendus vers l'avant.
   zombie: {
+    main: mainDroite(-1),
     tailleTexture: [64, 64],
     parties: {
       tete: TETE,
@@ -135,6 +146,7 @@ const definitions = {
 
   // Squelette : skin 64x32, membres de 2 px ; côté gauche = côté droit en miroir
   squelette: {
+    main: mainDroite(0),
     tailleTexture: [64, 32],
     parties: {
       tete: TETE,

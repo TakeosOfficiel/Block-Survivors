@@ -25,6 +25,7 @@ const definitions = {
   },
   squelette: {
     nom: 'Squelette',
+    objetEnMain: 'item/bow',
     sons: { blessure: 'squelette_blesse', mort: 'squelette_mort' },
     modele: 'squelette',
     skin: 'entity/skeleton/skeleton',
@@ -90,6 +91,7 @@ const definitions = {
   },
   seigneur_wither: {
     nom: 'Seigneur wither',
+    objetEnMain: 'item/bow',
     sons: { blessure: 'squelette_blesse', mort: 'squelette_mort' },
     hauteurSons: 0.6,
     modele: 'squelette',

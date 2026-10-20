@@ -56,7 +56,7 @@ export class Invocations implements SourceEntites {
       const modele = compilerModele(MODELES[def.modele]);
       return {
         modele,
-        instances: new ModeleInstancie(modele, def, textures.obtenir(def.skin), CONFIG.armes.golems.capacite, scene),
+        instances: new ModeleInstancie(modele, def, textures, CONFIG.armes.golems.capacite, scene),
         pose: creerPoseModele(modele),
         couleurs: [0xffffff, def.couleurParticules],
       };

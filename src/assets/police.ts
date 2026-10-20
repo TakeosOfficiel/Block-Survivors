@@ -7,6 +7,7 @@
  */
 import opentype from 'opentype.js';
 import { SOURCES_FICHIERS, SOURCES_TEXTURES } from '../config';
+import { lirePixels } from './pixels';
 
 export const NOM_POLICE = 'Minecraft';
 
@@ -111,16 +112,6 @@ function rectangle(chemin: opentype.Path, x: number, haut: number, l: number, h:
   chemin.lineTo((x + l) * U, (haut - h) * U);
   chemin.lineTo(x * U, (haut - h) * U);
   chemin.close();
-}
-
-function lirePixels(image: HTMLImageElement): ImageData {
-  const canvas = document.createElement('canvas');
-  canvas.width = image.width;
-  canvas.height = image.height;
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  if (!ctx) throw new Error('Canvas 2D indisponible');
-  ctx.drawImage(image, 0, 0);
-  return ctx.getImageData(0, 0, image.width, image.height);
 }
 
 async function chargerJson(chemin: string): Promise<unknown> {

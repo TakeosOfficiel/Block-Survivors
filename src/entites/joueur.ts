@@ -45,7 +45,7 @@ export class Joueur implements SourceEntites, CibleJoueur {
     this.retours = retours;
     const personnage = etat.personnage;
     this.modele = compilerModele(MODELES[personnage.modele]);
-    this.rendu = new ModeleInstancie(this.modele, personnage, textures.obtenir(personnage.skin), 1, scene);
+    this.rendu = new ModeleInstancie(this.modele, personnage, textures, 1, scene);
     this.pose = creerPoseModele(this.modele);
   }
 

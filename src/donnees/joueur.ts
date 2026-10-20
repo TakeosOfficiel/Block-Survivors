@@ -8,6 +8,7 @@ export const JOUEUR_BASE: DefinitionJoueur = {
   vitesse: 5,
   reactivite: 25,
   vitesseRotation: 14,
+  armesDepart: ['epee'],
   modele: 'humanoide',
   skin: 'entity/player/wide/steve',
   couleursSecours: {

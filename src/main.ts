@@ -32,6 +32,9 @@ async function demarrer(): Promise<void> {
   const jeu = new Jeu(rendu, textures, arene);
   ecran.masquer();
   jeu.demarrer();
+
+  // En développement uniquement : accès à la scène depuis la console du navigateur
+  if (import.meta.env.DEV) Object.assign(window, { blockSurvivors: { jeu, rendu } });
 }
 
 void demarrer();

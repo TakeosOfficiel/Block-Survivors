@@ -7,7 +7,7 @@ import { JOUEUR_BASE } from '../donnees/joueur';
 import { MODELES } from '../donnees/modeles';
 import type { Ombres } from '../effets/ombres';
 import type { EtatJoueur, EtatPartie } from '../etat';
-import { angleChute, avancerAnimation, calculerRotations, creerEtatAnimation } from '../modeles/animation';
+import { angleChute, avancerAnimation, calculerRotations, creerEtatAnimation, declencherAttaque } from '../modeles/animation';
 import { compilerModele, type ModeleCompile } from '../modeles/compilation';
 import { creerPoseModele, ModeleInstancie, type PoseModele } from '../modeles/rendu';
 import { ecartAngle, facteurLissage } from '../utils/maths';
@@ -65,6 +65,11 @@ export class Joueur implements SourceEntites, CibleJoueur {
       j.angle += ecartAngle(j.angle, Math.atan2(dx, dz)) * facteurLissage(JOUEUR_BASE.vitesseRotation, dt);
     }
     avancerAnimation(this.animation, this.modele, dt, Math.hypot(j.vx, j.vz));
+  }
+
+  /** Joue le geste d'attaque (coup d'épée). */
+  declencherGeste(): void {
+    declencherAttaque(this.animation, this.modele);
   }
 
   subirDegats(degats: number): boolean {

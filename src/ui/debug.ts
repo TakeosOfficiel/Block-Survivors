@@ -1,9 +1,10 @@
 /**
  * Panneau debug (F3 ou ²) : mesures, vitesse du temps, invincibilité,
- * apparition d'ennemis et de boss, frappe de zone.
+ * apparition d'ennemis et de boss, armes, frappe de zone.
  */
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG, SOURCES_TEXTURES } from '../config';
+import { ARMES, IDS_ARMES, type IdArme } from '../donnees/armes';
 import { BOSS } from '../donnees/boss';
 import { ENNEMIS, IDS_ENNEMIS, type IdEnnemi } from '../donnees/ennemis';
 import type { EtatPartie } from '../etat';
@@ -25,6 +26,7 @@ export interface SourcesDebug {
   compterParticules(): number;
   definirInvincibilite(actif: boolean): void;
   apparaitreEnnemi(id: IdEnnemi): void;
+  ameliorerArme(id: IdArme): void;
   frapper(): void;
 }
 
@@ -49,6 +51,7 @@ export class PanneauDebug {
     accelerer: element<HTMLButtonElement>('dbg-accelerer'),
     invincible: element<HTMLButtonElement>('dbg-invincible'),
     apparitions: element('dbg-apparitions'),
+    armes: element('dbg-armes'),
     frappe: element<HTMLButtonElement>('dbg-frappe'),
     boss: element<HTMLButtonElement>('dbg-boss'),
   };
@@ -70,12 +73,12 @@ export class PanneauDebug {
     this.lierBouton(this.dom.frappe, () => this.sources.frapper());
     this.lierBouton(this.dom.boss, () => this.apparitionBoss());
 
-    // Un bouton par type d'ennemi, généré depuis la table ENNEMIS
+    // Un bouton par ennemi et par arme, générés depuis les tables de données
     for (const id of IDS_ENNEMIS) {
-      const bouton = document.createElement('button');
-      bouton.textContent = ENNEMIS[id].nom;
-      this.lierBouton(bouton, () => this.sources.apparaitreEnnemi(id));
-      this.dom.apparitions.append(bouton);
+      this.dom.apparitions.append(this.creerBouton(ENNEMIS[id].nom, () => this.sources.apparaitreEnnemi(id)));
+    }
+    for (const id of IDS_ARMES) {
+      this.dom.armes.append(this.creerBouton(ARMES[id].nom, () => this.sources.ameliorerArme(id)));
     }
 
     window.addEventListener('keydown', this.surTouche);
@@ -89,6 +92,13 @@ export class PanneauDebug {
     if (this.minuterie < CONFIG.debug.periodeRafraichissement) return;
     this.minuterie = 0;
     this.rafraichir();
+  }
+
+  private creerBouton(texte: string, action: () => void): HTMLButtonElement {
+    const bouton = document.createElement('button');
+    bouton.textContent = texte;
+    this.lierBouton(bouton, action);
+    return bouton;
   }
 
   /** Le bouton rend le focus après le clic : Espace/Entrée ne le redéclenchent pas. */

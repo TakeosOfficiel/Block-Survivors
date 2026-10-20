@@ -97,6 +97,8 @@ const definitions = {
     },
     marche: { ...ALLURE, membres: [...MARCHE_BRAS, ...MARCHE_JAMBES] },
     repos: REPOS_BRAS,
+    // Coup d'épée : le bras droit se lève vers l'avant
+    attaque: { duree: 0.3, membres: [{ partie: 'brasDroit', amplitude: 1.8 }] },
   },
 
   // Zombie : image 64x64 mais seule la moitié haute est remplie (ancien layout) :
@@ -147,6 +149,40 @@ const definitions = {
         { partie: 'patteArriereGauche', axe: 'x', amplitude: 1.4, dephasage: Math.PI },
         { partie: 'patteAvantDroite', axe: 'x', amplitude: 1.4, dephasage: Math.PI },
         { partie: 'patteAvantGauche', axe: 'x', amplitude: 1.4, dephasage: 0 },
+      ],
+    },
+  },
+
+  // Golem de fer : skin 128x128 (modèle vanilla converti)
+  golem_fer: {
+    tailleTexture: [128, 128],
+    parties: {
+      tete:        { taille: [8, 10, 8],  pivot: [0, 31, 2],  centre: [0, 7, 1.5],      uv: [0, 0] },
+      nez:         { taille: [2, 4, 2],   pivot: [0, 31, 2],  centre: [0, 3, 6.5],      uv: [24, 0] },
+      torse:       { taille: [18, 12, 11], pivot: [0, 31, 0], centre: [0, -4, 0.5],     uv: [0, 40] },
+      bassin:      { taille: [9, 5, 6],   pivot: [0, 31, 0],  centre: [0, -12.5, 0],    uv: [0, 70], gonflement: 0.5 },
+      brasDroit:   { taille: [4, 30, 6],  pivot: [0, 31, 0],  centre: [-11, -12.5, 0],  uv: [60, 21] },
+      brasGauche:  { taille: [4, 30, 6],  pivot: [0, 31, 0],  centre: [11, -12.5, 0],   uv: [60, 58] },
+      jambeDroite: { taille: [6, 16, 5],  pivot: [-4, 13, 0], centre: [-0.5, -5, 0.5],  uv: [37, 0] },
+      jambeGauche: { taille: [6, 16, 5],  pivot: [5, 13, 0],  centre: [-0.5, -5, 0.5],  uv: [60, 0], miroir: true },
+    },
+    marche: {
+      frequence: 1.8,
+      vitesseReference: 3.5,
+      lissage: 8,
+      membres: [
+        { partie: 'jambeDroite', axe: 'x', amplitude: 0.8, dephasage: 0 },
+        { partie: 'jambeGauche', axe: 'x', amplitude: 0.8, dephasage: Math.PI },
+        { partie: 'brasDroit', axe: 'x', amplitude: 0.6, dephasage: Math.PI },
+        { partie: 'brasGauche', axe: 'x', amplitude: 0.6, dephasage: 0 },
+      ],
+    },
+    // Coup : les deux bras s'abattent
+    attaque: {
+      duree: 0.5,
+      membres: [
+        { partie: 'brasDroit', amplitude: 2 },
+        { partie: 'brasGauche', amplitude: 2 },
       ],
     },
   },

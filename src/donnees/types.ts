@@ -2,6 +2,8 @@
  * Types du contenu du jeu. Les tables de données (blocs, modèles, ennemis…)
  * sont vérifiées contre ces types à la compilation.
  */
+import type { IdAllie } from './allies';
+import type { IdArme } from './armes';
 import type { IdBloc } from './blocs';
 import type { IdEnnemi } from './ennemis';
 import type { IdModele } from './modeles';
@@ -52,6 +54,8 @@ export interface CubeModele {
   readonly miroir?: boolean;
   /** Pose de base (rad), appliquée dans l'ordre Z, Y, X comme en jeu. */
   readonly rotation?: Vec3;
+  /** Agrandit la boîte de ce nombre de pixels sur chaque face, sans changer le patron (« inflate » du jeu). */
+  readonly gonflement?: number;
 }
 
 export type Axe = 'x' | 'y' | 'z';
@@ -90,6 +94,11 @@ export interface DefinitionModele {
     readonly frequenceX: number;  // rad/s
     readonly membres: readonly MembreRepos[];
   };
+  /** Geste d'attaque : les membres listés se lèvent vers l'avant puis retombent. */
+  readonly attaque?: {
+    readonly duree: number;       // s
+    readonly membres: readonly { readonly partie: string; readonly amplitude: number }[];
+  };
 }
 
 /** Apparence d'une entité : modèle, skin, couleurs de secours, ombre. */
@@ -113,6 +122,7 @@ export interface DefinitionJoueur extends ApparenceEntite {
   readonly vitesse: number;          // blocs / seconde
   readonly reactivite: number;       // rapidité d'atteinte de la vitesse cible (1/s)
   readonly vitesseRotation: number;  // rapidité d'orientation vers la direction de marche (1/s)
+  readonly armesDepart: readonly IdArme[];
 }
 
 // --------------------------------------------------------------------------
@@ -161,19 +171,94 @@ export interface DefinitionEnnemi extends ApparenceEntite {
 // --------------------------------------------------------------------------
 // Projectiles
 // --------------------------------------------------------------------------
+/**
+ * Forme d'affichage d'un projectile :
+ * - croisee : deux plans croisés le long de la trajectoire (flèches) ;
+ * - plat : icône d'objet posée à plat, sa pointe (coin haut-droit) dans le sens de la trajectoire ;
+ * - face_camera : icône toujours tournée vers la caméra (boules de feu).
+ */
+export type FormeProjectile = 'croisee' | 'plat' | 'face_camera';
+
 export interface DefinitionProjectile {
   readonly nom: string;
+  readonly forme: FormeProjectile;
   readonly texture: CheminTexture;
   readonly tailleTexture: readonly [number, number];
-  /** Rectangle [x, y, largeur, hauteur] de la vue de profil dans la texture (pixels). */
+  /** Rectangle [x, y, largeur, hauteur] affiché, dans la texture (pixels). */
   readonly uv: readonly [number, number, number, number];
-  readonly longueur: number;   // blocs
-  readonly largeur: number;    // blocs
-  readonly vitesse: number;    // blocs / seconde
-  readonly duree: number;      // s avant disparition
+  readonly longueur: number;   // blocs (côté de l'icône pour plat / face_camera)
+  readonly largeur: number;    // blocs (épaisseur des plans croisés)
+  readonly vitesse: number;    // blocs / seconde (tir des ennemis)
+  readonly duree: number;      // s avant disparition (tir des ennemis)
   readonly rayon: number;      // rayon de collision (blocs)
   readonly hauteur: number;    // altitude de vol (blocs)
+  /** Rotation sur lui-même (rad/s), pour les haches. */
+  readonly rotationPropre?: number;
+  /** Couleurs des particules laissées derrière lui. */
+  readonly trainee?: readonly number[];
   readonly couleurSecours: number;
+}
+
+// --------------------------------------------------------------------------
+// Armes du joueur
+// --------------------------------------------------------------------------
+/** Statistiques d'une arme ; chaque mécanique n'utilise que celles qui la concernent. */
+export interface StatsArme {
+  readonly degats: number;
+  readonly cadence: number;      // s entre deux déclenchements (orbite : délai avant de retoucher un ennemi)
+  readonly nombre: number;       // projectiles, haches, éclairs ou golems
+  readonly portee: number;       // blocs : recherche de cible, distance de vol
+  readonly vitesse: number;      // blocs/s (orbite : rad/s)
+  readonly zone: number;         // blocs : rayon de balayage, d'orbite, d'explosion, d'impact, d'allonge
+  readonly duree: number;        // s de vie (golems)
+  readonly perforation: number;  // ennemis traversés avant de disparaître
+  readonly recul: number;        // blocs/s donnés aux ennemis touchés
+}
+
+export type MecaniqueArme =
+  /** Frappe en arc de cercle devant le joueur. */
+  | { readonly type: 'balayage'; readonly angle: number; readonly effet: readonly CheminTexture[] }
+  /** Projectiles en ligne droite vers l'ennemi le plus proche. */
+  | { readonly type: 'tir'; readonly projectile: IdProjectile; readonly dispersion: number }
+  /** Projectile qui traverse tout, puis revient au joueur. */
+  | { readonly type: 'retour'; readonly projectile: IdProjectile; readonly dispersion: number }
+  /** Objets qui tournent en permanence autour du joueur. */
+  | { readonly type: 'orbite'; readonly projectile: IdProjectile }
+  /** Projectile qui explose au premier ennemi touché. */
+  | { readonly type: 'explosif'; readonly projectile: IdProjectile; readonly couleurs: readonly number[] }
+  /** Éclairs qui frappent des ennemis au hasard autour du joueur. */
+  | { readonly type: 'foudre'; readonly couleur: number }
+  /** Alliés qui combattent seuls pendant un temps limité. */
+  | { readonly type: 'invocation'; readonly allie: IdAllie };
+
+export interface NiveauArme {
+  /** Texte de la carte d'amélioration. */
+  readonly description: string;
+  /** Ajouts aux statistiques (cumulés rang après rang). */
+  readonly modif: Partial<StatsArme>;
+}
+
+export interface DefinitionArme {
+  readonly nom: string;
+  readonly description: string;
+  readonly icone: CheminTexture;
+  readonly mecanique: MecaniqueArme;
+  /** Statistiques au rang 1. */
+  readonly stats: StatsArme;
+  /** Améliorations des rangs 2, 3… ; rang maximal = 1 + longueur. */
+  readonly niveaux: readonly NiveauArme[];
+}
+
+// --------------------------------------------------------------------------
+// Alliés (invocations)
+// --------------------------------------------------------------------------
+export interface DefinitionAllie extends ApparenceEntite {
+  readonly nom: string;
+  readonly vitesse: number;      // blocs/s
+  readonly rayon: number;        // blocs
+  readonly cadenceCoups: number; // s entre deux coups
+  readonly detection: number;    // distance de recherche d'une cible (blocs)
+  readonly couleurParticules: number;
 }
 
 // --------------------------------------------------------------------------

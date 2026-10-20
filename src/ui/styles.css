@@ -71,6 +71,24 @@ canvas { display: block; }
   image-rendering: pixelated;
 }
 
+/* Armes possédées : icônes 16x16 agrandies ×2 et rang */
+#hud-armes {
+  position: absolute; bottom: 12px; left: 12px;
+  display: flex; gap: 4px;
+}
+.arme {
+  position: relative; width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  border: 2px solid #8b8b8b;
+  font-weight: bold;
+}
+.arme img { width: 32px; height: 32px; image-rendering: pixelated; }
+.arme .rang {
+  position: absolute; right: 1px; bottom: -2px;
+  font-size: 13px; font-weight: bold;
+}
+
 /* --- Panneau debug (inspiré de l'écran F3 de Minecraft) ------------------ */
 #debug {
   position: fixed; top: 10px; left: 10px;

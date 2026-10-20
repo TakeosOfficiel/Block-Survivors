@@ -88,12 +88,24 @@ export const CONFIG = {
 
   projectiles: {
     capacite: 256,
+    intervalleTrainee: 0.05,   // s entre deux particules de traînée
+  },
+
+  armes: {
+    distanceRetour: 0.7,       // le trident disparaît à cette distance du joueur (blocs)
+    dureeBalayage: 0.25,       // durée de l'effet de balayage (s)
+    foudre: { hauteur: 18, segments: 10, largeur: 0.18, ecart: 0.7, duree: 0.25, capacite: 24 },
+    golems: { capacite: 8, distanceSuivi: 3 },
   },
 
   particules: {
     capacite: 1024,
     gravite: 14,
     mort: { nombre: 10, vitesse: 2.5, taille: 0.18, duree: 0.7 },
+    trainee: { nombre: 1, vitesse: 0.6, taille: 0.16, duree: 0.4 },
+    explosionArme: { nombre: 28, vitesse: 6, taille: 0.35, duree: 0.8 },
+    impactFoudre: { nombre: 14, vitesse: 5, taille: 0.2, duree: 0.5 },
+    invocation: { nombre: 20, vitesse: 3, taille: 0.3, duree: 0.8 },
     explosion: { nombre: 70, vitesse: 8, taille: 0.45, duree: 1, couleurs: [0xffffff, 0xb0b0b0, 0xff9a2e] },
   },
 

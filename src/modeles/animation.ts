@@ -10,16 +10,23 @@ export interface EtatAnimation {
   phase: number;      // cycle de marche (rad)
   intensite: number;  // 0 = immobile, 1 = pleine allure
   temps: number;      // horloge du balancement au repos (s)
+  attaque: number;    // s restantes du geste d'attaque (0 = aucun)
 }
 
 export function creerEtatAnimation(): EtatAnimation {
-  return { phase: 0, intensite: 0, temps: 0 };
+  return { phase: 0, intensite: 0, temps: 0, attaque: 0 };
 }
 
 export function reinitialiserAnimation(etat: EtatAnimation): void {
   etat.phase = 0;
   etat.intensite = 0;
   etat.temps = Math.random() * 10;  // désynchronise le balancement des entités
+  etat.attaque = 0;
+}
+
+/** Lance le geste d'attaque du modèle (sans effet s'il n'en a pas). */
+export function declencherAttaque(etat: EtatAnimation, modele: ModeleCompile): void {
+  etat.attaque = modele.definition.attaque?.duree ?? 0;
 }
 
 const TOUR = Math.PI * 2;
@@ -27,6 +34,7 @@ const TOUR = Math.PI * 2;
 /** Avance l'animation : dt en temps de jeu (s), vitesseSol en blocs/s. */
 export function avancerAnimation(etat: EtatAnimation, modele: ModeleCompile, dt: number, vitesseSol: number): void {
   etat.temps += dt;
+  if (etat.attaque > 0) etat.attaque = Math.max(0, etat.attaque - dt);
   const marche = modele.definition.marche;
   if (!marche) return;
   etat.phase = (etat.phase + vitesseSol * dt * marche.frequence) % TOUR;
@@ -53,6 +61,15 @@ export function calculerRotations(modele: ModeleCompile, etat: EtatAnimation, so
       const m = modele.repos[i];
       sortie[m.partie * 3] += m.signe * avant;
       sortie[m.partie * 3 + 2] -= m.signe * ecart;  // écarte le bras du corps
+    }
+  }
+
+  const attaque = modele.definition.attaque;
+  if (attaque && etat.attaque > 0) {
+    const levee = Math.sin((1 - etat.attaque / attaque.duree) * Math.PI);
+    for (let i = 0; i < modele.attaque.length; i++) {
+      const m = modele.attaque[i];
+      sortie[m.partie * 3] -= levee * m.amplitude;
     }
   }
 }

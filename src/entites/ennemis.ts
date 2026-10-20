@@ -39,6 +39,7 @@ export class Ennemis implements SourceEntites {
   private readonly grille: GrilleSpatiale;
   private readonly voisins = new Int32Array(64);
   private readonly rendus: RenduType[];
+  private prochainId = 1;
 
   constructor(
     etat: EtatPartie,
@@ -73,6 +74,7 @@ export class Ennemis implements SourceEntites {
     if (!e) return false;
     const def = ENNEMIS[id];
     const limite = this.etat.arene.taille / 2 - def.rayon;
+    e.id = this.prochainId++;
     e.indexType = IDS_ENNEMIS.indexOf(id);
     e.definition = def;
     e.x = borner(x, -limite, limite);
@@ -90,7 +92,68 @@ export class Ennemis implements SourceEntites {
     e.meche = 0;
     e.mort = -1;
     e.aExploser = false;
+    e.immunites.fill(0);
     reinitialiserAnimation(e.animation);
+    return true;
+  }
+
+  /** Ennemi actif à un index renvoyé par chercher(). */
+  obtenir(index: number): Ennemi {
+    return this.pool.elements[index];
+  }
+
+  /**
+   * Écrit dans `sortie` les index des ennemis vivants qui touchent le cercle
+   * (leur propre rayon compris) ; renvoie leur nombre.
+   */
+  chercher(x: number, z: number, rayon: number, sortie: Int32Array): number {
+    const candidats = this.grille.requeter(x, z, rayon + RAYON_MAX, this.voisins);
+    let n = 0;
+    for (let k = 0; k < candidats && n < sortie.length; k++) {
+      const i = this.voisins[k];
+      const e = this.pool.elements[i];
+      const dx = e.x - x;
+      const dz = e.z - z;
+      const portee = rayon + e.definition.rayon;
+      if (e.mort < 0 && dx * dx + dz * dz <= portee * portee) sortie[n++] = i;
+    }
+    return n;
+  }
+
+  /** Ennemi vivant le plus proche à moins de `portee`, ou null. */
+  plusProche(x: number, z: number, portee: number): Ennemi | null {
+    let meilleur: Ennemi | null = null;
+    let meilleureD2 = portee * portee;
+    for (let i = 0; i < this.pool.nombre; i++) {
+      const e = this.pool.elements[i];
+      if (e.mort >= 0) continue;
+      const d2 = (e.x - x) ** 2 + (e.z - z) ** 2;
+      if (d2 < meilleureD2) {
+        meilleureD2 = d2;
+        meilleur = e;
+      }
+    }
+    return meilleur;
+  }
+
+  /** Ennemi vivant tiré au hasard à moins de `portee`, ou null (tirage uniforme en un passage). */
+  auHasard(x: number, z: number, portee: number): Ennemi | null {
+    let choisi: Ennemi | null = null;
+    let vus = 0;
+    const p2 = portee * portee;
+    for (let i = 0; i < this.pool.nombre; i++) {
+      const e = this.pool.elements[i];
+      if (e.mort >= 0 || (e.x - x) ** 2 + (e.z - z) ** 2 > p2) continue;
+      if (Math.random() * ++vus < 1) choisi = e;
+    }
+    return choisi;
+  }
+
+  /** Blesse l'ennemi si l'arme `source` ne l'a pas touché depuis moins de `delai` secondes. */
+  blesserAvecDelai(e: Ennemi, source: number, delai: number, degats: number, sourceX: number, sourceZ: number, recul: number): boolean {
+    if (e.mort >= 0 || e.immunites[source] > this.etat.tempsJeu) return false;
+    e.immunites[source] = this.etat.tempsJeu + delai;
+    this.blesser(e, degats, sourceX, sourceZ, recul);
     return true;
   }
 
@@ -125,13 +188,8 @@ export class Ennemis implements SourceEntites {
     const n = this.pool.nombre;
     const elements = this.pool.elements;
 
-    // 1. Grille des ennemis vivants (les index restent stables jusqu'à l'étape 3)
-    this.grille.vider();
-    for (let i = 0; i < n; i++) {
-      if (elements[i].mort < 0) this.grille.inserer(i, elements[i].x, elements[i].z);
-    }
-
-    // 2. Comportement et déplacement
+    // 1. Comportement et déplacement (la grille date de la fin du pas précédent :
+    //    ses index sont valides, seuls des ajouts ont pu avoir lieu depuis)
     for (let i = 0; i < n; i++) {
       const e = elements[i];
       if (e.mort >= 0) {
@@ -142,7 +200,7 @@ export class Ennemis implements SourceEntites {
       this.deplacer(e, i, dt);
     }
 
-    // 3. Retrait des ennemis explosés ou morts depuis assez longtemps
+    // 2. Retrait des ennemis explosés ou morts depuis assez longtemps
     for (let i = n - 1; i >= 0; i--) {
       const e = elements[i];
       if (e.aExploser) {
@@ -152,6 +210,12 @@ export class Ennemis implements SourceEntites {
         this.particules.emettre(e.x, 0.6, e.z, CONFIG.particules.mort, this.rendus[e.indexType].couleursMort);
         this.pool.liberer(i);
       }
+    }
+
+    // 3. Grille des ennemis vivants, utilisée par les armes et au pas suivant
+    this.grille.vider();
+    for (let i = 0; i < this.pool.nombre; i++) {
+      if (elements[i].mort < 0) this.grille.inserer(i, elements[i].x, elements[i].z);
     }
   }
 
@@ -235,6 +299,7 @@ export class Ennemis implements SourceEntites {
       const autre = this.voisins[k];
       if (autre === index) continue;
       const o = this.pool.elements[autre];
+      if (o.mort >= 0) continue;
       const ox = e.x - o.x;
       const oz = e.z - o.z;
       const minimum = def.rayon + o.definition.rayon;

@@ -1,7 +1,9 @@
-/** HUD : cœurs, compteur de FPS et messages centraux. */
+/** HUD : cœurs, armes possédées, compteur de FPS et messages centraux. */
 import type { BibliothequeTextures } from '../assets/textures';
+import type { Arsenal } from '../combat/arsenal';
 import { CONFIG } from '../config';
 import type { EtatJoueur } from '../etat';
+import { BarreArmes } from './barreArmes';
 import { BarreCoeurs } from './coeurs';
 import { element } from './dom';
 
@@ -9,6 +11,7 @@ export class Hud {
   private readonly elementFps = element('hud-fps');
   private readonly elementMessage = element('hud-message');
   private readonly coeurs: BarreCoeurs;
+  private readonly armes: BarreArmes;
 
   private images = 0;
   private duree = 0;
@@ -20,6 +23,7 @@ export class Hud {
 
   constructor(textures: BibliothequeTextures, pvMax: number) {
     this.coeurs = new BarreCoeurs(textures, pvMax);
+    this.armes = new BarreArmes(textures);
   }
 
   /** Affiche un message central pendant `duree` secondes (Infinity = jusqu'au prochain message). */
@@ -30,9 +34,10 @@ export class Hud {
   }
 
   /** dtBrut (non borné) mesure les FPS réels ; dtReel (borné) fait avancer les minuteries. */
-  majVisuel(dtBrut: number, dtReel: number, joueur: EtatJoueur): void {
+  majVisuel(dtBrut: number, dtReel: number, joueur: EtatJoueur, arsenal: Arsenal): void {
     this.mesurerFps(dtBrut);
     this.coeurs.afficher(joueur.pv);
+    this.armes.afficher(arsenal);
 
     if (this.minuterieMessage > 0) {
       this.minuterieMessage -= dtReel;

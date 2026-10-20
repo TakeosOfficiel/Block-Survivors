@@ -44,7 +44,8 @@ export function creerGeometrieCube(
 ): THREE.BoxGeometry {
   const [l, h, p] = cube.taille;
   const [u, v] = cube.uv;
-  const geometrie = new THREE.BoxGeometry(l / PIXELS_PAR_BLOC, h / PIXELS_PAR_BLOC, p / PIXELS_PAR_BLOC);
+  const g = 2 * (cube.gonflement ?? 0);
+  const geometrie = new THREE.BoxGeometry((l + g) / PIXELS_PAR_BLOC, (h + g) / PIXELS_PAR_BLOC, (p + g) / PIXELS_PAR_BLOC);
 
   // [x, y, largeur, hauteur] en pixels, dans l'ordre des faces de BoxGeometry
   const gauche = [u + p + l, v + p, p, h] as const;

@@ -26,6 +26,11 @@ export interface MembreReposCompile {
   readonly signe: number;
 }
 
+export interface MembreAttaqueCompile {
+  readonly partie: number;
+  readonly amplitude: number;
+}
+
 export interface ModeleCompile {
   readonly definition: DefinitionModele;
   readonly parties: readonly PartieCompilee[];
@@ -33,6 +38,7 @@ export interface ModeleCompile {
   readonly poseBase: Float32Array;
   readonly marche: readonly MembreMarcheCompile[];
   readonly repos: readonly MembreReposCompile[];
+  readonly attaque: readonly MembreAttaqueCompile[];
 }
 
 const INDEX_AXE: Record<Axe, number> = { x: 0, y: 1, z: 2 };
@@ -68,5 +74,6 @@ export function compilerModele(definition: DefinitionModele): ModeleCompile {
       absolu: m.absolu ?? false,
     })),
     repos: (definition.repos?.membres ?? []).map((m) => ({ partie: indexPartie(m.partie), signe: m.signe })),
+    attaque: (definition.attaque?.membres ?? []).map((m) => ({ partie: indexPartie(m.partie), amplitude: m.amplitude })),
   };
 }

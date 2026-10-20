@@ -1,5 +1,7 @@
 /** Liste des textures à précharger avant une partie, déduite des données. */
 import { CONFIG } from '../config';
+import { ALLIES, IDS_ALLIES } from '../donnees/allies';
+import { ARMES, IDS_ARMES } from '../donnees/armes';
 import { BLOCS, type IdBloc } from '../donnees/blocs';
 import { ENNEMIS, IDS_ENNEMIS } from '../donnees/ennemis';
 import { JOUEUR_BASE } from '../donnees/joueur';
@@ -20,6 +22,12 @@ export function texturesRequises(arene: DefinitionArene): Set<CheminTexture> {
   chemins.add(JOUEUR_BASE.skin);
   for (const id of IDS_ENNEMIS) chemins.add(ENNEMIS[id].skin);
   for (const id of IDS_PROJECTILES) chemins.add(PROJECTILES[id].texture);
+  for (const id of IDS_ALLIES) chemins.add(ALLIES[id].skin);
+  for (const id of IDS_ARMES) {
+    const arme = ARMES[id];
+    chemins.add(arme.icone);
+    if (arme.mecanique.type === 'balayage') for (const image of arme.mecanique.effet) chemins.add(image);
+  }
   chemins.add(CONFIG.ombre.texture);
   for (const coeur of Object.values(CONFIG.hud.coeurs)) chemins.add(coeur);
   return chemins;

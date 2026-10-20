@@ -29,9 +29,10 @@ src/
   assets/               chargement des textures et liste des textures requises
   moteur/               rendu, boucle de jeu, caméra, géométries UV
   monde/                construction de l'arène en blocs
-  entites/              joueur, ennemis et comportements, projectiles, directeur d'apparition
+  entites/              joueur, ennemis et comportements, projectiles ennemis, directeur d'apparition
+  combat/               armes du joueur : arsenal et une classe par mécanique
   modeles/              modèles cubiques : compilation, animation, rendu instancié
-  effets/               ombres et particules (instanciées)
+  effets/               ombres, particules, rendu des projectiles (instanciés)
   controles/            clavier et molette
   ui/                   HUD, panneau debug, écran de chargement, styles
   utils/                fonctions pures, pool d'objets, grille spatiale
@@ -58,8 +59,11 @@ client. Les navigateurs refusent les PNG locaux en `file://` : utilise
 ## Debug
 
 `F3` ou `²` : FPS, entités, appels de dessin, textures, vitesse du temps
-(`-` / `+`), invincibilité (`I`), apparition de chaque ennemi, frappe de zone
-(`K`), apparition d'un boss (`B`).
+(`-` / `+`), invincibilité (`I`), apparition de chaque ennemi, ajout ou rang
+supérieur de chaque arme, frappe de zone (`K`), apparition d'un boss (`B`).
+
+En `npm run dev`, la partie est accessible dans la console du navigateur via
+`window.blockSurvivors`.
 
 ---
 

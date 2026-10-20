@@ -27,7 +27,8 @@ jobs:
       - run: npm ci
       - run: npm run build
       # Sous Windows, l'icône et les métadonnées peuvent être écrites dans l'exe
-      - run: npx electron-builder --win portable -c.win.signAndEditExecutable=true
+      - run: npx electron-builder --win portable --publish never --config.win.signAndEditExecutable=true
+        shell: bash
       - uses: actions/upload-artifact@v4
         with:
           name: BlockSurvivors

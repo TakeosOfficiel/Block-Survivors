@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Block Survivors</title>
+<style>
+  /* ======================================================================
+     STYLES — HUD et overlay debug (inspiré de l'écran F3 de Minecraft)
+     ====================================================================== */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #78a7ff; }
+  body {
+    font-family: "Courier New", Courier, monospace;
+    color: #fff;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  canvas { display: block; }
+
+  /* Ombre de texte façon Minecraft : décalage net, sans flou */
+  .texte-mc { text-shadow: 2px 2px 0 #3f3f3f; }
+
+  #hud { position: fixed; inset: 0; pointer-events: none; }
+  #hud-fps {
+    position: absolute; top: 10px; right: 12px;
+    font-size: 18px; font-weight: bold;
+  }
+  #hud-aide {
+    position: absolute; bottom: 12px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px; white-space: nowrap; opacity: 0.85;
+  }
+  #message {
+    position: absolute; top: 22%; left: 50%;
+    transform: translateX(-50%);
+    font-size: 20px; font-weight: bold; color: #ffff55;
+    white-space: nowrap;
+    opacity: 0; transition: opacity 0.25s;
+  }
+  #message.visible { opacity: 1; }
+
+  #debug {
+    position: fixed; top: 10px; left: 10px;
+    font-size: 14px; line-height: 1.4;
+  }
+  #debug.cache { display: none; }
+  #debug .ligne {
+    display: table;
+    background: rgba(80, 80, 80, 0.6);
+    padding: 1px 6px; margin-bottom: 2px;
+  }
+  #debug .titre { color: #ffff55; }
+  #debug small { color: #c0c0c0; }
+  #debug button {
+    font: inherit; font-weight: bold; color: #fff;
+    text-shadow: 2px 2px 0 #3f3f3f;
+    background: #6f6f6f;
+    border: 2px solid #000;
+    box-shadow: inset 2px 2px 0 #a8a8a8, inset -2px -2px 0 #4a4a4a;
+    padding: 0 8px; margin: 1px 2px; cursor: pointer;
+  }
+  #debug button:hover { background: #7f89c4; }
+  #debug button.actif { color: #55ff55; }
+</style>
+</head>
+<body>
+
+<!-- HUD (non cliquable) -->
+<div id="hud" class="texte-mc">
+  <div id="hud-fps">FPS : --</div>
+  <div id="message"></div>
+  <div id="hud-aide">ZQSD / WASD / Flèches : se déplacer · Molette : zoom · F3 ou ² : debug</div>
+</div>
+
+<!-- Overlay debug (F3 ou ²) -->
+<div id="debug" class="cache texte-mc">
+  <div class="ligne titre">Block Survivors — DEBUG</div>
+  <div class="ligne">FPS : <span id="dbg-fps">--</span> (<span id="dbg-ms">--</span> ms / image)</div>
+  <div class="ligne">Entités actives : <span id="dbg-entites">0</span></div>
+  <div class="ligne">Appels de dessin : <span id="dbg-appels">0</span> · Triangles : <span id="dbg-triangles">0</span></div>
+  <div class="ligne">Temps de jeu : <span id="dbg-temps">00:00</span></div>
+  <div class="ligne">Joueur X / Z : <span id="dbg-position">0 / 0</span></div>
+  <div class="ligne">Distance caméra : <span id="dbg-zoom">0</span></div>
+  <div class="ligne">
+    Vitesse du temps :
+    <button id="dbg-ralentir">−</button><span id="dbg-vitesse">×1</span><button id="dbg-accelerer">+</button>
+    <small>(touches - / +)</small>
+  </div>
+  <div class="ligne">
+    Invincibilité : <button id="dbg-invincible">OFF</button> <small>(touche I)</small>
+  </div>
+  <div class="ligne">
+    <button id="dbg-boss">Faire apparaître un boss</button> <small>(touche B)</small>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+/* ==========================================================================
+   BLOCK SURVIVORS — Milestone 1 : scène, arène, joueur, caméra, HUD, debug
+   Note légale : les textures et noms Minecraft appartiennent à Mojang ;
+   projet de fan non commercial.
+   ========================================================================== */
+
+
+// ==========================================================================
+// 1. CONFIGURATION TECHNIQUE
+// ==========================================================================
+const CONFIG = {
+  // Pas de temps
+  dtMax: 0.1,          // deltaTime réel maximal (s) : évite les sauts après un onglet en arrière-plan
+  pasSimMax: 1 / 60,   // durée max d'un sous-pas de simulation (s)
+  sousPasMax: 40,      // sous-pas max par image (protège le mode ×16 sur les machines lentes)
+
+  camera: {
+    inclinaisonDeg: 55,      // plongée sous l'horizontale
+    fov: 45,
+    hauteurVisee: 0.5,       // hauteur du point visé au-dessus du sol (blocs)
+    distance: 24,            // distance caméra → point visé au démarrage (blocs)
+    distanceMin: 10,
+    distanceMax: 40,
+    sensibiliteZoom: 0.0012, // facteur exponentiel par pixel de molette
+    suivi: 10,               // raideur du suivi du joueur (1/s)
+    lissageZoom: 12,         // raideur du zoom (1/s)
+  },
+
+  rendu: {
+    pixelRatioMax: 2,
+    // Ombrage façon Minecraft : dessus pleine lumière, faces latérales plus sombres
+    ambiante: 0.35,
+    soleil: 0.75,
+    directionSoleil: [0.3, 1, 0.5],
+    contrasteDamier: 0.9,    // un bloc sur deux légèrement assombri pour lire la grille
+  },
+
+  // Contrôles par touche PHYSIQUE (event.code) : la même touche fonctionne
+  // en AZERTY (Z Q S D) et en QWERTY (W A S D).
+  controles: {
+    haut:   ['KeyW', 'ArrowUp'],
+    bas:    ['KeyS', 'ArrowDown'],
+    gauche: ['KeyA', 'ArrowLeft'],
+    droite: ['KeyD', 'ArrowRight'],
+  },
+
+  hud: {
+    periodeFps: 0.5,               // fenêtre de mesure des FPS (s)
+    periodeRafraichissement: 0.25, // rafraîchissement de l'overlay debug (s)
+    dureeMessage: 2.5,             // durée d'affichage d'un message central (s)
+  },
+
+  debug: {
+    actifAuDemarrage: false,
+    touchesOverlay: ['F3', 'Backquote'],   // Backquote = touche ² en AZERTY
+    vitessesTemps: [0.25, 0.5, 1, 2, 4, 8, 16],
+  },
+};
+
+
+// ==========================================================================
+// 2. CONTENU DU JEU (data-driven)
+//    Ajouter du contenu = ajouter des entrées ici. La logique lit ces tables.
+// ==========================================================================
+
+// Types de blocs. La clé reprend l'identifiant officiel Minecraft.
+// `couleur` = couleur unie utilisée quand aucune texture n'est appliquée.
+const BLOCS = {
+  grass_block: { nom: "Bloc d'herbe", couleur: 0x91bd59 },
+  cobblestone: { nom: 'Pierre',       couleur: 0x7f7f7f },
+};
+
+// Statistiques et apparence de base du joueur.
+const JOUEUR_BASE = {
+  taille: 0.8,            // côté du cube (blocs)
+  rayon: 0.4,             // rayon de collision (blocs)
+  vitesse: 5,             // blocs / seconde
+  reactivite: 25,         // rapidité d'atteinte de la vitesse cible (1/s)
+  vitesseRotation: 14,    // rapidité d'orientation vers la direction de marche (1/s)
+  couleur: 0x2fa8a8,      // corps
+  couleurFace: 0xc8946c,  // face avant (montre l'orientation)
+};
+
+// Arènes. `taille` = côté de la zone jouable en blocs, centrée sur l'origine.
+const ARENES = [
+  {
+    id: 'prairie',
+    nom: 'Prairie du village abandonné',
+    taille: 60,
+    hauteurMur: 2,              // en blocs
+    blocSol: 'grass_block',
+    blocMur: 'cobblestone',
+    blocExterieur: 'grass_block',
+    teinteExterieur: 0.65,      // assombrissement du terrain hors arène
+    tailleExterieur: 400,       // côté du terrain décoratif hors arène (blocs)
+    ciel: 0x78a7ff,
+    brouillard: { debut: 45, fin: 120 },
+  },
+];
+
+// Boss. Table vide : aucun boss n'est encore déclaré.
+const BOSS = [];
+
+
+// ==========================================================================
+// 3. ÉTAT DU JEU
+// ==========================================================================
+const etat = {
+  arene: ARENES[0],
+  tempsJeu: 0,  // secondes de jeu écoulées (suivent la vitesse du temps)
+  indexVitesseTemps: CONFIG.debug.vitessesTemps.indexOf(1),
+  vitesseTemps: 1,
+  debug: {
+    visible: CONFIG.debug.actifAuDemarrage,
+    invincible: false,
+  },
+};
+
+const joueur = {
+  x: 0, z: 0,     // position au sol
+  vx: 0, vz: 0,   // vitesse (blocs/s)
+  angle: 0,       // orientation (rad), 0 = face vers +Z
+  mesh: null,
+};
+
+// Pools d'entités enregistrés ; chacun expose un champ `actifs` (lu par le compteur debug).
+const POOLS = [];
+
+
+// ==========================================================================
+// 4. RENDU : moteur, scène, caméra, lumières
+// ==========================================================================
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+} catch (erreur) {
+  document.body.innerHTML =
+    '<p style="padding:20px;font:18px monospace;color:#fff">WebGL est indisponible sur ce navigateur.</p>';
+  throw erreur;
+}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, CONFIG.rendu.pixelRatioMax));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+
+// Caméra sans lacet : elle garde une inclinaison fixe et se contente de translater.
+const INCLINAISON = THREE.MathUtils.degToRad(CONFIG.camera.inclinaisonDeg);
+const SIN_INCLINAISON = Math.sin(INCLINAISON);
+const COS_INCLINAISON = Math.cos(INCLINAISON);
+const camera = new THREE.PerspectiveCamera(
+  CONFIG.camera.fov, window.innerWidth / window.innerHeight, 0.5, 500
+);
+camera.rotation.set(-INCLINAISON, 0, 0);
+
+// Lumières. three.js calcule en unités physiques : une intensité de π = éclairage plein.
+const lumiereAmbiante = new THREE.AmbientLight(0xffffff, CONFIG.rendu.ambiante * Math.PI);
+const soleil = new THREE.DirectionalLight(0xffffff, CONFIG.rendu.soleil * Math.PI);
+soleil.position.fromArray(CONFIG.rendu.directionSoleil);
+scene.add(lumiereAmbiante, soleil);
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+
+// ==========================================================================
+// 5. MONDE : arène en blocs (un InstancedMesh par type de bloc)
+// ==========================================================================
+const geometrieBloc = new THREE.BoxGeometry(1, 1, 1);
+
+// Crée un InstancedMesh pour un type de bloc à partir d'une liste plate [x,y,z, x,y,z, ...]
+// (coordonnées des centres de blocs).
+function creerInstancesBlocs(idBloc, positions) {
+  const definition = BLOCS[idBloc];
+  const nombre = positions.length / 3;
+  const materiau = new THREE.MeshLambertMaterial({ color: 0xffffff });
+  const mesh = new THREE.InstancedMesh(geometrieBloc, materiau, nombre);
+  const matrice = new THREE.Matrix4();
+  const couleurBase = new THREE.Color(definition.couleur);
+  const couleur = new THREE.Color();
+
+  for (let i = 0; i < nombre; i++) {
+    const x = positions[i * 3];
+    const y = positions[i * 3 + 1];
+    const z = positions[i * 3 + 2];
+    matrice.makeTranslation(x, y, z);
+    mesh.setMatrixAt(i, matrice);
+    // Damier discret : rend chaque bloc lisible tant qu'il n'y a pas de texture
+    const pair = (Math.floor(x) + Math.floor(y) + Math.floor(z)) & 1;
+    couleur.copy(couleurBase).multiplyScalar(pair ? 1 : CONFIG.rendu.contrasteDamier);
+    mesh.setColorAt(i, couleur);
+  }
+  mesh.instanceMatrix.needsUpdate = true;
+  mesh.instanceColor.needsUpdate = true;
+  mesh.name = idBloc;
+  return mesh;
+}
+
+// Construit l'arène décrite par une entrée de la table ARENES.
+function construireArene(definition) {
+  const groupe = new THREE.Group();
+  const demi = definition.taille / 2;
+  const positionsParBloc = {};
+  const ajouter = (idBloc, x, y, z) => {
+    (positionsParBloc[idBloc] ??= []).push(x, y, z);
+  };
+
+  // Sol : une couche de blocs dont la face supérieure est à y = 0
+  for (let i = 0; i < definition.taille; i++) {
+    for (let k = 0; k < definition.taille; k++) {
+      ajouter(definition.blocSol, -demi + i + 0.5, -0.5, -demi + k + 0.5);
+    }
+  }
+
+  // Murs : anneau de blocs juste autour de la zone jouable (coins compris)
+  for (let h = 0; h < definition.hauteurMur; h++) {
+    const y = h + 0.5;
+    for (let i = -1; i <= definition.taille; i++) {
+      const c = -demi + i + 0.5;
+      ajouter(definition.blocMur, c, y, -demi - 0.5);   // mur nord
+      ajouter(definition.blocMur, c, y,  demi + 0.5);   // mur sud
+      if (i >= 0 && i < definition.taille) {
+        ajouter(definition.blocMur, -demi - 0.5, y, c); // mur ouest
+        ajouter(definition.blocMur,  demi + 0.5, y, c); // mur est
+      }
+    }
+  }
+
+  for (const idBloc in positionsParBloc) {
+    groupe.add(creerInstancesBlocs(idBloc, positionsParBloc[idBloc]));
+  }
+
+  // Terrain hors arène : un grand plan juste sous le niveau du sol
+  const couleurExterieur = new THREE.Color(BLOCS[definition.blocExterieur].couleur)
+    .multiplyScalar(definition.teinteExterieur);
+  const exterieur = new THREE.Mesh(
+    new THREE.PlaneGeometry(definition.tailleExterieur, definition.tailleExterieur),
+    new THREE.MeshLambertMaterial({ color: couleurExterieur })
+  );
+  exterieur.rotation.x = -Math.PI / 2;
+  exterieur.position.y = -0.02;
+  groupe.add(exterieur);
+
+  // Ciel et brouillard propres à l'arène
+  scene.background = new THREE.Color(definition.ciel);
+  scene.fog = new THREE.Fog(definition.ciel, definition.brouillard.debut, definition.brouillard.fin);
+
+  scene.add(groupe);
+  return groupe;
+}
+
+
+// ==========================================================================
+// 6. JOUEUR
+// ==========================================================================
+function creerJoueur() {
+  const t = JOUEUR_BASE.taille;
+  const corps = new THREE.MeshLambertMaterial({ color: JOUEUR_BASE.couleur });
+  const face = new THREE.MeshLambertMaterial({ color: JOUEUR_BASE.couleurFace });
+  // Ordre des faces d'une BoxGeometry : +X, -X, +Y, -Y, +Z (avant), -Z
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(t, t, t),
+    [corps, corps, corps, corps, face, corps]
+  );
+  mesh.position.set(joueur.x, t / 2, joueur.z);
+  scene.add(mesh);
+  joueur.mesh = mesh;
+}
+
+function majJoueur(dt) {
+  // Direction voulue d'après le clavier
+  let dx = (actionActive('droite') ? 1 : 0) - (actionActive('gauche') ? 1 : 0);
+  let dz = (actionActive('bas') ? 1 : 0) - (actionActive('haut') ? 1 : 0);
+  const norme = Math.hypot(dx, dz);
+  if (norme > 0) { dx /= norme; dz /= norme; }
+
+  // Vitesse : approche exponentielle de la vitesse cible (réactif, sans à-coups)
+  const k = 1 - Math.exp(-JOUEUR_BASE.reactivite * dt);
+  joueur.vx += (dx * JOUEUR_BASE.vitesse - joueur.vx) * k;
+  joueur.vz += (dz * JOUEUR_BASE.vitesse - joueur.vz) * k;
+  joueur.x += joueur.vx * dt;
+  joueur.z += joueur.vz * dt;
+
+  // Collisions avec les bords de l'arène
+  const limite = etat.arene.taille / 2 - JOUEUR_BASE.rayon;
+  if (joueur.x < -limite)     { joueur.x = -limite; joueur.vx = 0; }
+  else if (joueur.x > limite) { joueur.x =  limite; joueur.vx = 0; }
+  if (joueur.z < -limite)     { joueur.z = -limite; joueur.vz = 0; }
+  else if (joueur.z > limite) { joueur.z =  limite; joueur.vz = 0; }
+
+  // Orientation vers la direction de marche (par le chemin angulaire le plus court)
+  if (norme > 0) {
+    const cible = Math.atan2(dx, dz);
+    const ecart = Math.atan2(Math.sin(cible - joueur.angle), Math.cos(cible - joueur.angle));
+    joueur.angle += ecart * (1 - Math.exp(-JOUEUR_BASE.vitesseRotation * dt));
+  }
+}
+
+// Recopie l'état logique du joueur dans son mesh.
+function majVisuelJoueur() {
+  joueur.mesh.position.x = joueur.x;
+  joueur.mesh.position.z = joueur.z;
+  joueur.mesh.rotation.y = joueur.angle;
+}
+
+
+// ==========================================================================
+// 7. ENTRÉES : clavier et molette
+// ==========================================================================
+const touchesEnfoncees = {};  // event.code → booléen
+
+const CODES_CONTROLES = new Set(Object.values(CONFIG.controles).flat());
+const CODES_OVERLAY = new Set(CONFIG.debug.touchesOverlay);
+
+// Vrai si au moins une des touches liées à l'action est enfoncée.
+function actionActive(nomAction) {
+  const codes = CONFIG.controles[nomAction];
+  for (let i = 0; i < codes.length; i++) {
+    if (touchesEnfoncees[codes[i]]) return true;
+  }
+  return false;
+}
+
+window.addEventListener('keydown', (e) => {
+  if (CODES_CONTROLES.has(e.code)) {
+    touchesEnfoncees[e.code] = true;
+    e.preventDefault();
+    return;
+  }
+  if (CODES_OVERLAY.has(e.code)) {
+    e.preventDefault();
+    if (!e.repeat) basculerDebug();
+    return;
+  }
+  // Raccourcis debug : actifs seulement quand l'overlay est ouvert
+  if (!etat.debug.visible || e.repeat) return;
+  if (e.key === '+' || e.key === '=')      changerVitesseTemps(1);
+  else if (e.key === '-' || e.key === '_') changerVitesseTemps(-1);
+  else if (e.code === 'KeyI')              basculerInvincibilite();
+  else if (e.code === 'KeyB')              debugApparitionBoss();
+});
+
+window.addEventListener('keyup', (e) => {
+  touchesEnfoncees[e.code] = false;
+});
+
+// Fenêtre qui perd le focus : on relâche tout pour éviter un joueur qui court seul
+window.addEventListener('blur', () => {
+  for (const code in touchesEnfoncees) touchesEnfoncees[code] = false;
+});
+
+// Molette : zoom exponentiel borné (Ctrl + molette reste le zoom du navigateur)
+window.addEventListener('wheel', (e) => {
+  if (e.ctrlKey) return;
+  e.preventDefault();
+  const pixels = e.deltaMode === 1 ? e.deltaY * 16
+               : e.deltaMode === 2 ? e.deltaY * 400
+               : e.deltaY;
+  cameraSuivi.distanceCible = THREE.MathUtils.clamp(
+    cameraSuivi.distanceCible * Math.exp(pixels * CONFIG.camera.sensibiliteZoom),
+    CONFIG.camera.distanceMin,
+    CONFIG.camera.distanceMax
+  );
+}, { passive: false });
+
+
+// ==========================================================================
+// 8. CAMÉRA : suivi du joueur et zoom
+// ==========================================================================
+const cameraSuivi = {
+  x: joueur.x,
+  z: joueur.z,
+  distance: CONFIG.camera.distance,
+  distanceCible: CONFIG.camera.distance,
+};
+
+// dtJeu pilote le suivi (cohérent avec la vitesse du temps), dtReel pilote le zoom.
+function majCamera(dtJeu, dtReel) {
+  const kSuivi = 1 - Math.exp(-CONFIG.camera.suivi * dtJeu);
+  cameraSuivi.x += (joueur.x - cameraSuivi.x) * kSuivi;
+  cameraSuivi.z += (joueur.z - cameraSuivi.z) * kSuivi;
+
+  const kZoom = 1 - Math.exp(-CONFIG.camera.lissageZoom * dtReel);
+  cameraSuivi.distance += (cameraSuivi.distanceCible - cameraSuivi.distance) * kZoom;
+
+  camera.position.set(
+    cameraSuivi.x,
+    CONFIG.camera.hauteurVisee + cameraSuivi.distance * SIN_INCLINAISON,
+    cameraSuivi.z + cameraSuivi.distance * COS_INCLINAISON
+  );
+}
+
+
+// ==========================================================================
+// 9. HUD
+// ==========================================================================
+const dom = {
+  fps:             document.getElementById('hud-fps'),
+  message:         document.getElementById('message'),
+  debug:           document.getElementById('debug'),
+  dbgFps:          document.getElementById('dbg-fps'),
+  dbgMs:           document.getElementById('dbg-ms'),
+  dbgEntites:      document.getElementById('dbg-entites'),
+  dbgAppels:       document.getElementById('dbg-appels'),
+  dbgTriangles:    document.getElementById('dbg-triangles'),
+  dbgTemps:        document.getElementById('dbg-temps'),
+  dbgPosition:     document.getElementById('dbg-position'),
+  dbgZoom:         document.getElementById('dbg-zoom'),
+  dbgVitesse:      document.getElementById('dbg-vitesse'),
+  dbgRalentir:     document.getElementById('dbg-ralentir'),
+  dbgAccelerer:    document.getElementById('dbg-accelerer'),
+  dbgInvincible:   document.getElementById('dbg-invincible'),
+  dbgBoss:         document.getElementById('dbg-boss'),
+};
+
+const mesureFps = { images: 0, duree: 0, fps: 0, ms: 0 };
+let minuterieOverlay = 0;
+let minuterieMessage = 0;
+
+function formaterTemps(secondes) {
+  const s = Math.floor(secondes);
+  const min = Math.floor(s / 60);
+  const sec = s % 60;
+  return (min < 10 ? '0' : '') + min + ':' + (sec < 10 ? '0' : '') + sec;
+}
+
+function afficherMessage(texte) {
+  dom.message.textContent = texte;
+  dom.message.classList.add('visible');
+  minuterieMessage = CONFIG.hud.dureeMessage;
+}
+
+// dtBrut (non borné) sert à mesurer les FPS réels ; dtReel (borné) aux minuteries.
+function majHud(dtBrut, dtReel) {
+  mesureFps.images++;
+  mesureFps.duree += dtBrut;
+  if (mesureFps.duree >= CONFIG.hud.periodeFps) {
+    mesureFps.fps = Math.round(mesureFps.images / mesureFps.duree);
+    mesureFps.ms = (mesureFps.duree * 1000) / mesureFps.images;
+    mesureFps.images = 0;
+    mesureFps.duree = 0;
+    dom.fps.textContent = 'FPS : ' + mesureFps.fps;
+  }
+
+  if (minuterieMessage > 0) {
+    minuterieMessage -= dtReel;
+    if (minuterieMessage <= 0) dom.message.classList.remove('visible');
+  }
+
+  if (etat.debug.visible) {
+    minuterieOverlay += dtReel;
+    if (minuterieOverlay >= CONFIG.hud.periodeRafraichissement) {
+      minuterieOverlay = 0;
+      majOverlayDebug();
+    }
+  }
+}
+
+
+// ==========================================================================
+// 10. MODE DEBUG
+// ==========================================================================
+function compterEntites() {
+  let total = 1; // le joueur
+  for (let i = 0; i < POOLS.length; i++) total += POOLS[i].actifs;
+  return total;
+}
+
+function majOverlayDebug() {
+  const infos = renderer.info.render;
+  dom.dbgFps.textContent = mesureFps.fps;
+  dom.dbgMs.textContent = mesureFps.ms.toFixed(1);
+  dom.dbgEntites.textContent = compterEntites();
+  dom.dbgAppels.textContent = infos.calls;
+  dom.dbgTriangles.textContent = infos.triangles;
+  dom.dbgTemps.textContent = formaterTemps(etat.tempsJeu);
+  dom.dbgPosition.textContent = joueur.x.toFixed(1) + ' / ' + joueur.z.toFixed(1);
+  dom.dbgZoom.textContent = cameraSuivi.distance.toFixed(1);
+}
+
+function basculerDebug() {
+  etat.debug.visible = !etat.debug.visible;
+  dom.debug.classList.toggle('cache', !etat.debug.visible);
+  if (etat.debug.visible) majOverlayDebug();
+}
+
+function changerVitesseTemps(sens) {
+  const liste = CONFIG.debug.vitessesTemps;
+  etat.indexVitesseTemps = THREE.MathUtils.clamp(etat.indexVitesseTemps + sens, 0, liste.length - 1);
+  etat.vitesseTemps = liste[etat.indexVitesseTemps];
+  dom.dbgVitesse.textContent = '×' + etat.vitesseTemps;
+}
+
+function basculerInvincibilite() {
+  etat.debug.invincible = !etat.debug.invincible;
+  dom.dbgInvincible.textContent = etat.debug.invincible ? 'ON' : 'OFF';
+  dom.dbgInvincible.classList.toggle('actif', etat.debug.invincible);
+}
+
+// Fait apparaître immédiatement le prochain boss de la table BOSS.
+function debugApparitionBoss() {
+  if (BOSS.length === 0) afficherMessage('Aucun boss déclaré dans la table BOSS');
+}
+
+function initialiserDebug() {
+  // Chaque bouton rend le focus après le clic (Espace/Entrée ne le redéclenchent pas)
+  const lier = (bouton, action) => {
+    bouton.addEventListener('click', () => { action(); bouton.blur(); });
+  };
+  lier(dom.dbgRalentir, () => changerVitesseTemps(-1));
+  lier(dom.dbgAccelerer, () => changerVitesseTemps(1));
+  lier(dom.dbgInvincible, basculerInvincibilite);
+  lier(dom.dbgBoss, debugApparitionBoss);
+
+  changerVitesseTemps(0);
+  dom.debug.classList.toggle('cache', !etat.debug.visible);
+}
+
+
+// ==========================================================================
+// 11. BOUCLE DE JEU
+// ==========================================================================
+function majSimulation(dt) {
+  etat.tempsJeu += dt;
+  majJoueur(dt);
+}
+
+let tempsPrecedent = -1;
+
+function boucle(tempsMs) {
+  requestAnimationFrame(boucle);
+
+  if (tempsPrecedent < 0) tempsPrecedent = tempsMs;
+  const dtBrut = Math.max(0, (tempsMs - tempsPrecedent) / 1000);
+  tempsPrecedent = tempsMs;
+  const dtReel = Math.min(dtBrut, CONFIG.dtMax);
+
+  // Simulation en sous-pas bornés : stable même avec le temps accéléré
+  const dtJeuDemande = dtReel * etat.vitesseTemps;
+  const nbPas = Math.min(Math.ceil(dtJeuDemande / CONFIG.pasSimMax), CONFIG.sousPasMax);
+  const pas = nbPas > 0 ? Math.min(dtJeuDemande / nbPas, CONFIG.pasSimMax) : 0;
+  for (let i = 0; i < nbPas; i++) majSimulation(pas);
+
+  majVisuelJoueur();
+  majCamera(pas * nbPas, dtReel);
+  renderer.render(scene, camera);
+  majHud(dtBrut, dtReel);
+}
+
+
+// ==========================================================================
+// 12. DÉMARRAGE
+// ==========================================================================
+construireArene(etat.arene);
+creerJoueur();
+initialiserDebug();
+majCamera(0, 0);
+requestAnimationFrame(boucle);
+</script>
+</body>
+</html>

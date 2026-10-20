@@ -128,6 +128,36 @@ const definitions = {
       { description: '+1 golem, dégâts +10', modif: { nombre: 1, degats: 10 } },
     ],
   },
+  loups: {
+    son: 'loup_aboiement',
+    nom: 'Meute de loups',
+    description: 'Des loups apprivoisés traquent et mordent les ennemis.',
+    icone: 'item/bone',
+    mecanique: { type: 'invocation', allie: 'loup' },
+    stats: { ...BASE, degats: 5, cadence: 3, nombre: 2, duree: 14, zone: 0.6, recul: 2 },
+    niveaux: [
+      { description: '+1 loup', modif: { nombre: 1 } },
+      { description: 'Dégâts +3', modif: { degats: 3 } },
+      { description: 'Les loups restent 6 s de plus', modif: { duree: 6 } },
+      { description: '+1 loup, dégâts +3', modif: { nombre: 1, degats: 3 } },
+      { description: '+2 loups', modif: { nombre: 2 } },
+    ],
+  },
+  vex: {
+    son: 'vex_invocation',
+    nom: 'Vex',
+    description: 'Des esprits volants foncent sur les ennemis à travers le décor.',
+    icone: 'item/echo_shard',
+    mecanique: { type: 'invocation', allie: 'vex' },
+    stats: { ...BASE, degats: 4, cadence: 4, nombre: 2, duree: 8, zone: 0.4, recul: 1 },
+    niveaux: [
+      { description: '+1 vex', modif: { nombre: 1 } },
+      { description: 'Dégâts +3', modif: { degats: 3 } },
+      { description: 'Invoqués 25 % plus souvent', modif: { cadence: -1 } },
+      { description: '+1 vex, restent 3 s de plus', modif: { nombre: 1, duree: 3 } },
+      { description: '+2 vex, dégâts +2', modif: { nombre: 2, degats: 2 } },
+    ],
+  },
 } satisfies Record<string, DefinitionArme>;
 
 export type IdArme = keyof typeof definitions;

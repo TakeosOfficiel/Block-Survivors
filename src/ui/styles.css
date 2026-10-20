@@ -247,9 +247,9 @@ img { image-rendering: pixelated; }
 .menu-separateur { height: 2px; background: #8b8b8b; box-shadow: 0 2px 0 #fff; margin: 4px 0; }
 .menu-sous-titre { color: #5a5a5a; margin-top: 4px; }
 .menu-grand-nom { font-size: 24px; line-height: 28px; color: #202020; }
-.menu-classes { display: flex; justify-content: center; gap: 10px; }
+.menu-classes { display: flex; justify-content: center; gap: 8px; }
 .menu-classe {
-  display: flex; flex-direction: column; align-items: center; gap: 2px; width: 96px; padding: 6px 2px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px;
   font: inherit; color: var(--mc-texte-panneau); background: rgba(0, 0, 0, 0.06);
   border: 2px solid transparent; cursor: pointer;
 }
@@ -296,7 +296,8 @@ img { image-rendering: pixelated; }
 .menu-puce { padding: 1px 6px; color: #fff; background: #5a3a7a; border: 2px solid #2a1a3a; }
 
 .menu-bas { display: flex; align-items: center; gap: 12px; }
-.menu-bas > .bouton-mc { width: 180px; }
+.menu-bas > .bouton-mc, .menu-bas-gauche .bouton-mc { width: 180px; }
+.menu-bas-gauche { gap: 4px; }
 .bouton-mc.bouton-jouer { width: 640px; height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 24px; line-height: 28px; }
 #menu-jouer-sous-titre { font-size: 16px; line-height: 18px; color: var(--mc-gris); }
 .bouton-jouer:hover #menu-jouer-sous-titre { color: var(--mc-jaune); }
@@ -638,3 +639,11 @@ img { image-rendering: pixelated; }
 .menu-arbres { display: flex; flex-direction: column; gap: 4px; }
 .menu-arbre { display: flex; align-items: center; gap: 8px; padding: 2px 4px; opacity: 0.7; }
 .menu-arbre.actif { opacity: 1; background: rgba(255, 255, 255, 0.35); }
+
+/* --- Nouveautés ---------------------------------------------------------- */
+#nouveautes { z-index: 14; }
+.nouveautes-liste { width: min(760px, 94vw); max-height: 600px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+.nouveautes-titre { font-size: 16px; color: #202020; }
+.nouveautes-titre.actuelle { color: #1f6f1f; }
+.nouveautes-section { color: #5a5a5a; margin-top: 4px; }
+.nouveautes-version ul { margin: 2px 0 0 18px; color: #303030; }

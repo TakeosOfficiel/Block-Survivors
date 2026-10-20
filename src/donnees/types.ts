@@ -349,6 +349,10 @@ export interface DefinitionAllie extends ApparenceEntite {
   readonly rayon: number;        // blocs
   readonly cadenceCoups: number; // s entre deux coups
   readonly detection: number;    // distance de recherche d'une cible (blocs)
+  /** Son de chaque coup porté. */
+  readonly sonCoup: IdSon;
+  /** Vole à cette hauteur (blocs) en traversant le décor (vex). */
+  readonly vol?: number;
 }
 
 // --------------------------------------------------------------------------

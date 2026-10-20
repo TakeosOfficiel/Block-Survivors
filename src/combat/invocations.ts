@@ -121,13 +121,21 @@ export class Invocations implements SourceEntites {
 
       a.vitesseSol = 0;
       if (distance > arret) {
-        carte.resoudreCollision(a.x + versX * def.vitesse * dt, a.z + versZ * def.vitesse * dt, def.rayon, corrige);
-        a.x = corrige.x;
-        a.z = corrige.z;
+        const nx = a.x + versX * def.vitesse * dt;
+        const nz = a.z + versZ * def.vitesse * dt;
+        if (def.vol !== undefined) {
+          // Volant : traverse le décor
+          a.x = nx;
+          a.z = nz;
+        } else {
+          carte.resoudreCollision(nx, nz, def.rayon, corrige);
+          a.x = corrige.x;
+          a.z = corrige.z;
+        }
         a.vitesseSol = def.vitesse;
       } else if (cible && a.minuterie <= 0) {
         ennemis.blesser(cible, s.degats, a.x, a.z, s.recul, arme.index);
-        this.contexte.retours.son('golem_coup');
+        this.contexte.retours.son(def.sonCoup);
         declencherAttaque(a.animation, this.rendus[a.indexType].modele);
         a.minuterie = def.cadenceCoups;
       }
@@ -145,6 +153,8 @@ export class Invocations implements SourceEntites {
       pose.x = a.x;
       pose.z = a.z;
       pose.angle = a.angle;
+      // Les volants flottent en ondulant doucement
+      pose.y = a.definition.vol !== undefined ? a.definition.vol + Math.sin(a.vie * 4) * 0.12 : 0;
       calculerRotations(rendu.modele, a.animation, pose.rotations);
       rendu.instances.ajouter(pose);
       ombres.ajouter(a.x, a.z, a.definition.rayonOmbre);

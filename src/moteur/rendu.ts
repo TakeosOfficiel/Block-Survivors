@@ -140,22 +140,29 @@ export class Rendu {
    * fois, ce qui compile ses shaders et envoie ses données. Sans cela, la
    * première apparition d'un boss ou d'un nouveau mob fige le jeu un instant.
    */
-  async prechauffer(): Promise<void> {
+  async prechauffer(surProgression?: (faites: number, total: number) => void): Promise<void> {
     const vides: THREE.InstancedMesh[] = [];
     this.scene.traverse((objet) => {
       const maillage = objet as THREE.InstancedMesh;
-      if (maillage.isInstancedMesh && maillage.count === 0) {
-        maillage.count = 1;
-        vides.push(maillage);
-      }
+      if (maillage.isInstancedMesh && maillage.count === 0 && maillage.visible) vides.push(maillage);
     });
-    try {
-      await this.renderer.compileAsync(this.scene, this.camera);
-    } catch {
-      // Compilation anticipée indisponible : le rendu ci-dessous suffit
+    // Par paquets, une image chacun : la barre de progression avance et la page reste réactive
+    for (const m of vides) m.visible = false;
+    // Un seul pixel dessiné : les shaders se compilent pareil, le dessin ne coûte rien
+    this.renderer.setScissorTest(true);
+    this.renderer.setScissor(0, 0, 1, 1);
+    const PAQUET = 16;
+    for (let i = 0; i < vides.length; i += PAQUET) {
+      for (const m of vides.slice(i, i + PAQUET)) {
+        m.visible = true;
+        m.count = 1;
+      }
+      this.renderer.render(this.scene, this.camera);
+      surProgression?.(Math.min(i + PAQUET, vides.length), vides.length);
+      await new Promise((resoudre) => requestAnimationFrame(resoudre));
     }
-    this.renderer.render(this.scene, this.camera);
-    for (const maillage of vides) maillage.count = 0;
+    this.renderer.setScissorTest(false);
+    for (const m of vides) m.count = 0;
   }
 
   private readonly redimensionner = (): void => {

@@ -26,6 +26,11 @@ const definitions = {
   golem_coup: { categorie: 'armes', chemin: 'mob/irongolem/hit1', hachage: '9d528a24b3aaf8e4210b570316ef4fe125f813d8', volume: 0.35, hauteur: [0.9, 1.1], intervalleMin: 0.15, simultanes: 2 },
   explosion: { categorie: 'armes', chemin: 'random/explode1', hachage: 'fa85b9e7e54c36c9f9d0249ca739444b5e3bb66c', volume: 0.45, hauteur: [0.8, 1.1], intervalleMin: 0.08, simultanes: 3 },
 
+  loup_aboiement: { categorie: 'armes', chemin: 'mob/wolf/bark1', hachage: '527618d2fbb9712950357c4d5e95cfb86ffee417', volume: 0.35, hauteur: [0.9, 1.2], intervalleMin: 0.3, simultanes: 2 },
+  loup_morsure: { categorie: 'armes', chemin: 'mob/wolf/growl1', hachage: '0eaaba6d7fee5159a61b36aea268381bface391b', volume: 0.2, hauteur: [0.9, 1.2], intervalleMin: 0.15, simultanes: 2 },
+  vex_invocation: { categorie: 'armes', chemin: 'mob/evocation_illager/prepare_summon', hachage: 'e792be7a228007d8a782b0d6caf9da9ebf77a86b', volume: 0.35, hauteur: [1, 1.1], intervalleMin: 0.5, simultanes: 1 },
+  vex_charge: { categorie: 'armes', chemin: 'mob/vex/charge1', hachage: 'e4208f313e7c1431d9e04c80974fa4ed4a783275', volume: 0.2, hauteur: [0.9, 1.2], intervalleMin: 0.15, simultanes: 2 },
+
   // --- Ennemis ---
   meche: { categorie: 'creatures', chemin: 'random/fuse', hachage: 'b9a550ba1e028c027557572aeb928b760864efe4', volume: 0.5, hauteur: [0.9, 1.1], intervalleMin: 0.2, simultanes: 2 },
   boss: { categorie: 'creatures', chemin: 'mob/wither/spawn', hachage: '52049ed59e074474287b5dfee00477ce571b3385', volume: 0.45, hauteur: [1, 1], intervalleMin: 1, simultanes: 1 },

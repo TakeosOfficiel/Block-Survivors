@@ -111,6 +111,36 @@ export const ARBRES: Readonly<Record<IdPersonnage, readonly [DefinitionArbre, De
       ],
     },
   ],
+  invocateur: [
+    {
+      id: 'maitre_chien',
+      nom: 'Maître-chien',
+      description: 'Une meute toujours plus grande.',
+      icone: 'item/bone',
+      talents: [
+        { id: 'crocs', nom: 'Crocs aiguisés', icone: 'item/bone', palier: 0, couts: COUTS.bas, effet: 'Dégâts +5 %', modif: { degats: 0.05 } },
+        { id: 'piste', nom: 'Sur la piste', icone: 'item/sugar', palier: 0, couts: COUTS.bas, effet: 'Vitesse +4 %', modif: { vitesse: 0.04 } },
+        { id: 'dressage', nom: 'Dressage', icone: 'item/lead', palier: 1, couts: COUTS.milieu.slice(0, 2), effet: 'Meute de loups : +1 rang au départ', arme: 'loups' },
+        { id: 'instinct', nom: 'Instinct', icone: 'item/flint', palier: 1, couts: COUTS.milieu, effet: 'Coups critiques +4 %', modif: { critique: 0.04 } },
+        { id: 'alpha', nom: 'Hurlement', icone: 'item/goat_horn', palier: 2, couts: COUTS.unique, effet: '+1 allié et +1 projectile', modif: { projectiles: 1 } },
+        { id: 'jugulaire', nom: 'À la gorge', icone: 'item/wolf_armor', palier: 2, couts: COUTS.haut, effet: 'Dégâts critiques +0,3', modif: { degatsCritiques: 0.3 } },
+      ],
+    },
+    {
+      id: 'evocateur',
+      nom: 'Évocateur',
+      description: 'Esprits et golems à son service.',
+      icone: 'item/echo_shard',
+      talents: [
+        { id: 'robustesse', nom: 'Robustesse', icone: 'item/iron_ingot', palier: 0, couts: COUTS.bas, effet: '+1 cœur', modif: { pvMax: 2 } },
+        { id: 'incantation', nom: 'Incantation', icone: 'item/amethyst_shard', palier: 0, couts: COUTS.bas, effet: 'Délai des armes −4 %', modif: { cadence: -0.04 } },
+        { id: 'vex', nom: 'Esprits liés', icone: 'item/echo_shard', palier: 1, couts: COUTS.milieu.slice(0, 2), effet: 'Vex : +1 rang au départ', arme: 'vex' },
+        { id: 'protection', nom: 'Garde rapprochée', icone: 'item/iron_chestplate', palier: 1, couts: COUTS.milieu.slice(0, 2), effet: 'Dégâts reçus −1', modif: { armure: 1 } },
+        { id: 'golem', nom: 'Gardien de fer', icone: 'block/carved_pumpkin', palier: 2, couts: COUTS.unique, effet: 'Commence avec le Golem de fer', arme: 'golems' },
+        { id: 'longevite', nom: 'Longévité', icone: 'item/glow_berries', palier: 2, couts: COUTS.haut, effet: '+0,1 PV par seconde', modif: { regeneration: 0.1 } },
+      ],
+    },
+  ],
 };
 
 /** Émeraudes gagnées en fin de partie. */

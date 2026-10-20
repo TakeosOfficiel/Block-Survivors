@@ -51,6 +51,20 @@ const definitions = {
     bonus: { zone: 0.15, degats: 0.1 },
     cartesExclusives: ['grimoire', 'cristal'],
   },
+  invocateur: {
+    nom: 'Invocateur',
+    objetEnMain: 'item/bone',
+    description: 'Fragile seul, il commande des loups, des vex et des golems.',
+    modele: 'humanoide',
+    skin: 'entity/player/wide/efe',
+    couleursSecours: { ...HUMAIN_SECOURS, corps: 0x4a6a8a },
+    rayonOmbre: 0.5,
+    pv: 18,
+    vitesse: 5.1,
+    armesDepart: ['loups'],
+    bonus: { regeneration: 0.05 },
+    cartesExclusives: ['meute', 'pacte'],
+  },
 } satisfies Record<string, DefinitionPersonnage>;
 
 export type IdPersonnage = keyof typeof definitions;

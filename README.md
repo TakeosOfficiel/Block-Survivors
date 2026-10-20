@@ -36,6 +36,14 @@ outils directement : `node node_modules/vite/bin/vite.js build`.
 `dist/index.html` est un fichier unique : il s'ouvre d'un double-clic et se
 charge tel quel dans Electron (`win.loadFile('dist/index.html')`).
 
+## Versions
+
+Chaque version a son numéro (`0.x.0` nouveautés, `0.x.y` corrections), son
+tag git `vX.Y.Z` et sa release GitHub avec l'exe ; le lien « derniere-version »
+pointe toujours sur la plus récente. Le détail est dans `CHANGELOG.md`, affiché
+dans le jeu (bouton « Nouveautés » de l'accueil, ouvert tout seul après une
+mise à jour).
+
 ## Structure
 
 ```
@@ -137,6 +145,7 @@ rend toutes les émeraudes de l'arbre.
 | Guerrier | Gladiateur (dégâts, critiques, épée renforcée) · Gardien (cœurs, armure, totem au départ) |
 | Archère | Tireuse d'élite (portée, critiques, arc renforcé, +1 projectile) · Rôdeuse (vitesse, collecte, relances, régénération) |
 | Mage | Pyromancien (zone, boules de feu renforcées, critiques) · Arcaniste (cadence, soins, relances, Éclairs dès le départ) |
+| Invocateur | Maître-chien (loups renforcés, critiques, +1 allié) · Évocateur (vex renforcés, armure, golem dès le départ) |
 
 **Déblocages** : les trois classes sont jouables d'emblée ; la Mine s'ouvre en
 survivant 5:00 dans la Prairie, le Nether en survivant 5:00 dans la Mine. Tout
@@ -157,7 +166,8 @@ la skin ne change que l'apparence.
 
 ## Personnages
 
-Guerrier (épée), Archère (arc) ou Mage (boules de feu).
+Guerrier (épée), Archère (arc), Mage (boules de feu) ou Invocateur (meute de
+loups ; vex volants et golem de fer à gagner en cartes ou en talents).
 
 ## Arènes
 

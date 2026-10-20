@@ -52,7 +52,10 @@ export class Ennemis implements SourceEntites {
   private readonly pool = new Pool<Ennemi>(CONFIG.ennemis.capacite, creerEnnemi);
   private readonly grille: GrilleSpatiale;
   private readonly voisins = new Int32Array(64);
-  private readonly rendus: RenduType[];
+  /** Rendu par type ; seuls ceux de l'arène existent au départ (les autres à la première apparition). */
+  private readonly rendus: (RenduType | null)[];
+  private readonly scene: THREE.Scene;
+  private readonly textures: BibliothequeTextures;
   /** Hauteur d'affichage des dégâts, par type (au-dessus de la tête). */
   private readonly hauteurs: Float32Array;
   private prochainId = 1;
@@ -74,20 +77,34 @@ export class Ennemis implements SourceEntites {
     this.particules = particules;
     this.butin = butin;
     this.grille = new GrilleSpatiale(etat.arene.taille / 2 + 1, CONFIG.ennemis.celluleGrille, CONFIG.ennemis.capacite);
-    this.rendus = IDS_ENNEMIS.map((id) => {
-      const def = ENNEMIS[id];
-      const modele = compilerModele(MODELES[def.modele]);
-      return {
-        modele,
-        instances: new ModeleInstancie(modele, def, textures, CONFIG.ennemis.capacite, scene),
-        pose: creerPoseModele(modele),
-      };
-    });
-    this.hauteurs = Float32Array.from(this.rendus, (r, i) => r.modele.hauteur * (ENNEMIS[IDS_ENNEMIS[i]].echelle ?? 1) + 0.3);
+    this.scene = scene;
+    this.textures = textures;
+    // Seuls les mobs et boss de l'arène sont préparés (moins de shaders à compiler au chargement)
+    const a = etat.arene;
+    const presents = new Set<IdEnnemi>([...a.ennemis, ...a.zones.flatMap((z) => z.ennemis)].map((e) => e.ennemi));
+    for (const id of a.boss) presents.add(id);
+    this.rendus = IDS_ENNEMIS.map(() => null);
+    for (const id of presents) this.rendu(IDS_ENNEMIS.indexOf(id));
+    this.hauteurs = Float32Array.from(IDS_ENNEMIS, (id) => compilerModele(MODELES[ENNEMIS[id].modele]).hauteur * (ENNEMIS[id].echelle ?? 1) + 0.3);
   }
 
   get actifs(): number {
     return this.pool.nombre;
+  }
+
+  /** Rendu du type (créé à la première demande). */
+  private rendu(indexType: number): RenduType {
+    const existant = this.rendus[indexType];
+    if (existant) return existant;
+    const def = ENNEMIS[IDS_ENNEMIS[indexType]];
+    const modele = compilerModele(MODELES[def.modele]);
+    const rendu: RenduType = {
+      modele,
+      instances: new ModeleInstancie(modele, def, this.textures, CONFIG.ennemis.capacite, this.scene),
+      pose: creerPoseModele(modele),
+    };
+    this.rendus[indexType] = rendu;
+    return rendu;
   }
 
   /** Fait apparaître un ennemi ; renvoie faux si le pool est plein. */
@@ -302,14 +319,14 @@ export class Ennemis implements SourceEntites {
   }
 
   majVisuel(ombres: Ombres): void {
-    for (let t = 0; t < this.rendus.length; t++) this.rendus[t].instances.commencer();
+    for (let t = 0; t < this.rendus.length; t++) this.rendus[t]?.instances.commencer();
 
     const blessure = CONFIG.surcouche.blessure;
     const flash = CONFIG.surcouche.flash;
     const g = CONFIG.ennemis;
     for (let i = 0; i < this.pool.nombre; i++) {
       const e = this.pool.elements[i];
-      const rendu = this.rendus[e.indexType];
+      const rendu = this.rendu(e.indexType);
       const pose = rendu.pose;
       pose.x = e.x;
       pose.z = e.z;
@@ -350,7 +367,7 @@ export class Ennemis implements SourceEntites {
       ombres.ajouter(e.x, e.z, e.definition.rayonOmbre * (pose.echelleXZ / echelle));
     }
 
-    for (let t = 0; t < this.rendus.length; t++) this.rendus[t].instances.terminer();
+    for (let t = 0; t < this.rendus.length; t++) this.rendus[t]?.instances.terminer();
   }
 
   // -----------------------------------------------------------------------
@@ -448,7 +465,7 @@ export class Ennemis implements SourceEntites {
     e.angle += ecartAngle(e.angle, Math.atan2(dx, dz)) * facteurLissage(g.vitesseRotation, dt);
     e.vitesseSol = longueur(e.dirX, e.dirZ) * vitesse;
     // Un grand modèle fait de grands pas : cycle de marche ralenti d'autant
-    avancerAnimation(e.animation, this.rendus[e.indexType].modele, dt, e.vitesseSol / (def.echelle ?? 1));
+    avancerAnimation(e.animation, this.rendu(e.indexType).modele, dt, e.vitesseSol / (def.echelle ?? 1));
   }
 
   /** Explosion : particules et dégâts au joueur décroissants avec la distance. */

@@ -352,6 +352,68 @@ const definitions = {
     parties: partiesPoisson(),
     marche: { frequence: 2.665, vitesseReference: 4, lissage: 8, membres: ondulationPoisson() },
   },
+
+  // Loup apprivoisé : skin 64x32 (modèle vanilla converti), tête avec oreilles et museau,
+  // corps et crinière couchés, queue relevée
+  loup: {
+    tailleTexture: [64, 32],
+    parties: {
+      tete:            { taille: [6, 6, 4], pivot: [-1, 10.5, 7], centre: [1, 0, 0],     uv: [0, 0] },
+      oreilleDroite:   { taille: [2, 2, 1], pivot: [-1, 10.5, 7], centre: [-1, 4, -0.5], uv: [16, 14] },
+      oreilleGauche:   { taille: [2, 2, 1], pivot: [-1, 10.5, 7], centre: [3, 4, -0.5],  uv: [16, 14] },
+      museau:          { taille: [3, 3, 4], pivot: [-1, 10.5, 7], centre: [1, -1.5, 3],  uv: [0, 10] },
+      corps:           { taille: [6, 9, 6], pivot: [0, 10, -2],   centre: [0, -2.5, 0],  uv: [18, 14], rotation: [DEMI_PI, 0, 0] },
+      criniere:        { taille: [8, 6, 7], pivot: [-1, 10, 3],   centre: [1, 0, -0.5],  uv: [21, 0],  rotation: [DEMI_PI, 0, 0] },
+      jambeArriereDroite: { taille: [2, 8, 2], pivot: [-2.5, 8, -7], centre: [1, -4, 0], uv: [0, 18] },
+      jambeArriereGauche: { taille: [2, 8, 2], pivot: [0.5, 8, -7],  centre: [1, -4, 0], uv: [0, 18] },
+      jambeAvantDroite:   { taille: [2, 8, 2], pivot: [-2.5, 8, 4],  centre: [1, -4, 0], uv: [0, 18] },
+      jambeAvantGauche:   { taille: [2, 8, 2], pivot: [0.5, 8, 4],   centre: [1, -4, 0], uv: [0, 18] },
+      queue:           { taille: [2, 8, 2], pivot: [-1, 12, -8],  centre: [1, -4, 0],    uv: [9, 18], rotation: [1.1, 0, 0] },
+    },
+    marche: {
+      ...ALLURE,
+      membres: [
+        { partie: 'jambeArriereDroite', axe: 'x', amplitude: 1.4, dephasage: 0 },
+        { partie: 'jambeArriereGauche', axe: 'x', amplitude: 1.4, dephasage: Math.PI },
+        { partie: 'jambeAvantDroite', axe: 'x', amplitude: 1.4, dephasage: Math.PI },
+        { partie: 'jambeAvantGauche', axe: 'x', amplitude: 1.4, dephasage: 0 },
+        { partie: 'queue', axe: 'z', amplitude: 0.5, dephasage: 0 },
+      ],
+    },
+    // Morsure : la tête plonge vers la cible
+    attaque: {
+      duree: 0.25,
+      membres: [
+        { partie: 'tete', amplitude: 0.7 },
+        { partie: 'oreilleDroite', amplitude: 0.7 },
+        { partie: 'oreilleGauche', amplitude: 0.7 },
+        { partie: 'museau', amplitude: 0.7 },
+      ],
+    },
+  },
+
+  // Vex : petit esprit volant de l'évocateur, skin 32x32 (modèle vanilla converti),
+  // ailes plates ouvertes vers l'arrière qui battent en vol
+  vex: {
+    tailleTexture: [32, 32],
+    parties: {
+      tete:       { taille: [5, 5, 5], pivot: [0, 6.5, 0],      centre: [0, 2.5, 0],   uv: [0, 0] },
+      corps:      { taille: [3, 4, 2], pivot: [0, 6.5, 0],      centre: [0, -2, 0],    uv: [0, 10] },
+      robe:       { taille: [3, 5, 2], pivot: [0, 6.5, 0],      centre: [0, -3.5, 0],  uv: [0, 16], gonflement: -0.2 },
+      brasDroit:  { taille: [2, 4, 2], pivot: [-1.75, 6.25, 0], centre: [-0.25, -1.5, 0], uv: [23, 0], gonflement: -0.1 },
+      brasGauche: { taille: [2, 4, 2], pivot: [1.75, 6.25, 0],  centre: [0.25, -1.5, 0],  uv: [23, 6], gonflement: -0.1 },
+      aileDroite: { taille: [0, 5, 8], pivot: [-0.5, 5.5, -1],  centre: [0, -2.5, -4],  uv: [16, 14], rotation: [0, 0.6, 0] },
+      aileGauche: { taille: [0, 5, 8], pivot: [0.5, 5.5, -1],   centre: [0, -2.5, -4],  uv: [16, 14], rotation: [0, -0.6, 0], miroir: true },
+    },
+    marche: {
+      frequence: 3, vitesseReference: 4, lissage: 6,
+      membres: [
+        { partie: 'aileDroite', axe: 'y', amplitude: 0.5, dephasage: 0 },
+        { partie: 'aileGauche', axe: 'y', amplitude: 0.5, dephasage: Math.PI },
+      ],
+    },
+    attaque: { duree: 0.25, membres: [{ partie: 'brasDroit', amplitude: 1.6 }] },
+  },
 } satisfies Record<string, DefinitionModele>;
 
 export type IdModele = keyof typeof definitions;

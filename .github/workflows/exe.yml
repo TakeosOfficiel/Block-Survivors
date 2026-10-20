@@ -1,6 +1,8 @@
 # Construit l'application Windows (BlockSurvivors.exe, portable) à chaque push
-# et la publie dans la release « derniere-version » : il suffit ensuite de la
-# télécharger depuis l'onglet Releases du dépôt, sans rien installer.
+# et la publie deux fois :
+#   - release « vX.Y.Z » (version de package.json), notes tirées de CHANGELOG.md ;
+#     tant que le numéro ne change pas, elle suit le dernier commit de la version ;
+#   - release « derniere-version » : lien fixe vers la plus récente.
 name: Application Windows
 
 on:
@@ -33,14 +35,31 @@ jobs:
         with:
           name: BlockSurvivors
           path: release/BlockSurvivors.exe
-      - name: Publier la release « derniere-version »
+      - name: Publier la release de la version et « derniere-version »
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          VERSION=$(node -p "require('./package.json').version")
+          # Section « ## [X.Y.Z] » du CHANGELOG, jusqu'à la version suivante
+          awk -v v="$VERSION" '
+            /^## \[/ { dedans = index($0, "[" v "]") > 0; next }
+            dedans { print }
+          ' CHANGELOG.md > notes.md
+          [ -s notes.md ] || echo "Version $VERSION." > notes.md
+          printf '\n---\nConstruit depuis %s (%s).\n' "$GITHUB_REF_NAME" "${GITHUB_SHA::7}" >> notes.md
+          cp release/BlockSurvivors.exe "release/BlockSurvivors-v$VERSION.exe"
+
+          gh release delete "v$VERSION" --yes --cleanup-tag || true
+          gh release create "v$VERSION" "release/BlockSurvivors-v$VERSION.exe" \
+            --target "$GITHUB_SHA" \
+            --title "Block Survivors $VERSION" \
+            --notes-file notes.md \
+            --latest
+
           gh release delete derniere-version --yes --cleanup-tag || true
           gh release create derniere-version release/BlockSurvivors.exe \
             --prerelease \
             --target "$GITHUB_SHA" \
-            --title "Block Survivors — dernière version" \
-            --notes "Construit automatiquement depuis la branche ${GITHUB_REF_NAME} (${GITHUB_SHA::7}). Télécharge BlockSurvivors.exe et double-clique dessus."
+            --title "Block Survivors — dernière version ($VERSION)" \
+            --notes-file notes.md

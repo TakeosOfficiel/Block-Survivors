@@ -24,6 +24,7 @@ import { libelleVersion, miseAJourDisponible, URL_TELECHARGEMENT } from '../vers
 import type { ApercuHeros } from './apercuHeros';
 import { caseImage } from './bilan';
 import { element } from './dom';
+import { EcranNouveautes } from './ecranNouveautes';
 import type { EcranProfil } from './ecranProfil';
 import { compteurEmeraudes, EcranTalents } from './ecranTalents';
 import type { PanneauOptions } from './panneauOptions';
@@ -42,6 +43,7 @@ export class EcranMenu {
   private readonly options: PanneauOptions;
   private readonly sauvegarde: Sauvegarde;
   private readonly talents: EcranTalents;
+  private readonly nouveautes = new EcranNouveautes();
   private readonly profil: EcranProfil;
   private readonly apercu: ApercuHeros | null;
   private personnage: IdPersonnage;
@@ -81,6 +83,7 @@ export class EcranMenu {
     this.creerPseudo();
     element<HTMLButtonElement>('menu-jouer').addEventListener('click', () => this.jouer());
     element<HTMLButtonElement>('menu-options').addEventListener('click', () => this.options.ouvrir());
+    element<HTMLButtonElement>('menu-nouveautes').addEventListener('click', () => this.nouveautes.ouvrir());
     element<HTMLButtonElement>('menu-talents').addEventListener('click', () => {
       this.talents.ouvrir(this.personnage, () => this.rafraichir());
     });
@@ -100,6 +103,7 @@ export class EcranMenu {
   attendreChoix(): Promise<ChoixPartie> {
     this.racine.classList.remove('cache');
     this.rafraichir();
+    this.nouveautes.ouvrirSiNouvelleVersion();
     return new Promise((resoudre) => {
       this.surJouer = resoudre;
     });
@@ -116,7 +120,7 @@ export class EcranMenu {
   }
 
   private readonly surTouche = (e: KeyboardEvent): void => {
-    if (e.code !== 'Enter' || e.repeat || this.options.ouvert || this.talents.ouvert || this.profil.ouvert) return;
+    if (e.code !== 'Enter' || e.repeat || this.options.ouvert || this.talents.ouvert || this.profil.ouvert || this.nouveautes.ouvert) return;
     e.preventDefault();
     this.jouer();
   };
@@ -143,7 +147,8 @@ export class EcranMenu {
     bouton.className = 'menu-classe';
     bouton.dataset['id'] = id;
     const icone = def.objetEnMain ?? ARMES[def.armesDepart[0]].icone;
-    bouton.append(caseImage(this.textures.url(icone), def.nom, 'grande'), texte(def.nom));
+    bouton.title = def.nom;
+    bouton.append(caseImage(this.textures.url(icone), def.nom, 'grande'));
     bouton.addEventListener('click', () => {
       this.personnage = id;
       this.rafraichir();
@@ -178,7 +183,8 @@ export class EcranMenu {
       ligne.classList.toggle('actif', index === actif);
       const textes = document.createElement('div');
       textes.className = 'option-textes';
-      textes.append(texte(index === actif ? `${arbre.nom} (actif)` : arbre.nom, 'option-nom'), texte(arbre.description, 'option-description'));
+      textes.append(texte(index === actif ? `${arbre.nom} (actif)` : arbre.nom, 'option-nom'));
+      ligne.title = arbre.description;
       ligne.append(caseImage(this.textures.url(arbre.icone), arbre.nom), textes);
       return ligne;
     }));

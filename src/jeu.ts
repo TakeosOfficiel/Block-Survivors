@@ -264,9 +264,9 @@ export class Jeu implements CallbacksBoucle, Retours {
   }
 
   /** Prépare tous les modèles sur la carte graphique (pendant l'écran de chargement). */
-  prechauffer(): Promise<void> {
+  prechauffer(surProgression?: (faites: number, total: number) => void): Promise<void> {
     this.camera.majVisuel(0, 0);
-    return this.rendu.prechauffer();
+    return this.rendu.prechauffer(surProgression);
   }
 
   demarrer(): void {

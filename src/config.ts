@@ -127,7 +127,7 @@ export const CONFIG = {
     distanceRetour: 0.7,       // le trident disparaît à cette distance du joueur (blocs)
     dureeBalayage: 0.25,       // durée de l'effet de balayage (s)
     foudre: { hauteur: 18, segments: 10, largeur: 0.18, ecart: 0.7, duree: 0.25, capacite: 24 },
-    golems: { capacite: 8, distanceSuivi: 3 },
+    golems: { capacite: 32, distanceSuivi: 3 },   // alliés invoqués (golems, loups, vex)
   },
 
   // Chiffres des dégâts au-dessus des ennemis (option)

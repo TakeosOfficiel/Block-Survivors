@@ -107,6 +107,20 @@ const definitions = {
     exclusif: true,
     niveaux: rangs(3, { description: 'Vitesse +12 %, collecte +20 %', modif: { vitesse: 0.12, collecte: 0.2 } }),
   },
+  meute: {
+    nom: 'Appel de la meute',
+    description: 'Invocateur : chaque invocation amène un allié de plus.',
+    icone: 'item/lead',
+    exclusif: true,
+    niveaux: rangs(2, { description: '+1 allié invoqué (et +1 projectile)', modif: { projectiles: 1 } }),
+  },
+  pacte: {
+    nom: "Étoile du Nether",
+    description: 'Invocateur : des alliés plus forts, invoqués plus souvent.',
+    icone: 'item/nether_star',
+    exclusif: true,
+    niveaux: rangs(3, { description: 'Dégâts +10 %, délai −5 %', modif: { degats: 0.1, cadence: -0.05 } }),
+  },
   grimoire: {
     nom: 'Grimoire enchanté',
     description: 'Mage : des sorts plus vastes et plus puissants.',

@@ -69,7 +69,10 @@
       </section>
     </div>
     <div class="menu-bas">
-      <button id="menu-options" class="bouton-mc">Options…</button>
+      <div class="pile-boutons menu-bas-gauche">
+        <button id="menu-options" class="bouton-mc">Options…</button>
+        <button id="menu-nouveautes" class="bouton-mc">Nouveautés</button>
+      </div>
       <button id="menu-jouer" class="bouton-mc bouton-jouer"><span id="menu-jouer-titre">Jouer</span><span id="menu-jouer-sous-titre"></span></button>
       <button id="menu-quitter" class="bouton-mc cache">Quitter le jeu</button>
     </div>
@@ -102,6 +105,13 @@
     </div>
     <div class="ecran-aide">La skin ne change que l'apparence : la classe garde ses armes et ses statistiques</div>
     <button id="profil-fermer" class="bouton-mc large">Terminé</button>
+  </div>
+
+  <!-- Nouveautés : journal des versions -->
+  <div id="nouveautes" class="ecran fond-terre cache">
+    <h2 class="ecran-titre">Nouveautés</h2>
+    <div id="nouveautes-liste" class="panneau-mc nouveautes-liste"></div>
+    <button id="nouveautes-fermer" class="bouton-mc large">Terminé</button>
   </div>
 
   <!-- Talents (menu) : deux arbres par personnage -->

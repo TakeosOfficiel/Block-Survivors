@@ -451,6 +451,38 @@ const definitions = {
     attaque: { duree: 0.25, membres: [{ partie: 'brasDroit', amplitude: 1.6 }] },
   },
 
+  // Trident lancé : skin 32x32, géométrie vanilla (bedrock-samples) ; pointes vers +Y
+  trident: {
+    tailleTexture: [32, 32],
+    parties: {
+      manche:        { taille: [1, 31, 1], pivot: [0, 0, 0], centre: [0, 12.5, 0], uv: [0, 0], gonflement: 0.01 },
+      garde:         { taille: [3, 2, 1],  pivot: [0, 0, 0], centre: [0, 23, 0],   uv: [4, 0] },
+      pointeDroite:  { taille: [1, 4, 1],  pivot: [0, 0, 0], centre: [-2, 25, 0],  uv: [4, 3] },
+      pointeGauche:  { taille: [1, 4, 1],  pivot: [0, 0, 0], centre: [2, 25, 0],   uv: [4, 3], miroir: true },
+    },
+  },
+
+  // Allay (Esprit protecteur) : skin 32x32, géométrie vanilla (bedrock-samples) convertie
+  allay: {
+    tailleTexture: [32, 32],
+    parties: {
+      tete:       { taille: [5, 5, 5], pivot: [0, 5, 0],       centre: [0, 2.51, 0],   uv: [0, 0] },
+      corps:      { taille: [3, 4, 2], pivot: [0, 5, 0],       centre: [0, -2, 0],     uv: [0, 10] },
+      robe:       { taille: [3, 5, 2], pivot: [0, 5, 0],       centre: [0, -2.5, 0],   uv: [0, 16], gonflement: -0.2 },
+      brasDroit:  { taille: [1, 4, 2], pivot: [-1.75, 4.5, 0], centre: [-0.25, -1.5, 0], uv: [23, 0] },
+      brasGauche: { taille: [1, 4, 2], pivot: [1.75, 4.5, 0],  centre: [0.25, -1.5, 0],  uv: [23, 6] },
+      aileDroite: { taille: [0, 5, 8], pivot: [-0.5, 4, -1],   centre: [0, -2.5, -4],  uv: [16, 14], rotation: [0, 0.6, 0] },
+      aileGauche: { taille: [0, 5, 8], pivot: [0.5, 4, -1],    centre: [0, -2.5, -4],  uv: [16, 14], rotation: [0, -0.6, 0], miroir: true },
+    },
+    marche: {
+      frequence: 3, vitesseReference: 4, lissage: 6,
+      membres: [
+        { partie: 'aileDroite', axe: 'y', amplitude: 0.5, dephasage: 0 },
+        { partie: 'aileGauche', axe: 'y', amplitude: 0.5, dephasage: Math.PI },
+      ],
+    },
+  },
+
   // Ravageur (Évocation supérieure) : skin 128x128, géométrie vanilla (bedrock-samples) convertie
   ravageur: {
     tailleTexture: [128, 128],

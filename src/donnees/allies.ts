@@ -108,7 +108,7 @@ const definitions = {
   // L'allay du jeu (même patron que le vex) : soutien, il ne combat pas
   allay: {
     nom: 'Esprit protecteur',
-    modele: 'vex',
+    modele: 'allay',
     skin: 'entity/allay/allay',
     couleursSecours: {},
     couleurSecoursParDefaut: 0x6fc8ff,

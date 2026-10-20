@@ -8,13 +8,17 @@ import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG } from '../config';
 import { IDS_PROJECTILES, PROJECTILES, type IdProjectile } from '../donnees/projectiles';
 import type { DefinitionProjectile } from '../donnees/types';
-import { creerGeometrieCroisee } from '../moteur/geometrie';
+import { MODELES } from '../donnees/modeles';
+import { creerGeometrieCroisee, creerGeometrieModele, creerGeometrieRelief } from '../moteur/geometrie';
 
 const CAPACITE_PAR_TYPE = 256;
 
-/** Les icônes d'objets pointent vers le coin haut-droit (ou vers le haut) : on les tourne pour pointer vers +Z. */
-const ORIENTATION_ICONE = (-3 * Math.PI) / 4;
-const ORIENTATION_ICONE_HAUT = Math.PI;
+/**
+ * Objets en relief couchés à plat : le haut du sprite part vers −X ; les icônes pointent
+ * vers le coin haut-droit (ou vers le haut, la fusée) : on les tourne pour pointer vers +Z.
+ */
+const ORIENTATION_ICONE = Math.PI / 4;
+const ORIENTATION_ICONE_HAUT = Math.PI / 2;
 
 interface RenduType {
   readonly maillage: THREE.InstancedMesh;
@@ -30,7 +34,7 @@ export class RenduProjectiles {
     this.types = IDS_PROJECTILES.map((id) => {
       const def = PROJECTILES[id];
       const map = textures.obtenir(def.texture);
-      const maillage = new THREE.InstancedMesh(creerGeometrie(def), creerMateriau(def, map), CAPACITE_PAR_TYPE);
+      const maillage = new THREE.InstancedMesh(creerGeometrie(def, map), creerMateriau(def, map), CAPACITE_PAR_TYPE);
       maillage.name = `projectile:${id}`;
       maillage.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       maillage.frustumCulled = false;
@@ -66,15 +70,31 @@ export class RenduProjectiles {
   }
 }
 
-function creerGeometrie(def: DefinitionProjectile): THREE.BufferGeometry {
+function creerGeometrie(def: DefinitionProjectile, map: THREE.Texture | null): THREE.BufferGeometry {
   if (def.forme === 'croisee') {
     return creerGeometrieCroisee(def.longueur, def.largeur, def.uv, def.tailleTexture);
   }
+  if (def.forme === 'modele' && def.modele) {
+    // Entité couchée dans le sens du vol : le haut du modèle (pointes) vers +Z, centrée
+    const geometrie = creerGeometrieModele(MODELES[def.modele]);
+    geometrie.computeBoundingBox();
+    const boite = geometrie.boundingBox;
+    if (boite) geometrie.translate(0, -(boite.min.y + boite.max.y) / 2, 0);
+    return geometrie.rotateX(Math.PI / 2);
+  }
+  const relief = def.forme === 'relief' && map ? creerGeometrieRelief(map, def.longueur) : null;
+  if (relief) {
+    // Objet couché à plat, pointe vers l'avant (+Z)
+    relief.rotateZ(Math.PI / 2);
+    relief.rotateY(def.pointeEnHaut ? ORIENTATION_ICONE_HAUT : ORIENTATION_ICONE);
+    return relief;
+  }
   const geometrie = new THREE.PlaneGeometry(def.longueur, def.longueur);
   appliquerRectangleUv(geometrie, def.uv, def.tailleTexture);
-  if (def.forme === 'plat') {
+  if (def.forme !== 'face_camera') {
+    // Secours sans pixels lisibles : l'icône posée à plat
     geometrie.rotateX(-Math.PI / 2);
-    geometrie.rotateY(def.pointeEnHaut ? ORIENTATION_ICONE_HAUT : ORIENTATION_ICONE);
+    geometrie.rotateY(def.pointeEnHaut ? Math.PI : (-3 * Math.PI) / 4);
   } else {
     // Face à la caméra : celle-ci ne tourne jamais, une inclinaison fixe suffit
     geometrie.rotateX(-(CONFIG.camera.inclinaisonDeg * Math.PI) / 180);

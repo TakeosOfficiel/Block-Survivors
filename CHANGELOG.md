@@ -5,6 +5,19 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.20.1] — 2026-10-20
+
+### Corrections
+- Les objets du jeu sont dessinés comme dans Minecraft, plus en images plates :
+  - la fusée et les haches lancées sont des objets en relief d'un pixel d'épaisseur ;
+  - le trident lancé utilise le vrai modèle de l'entité (manche, garde et trois pointes) ;
+  - la Lame colossale est une épée en relief plantée dans le sol ;
+  - les flèches de la Pluie de flèches sont les entités de flèche du jeu, plantées pointe en bas ;
+  - les pommes au sol sont en relief et tournent sur elles-mêmes comme les objets lâchés du jeu ;
+  - l'allay (Esprit protecteur) a son vrai modèle au lieu de celui du vex ;
+  - les racines du Totem des racines (et la haie du Bosquet) sont de vrais blocs de racines de palétuvier.
+- Les boules de feu restent tournées vers la caméra : c'est ainsi que le jeu dessine les boules de feu des blazes et des ghasts.
+
 ## [0.20.0] — 2026-10-20
 
 Refonte des classes, dernière étape : 4 emplacements d'armes et éveils. Valeurs provisoires, à ajuster après les essais.

@@ -274,18 +274,25 @@ export interface DefinitionEnnemi extends ApparenceEntite {
  * - plat : icône d'objet posée à plat, sa pointe (coin haut-droit) dans le sens de la trajectoire ;
  * - face_camera : icône toujours tournée vers la caméra (boules de feu).
  */
-export type FormeProjectile = 'croisee' | 'plat' | 'face_camera';
+/**
+ * `croisee` : plans croisés de l'entité (flèches) ; `relief` : objet en relief d'un pixel d'épaisseur,
+ * comme les objets du jeu (fusée, hache) ; `modele` : modèle cubique de l'entité (trident) ;
+ * `face_camera` : sprite tourné vers la caméra, comme le jeu dessine les boules de feu.
+ */
+export type FormeProjectile = 'croisee' | 'relief' | 'modele' | 'face_camera';
 
 export interface DefinitionProjectile {
   readonly nom: string;
   readonly forme: FormeProjectile;
+  /** Modèle de l'entité (forme `modele`). */
+  readonly modele?: IdModele;
   /** Icône posée à plat : pointe en haut (fusée) au lieu d'en haut à droite (épée, trident). */
   readonly pointeEnHaut?: boolean;
   readonly texture: CheminTexture;
   readonly tailleTexture: readonly [number, number];
   /** Rectangle [x, y, largeur, hauteur] affiché, dans la texture (pixels). */
   readonly uv: readonly [number, number, number, number];
-  readonly longueur: number;   // blocs (côté de l'icône pour plat / face_camera)
+  readonly longueur: number;   // blocs (côté de l'icône pour relief / face_camera ; ignoré pour modele)
   readonly largeur: number;    // blocs (épaisseur des plans croisés)
   readonly vitesse: number;    // blocs / seconde (tir des ennemis)
   readonly duree: number;      // s avant disparition (tir des ennemis)
@@ -370,7 +377,7 @@ export type MecaniqueArme =
    */
   | { readonly type: 'ricochet'; readonly projectile: IdProjectile; readonly perte: number; readonly distanceRebond: number }
   /** Flèches (`image`) qui tombent du ciel sur le plus gros groupe, `impactsParSeconde` pendant la durée. */
-  | { readonly type: 'pluie'; readonly image: CheminTexture; readonly impactsParSeconde: number }
+  | { readonly type: 'pluie'; readonly projectile: IdProjectile; readonly impactsParSeconde: number }
   /**
    * Piège (buissons `image`) posé sous le joueur : blesse et ralentit toutes les `intervalle` s ;
    * dès le rang `enracineAuRang`, il enracine un instant les ennemis qui y entrent.

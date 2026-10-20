@@ -1,6 +1,8 @@
 /** Géométries de blocs, de modèles cubiques et de projectiles, UV mappées sur les textures vanilla. */
 import * as THREE from 'three';
-import type { CubeModele } from '../donnees/types';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { lirePixels } from '../assets/pixels';
+import type { CubeModele, DefinitionModele } from '../donnees/types';
 
 export const PIXELS_PAR_BLOC = 16;
 
@@ -172,5 +174,33 @@ export function creerGeometrieObjet(
   geometrie.setAttribute('normal', new THREE.Float32BufferAttribute(normales, 3));
   geometrie.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
   geometrie.setIndex(indices);
+  return geometrie;
+}
+
+/**
+ * Objet en relief tiré d'une texture d'objet (fusée, hache, épée, pomme) :
+ * la plaque d'un pixel d'épaisseur de `creerGeometrieObjet`, de côté `taille`
+ * blocs. Null si les pixels de l'image ne peuvent pas être lus.
+ */
+export function creerGeometrieRelief(texture: THREE.Texture, taille: number): THREE.BufferGeometry | null {
+  const image = texture.image as (CanvasImageSource & { width: number; height: number }) | undefined;
+  if (!image) return null;
+  try {
+    const pixels = lirePixels(image);
+    return creerGeometrieObjet(pixels.data, image.width, image.height, taille / image.width);
+  } catch {
+    return null;
+  }
+}
+
+/** Modèle cubique fusionné en une seule géométrie (parties immobiles : trident lancé). */
+export function creerGeometrieModele(definition: DefinitionModele): THREE.BufferGeometry {
+  const morceaux = Object.values(definition.parties).map((cube) => {
+    const g = creerGeometrieCube(cube, definition.tailleTexture);
+    if (cube.rotation) g.rotateZ(cube.rotation[2]).rotateY(cube.rotation[1]).rotateX(cube.rotation[0]);
+    return g.translate(cube.pivot[0] / PIXELS_PAR_BLOC, cube.pivot[1] / PIXELS_PAR_BLOC, cube.pivot[2] / PIXELS_PAR_BLOC);
+  });
+  const geometrie = mergeGeometries(morceaux);
+  if (!geometrie) throw new Error('Modèle impossible à fusionner');
   return geometrie;
 }

@@ -146,7 +146,7 @@ export const CONFIG = {
       // Talents : provocation de l'alpha gardien (multiplicateur), haie du Bosquet (distance max entre totems,
       // ralenti, espacement des racines, demi-largeur, période des ralentissements)
       provocationAlpha: 2.5,
-      haie: { distance: 8, ralenti: 0.4, espacement: 0.7, largeur: 0.9, periode: 0.5 },
+      haie: { distance: 8, ralenti: 0.4, espacement: 0.7, largeur: 0.9, periode: 0.5, racinesMax: 48 },
     },
     // Onde de choc : blocs soulevés tous les `espacement` blocs, qui jaillissent puis s'enfoncent (s)
     fissure: {

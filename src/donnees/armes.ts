@@ -334,7 +334,7 @@ const definitions = {
     description: 'Des flèches tombent du ciel sur le plus gros groupe.',
     icone: 'item/arrow',
     famille: 'projectile',
-    mecanique: { type: 'pluie', image: 'item/arrow', impactsParSeconde: 7.5 },
+    mecanique: { type: 'pluie', projectile: 'fleche', impactsParSeconde: 7.5 },
     stats: { ...BASE, degats: 6, cadence: 6, portee: 14, zone: 2.5, duree: 1.6, recul: 1 },
     niveaux: [
       { description: 'Rayon +0,5 bloc', modif: { zone: 0.5 } },

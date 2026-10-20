@@ -20,12 +20,14 @@ const definitions = {
     hauteur: 1.3,
     couleurSecours: 0x9b7a4a,
   },
+  // Trident lancé : le modèle de l'entité du jeu (manche, garde et trois pointes)
   trident: {
     nom: 'Trident',
-    forme: 'plat',
-    texture: 'item/trident',
-    tailleTexture: [16, 16],
-    uv: ICONE,
+    forme: 'modele',
+    modele: 'trident',
+    texture: 'entity/trident',
+    tailleTexture: [32, 32],
+    uv: [0, 0, 32, 32],
     longueur: 1.4,
     largeur: 0,
     vitesse: 13,
@@ -36,7 +38,7 @@ const definitions = {
   },
   hache: {
     nom: 'Hache',
-    forme: 'plat',
+    forme: 'relief',
     texture: 'item/iron_axe',
     tailleTexture: [16, 16],
     uv: ICONE,
@@ -99,7 +101,7 @@ const definitions = {
   },
   fusee: {
     nom: "Fusée d'artifice",
-    forme: 'plat',
+    forme: 'relief',
     pointeEnHaut: true,
     texture: 'item/firework_rocket',
     tailleTexture: [16, 16],

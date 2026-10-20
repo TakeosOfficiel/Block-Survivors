@@ -9,6 +9,7 @@ import { CONFIG } from '../config';
 import { GERBES } from '../donnees/particules';
 import { JOUEUR_BASE } from '../donnees/joueur';
 import { IDS_OBJETS, OBJETS, type IdObjet } from '../donnees/objets';
+import { creerGeometrieRelief } from '../moteur/geometrie';
 import type { Particules } from '../effets/particules';
 import type { Retours } from '../effets/retours';
 import type { EtatPartie } from '../etat';
@@ -39,13 +40,14 @@ export class Objets {
     this.retours = retours;
     const inclinaison = (CONFIG.camera.inclinaisonDeg * Math.PI) / 180;
 
+    // Comme les objets au sol du jeu : en relief (un pixel d'épaisseur), qui tournent sur eux-mêmes
     this.maillages = IDS_OBJETS.map((id) => {
       const def = OBJETS[id];
       const map = textures.obtenir(def.icone);
-      const geometrie = new THREE.PlaneGeometry(def.taille, def.taille);
-      geometrie.rotateX(-inclinaison);  // face à la caméra (qui ne tourne pas)
+      const relief = map ? creerGeometrieRelief(map, def.taille) : null;
+      const geometrie = relief ?? new THREE.PlaneGeometry(def.taille, def.taille).rotateX(-inclinaison);
       const materiau = map
-        ? new THREE.MeshBasicMaterial({ map, alphaTest: 0.5 })
+        ? new THREE.MeshLambertMaterial({ map, alphaTest: 0.5, side: THREE.DoubleSide })
         : new THREE.MeshBasicMaterial({ color: def.couleurSecours });
       const maillage = new THREE.InstancedMesh(geometrie, materiau, CAPACITE);
       maillage.name = `objet:${id}`;
@@ -92,7 +94,8 @@ export class Objets {
     this.comptes.fill(0);
     for (let i = 0; i < this.pool.nombre; i++) {
       const o = this.pool.elements[i];
-      matrice.makeTranslation(o.x, 0.55 + Math.sin(temps * 3 + o.phase) * 0.08, o.z);
+      // Balancement et rotation des objets au sol du jeu (un tour toutes les ~6 s)
+      matrice.makeRotationY(temps + o.phase).setPosition(o.x, 0.55 + Math.sin(temps * 2 + o.phase) * 0.1, o.z);
       this.maillages[o.indexType].setMatrixAt(this.comptes[o.indexType]++, matrice);
     }
     for (let t = 0; t < this.maillages.length; t++) {

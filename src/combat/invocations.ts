@@ -26,7 +26,6 @@ import type { CheminTexture, DefinitionAllie } from '../donnees/types';
 import type { BarresVie } from '../effets/barresVie';
 import { CubesTextures } from '../effets/cubesTextures';
 import type { Ombres } from '../effets/ombres';
-import { PlansCroises } from '../effets/plansCroises';
 import type { SourceEntites } from '../entites/types';
 import { avancerAnimation, calculerRotations, creerEtatAnimation, declencherAttaque, reinitialiserAnimation, type EtatAnimation } from '../modeles/animation';
 import { compilerModele, type ModeleCompile } from '../modeles/compilation';
@@ -78,10 +77,10 @@ interface RenduType {
   readonly pose: PoseModele;
 }
 
-/** Alliés en blocs (totem) : cubes empilés et racines, par texture. */
+/** Alliés en blocs (totem) : cubes empilés et blocs de racines (à trous, comme en jeu), par texture. */
 interface RenduBlocs {
   readonly cubes: Map<CheminTexture, CubesTextures>;
-  readonly racines: Map<CheminTexture, PlansCroises>;
+  readonly racines: Map<CheminTexture, CubesTextures>;
 }
 
 export class Invocations implements SourceEntites {
@@ -115,7 +114,8 @@ export class Invocations implements SourceEntites {
           if (!this.blocs.cubes.has(texture)) this.blocs.cubes.set(texture, new CubesTextures(scene, textures, texture, capacite * def.blocs.empilement.length, false, def.nom));
         }
         if (!this.blocs.racines.has(def.blocs.racines)) {
-          this.blocs.racines.set(def.blocs.racines, new PlansCroises(scene, textures, def.blocs.racines, capacite * CONFIG.armes.invocations.racines, def.nom));
+          const capaciteRacines = capacite * CONFIG.armes.invocations.racines + CONFIG.armes.invocations.haie.racinesMax;
+          this.blocs.racines.set(def.blocs.racines, new CubesTextures(scene, textures, def.blocs.racines, capaciteRacines, false, def.nom, true));
         }
         return null;
       }

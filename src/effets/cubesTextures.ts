@@ -1,7 +1,8 @@
 /**
  * Cubes texturés d'un même bloc (magma, glace, améthyste…) dessinés en un
  * seul InstancedMesh, réécrit à chaque image : commencer(), ajouter() pour
- * chaque cube, terminer(). Lumineux : non éclairé (magma, feu).
+ * chaque cube, terminer(). Lumineux : non éclairé (magma, feu). Découpé :
+ * texture à trous comme les feuilles du jeu (racines de palétuvier).
  */
 import * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
@@ -17,9 +18,11 @@ export class CubesTextures {
   private readonly maillage: THREE.InstancedMesh;
   private n = 0;
 
-  constructor(scene: THREE.Scene, textures: BibliothequeTextures, chemin: CheminTexture, capacite: number, lumineux: boolean, nom: string) {
+  constructor(
+    scene: THREE.Scene, textures: BibliothequeTextures, chemin: CheminTexture, capacite: number, lumineux: boolean, nom: string, decoupe = false,
+  ) {
     const map = textures.obtenir(chemin);
-    const reglages = map ? { map } : { color: 0x888888 };
+    const reglages = map ? (decoupe ? { map, alphaTest: 0.5, side: THREE.DoubleSide } : { map }) : { color: 0x888888 };
     const materiau = lumineux ? new THREE.MeshBasicMaterial(reglages) : new THREE.MeshLambertMaterial(reglages);
     this.maillage = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), materiau, capacite);
     this.maillage.name = nom;

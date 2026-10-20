@@ -13,6 +13,7 @@ import { GERBES } from '../donnees/particules';
 import type { Ombres } from '../effets/ombres';
 import type { CheminTexture } from '../donnees/types';
 import type { Point } from '../monde/carte';
+import { creerGeometrieRelief } from '../moteur/geometrie';
 import { Pool } from '../utils/pool';
 import type { ArmeEquipee } from './armeEquipee';
 import type { ContexteCombat } from './contexte';
@@ -30,26 +31,28 @@ const groupe: Point = { x: 0, z: 0 };
 
 export class Chutes {
   private readonly contexte: ContexteCombat;
-  private readonly textures: BibliothequeTextures;
   private readonly tampon = new Int32Array(128);
   private readonly chutes: Pool<Chute>;
   /** Une lame affichée par chute (un matériau chacune pour son fondu). */
-  private readonly lames: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>[];
+  private readonly lames: THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>[];
   /** Éclats de l'impact : le côté du bloc du sol de l'arène. */
   private readonly eboulis: CheminTexture;
 
   constructor(contexte: ContexteCombat, textures: BibliothequeTextures, scene: THREE.Scene) {
     const c = CONFIG.armes.chute;
     this.contexte = contexte;
-    this.textures = textures;
     this.chutes = new Pool<Chute>(c.capacite, () => ({ arme: null, x: 0, z: 0, t: 0, tombee: false }));
     this.eboulis = BLOCS[contexte.etat.arene.exterieur.bloc].faces.cotes;
-    const geometrie = new THREE.PlaneGeometry(1, 1);
-    // Texture posée dès le départ : le shader ne change pas à la première chute
+    // L'épée en relief, comme les objets du jeu, debout face à la caméra (qui ne pivote jamais),
+    // pointe en bas : le sprite a la pointe en haut à droite
     const premiere = IDS_ARMES.map((id) => ARMES[id].mecanique).find((m) => m.type === 'chute');
     const map = premiere?.type === 'chute' ? textures.obtenir(premiere.image) : null;
+    const relief = map ? creerGeometrieRelief(map, 1) : null;
+    const geometrie = relief
+      ? relief.rotateY(-Math.PI / 2).rotateZ((3 * Math.PI) / 4)
+      : new THREE.PlaneGeometry(1, 1).rotateZ(-Math.PI * 0.75);
     this.lames = Array.from({ length: c.capacite }, () => {
-      const lame = new THREE.Mesh(geometrie, new THREE.MeshBasicMaterial({ map, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide, depthWrite: false }));
+      const lame = new THREE.Mesh(geometrie, new THREE.MeshLambertMaterial({ map, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide }));
       lame.name = 'lame colossale';
       lame.visible = false;
       lame.renderOrder = 5;
@@ -115,11 +118,7 @@ export class Chutes {
       const m = ch.arme?.definition.mecanique;
       if (!ch.arme || m?.type !== 'chute' || ch.t < 0) continue;
       const lame = this.lames[n++];
-      const image = this.textures.obtenir(m.image);
-      if (lame.material.map !== image) {
-        lame.material.map = image;
-        lame.material.needsUpdate = true;
-      }
+
       // Chute accélérée, puis plantée un peu dans le sol
       const p = Math.min(1, ch.t / c.duree);
       const hauteur = ch.tombee ? -c.enfoncement * m.taille : c.hauteur * (1 - p * p);
@@ -128,7 +127,6 @@ export class Chutes {
       // Debout dans le monde (plan vertical tourné vers la caméra, qui ne pivote jamais),
       // pointe en bas : l'icône a la pointe en haut à droite, à une demi-diagonale du centre
       lame.position.set(ch.x, hauteur + m.taille * Math.SQRT1_2, ch.z);
-      lame.rotation.set(0, 0, -Math.PI * 0.75);
       const fondu = ch.t - c.duree - c.tenue;
       lame.material.opacity = fondu > 0 ? Math.max(0, 1 - fondu / c.fondu) : 1;
       // L'ombre au sol annonce l'impact

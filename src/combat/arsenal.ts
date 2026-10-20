@@ -5,7 +5,7 @@
  */
 import { ARMES, type IdArme } from '../donnees/armes';
 import type { ArmeEquipee } from './armeEquipee';
-import { creerArmeEquipee, rangMax, recalculerStats } from './armeEquipee';
+import { calculerStats, creerArmeEquipee, rangMax } from './armeEquipee';
 import type { Balayages } from './balayages';
 import type { ContexteCombat } from './contexte';
 import type { Foudre } from './foudre';
@@ -37,22 +37,31 @@ export class Arsenal {
     this.systemes = systemes;
   }
 
+  /** Rang possédé (0 = arme absente). */
   rang(id: IdArme): number {
     return this.armes.find((a) => a.id === id)?.rang ?? 0;
   }
 
   /** Ajoute l'arme au rang 1, ou la monte d'un rang ; faux si elle est déjà au maximum. */
   ameliorer(id: IdArme): boolean {
+    const modificateurs = this.contexte.etat.modificateurs;
     const existante = this.armes.find((a) => a.id === id);
     if (!existante) {
-      this.armes.push(creerArmeEquipee(id));
+      this.armes.push(creerArmeEquipee(id, modificateurs));
     } else {
       if (existante.rang >= rangMax(ARMES[id])) return false;
       existante.rang++;
-      recalculerStats(existante);
+      calculerStats(existante.definition, existante.rang, modificateurs, existante.stats);
     }
     this.version++;
     return true;
+  }
+
+  /** À appeler quand les modificateurs des passifs changent. */
+  recalculer(): void {
+    const modificateurs = this.contexte.etat.modificateurs;
+    for (const arme of this.armes) calculerStats(arme.definition, arme.rang, modificateurs, arme.stats);
+    this.version++;
   }
 
   maj(dt: number): void {

@@ -59,11 +59,33 @@ canvas { display: block; }
 }
 #hud-message.visible { opacity: 1; }
 
-/* Cœurs : sprites 9x9 agrandis ×3, pixels nets */
+/* Cœurs : sprites 9x9 agrandis ×3, pixels nets, 10 par ligne */
 #hud-coeurs {
+  position: absolute; bottom: 74px; left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  display: flex; flex-wrap: wrap-reverse; gap: 3px;
+}
+
+/* Barre d'expérience : sprites 182x5 agrandis ×2, niveau en vert au centre */
+#hud-xp {
   position: absolute; bottom: 40px; left: 50%;
   transform: translateX(-50%);
-  display: flex; gap: 3px;
+  width: 364px; height: 10px;
+  background: #2a2a2a;
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+}
+#hud-xp-remplissage {
+  height: 100%; width: 0;
+  background: #80ff20 left center / 364px 10px no-repeat;
+  image-rendering: pixelated;
+}
+#hud-niveau {
+  position: absolute; left: 50%; top: -20px;
+  transform: translateX(-50%);
+  font-size: 18px; font-weight: bold; color: #80ff20;
+  text-shadow: 2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000;
 }
 .coeur { position: relative; width: 27px; height: 27px; }
 .coeur img {
@@ -71,23 +93,77 @@ canvas { display: block; }
   image-rendering: pixelated;
 }
 
-/* Armes possédées : icônes 16x16 agrandies ×2 et rang */
-#hud-armes {
+/* Armes (ligne du bas) et passifs (au-dessus) : icônes 16x16 agrandies ×2 et rang */
+#hud-capacites {
   position: absolute; bottom: 12px; left: 12px;
-  display: flex; gap: 4px;
+  display: flex; flex-direction: column; gap: 4px;
 }
-.arme {
+#hud-armes, #hud-passifs { display: flex; gap: 4px; }
+.capacite {
   position: relative; width: 40px; height: 40px;
   display: flex; align-items: center; justify-content: center;
   background: rgba(0, 0, 0, 0.45);
   border: 2px solid #8b8b8b;
   font-weight: bold;
 }
-.arme img { width: 32px; height: 32px; image-rendering: pixelated; }
-.arme .rang {
+.capacite img { width: 32px; height: 32px; image-rendering: pixelated; }
+#hud-passifs .capacite { border-color: #5a7fbf; }
+.capacite .rang {
   position: absolute; right: 1px; bottom: -2px;
   font-size: 13px; font-weight: bold;
 }
+
+/* --- Écrans (cartes, pause) ------------------------------------------- */
+.ecran {
+  position: fixed; inset: 0; z-index: 5;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  background: rgba(16, 16, 16, 0.72);
+}
+.ecran-titre { font-size: 36px; font-weight: bold; color: #ffff55; }
+.ecran-sous-titre { font-size: 16px; color: #e0e0e0; }
+
+/* Bouton façon Minecraft */
+.bouton-mc {
+  font: inherit; font-size: 18px; color: #fff;
+  text-shadow: 2px 2px 0 #3f3f3f;
+  background: #6f6f6f;
+  border: 2px solid #000;
+  box-shadow: inset 2px 2px 0 #a8a8a8, inset -2px -2px 0 #4a4a4a;
+  padding: 8px 28px; cursor: pointer;
+}
+.bouton-mc:hover { background: #7f89c4; }
+
+/* Cartes : panneaux gris biseautés comme les inventaires */
+#cartes-liste { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
+.carte {
+  position: relative;
+  width: 240px; min-height: 290px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 18px 14px;
+  font: inherit; color: #3f3f3f; text-align: center; text-shadow: none;
+  background: #c6c6c6;
+  border: 3px solid #000;
+  box-shadow: inset 3px 3px 0 #ffffff, inset -3px -3px 0 #555555;
+  cursor: pointer;
+  transition: transform 0.08s;
+}
+.carte:hover { transform: translateY(-4px); background: #d6d6e8; }
+.carte-touche {
+  position: absolute; top: 6px; left: 8px;
+  font-size: 16px; font-weight: bold; color: #555;
+}
+.carte-icone {
+  width: 64px; height: 64px;
+  display: flex; align-items: center; justify-content: center;
+  background: #8b8b8b;
+  box-shadow: inset 2px 2px 0 #373737, inset -2px -2px 0 #ffffff;
+  font-size: 28px; font-weight: bold;
+}
+.carte-icone img { width: 48px; height: 48px; image-rendering: pixelated; }
+.carte-nom { font-size: 18px; font-weight: bold; color: #202020; }
+.carte-etiquette { font-size: 14px; font-weight: bold; color: #b8860b; }
+.carte-description { font-size: 14px; }
+.carte-stats { list-style: none; font-size: 13px; color: #1f6f1f; font-weight: bold; }
 
 /* --- Panneau debug (inspiré de l'écran F3 de Minecraft) ------------------ */
 #debug {

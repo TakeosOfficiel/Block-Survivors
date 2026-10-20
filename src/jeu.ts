@@ -23,6 +23,7 @@ import { RenduProjectiles } from './effets/renduProjectiles';
 import { DirecteurApparitions } from './entites/directeur';
 import { Ennemis } from './entites/ennemis';
 import { Joueur } from './entites/joueur';
+import { Orbes } from './entites/orbes';
 import { ProjectilesEnnemis } from './entites/projectilesEnnemis';
 import type { SourceEntites } from './entites/types';
 import { creerEtatPartie, type EtatPartie } from './etat';
@@ -30,7 +31,12 @@ import { construireArene } from './monde/arene';
 import { Boucle, type CallbacksBoucle } from './moteur/boucle';
 import { CameraJeu } from './moteur/camera';
 import type { Rendu } from './moteur/rendu';
+import { Ameliorations, type Carte } from './progression/ameliorations';
+import { gagnerXp } from './progression/niveaux';
+import { Passifs } from './progression/passifs';
 import { PanneauDebug } from './ui/debug';
+import { EcranCartes } from './ui/ecranCartes';
+import { EcranPause } from './ui/ecranPause';
 import { Hud } from './ui/hud';
 
 export class Jeu implements CallbacksBoucle {
@@ -51,6 +57,7 @@ export class Jeu implements CallbacksBoucle {
   private readonly joueur: Joueur;
   private readonly ennemis: Ennemis;
   private readonly projectilesEnnemis: ProjectilesEnnemis;
+  private readonly orbes: Orbes;
   private readonly directeur: DirecteurApparitions;
 
   // Combat du joueur
@@ -60,6 +67,12 @@ export class Jeu implements CallbacksBoucle {
   private readonly orbites: Orbites;
   private readonly foudre: Foudre;
   private readonly invocations: Invocations;
+
+  // Progression
+  private readonly passifs = new Passifs();
+  private readonly ameliorations: Ameliorations;
+  private readonly ecranCartes: EcranCartes;
+  private readonly ecranPause: EcranPause;
 
   private readonly debug: PanneauDebug;
   private readonly sourcesEntites: readonly SourceEntites[];
@@ -72,7 +85,7 @@ export class Jeu implements CallbacksBoucle {
     const scene = rendu.scene;
 
     construireArene(arene, textures, scene);
-    this.hud = new Hud(textures, this.etat.joueur.pvMax);
+    this.hud = new Hud(textures);
     this.ombres = new Ombres(textures.obtenir(CONFIG.ombre.texture), scene);
     this.particules = new Particules(scene);
     this.renduProjectiles = new RenduProjectiles(textures, scene);
@@ -80,10 +93,12 @@ export class Jeu implements CallbacksBoucle {
     // Entités
     this.joueur = new Joueur(this.etat, this.entrees, scene, textures);
     this.projectilesEnnemis = new ProjectilesEnnemis(this.etat, this.joueur);
+    this.orbes = new Orbes(this.etat, scene, textures);
     this.ennemis = new Ennemis(
       this.etat,
       { cible: this.joueur, tireur: this.projectilesEnnemis },
       this.particules,
+      this.orbes,
       scene,
       textures,
     );
@@ -111,7 +126,14 @@ export class Jeu implements CallbacksBoucle {
     });
     for (const id of JOUEUR_BASE.armesDepart) this.arsenal.ameliorer(id);
 
-    this.sourcesEntites = [this.joueur, this.ennemis, this.projectilesEnnemis, this.projectilesJoueur, this.invocations];
+    // Progression
+    this.ameliorations = new Ameliorations(this.etat, this.arsenal, this.passifs);
+    this.ecranCartes = new EcranCartes(textures);
+    this.ecranPause = new EcranPause(() => !this.ecranCartes.ouvert && !this.etat.joueur.mort);
+
+    this.sourcesEntites = [
+      this.joueur, this.ennemis, this.projectilesEnnemis, this.projectilesJoueur, this.invocations, this.orbes,
+    ];
 
     this.debug = new PanneauDebug({
       rendu,
@@ -124,6 +146,7 @@ export class Jeu implements CallbacksBoucle {
       definirInvincibilite: (actif) => { this.joueur.invincible = actif; },
       apparaitreEnnemi: (id) => this.apparaitreAutourDuJoueur(id),
       ameliorerArme: (id) => { this.arsenal.ameliorer(id); },
+      gagnerNiveau: () => gagnerXp(this.etat, this.etat.joueur.xpNiveau - this.etat.joueur.xp),
       frapper: () => this.frapperAutourDuJoueur(),
     });
     this.boucle = new Boucle(this);
@@ -145,6 +168,7 @@ export class Jeu implements CallbacksBoucle {
     this.directeur.maj(dt);
     this.ennemis.maj(dt);           // reconstruit la grille utilisée par les armes
     this.arsenal.maj(dt);
+    this.orbes.maj(dt);
     this.projectilesJoueur.maj(dt);
     this.invocations.maj(dt);
     this.foudre.maj(dt);
@@ -165,22 +189,38 @@ export class Jeu implements CallbacksBoucle {
     this.orbites.majVisuel(this.arsenal.armes, this.renduProjectiles, this.etat.tempsJeu);
     this.renduProjectiles.terminer();
 
+    this.orbes.majVisuel(this.etat.tempsJeu);
     this.balayages.majVisuel(dtJeu);
     this.foudre.majVisuel();
     this.particules.majVisuel();
     this.camera.majVisuel(dtJeu, dtReel);
     this.rendu.dessiner();
 
-    this.hud.majVisuel(dtBrut, dtReel, this.etat.joueur, this.arsenal);
+    this.hud.majVisuel(dtBrut, dtReel, this.etat.joueur, this.arsenal, this.passifs);
     this.debug.majVisuel(dtReel);
     if (this.etat.joueur.mort && !this.mortAnnoncee) {
       this.mortAnnoncee = true;
       this.hud.afficherMessage('Vous êtes mort !', Infinity);
     }
+    this.proposerCartes();
   }
 
+  /** Partie figée pendant le choix des cartes et la pause. */
   vitesseTemps(): number {
-    return this.debug.vitesseTemps;
+    return this.ecranCartes.ouvert || this.ecranPause.active ? 0 : this.debug.vitesseTemps;
+  }
+
+  // --- Progression -------------------------------------------------------
+
+  /** Ouvre les cartes d'un niveau en attente (un niveau à la fois). */
+  private proposerCartes(): void {
+    if (this.etat.niveauxEnAttente === 0 || this.ecranCartes.ouvert || this.etat.joueur.mort) return;
+    this.ecranPause.definir(false);
+    const niveau = this.etat.joueur.niveau - this.etat.niveauxEnAttente + 1;
+    this.ecranCartes.ouvrir(niveau, this.ameliorations.tirer(), (carte: Carte) => {
+      this.ameliorations.appliquer(carte.amelioration);
+      this.etat.niveauxEnAttente--;
+    });
   }
 
   // --- Debug -------------------------------------------------------------

@@ -19,6 +19,7 @@ import { borner, ecartAngle, facteurLissage } from '../utils/maths';
 import { Pool } from '../utils/pool';
 import { appliquerComportement, type ContexteComportement } from './comportements';
 import { creerEnnemi, type Ennemi } from './ennemi';
+import type { DepotXp } from './orbes';
 import type { SourceEntites } from './types';
 
 /** Tout ce qu'il faut pour afficher un type d'ennemi. */
@@ -35,6 +36,7 @@ export class Ennemis implements SourceEntites {
   private readonly etat: EtatPartie;
   private readonly contexte: ContexteComportement;
   private readonly particules: Particules;
+  private readonly depotXp: DepotXp;
   private readonly pool = new Pool<Ennemi>(CONFIG.ennemis.capacite, creerEnnemi);
   private readonly grille: GrilleSpatiale;
   private readonly voisins = new Int32Array(64);
@@ -45,12 +47,14 @@ export class Ennemis implements SourceEntites {
     etat: EtatPartie,
     contexte: ContexteComportement,
     particules: Particules,
+    depotXp: DepotXp,
     scene: THREE.Scene,
     textures: BibliothequeTextures,
   ) {
     this.etat = etat;
     this.contexte = contexte;
     this.particules = particules;
+    this.depotXp = depotXp;
     this.grille = new GrilleSpatiale(etat.arene.taille / 2 + 1, CONFIG.ennemis.celluleGrille, CONFIG.ennemis.capacite);
     this.rendus = IDS_ENNEMIS.map((id) => {
       const def = ENNEMIS[id];
@@ -171,6 +175,7 @@ export class Ennemis implements SourceEntites {
       e.mort = 0;
       e.meche = 0;
       this.etat.ennemisTues++;
+      this.depotXp.deposer(e.x, e.z, e.definition.xp);
     }
   }
 

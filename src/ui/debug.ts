@@ -27,6 +27,7 @@ export interface SourcesDebug {
   definirInvincibilite(actif: boolean): void;
   apparaitreEnnemi(id: IdEnnemi): void;
   ameliorerArme(id: IdArme): void;
+  gagnerNiveau(): void;
   frapper(): void;
 }
 
@@ -53,6 +54,7 @@ export class PanneauDebug {
     apparitions: element('dbg-apparitions'),
     armes: element('dbg-armes'),
     frappe: element<HTMLButtonElement>('dbg-frappe'),
+    niveau: element<HTMLButtonElement>('dbg-niveau'),
     boss: element<HTMLButtonElement>('dbg-boss'),
   };
 
@@ -71,6 +73,7 @@ export class PanneauDebug {
     this.lierBouton(this.dom.accelerer, () => this.changerVitesseTemps(1));
     this.lierBouton(this.dom.invincible, () => this.basculerInvincibilite());
     this.lierBouton(this.dom.frappe, () => this.sources.frapper());
+    this.lierBouton(this.dom.niveau, () => this.sources.gagnerNiveau());
     this.lierBouton(this.dom.boss, () => this.apparitionBoss());
 
     // Un bouton par ennemi et par arme, générés depuis les tables de données
@@ -121,6 +124,7 @@ export class PanneauDebug {
     else if (e.key === '-' || e.key === '_') this.changerVitesseTemps(-1);
     else if (e.code === 'KeyI') this.basculerInvincibilite();
     else if (e.code === 'KeyK') this.sources.frapper();
+    else if (e.code === 'KeyL') this.sources.gagnerNiveau();
     else if (e.code === 'KeyB') this.apparitionBoss();
   };
 
@@ -170,7 +174,7 @@ export class PanneauDebug {
     this.dom.triangles.textContent = String(infos.triangles);
     this.dom.textures.textContent = `${bilan.chargees} / ${bilan.demandees}${detailSources ? ` (${detailSources})` : ''}`;
     this.dom.temps.textContent = formaterTemps(etat.tempsJeu);
-    this.dom.pv.textContent = `${etat.joueur.pv} / ${etat.joueur.pvMax}`;
+    this.dom.pv.textContent = `${Math.ceil(etat.joueur.pv)} / ${etat.joueur.pvMax}`;
     this.dom.tues.textContent = String(etat.ennemisTues);
     this.dom.position.textContent = `${etat.joueur.x.toFixed(1)} / ${etat.joueur.z.toFixed(1)}`;
     this.dom.zoom.textContent = camera.distance.toFixed(1);

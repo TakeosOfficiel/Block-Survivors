@@ -20,34 +20,24 @@ const MOTIF = [
 ];
 
 export class BarreCoeurs {
+  private readonly conteneur = element('hud-coeurs');
   private readonly pleins: HTMLImageElement[] = [];
+  private readonly urlConteneur: string;
   private readonly urlPlein: string;
   private readonly urlMoitie: string;
   private affiche = -1;
+  private pvMaxAffiche = -1;
 
-  constructor(textures: BibliothequeTextures, pvMax: number) {
+  constructor(textures: BibliothequeTextures) {
     const sprites = CONFIG.hud.coeurs;
-    const urlConteneur = textures.url(sprites.conteneur) ?? dessinerCoeur('#1a1a1a', '#4a1010', 9);
+    this.urlConteneur = textures.url(sprites.conteneur) ?? dessinerCoeur('#1a1a1a', '#4a1010', 9);
     this.urlPlein = textures.url(sprites.plein) ?? dessinerCoeur(null, '#e01b1b', 9);
     this.urlMoitie = textures.url(sprites.moitie) ?? dessinerCoeur(null, '#e01b1b', 5);
-
-    const conteneur = element('hud-coeurs');
-    for (let i = 0; i < Math.ceil(pvMax / 2); i++) {
-      const coeur = document.createElement('span');
-      coeur.className = 'coeur';
-      const fond = document.createElement('img');
-      fond.src = urlConteneur;
-      fond.alt = '';
-      const plein = document.createElement('img');
-      plein.alt = '';
-      coeur.append(fond, plein);
-      conteneur.append(coeur);
-      this.pleins.push(plein);
-    }
   }
 
   /** Met à jour l'affichage (ne touche le DOM que si les PV ont changé). */
-  afficher(pv: number): void {
+  afficher(pv: number, pvMax: number): void {
+    if (pvMax !== this.pvMaxAffiche) this.construire(pvMax);
     const valeur = Math.ceil(pv);
     if (valeur === this.affiche) return;
     this.affiche = valeur;
@@ -56,6 +46,26 @@ export class BarreCoeurs {
       image.style.visibility = reste > 0 ? 'visible' : 'hidden';
       if (reste > 0) image.src = reste >= 2 ? this.urlPlein : this.urlMoitie;
     });
+  }
+
+  /** Un emplacement de cœur par tranche de 2 PV maximum. */
+  private construire(pvMax: number): void {
+    this.pvMaxAffiche = pvMax;
+    this.affiche = -1;
+    this.pleins.length = 0;
+    this.conteneur.replaceChildren();
+    for (let i = 0; i < Math.ceil(pvMax / 2); i++) {
+      const coeur = document.createElement('span');
+      coeur.className = 'coeur';
+      const fond = document.createElement('img');
+      fond.src = this.urlConteneur;
+      fond.alt = '';
+      const plein = document.createElement('img');
+      plein.alt = '';
+      coeur.append(fond, plein);
+      this.conteneur.append(coeur);
+      this.pleins.push(plein);
+    }
   }
 }
 

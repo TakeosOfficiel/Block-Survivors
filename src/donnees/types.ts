@@ -122,6 +122,7 @@ export interface DefinitionJoueur extends ApparenceEntite {
   readonly vitesse: number;          // blocs / seconde
   readonly reactivite: number;       // rapidité d'atteinte de la vitesse cible (1/s)
   readonly vitesseRotation: number;  // rapidité d'orientation vers la direction de marche (1/s)
+  readonly collecte: number;         // rayon d'attraction des orbes d'XP (blocs)
   readonly armesDepart: readonly IdArme[];
 }
 
@@ -164,6 +165,8 @@ export interface DefinitionEnnemi extends ApparenceEntite {
   readonly vitesse: number;   // blocs / seconde
   readonly rayon: number;     // rayon de collision (blocs)
   readonly comportement: ComportementEnnemi;
+  /** Expérience lâchée à la mort. */
+  readonly xp: number;
   /** Couleur des particules à la mort. */
   readonly couleurParticules: number;
 }
@@ -313,4 +316,53 @@ export interface DefinitionArene {
 export interface DefinitionBoss {
   readonly id: string;
   readonly nom: string;
+}
+
+// --------------------------------------------------------------------------
+// Bonus passifs et progression
+// --------------------------------------------------------------------------
+/**
+ * Modificateurs globaux du joueur, cumulés depuis ses bonus passifs.
+ * Multiplicateurs (neutre = 1) : degats, cadence, zone, portee, vitesse, collecte.
+ * Ajouts (neutre = 0) : projectiles, pvMax, armure, regeneration.
+ */
+export interface Modificateurs {
+  degats: number;
+  cadence: number;       // < 1 : armes plus rapides
+  zone: number;
+  portee: number;
+  projectiles: number;   // projectiles, haches, éclairs, golems en plus
+  vitesse: number;
+  pvMax: number;
+  armure: number;        // dégâts retirés à chaque coup reçu (minimum 1 dégât)
+  regeneration: number;  // PV / s
+  collecte: number;
+}
+
+export interface NiveauPassif {
+  readonly description: string;
+  /** Ajouts aux modificateurs (cumulés rang après rang). */
+  readonly modif: Partial<Modificateurs>;
+}
+
+export interface DefinitionPassif {
+  readonly nom: string;
+  readonly description: string;
+  readonly icone: CheminTexture;
+  /** Effets des rangs 1, 2… ; rang maximal = longueur. */
+  readonly niveaux: readonly NiveauPassif[];
+}
+
+export interface DefinitionProgression {
+  /** XP pour passer du niveau 1 au niveau 2. */
+  readonly xpPremierNiveau: number;
+  /** XP supplémentaire demandée à chaque niveau, par tranche de niveaux. */
+  readonly paliers: readonly { readonly jusquAuNiveau: number; readonly increment: number }[];
+  readonly cartesParNiveau: number;
+  readonly emplacementsArmes: number;
+  readonly emplacementsPassifs: number;
+  /** Carte proposée quand il n'y a plus rien à améliorer. */
+  readonly soin: { readonly nom: string; readonly description: string; readonly icone: CheminTexture; readonly pv: number };
+  /** Image de l'orbe (0 à 15 dans la texture) selon sa valeur, de la plus petite à la plus grosse. */
+  readonly orbes: readonly { readonly valeurMin: number; readonly image: number }[];
 }

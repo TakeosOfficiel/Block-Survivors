@@ -19,6 +19,7 @@ const definitions = {
     vitesse: 2.2,
     rayon: 0.35,
     comportement: { type: 'melee', degats: 3, portee: 0.4, cadence: 1 },
+    xp: 1,
     couleurParticules: 0x4f7a3a,
   },
   squelette: {
@@ -31,6 +32,7 @@ const definitions = {
     vitesse: 2.4,
     rayon: 0.35,
     comportement: { type: 'archer', projectile: 'fleche', degats: 3, distanceIdeale: 9, portee: 13, cadence: 2.2 },
+    xp: 2,
     couleurParticules: 0xd0d0d0,
   },
   araignee: {
@@ -44,6 +46,7 @@ const definitions = {
     vitesse: 4.6,
     rayon: 0.6,
     comportement: { type: 'melee', degats: 2, portee: 0.3, cadence: 0.8 },
+    xp: 1,
     couleurParticules: 0x3a2e28,
   },
   creeper: {
@@ -56,6 +59,7 @@ const definitions = {
     vitesse: 2.6,
     rayon: 0.35,
     comportement: { type: 'explosif', distanceAmorcage: 2.5, distanceAnnulation: 5, duree: 1.5, rayon: 3.5, degats: 10 },
+    xp: 3,
     couleurParticules: 0x5fb04a,
   },
 } satisfies Record<string, DefinitionEnnemi>;

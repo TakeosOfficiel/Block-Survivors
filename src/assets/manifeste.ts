@@ -5,6 +5,8 @@ import { ARMES, IDS_ARMES } from '../donnees/armes';
 import { BLOCS, type IdBloc } from '../donnees/blocs';
 import { ENNEMIS, IDS_ENNEMIS } from '../donnees/ennemis';
 import { JOUEUR_BASE } from '../donnees/joueur';
+import { IDS_PASSIFS, PASSIFS } from '../donnees/passifs';
+import { PROGRESSION } from '../donnees/progression';
 import { IDS_PROJECTILES, PROJECTILES } from '../donnees/projectiles';
 import type { CheminTexture, DefinitionArene } from '../donnees/types';
 
@@ -29,6 +31,10 @@ export function texturesRequises(arene: DefinitionArene): Set<CheminTexture> {
     if (arme.mecanique.type === 'balayage') for (const image of arme.mecanique.effet) chemins.add(image);
   }
   chemins.add(CONFIG.ombre.texture);
-  for (const coeur of Object.values(CONFIG.hud.coeurs)) chemins.add(coeur);
+  for (const id of IDS_PASSIFS) chemins.add(PASSIFS[id].icone);
+  chemins.add(PROGRESSION.soin.icone);
+  chemins.add(CONFIG.orbes.texture);
+  for (const sprite of Object.values(CONFIG.hud.coeurs)) chemins.add(sprite);
+  for (const sprite of Object.values(CONFIG.hud.barreXp)) chemins.add(sprite);
   return chemins;
 }

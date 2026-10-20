@@ -41,6 +41,8 @@ export class Joueur implements SourceEntites, CibleJoueur {
       return;
     }
     if (j.invulnerabilite > 0) j.invulnerabilite -= dt;
+    const mods = this.etat.modificateurs;
+    if (mods.regeneration > 0) j.pv = Math.min(j.pvMax, j.pv + mods.regeneration * dt);
 
     // Direction voulue d'après le clavier
     let dx = (this.entrees.action('droite') ? 1 : 0) - (this.entrees.action('gauche') ? 1 : 0);
@@ -53,8 +55,9 @@ export class Joueur implements SourceEntites, CibleJoueur {
 
     // Vitesse : approche exponentielle de la vitesse cible (réactif, sans à-coups)
     const k = facteurLissage(JOUEUR_BASE.reactivite, dt);
-    j.vx += (dx * JOUEUR_BASE.vitesse - j.vx) * k;
-    j.vz += (dz * JOUEUR_BASE.vitesse - j.vz) * k;
+    const vitesse = JOUEUR_BASE.vitesse * mods.vitesse;
+    j.vx += (dx * vitesse - j.vx) * k;
+    j.vz += (dz * vitesse - j.vz) * k;
     j.x += j.vx * dt;
     j.z += j.vz * dt;
 
@@ -75,7 +78,9 @@ export class Joueur implements SourceEntites, CibleJoueur {
   subirDegats(degats: number): boolean {
     const j = this.etat.joueur;
     if (j.mort || this.invincible || j.invulnerabilite > 0) return false;
-    j.pv = Math.max(0, j.pv - degats);
+    // L'armure retire des dégâts, mais un coup en fait toujours au moins 1
+    const subis = Math.max(1, degats - this.etat.modificateurs.armure);
+    j.pv = Math.max(0, j.pv - subis);
     j.invulnerabilite = JOUEUR_BASE.invulnerabilite;
     if (j.pv === 0) {
       j.mort = true;

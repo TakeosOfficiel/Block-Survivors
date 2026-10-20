@@ -86,6 +86,16 @@ export const CONFIG = {
     gonflementHauteur: 0.1,
   },
 
+  orbes: {
+    capacite: 1200,
+    texture: 'entity/experience_orb',
+    taille: 0.4,             // côté de l'orbe la plus petite (blocs)
+    hauteur: 0.35,
+    attraction: 30,          // accélération vers le joueur (blocs/s²)
+    vitesseMax: 14,
+    distanceCollecte: 0.6,
+  },
+
   projectiles: {
     capacite: 256,
     intervalleTrainee: 0.05,   // s entre deux particules de traînée
@@ -129,6 +139,10 @@ export const CONFIG = {
   hud: {
     periodeFps: 0.5,         // fenêtre de mesure des FPS (s)
     dureeMessage: 3,         // durée d'affichage d'un message central (s)
+    barreXp: {
+      fond: 'gui/sprites/hud/experience_bar_background',
+      progression: 'gui/sprites/hud/experience_bar_progress',
+    },
     coeurs: {
       plein: 'gui/sprites/hud/heart/full',
       moitie: 'gui/sprites/hud/heart/half',

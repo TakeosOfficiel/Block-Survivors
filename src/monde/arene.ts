@@ -34,7 +34,9 @@ export function construireArene(
       }
     }
   }
-  groupe.add(creerTerrainExterieur(definition, textures));
+  const exterieur = creerTerrainExterieur(definition, textures);
+  if (exterieur) groupe.add(exterieur);
+  if (monde.decor) groupe.add(monde.decor);
 
   scene.add(groupe);
   return groupe;
@@ -134,15 +136,16 @@ function creerGeometrieCroix(): THREE.BufferGeometry {
  * plan troué à la taille de l'arène (il ne recouvre ni le sol ni les liquides).
  * Les UV d'une ShapeGeometry valent ses coordonnées : une texture par bloc.
  */
-function creerTerrainExterieur(definition: DefinitionArene, textures: BibliothequeTextures): THREE.Mesh {
+function creerTerrainExterieur(definition: DefinitionArene, textures: BibliothequeTextures): THREE.Mesh | null {
+  if (!definition.exterieur) return null;
   const { bloc: idBloc, assombrissement, taille } = definition.exterieur;
   const bloc = BLOCS[idBloc];
   const map = textures.obtenirRepetee(bloc.faces.haut, 1);
   const couleur = new THREE.Color(map ? (bloc.teinteHaut ?? 0xffffff) : bloc.couleurSecours)
     .multiplyScalar(assombrissement);
 
-  const exterieur = carre(taille / 2);
-  exterieur.holes.push(carre(definition.taille / 2));
+  const exterieur = rectangle(taille / 2, taille / 2);
+  exterieur.holes.push(rectangle(definition.largeur / 2, definition.profondeur / 2));
   const plan = new THREE.Mesh(
     new THREE.ShapeGeometry(exterieur),
     new THREE.MeshLambertMaterial({ map, color: couleur }),
@@ -152,9 +155,9 @@ function creerTerrainExterieur(definition: DefinitionArene, textures: Bibliotheq
   return plan;
 }
 
-/** Carré centré de demi-côté `d`. */
-function carre(d: number): THREE.Shape {
+/** Rectangle centré de demi-côtés `dx`, `dz`. */
+function rectangle(dx: number, dz: number): THREE.Shape {
   return new THREE.Shape([
-    new THREE.Vector2(-d, -d), new THREE.Vector2(d, -d), new THREE.Vector2(d, d), new THREE.Vector2(-d, d),
+    new THREE.Vector2(-dx, -dz), new THREE.Vector2(dx, -dz), new THREE.Vector2(dx, dz), new THREE.Vector2(-dx, dz),
   ]);
 }

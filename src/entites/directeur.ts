@@ -100,11 +100,12 @@ export class DirecteurApparitions {
   private trouverPointHorsChamp(): boolean {
     const j = this.etat.joueur;
     const { carte, flux } = this.terrain;
-    const limite = this.etat.arene.taille / 2 - 1;
+    const limiteX = this.etat.arene.largeur / 2 - 1;
+    const limiteZ = this.etat.arene.profondeur / 2 - 1;
     let meilleure = -1;
     for (let essai = 0; essai < CONFIG.ennemis.essaisApparition; essai++) {
-      const x = (Math.random() * 2 - 1) * limite;
-      const z = (Math.random() * 2 - 1) * limite;
+      const x = (Math.random() * 2 - 1) * limiteX;
+      const z = (Math.random() * 2 - 1) * limiteZ;
       const distance = longueur(x - j.x, z - j.z);
       if (distance < APPARITIONS.distanceMin || carte.bloqueMarche(x, z) || !flux.atteignable(x, z)) continue;
       if (!this.vue.estVisible(x, z, 2)) {

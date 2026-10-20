@@ -87,12 +87,13 @@ export class DirecteurBoss {
     const id = this.idProchain();
     this.prochain++;
     const j = this.etat.joueur;
-    const limite = this.etat.arene.taille / 2 - ENNEMIS[id].rayon - 1;
-    let x = j.x > 0 ? -limite : limite;
-    let z = j.z > 0 ? -limite : limite;
+    const limiteX = this.etat.arene.largeur / 2 - ENNEMIS[id].rayon - 1;
+    const limiteZ = this.etat.arene.profondeur / 2 - ENNEMIS[id].rayon - 1;
+    let x = j.x > 0 ? -limiteX : limiteX;
+    let z = j.z > 0 ? -limiteZ : limiteZ;
     for (let essai = 0; essai < 16; essai++) {
-      const cx = (Math.random() * 2 - 1) * limite;
-      const cz = (Math.random() * 2 - 1) * limite;
+      const cx = (Math.random() * 2 - 1) * limiteX;
+      const cz = (Math.random() * 2 - 1) * limiteZ;
       if (this.terrain.carte.bloqueMarche(cx, cz)) continue;
       if (longueur(cx - j.x, cz - j.z) > 12 && !this.vue.estVisible(cx, cz, 3)) {
         x = cx;

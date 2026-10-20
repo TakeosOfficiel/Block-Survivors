@@ -15,7 +15,8 @@ import { CONFIG, SOURCES_TEXTURES } from './config';
 import { PERSONNAGES } from './donnees/personnages';
 import { Jeu } from './jeu';
 import { choixDemande, memoriserChoix, partieDemandee } from './lancement';
-import { genererMonde } from './monde/generation';
+import { importerArene } from './minecraft/importation';
+import { genererMonde, type MondeGenere } from './monde/generation';
 import { Rendu } from './moteur/rendu';
 import { chargerOptions } from './options';
 import { Sauvegarde } from './progression/sauvegarde';
@@ -86,7 +87,23 @@ async function demarrer(): Promise<void> {
 
   ecran.etape('Génération du monde…');
   await new Promise((resoudre) => requestAnimationFrame(resoudre));  // laisse s'afficher l'étape
-  const monde = genererMonde(choix.arene);
+  let monde: MondeGenere;
+  if (choix.arene.source) {
+    // Map construite dans Minecraft : sa taille et son décor viennent de la schématique
+    try {
+      const importee = await importerArene(choix.arene, textures, {
+        etape: (texte) => ecran.etape(texte),
+        progression: (faites, total) => ecran.progression(faites, total),
+      });
+      choix = { ...choix, arene: importee.arene };
+      monde = importee.monde;
+    } catch (erreur) {
+      ecran.erreur(`Map « ${choix.arene.nom} » illisible : ${(erreur as Error).message}`);
+      return;
+    }
+  } else {
+    monde = genererMonde(choix.arene);
+  }
   ecran.etape('Chargement des textures…');
   await textures.charger(
     texturesRequises(choix.arene, monde, apparenceJoueur(PERSONNAGES[choix.personnage], profil)),

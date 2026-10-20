@@ -55,7 +55,7 @@ export function texturesRequises(
   };
 
   for (const id of monde.blocs.keys()) ajouterBloc(id);
-  ajouterBloc(arene.exterieur.bloc);
+  if (arene.exterieur) ajouterBloc(arene.exterieur.bloc);
 
   chemins.add(personnage.skin);
   if (personnage.objetEnMain) chemins.add(personnage.objetEnMain);

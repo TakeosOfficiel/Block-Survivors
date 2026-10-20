@@ -3,6 +3,7 @@
  * ambiance et population d'ennemis par zone. Ajouter une arène = ajouter une entrée.
  * Coordonnées en blocs, origine au centre (le joueur y démarre).
  */
+import { arenesImportees } from './arenesImportees';
 import type { DefinitionArene } from './types';
 
 const prairie: DefinitionArene = {
@@ -10,7 +11,8 @@ const prairie: DefinitionArene = {
   nom: 'Prairie du village abandonné',
   icone: 'block/grass_block_side',
   description: 'Un village en ruine au milieu des champs.',
-  taille: 60,
+  largeur: 60,
+  profondeur: 60,
   hauteurMur: 2,
   sol: [{ bloc: 'grass_block', poids: 1 }],
   taches: [
@@ -67,7 +69,8 @@ const mine: DefinitionArene = {
   nom: 'Mine souterraine',
   icone: 'block/iron_ore',
   description: 'Galeries sombres, piliers de minerai et toiles d\'araignée.',
-  taille: 60,
+  largeur: 60,
+  profondeur: 60,
   hauteurMur: 3,
   sol: [
     { bloc: 'stone', poids: 6 },
@@ -135,7 +138,8 @@ const nether: DefinitionArene = {
   nom: 'Zone volcanique',
   icone: 'block/netherrack',
   description: 'Lacs de lave, sable des âmes et ruines de forteresse.',
-  taille: 60,
+  largeur: 60,
+  profondeur: 60,
   hauteurMur: 3,
   sol: [{ bloc: 'netherrack', poids: 1 }],
   taches: [
@@ -186,6 +190,9 @@ const nether: DefinitionArene = {
   ],
 };
 
-export const ARENES: readonly DefinitionArene[] = [prairie, mine, nether];
+const ARENES_DE_BASE: readonly DefinitionArene[] = [prairie, mine, nether];
+
+/** Arènes du jeu, puis celles construites dans Minecraft (dossier cartes/). */
+export const ARENES: readonly DefinitionArene[] = [...ARENES_DE_BASE, ...arenesImportees(ARENES_DE_BASE)];
 
 export const ARENE_PAR_DEFAUT = 'prairie';

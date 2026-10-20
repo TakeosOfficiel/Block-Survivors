@@ -54,7 +54,8 @@ export class ProjectilesEnnemis implements SourceEntites, Tireur {
 
   maj(dt: number): void {
     const j = this.etat.joueur;
-    const limite = this.etat.arene.taille / 2;
+    const limiteX = this.etat.arene.largeur / 2;
+    const limiteZ = this.etat.arene.profondeur / 2;
     const { pasCollision, rayonDecor } = CONFIG.projectiles;
     for (let i = this.pool.nombre - 1; i >= 0; i--) {
       const p = this.pool.elements[i];
@@ -67,7 +68,7 @@ export class ProjectilesEnnemis implements SourceEntites, Tireur {
       for (let k = 0; k < nbPas && !fini; k++) {
         p.x += (p.vx * dt) / nbPas;
         p.z += (p.vz * dt) / nbPas;
-        const sortie = p.x < -limite || p.x > limite || p.z < -limite || p.z > limite;
+        const sortie = p.x < -limiteX || p.x > limiteX || p.z < -limiteZ || p.z > limiteZ;
         if (sortie || this.carte.toucheTir(p.x, p.z, rayonDecor)) {
           fini = true;
           break;

@@ -88,7 +88,8 @@ export class ProjectilesJoueur implements SourceEntites {
     const { etat, ennemis, particules, carte } = this.contexte;
     const { pasCollision, rayonDecor } = CONFIG.projectiles;
     const j = etat.joueur;
-    const limite = etat.arene.taille / 2;
+    const limiteX = etat.arene.largeur / 2;
+    const limiteZ = etat.arene.profondeur / 2;
 
     for (let i = this.pool.nombre - 1; i >= 0; i--) {
       const p = this.pool.elements[i];
@@ -116,7 +117,7 @@ export class ProjectilesJoueur implements SourceEntites {
         p.x += (p.dirX * pas) / nbPas;
         p.z += (p.dirZ * pas) / nbPas;
         p.parcouru += pas / nbPas;
-        sortie = p.x < -limite || p.x > limite || p.z < -limite || p.z > limite
+        sortie = p.x < -limiteX || p.x > limiteX || p.z < -limiteZ || p.z > limiteZ
           || (!p.retour && carte.toucheTir(p.x, p.z, rayonDecor));
         if (sortie) break;
 

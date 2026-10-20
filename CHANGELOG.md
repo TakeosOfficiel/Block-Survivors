@@ -5,6 +5,16 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [À venir] — numéro fixé après la fusion avec main
+
+### Nouveautés
+- Maps construites dans Minecraft : chaque fichier `.schem` (WorldEdit / FAWE) ou `.nbt` (bloc de structure) du dossier `cartes/` devient une arène. Première map : le **Jardin des champignons**.
+- Tous les blocs vanilla s'affichent avec leur vraie forme (escaliers, dalles, portillons, plantes, vitres teintées, champignons géants…), lus dans les fichiers officiels de Minecraft.
+- La zone jouable est trouvée toute seule (le sol plat où l'on démarre, ou celui d'un panneau « depart ») ; le reste de la construction sert de décor autour de l'arène.
+
+### Changements
+- Les arènes peuvent être rectangulaires.
+
 ## [0.8.3] — 2026-10-20
 
 ### Changements

@@ -25,8 +25,8 @@ export class ChampDeFlux {
 
   constructor(carte: CarteMonde) {
     this.carte = carte;
-    this.distances = new Int32Array(carte.taille * carte.taille).fill(INATTEIGNABLE);
-    this.file = new Int32Array(carte.taille * carte.taille);
+    this.distances = new Int32Array(carte.largeur * carte.profondeur).fill(INATTEIGNABLE);
+    this.file = new Int32Array(carte.largeur * carte.profondeur);
   }
 
   /** Recalcule le champ si la cible a changé de case. */
@@ -35,7 +35,7 @@ export class ChampDeFlux {
     if (cible === this.celluleCible || cible < 0) return;
     this.celluleCible = cible;
 
-    const { taille, drapeaux } = this.carte;
+    const { largeur, profondeur, drapeaux } = this.carte;
     this.distances.fill(INATTEIGNABLE);
     this.distances[cible] = 0;
     let debut = 0;
@@ -43,14 +43,14 @@ export class ChampDeFlux {
     this.file[fin++] = cible;
     while (debut < fin) {
       const c = this.file[debut++];
-      const ix = c % taille;
-      const iz = (c - ix) / taille;
+      const ix = c % largeur;
+      const iz = (c - ix) / largeur;
       const d = this.distances[c] + 1;
       for (let v = 0; v < 4; v++) {
         const nx = ix + VOISINS_X[v];
         const nz = iz + VOISINS_Z[v];
-        if (nx < 0 || nz < 0 || nx >= taille || nz >= taille) continue;
-        const n = nz * taille + nx;
+        if (nx < 0 || nz < 0 || nx >= largeur || nz >= profondeur) continue;
+        const n = nz * largeur + nx;
         if (this.distances[n] !== INATTEIGNABLE || (drapeaux[n] & BLOQUE_MARCHE) !== 0) continue;
         this.distances[n] = d;
         this.file[fin++] = n;
@@ -72,19 +72,19 @@ export class ChampDeFlux {
   direction(x: number, z: number, sortie: Point): boolean {
     const c = this.carte.cellule(x, z);
     if (c < 0 || this.distances[c] === INATTEIGNABLE) return false;
-    const { taille, drapeaux } = this.carte;
-    const ix = c % taille;
-    const iz = (c - ix) / taille;
+    const { largeur, profondeur, drapeaux } = this.carte;
+    const ix = c % largeur;
+    const iz = (c - ix) / largeur;
     let meilleure = -1;
     let meilleureDistance = this.distances[c];
     for (let v = 0; v < 8; v++) {
       const nx = ix + VOISINS_X[v];
       const nz = iz + VOISINS_Z[v];
-      if (nx < 0 || nz < 0 || nx >= taille || nz >= taille) continue;
-      const n = nz * taille + nx;
+      if (nx < 0 || nz < 0 || nx >= largeur || nz >= profondeur) continue;
+      const n = nz * largeur + nx;
       const d = this.distances[n];
       if (d === INATTEIGNABLE || d >= meilleureDistance) continue;
-      if (v >= 4 && ((drapeaux[iz * taille + nx] & BLOQUE_MARCHE) !== 0 || (drapeaux[nz * taille + ix] & BLOQUE_MARCHE) !== 0)) continue;
+      if (v >= 4 && ((drapeaux[iz * largeur + nx] & BLOQUE_MARCHE) !== 0 || (drapeaux[nz * largeur + ix] & BLOQUE_MARCHE) !== 0)) continue;
       meilleure = n;
       meilleureDistance = d;
     }

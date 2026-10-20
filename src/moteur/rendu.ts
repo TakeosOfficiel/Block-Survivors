@@ -22,6 +22,7 @@ export class Rendu {
   private readonly ambiante: THREE.AmbientLight;
   private readonly soleil: THREE.DirectionalLight;
   private niveau: NiveauShaders = 'aucun';
+  /** Plus grand côté de l'arène (la carte d'ombres la couvre en entier). */
   private tailleArene = 60;
 
   /**
@@ -89,7 +90,7 @@ export class Rendu {
     this.ambiante.intensity = l.ambiante * Math.PI;
     this.soleil.color.set(l.couleurSoleil);
     this.soleil.intensity = l.soleil * Math.PI;
-    this.tailleArene = arene.taille;
+    this.tailleArene = Math.max(arene.largeur, arene.profondeur);
   }
 
   /** À appeler une fois la scène construite : qui projette et reçoit les ombres. */

@@ -6,7 +6,8 @@
  * En cas d'échec, l'interface garde sa police de secours.
  */
 import opentype from 'opentype.js';
-import { SOURCES_FICHIERS, SOURCES_TEXTURES } from '../config';
+import { SOURCES_TEXTURES } from '../config';
+import { chargerJsonVanilla } from './fichiers';
 import { lirePixels } from './pixels';
 
 export const NOM_POLICE = 'Minecraft';
@@ -115,15 +116,9 @@ function rectangle(chemin: opentype.Path, x: number, haut: number, l: number, h:
 }
 
 async function chargerJson(chemin: string): Promise<unknown> {
-  for (const source of SOURCES_FICHIERS) {
-    try {
-      const reponse = await fetch(source(chemin));
-      if (reponse.ok) return await reponse.json();
-    } catch {
-      // Source suivante
-    }
-  }
-  throw new Error(`Introuvable : ${chemin}`);
+  const json = await chargerJsonVanilla(chemin);
+  if (json === null) throw new Error(`Introuvable : ${chemin}`);
+  return json;
 }
 
 async function chargerImage(chemin: string): Promise<HTMLImageElement> {

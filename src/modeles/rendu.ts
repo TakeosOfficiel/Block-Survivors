@@ -8,7 +8,7 @@ import { lirePixels } from '../assets/pixels';
 import type { BibliothequeTextures } from '../assets/textures';
 import type { ApparenceEntite, MainModele } from '../donnees/types';
 import { creerGeometrieCube, creerGeometrieObjet, PIXELS_PAR_BLOC } from '../moteur/geometrie';
-import { activerSurcouche, creerAttributSurcouche, NOM_ATTRIBUT_SURCOUCHE } from '../moteur/surcouche';
+import { creerAttributSurcouche, creerMateriauSurcouche, NOM_ATTRIBUT_SURCOUCHE } from '../moteur/surcouche';
 import type { ModeleCompile } from './compilation';
 
 /** Pose d'une instance, remplie par l'appelant (objet réutilisé, pas d'allocation). */
@@ -83,12 +83,12 @@ export class ModeleInstancie {
     // Découpe comme en jeu (rendu « entity cutout no cull ») : les pixels
     // transparents (côtes du squelette, yeux de l'araignée) sont percés et
     // l'intérieur reste visible à travers, au lieu d'apparaître en noir
-    const materiauSkin = skin ? creerMateriau({ map: skin, alphaTest: 0.5, side: THREE.DoubleSide }) : null;
+    const materiauSkin = skin ? creerMateriauSurcouche({ map: skin, alphaTest: 0.5, side: THREE.DoubleSide }) : null;
     this.maillages = modele.parties.map((partie) => {
       const geometrie = creerGeometrieCube(partie.cube, modele.definition.tailleTexture);
       geometrie.setAttribute(NOM_ATTRIBUT_SURCOUCHE, this.surcouche);
       const couleur = apparence.couleursSecours[partie.nom] ?? apparence.couleurSecoursParDefaut ?? 0x808080;
-      const maillage = new THREE.InstancedMesh(geometrie, materiauSkin ?? creerMateriau({ color: couleur }), capacite);
+      const maillage = new THREE.InstancedMesh(geometrie, materiauSkin ?? creerMateriauSurcouche({ color: couleur }), capacite);
       maillage.name = `${apparence.modele}:${partie.nom}`;
       maillage.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       maillage.frustumCulled = false;  // les instances couvrent toute l'arène
@@ -114,7 +114,7 @@ export class ModeleInstancie {
     geometrie.setAttribute(NOM_ATTRIBUT_SURCOUCHE, this.surcouche);
     const maillage = new THREE.InstancedMesh(
       geometrie,
-      creerMateriau({ map: texture, alphaTest: 0.5, side: THREE.DoubleSide }),
+      creerMateriauSurcouche({ map: texture, alphaTest: 0.5, side: THREE.DoubleSide }),
       capacite,
     );
     maillage.name = 'objet en main';
@@ -178,10 +178,4 @@ export class ModeleInstancie {
     }
     this.surcouche.needsUpdate = true;
   }
-}
-
-function creerMateriau(parametres: THREE.MeshLambertMaterialParameters): THREE.MeshLambertMaterial {
-  const materiau = new THREE.MeshLambertMaterial(parametres);
-  activerSurcouche(materiau);
-  return materiau;
 }

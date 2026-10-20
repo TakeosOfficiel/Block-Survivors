@@ -142,6 +142,19 @@ export const CONFIG = {
     niveau: { nombre: 36, vitesse: 4.5, taille: 0.22, duree: 1, couleurs: [0x80ff20, 0xffff55, 0xffffff] },
   },
 
+  // Herbe réaliste (option, test WebGPU) sur les blocs d'herbe de l'arène
+  herbe: {
+    densite: 14,                 // brins par bloc
+    hauteur: [0.32, 0.62],       // blocs
+    largeur: 0.07,               // blocs, à la base du brin
+    vent: 0.16,                  // amplitude du pliage par le vent (blocs)
+    directionVent: [0.93, 0.37], // unitaire, en (x, z)
+    rayonCouche: 1.1,            // les brins se couchent autour du joueur dans ce rayon (blocs)
+    couche: 0.45,                // amplitude du pliage près du joueur (blocs)
+    couleurPied: 0x2f5a1c,
+    couleurPointe: 0x9fcf5a,
+  },
+
   textures: {
     delaiMaxMs: 8000,        // abandon d'une source qui ne répond pas
   },

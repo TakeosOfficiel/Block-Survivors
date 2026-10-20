@@ -11,6 +11,7 @@ export class PanneauOptions {
   private readonly texteVolume = element('option-volume-texte');
   private readonly boutonFps = element<HTMLButtonElement>('option-fps');
   private readonly boutonSecousses = element<HTMLButtonElement>('option-secousses');
+  private readonly boutonHerbe = element<HTMLButtonElement>('option-herbe');
   private readonly options: Options;
   private readonly appliquer: (options: Options) => void;
   private surFermeture: (() => void) | null = null;
@@ -30,6 +31,10 @@ export class PanneauOptions {
     });
     this.boutonSecousses.addEventListener('click', () => {
       this.options.secousses = !this.options.secousses;
+      this.changer();
+    });
+    this.boutonHerbe.addEventListener('click', () => {
+      this.options.herbeRealiste = !this.options.herbeRealiste;
       this.changer();
     });
     element<HTMLButtonElement>('options-fermer').addEventListener('click', () => this.fermer());
@@ -70,6 +75,7 @@ export class PanneauOptions {
     this.texteVolume.textContent = pourcent === 0 ? 'Sons : désactivés' : `Sons : ${pourcent} %`;
     this.boutonFps.textContent = `Compteur de FPS : ${o.afficherFps ? 'OUI' : 'NON'}`;
     this.boutonSecousses.textContent = `Secousses de l'écran : ${o.secousses ? 'OUI' : 'NON'}`;
+    this.boutonHerbe.textContent = `Herbe réaliste (test) : ${o.herbeRealiste ? 'OUI' : 'NON'}`;
   }
 
   private readonly surTouche = (e: KeyboardEvent): void => {

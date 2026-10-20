@@ -2,11 +2,14 @@
  * Surcouche de couleur par instance, comme l'« overlay » des entités Minecraft :
  * rouge quand une entité est blessée, blanc quand un creeper va exploser.
  *
- * Chaque instance porte un vec4 (r, g, b, force) ; le fragment final est
- * mélangé vers cette couleur. Une multiplication de couleur ne permettrait pas
- * d'éclaircir jusqu'au blanc.
+ * Chaque instance porte un vec4 (r, g, b, force) ; la couleur finale du
+ * matériau est mélangée vers cette couleur (en TSL, le langage de shaders de
+ * three.js, valable en WebGPU comme en WebGL2). Une multiplication de couleur
+ * ne permettrait pas d'éclaircir jusqu'au blanc.
  */
 import * as THREE from 'three';
+import { MeshLambertNodeMaterial } from 'three/webgpu';
+import { attribute, mix, output, vec4 } from 'three/tsl';
 
 export const NOM_ATTRIBUT_SURCOUCHE = 'aSurcouche';
 
@@ -17,19 +20,10 @@ export function creerAttributSurcouche(capacite: number): THREE.InstancedBufferA
   return attribut;
 }
 
-/** Ajoute la surcouche au shader d'un matériau three.js standard. */
-export function activerSurcouche(materiau: THREE.Material): void {
-  materiau.onBeforeCompile = (shader) => {
-    shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', `#include <common>\nattribute vec4 ${NOM_ATTRIBUT_SURCOUCHE};\nvarying vec4 vSurcouche;`)
-      .replace('#include <begin_vertex>', `#include <begin_vertex>\nvSurcouche = ${NOM_ATTRIBUT_SURCOUCHE};`);
-    shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying vec4 vSurcouche;')
-      // Mélange après la conversion sRGB : même rendu qu'en jeu, où la teinte s'applique sur l'image finale
-      .replace(
-        '#include <colorspace_fragment>',
-        '#include <colorspace_fragment>\ngl_FragColor.rgb = mix(gl_FragColor.rgb, vSurcouche.rgb, vSurcouche.a);',
-      );
-  };
-  materiau.customProgramCacheKey = () => 'surcouche';
+/** Matériau Lambert dont la couleur finale est mélangée vers la surcouche de l'instance. */
+export function creerMateriauSurcouche(parametres: THREE.MeshLambertMaterialParameters): MeshLambertNodeMaterial {
+  const materiau = new MeshLambertNodeMaterial(parametres);
+  const surcouche = attribute<'vec4'>(NOM_ATTRIBUT_SURCOUCHE, 'vec4');
+  materiau.outputNode = vec4(mix(output.rgb, surcouche.rgb, surcouche.a), output.a);
+  return materiau;
 }

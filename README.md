@@ -1,8 +1,12 @@
 # Block Survivors
 
 Survivor-like en vue de dessus dans un monde voxel aux textures et aux sons
-Minecraft. Survivez 15 minutes à la horde. TypeScript + three.js, construit
-avec Vite.
+Minecraft. Survivez 15 minutes à la horde. TypeScript + three.js (rendu
+WebGPU, repli automatique sur WebGL2), construit avec Vite.
+
+Le moteur utilisé (WebGPU ou WebGL2) s'affiche en bas du menu, à côté de la
+version. Si le navigateur annonce WebGPU mais ne le gère pas assez bien, ou si
+le GPU décroche en cours de partie, le jeu repasse tout seul en WebGL2.
 
 ## Jouer sans rien installer (Windows)
 
@@ -137,7 +141,12 @@ ZQSD / WASD / flèches : se déplacer · molette : zoom · `1` `2` `3` ou clic :
 choisir une carte · `Échap` : pause · `Entrée` : jouer (menu) ou rejouer (fin).
 
 La pause propose Reprendre, Options (volume des sons, compteur de FPS,
-secousses de l'écran), Recommencer, Menu principal, et le bilan en cours.
+secousses de l'écran, herbe réaliste), Recommencer, Menu principal, et le
+bilan en cours.
+
+**Herbe réaliste (test)** : des brins 3D animés par la carte graphique (vent
+en vagues, brins couchés autour du joueur) poussent sur les blocs d'herbe.
+Option activée par défaut, désactivable à tout moment.
 
 ## Debug
 

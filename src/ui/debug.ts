@@ -181,7 +181,7 @@ export class PanneauDebug {
     this.dom.ms.textContent = hud.msParImage.toFixed(1);
     this.dom.entites.textContent = String(this.sources.compterEntites());
     this.dom.particules.textContent = String(this.sources.compterParticules());
-    this.dom.appels.textContent = String(infos.calls);
+    this.dom.appels.textContent = `${infos.drawCalls} (${rendu.api})`;
     this.dom.triangles.textContent = String(infos.triangles);
     this.dom.textures.textContent = `${bilan.chargees} / ${bilan.demandees}${detailSources ? ` (${detailSources})` : ''}`;
     this.dom.temps.textContent = formaterTemps(etat.tempsJeu);

@@ -9,11 +9,13 @@ export interface Options {
   volume: number;
   afficherFps: boolean;
   secousses: boolean;
+  /** Brins d'herbe 3D animés (test WebGPU) sur les blocs d'herbe. */
+  herbeRealiste: boolean;
 }
 
 const CLE = 'block-survivors.options';
 
-const PAR_DEFAUT: Readonly<Options> = { volume: 0.7, afficherFps: false, secousses: true };
+const PAR_DEFAUT: Readonly<Options> = { volume: 0.7, afficherFps: false, secousses: true, herbeRealiste: true };
 
 export function chargerOptions(): Options {
   const options = { ...PAR_DEFAUT };
@@ -22,6 +24,7 @@ export function chargerOptions(): Options {
     if (typeof lu.volume === 'number' && Number.isFinite(lu.volume)) options.volume = Math.min(1, Math.max(0, lu.volume));
     if (typeof lu.afficherFps === 'boolean') options.afficherFps = lu.afficherFps;
     if (typeof lu.secousses === 'boolean') options.secousses = lu.secousses;
+    if (typeof lu.herbeRealiste === 'boolean') options.herbeRealiste = lu.herbeRealiste;
   }
   return options;
 }

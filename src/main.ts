@@ -30,9 +30,9 @@ async function demarrer(): Promise<void> {
 
   let rendu: Rendu;
   try {
-    rendu = new Rendu(document.body);
+    rendu = await Rendu.creer(document.body);
   } catch {
-    ecran.erreur('WebGL est indisponible sur ce navigateur.');
+    ecran.erreur('Ni WebGPU ni WebGL2 ne sont disponibles sur ce navigateur.');
     return;
   }
 
@@ -47,6 +47,7 @@ async function demarrer(): Promise<void> {
     textures.charger(texturesInterface(), (faites, total) => ecran.progression(faites, total)),
   ]);
   appliquerHabillage(textures);
+  document.getElementById('menu-rendu')?.replaceChildren(rendu.api);
   // Clic sur tout bouton de l'interface, comme en jeu
   document.addEventListener('click', (e) => {
     if ((e.target as Element | null)?.closest('button')) sons.jouer('clic');

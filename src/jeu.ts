@@ -34,6 +34,7 @@ import type { SourceEntites } from './entites/types';
 import { creerEtatPartie, type EtatPartie } from './etat';
 import { lancerPartie, retournerAuMenu, type ChoixPartie } from './lancement';
 import { construireArene } from './monde/arene';
+import { Herbe } from './monde/herbe';
 import type { MondeGenere } from './monde/generation';
 import { ChampDeFlux, type Terrain } from './monde/navigation';
 import { Boucle, type CallbacksBoucle } from './moteur/boucle';
@@ -66,6 +67,7 @@ export class Jeu implements CallbacksBoucle, Retours {
   private readonly sons: LecteurSons;
   private readonly etat: EtatPartie;
   private readonly terrain: Terrain;
+  private readonly herbe: Herbe | null;
   private readonly entrees = new Entrees();
   private readonly hud: Hud;
   private readonly camera: CameraJeu;
@@ -129,6 +131,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     // Monde : blocs affichés, carte de collision, navigation des ennemis
     construireArene(arene, monde, textures, scene);
     rendu.appliquerAmbiance(arene);
+    this.herbe = Herbe.creer(arene.id, monde, scene);
     this.terrain = { carte: monde.carte, flux: new ChampDeFlux(monde.carte) };
     const carte = monde.carte;
     this.ombres = new Ombres(textures.obtenir(CONFIG.ombre.texture), scene);
@@ -239,6 +242,7 @@ export class Jeu implements CallbacksBoucle, Retours {
   appliquerOptions(options: Options): void {
     this.hud.afficherFps = options.afficherFps;
     this.camera.secoussesActives = options.secousses;
+    if (this.herbe) this.herbe.visible = options.herbeRealiste;
   }
 
   // --- Retours -----------------------------------------------------------
@@ -303,6 +307,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.balayages.majVisuel(dtJeu);
     this.foudre.majVisuel();
     this.particules.majVisuel();
+    this.herbe?.majVisuel(this.etat.joueur.x, this.etat.joueur.z);
     this.camera.majVisuel(dtJeu, dtReel);
     this.rendu.dessiner();
 

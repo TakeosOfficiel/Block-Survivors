@@ -401,6 +401,28 @@ export interface DefinitionArme {
   readonly libelles?: Partial<Record<keyof StatsArme, string>>;
   /** Statistiques montrées sur les cartes, si elles diffèrent de celles de sa mécanique. */
   readonly statsAffichees?: readonly (keyof StatsArme)[];
+  /** Éveils proposés au rang maximal : deux variantes exclusives. */
+  readonly eveils?: readonly [EveilArme, EveilArme];
+}
+
+/** Éveil d'une arme au rang maximal : une variante exclusive (l'autre n'est plus proposée). */
+export interface EveilArme {
+  readonly nom: string;
+  readonly description: string;
+  readonly icone: CheminTexture;
+  /** Ajouts aux statistiques de base (avant les modificateurs). */
+  readonly ajout?: Partial<StatsArme>;
+  /** Parts en plus (0,2 = +20 %) des statistiques finales. */
+  readonly part?: Partial<StatsArme>;
+  /** État infligé à chaque coup de l'arme. */
+  readonly etat?: EtatEveil;
+}
+
+export interface EtatEveil {
+  readonly type: 'brulure' | 'poison' | 'ralenti' | 'etourdi';
+  /** Dégâts par seconde (brûlure, poison), part de vitesse retirée (ralenti) ou durée (étourdi, s). */
+  readonly valeur: number;
+  readonly duree: number;
 }
 
 // --------------------------------------------------------------------------

@@ -15,7 +15,7 @@ import { ARMES, IDS_ARMES, type IdArme } from '../../donnees/armes';
 import { ETATS } from '../../donnees/etats';
 import { GERBES, type IdGerbe } from '../../donnees/particules';
 import { PLAFONDS } from '../../donnees/plafonds';
-import type { DefinitionAllie, FamilleArme } from '../../donnees/types';
+import type { DefinitionAllie, EtatEveil, EveilArme, FamilleArme } from '../../donnees/types';
 import type { Ombres } from '../../effets/ombres';
 import type { Ennemi } from '../../entites/ennemi';
 import type { CrochetsTalents, NatureCoup } from '../../entites/ennemis';
@@ -134,6 +134,8 @@ export class Talents implements CrochetsTalents, CrochetsJoueur {
   private arsenalPartie: Arsenal | null = null;
   /** Dégâts causés par un talent en cours : ils ne relancent pas les talents. */
   private enReaction = false;
+  /** État infligé par l'éveil de chaque arme (index dans IDS_ARMES), ou null. */
+  private readonly etatsEveils: (EtatEveil | null)[] = IDS_ARMES.map(() => null);
   // Mouvements du joueur, pour les talents qui en dépendent
   /** s depuis le dernier pas, et s de marche continue. */
   tempsImmobile = 0;
@@ -314,7 +316,24 @@ export class Talents implements CrochetsTalents, CrochetsJoueur {
   }
 
   apresCoup(e: Ennemi, degats: number, arme: number, critique: boolean, nature: NatureCoup): void {
-    if (!this.enReaction) this.classe.apresCoup(e, degats, arme, critique, nature);
+    if (this.enReaction) return;
+    // État de l'éveil de l'arme (Aura de feu, Haches givrées…)
+    const etat = arme >= 0 && (nature === 'arme' || nature === 'allie') && e.mort < 0 ? this.etatsEveils[arme] : null;
+    if (etat) {
+      const ennemis = this.contexte.ennemis;
+      switch (etat.type) {
+        case 'brulure': ennemis.bruler(e, 1, etat.valeur, etat.duree, arme); break;
+        case 'poison': ennemis.empoisonner(e, 1, etat.valeur, etat.duree, arme); break;
+        case 'ralenti': ennemis.ralentir(e, etat.valeur, etat.duree); break;
+        case 'etourdi': ennemis.etourdir(e, etat.valeur); break;
+      }
+    }
+    this.classe.apresCoup(e, degats, arme, critique, nature);
+  }
+
+  /** L'arme d'index `arme` vient d'être éveillée. */
+  definirEveil(arme: number, eveil: EveilArme): void {
+    this.etatsEveils[arme] = eveil.etat ?? null;
   }
 
   surMort(e: Ennemi, arme: number, nature: NatureCoup): void {

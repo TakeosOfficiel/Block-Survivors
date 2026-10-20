@@ -1,7 +1,8 @@
 /**
  * Cartes d'amélioration : tirage des propositions à chaque niveau (nouvelle
- * arme, rang d'arme, nouveau passif, rang de passif, ou soin si tout est au
- * maximum), textes affichés et application du choix.
+ * arme, rang d'arme, éveil d'une arme au rang maximal, nouveau passif, rang
+ * de passif, ou soin si tout est au maximum), textes affichés et application
+ * du choix.
  */
 import { calculerStats, rangMax } from '../combat/armeEquipee';
 import type { Arsenal } from '../combat/arsenal';
@@ -9,18 +10,20 @@ import { ARMES, IDS_ARMES, type IdArme } from '../donnees/armes';
 import { IDS_PASSIFS, PASSIFS, type IdPassif } from '../donnees/passifs';
 import { armeProposable } from '../donnees/personnages';
 import { PROGRESSION } from '../donnees/progression';
-import type { CheminTexture, MecaniqueArme, Modificateurs, StatsArme } from '../donnees/types';
+import type { CheminTexture, EtatEveil, MecaniqueArme, Modificateurs, StatsArme } from '../donnees/types';
 import type { EtatPartie } from '../etat';
 import { creerModificateurs, cumulerModificateurs } from './modificateurs';
 import type { Passifs } from './passifs';
 
 export type Amelioration =
   | { readonly type: 'arme'; readonly id: IdArme }
+  /** Éveil (variante 0 ou 1) d'une arme au rang maximal ; l'autre variante n'est plus proposée. */
+  | { readonly type: 'eveil'; readonly id: IdArme; readonly variante: number }
   | { readonly type: 'passif'; readonly id: IdPassif }
   | { readonly type: 'soin' };
 
 /** Famille de la carte, qui donne la couleur de son nom (comme la rareté des objets du jeu). */
-export type RareteCarte = 'nouvelle_arme' | 'arme' | 'passif' | 'exclusif' | 'soin';
+export type RareteCarte = 'nouvelle_arme' | 'arme' | 'eveil' | 'passif' | 'exclusif' | 'soin';
 
 /** Tout ce qu'une carte affiche. */
 export interface Carte {
@@ -50,6 +53,14 @@ const LIBELLES_STATS: Record<keyof StatsArme, { nom: string; unite: string }> = 
   recul: { nom: 'Recul', unite: '' },
   ralenti: { nom: 'Ralentissement', unite: '' },
   etourdi: { nom: 'Étourdissement', unite: ' s' },
+};
+
+/** Ligne d'une carte d'éveil pour l'état qu'il inflige. */
+const LIBELLES_ETATS: Record<EtatEveil['type'], string> = {
+  brulure: 'Enflamme à chaque coup',
+  poison: 'Empoisonne à chaque coup',
+  ralenti: 'Ralentit à chaque coup',
+  etourdi: 'Étourdit à chaque coup',
 };
 
 /** Statistiques utiles à chaque mécanique (les autres ne sont pas affichées). */
@@ -145,6 +156,9 @@ export class Ameliorations {
       case 'arme':
         this.arsenal.ameliorer(amelioration.id);
         break;
+      case 'eveil':
+        this.arsenal.eveiller(amelioration.id, amelioration.variante);
+        break;
       case 'passif': {
         const pvMaxAvant = this.etat.modificateurs.pvMax;
         this.passifs.ameliorer(amelioration.id);
@@ -175,6 +189,12 @@ export class Ameliorations {
       const rang = this.arsenal.rang(id);
       if (rang === 0 ? placeArme : rang < rangMax(ARMES[id])) liste.push({ type: 'arme', id });
     }
+    // Éveils : les deux variantes d'une arme au rang maximal pas encore éveillée
+    for (const arme of this.arsenal.armes) {
+      const eveils = arme.definition.eveils;
+      if (!eveils || arme.eveil >= 0 || arme.rang < rangMax(arme.definition)) continue;
+      for (let variante = 0; variante < eveils.length; variante++) liste.push({ type: 'eveil', id: arme.id, variante });
+    }
     const exclusifs: readonly IdPassif[] = this.etat.personnage.cartesExclusives;
     for (const id of IDS_PASSIFS) {
       if (PASSIFS[id].exclusif && !exclusifs.includes(id)) continue;
@@ -192,6 +212,7 @@ export class Ameliorations {
   private decrire(amelioration: Amelioration): Carte {
     switch (amelioration.type) {
       case 'arme': return this.decrireArme(amelioration.id);
+      case 'eveil': return this.decrireEveil(amelioration.id, amelioration.variante);
       case 'passif': return this.decrirePassif(amelioration.id);
       case 'soin': {
         const s = PROGRESSION.soin;
@@ -205,7 +226,7 @@ export class Ameliorations {
     const rang = this.arsenal.rang(id);
     const mods = this.etat.modificateurs;
     const talent = this.etat.talents.armes[id] ?? null;
-    const apres = calculerStats(def, rang + 1, mods, { ...def.stats }, talent);
+    const apres = calculerStats(def, rang + 1, mods, { ...def.stats }, talent, null);
     const utiles = def.statsAffichees ?? STATS_UTILES[def.mecanique.type];
     const amelioration: Amelioration = { type: 'arme', id };
 
@@ -232,6 +253,30 @@ export class Ameliorations {
       icone: def.icone,
       etiquette: `Rang ${rang} → ${rang + 1}`,
       description: def.niveaux[rang - 1].description,
+      lignes,
+    };
+  }
+
+  private decrireEveil(id: IdArme, variante: number): Carte {
+    const def = ARMES[id];
+    const eveil = def.eveils?.[variante];
+    const arme = this.arsenal.armes.find((a) => a.id === id);
+    if (!eveil || !arme) return this.decrire({ type: 'soin' });
+    const mods = this.etat.modificateurs;
+    const avant = calculerStats(def, arme.rang, mods, { ...def.stats }, arme.talent);
+    const apres = calculerStats(def, arme.rang, mods, { ...def.stats }, arme.talent, eveil);
+    const lignes = (Object.keys(LIBELLES_STATS) as (keyof StatsArme)[])
+      .filter((cle) => Math.abs(apres[cle] - avant[cle]) > 1e-6)
+      .map((cle) => `${def.libelles?.[cle] ?? LIBELLES_STATS[cle].nom} : ${formaterStat(cle, avant[cle])} → ${formaterStat(cle, apres[cle])}`);
+    if (eveil.etat) lignes.push(LIBELLES_ETATS[eveil.etat.type]);
+    const autre = def.eveils?.[1 - variante];
+    return {
+      amelioration: { type: 'eveil', id, variante },
+      rarete: 'eveil',
+      nom: `${def.nom} : ${eveil.nom}`,
+      icone: eveil.icone,
+      etiquette: 'Éveil',
+      description: autre ? `${eveil.description} (Exclut ${autre.nom}.)` : eveil.description,
       lignes,
     };
   }

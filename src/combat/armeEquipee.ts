@@ -2,7 +2,7 @@
 import { ALLIES } from '../donnees/allies';
 import { ARMES, IDS_ARMES, type IdArme } from '../donnees/armes';
 import { PLAFONDS, PROFITE_PROJECTILES } from '../donnees/plafonds';
-import type { BonusArmeTalent, DefinitionArme, Modificateurs, StatsArme } from '../donnees/types';
+import type { BonusArmeTalent, DefinitionArme, EveilArme, Modificateurs, StatsArme } from '../donnees/types';
 
 export type StatsCalculees = { -readonly [K in keyof StatsArme]: number };
 
@@ -37,6 +37,8 @@ export interface ArmeEquipee {
   readonly stats: StatsCalculees;
   /** Bonus des talents propres à cette arme, ou null. */
   readonly talent: BonusArmeCumule | null;
+  /** Éveil choisi (index dans `definition.eveils`), −1 avant l'éveil. */
+  eveil: number;
   /** s avant le prochain déclenchement. */
   minuterie: number;
 }
@@ -50,6 +52,7 @@ export function creerArmeEquipee(id: IdArme, modificateurs: Modificateurs, talen
     rang: 1,
     stats: { ...definition.stats },
     talent,
+    eveil: -1,
     minuterie: 0,
   };
   calculerStats(definition, 1, modificateurs, arme.stats, talent);
@@ -58,6 +61,11 @@ export function creerArmeEquipee(id: IdArme, modificateurs: Modificateurs, talen
 
 export function rangMax(definition: DefinitionArme): number {
   return 1 + definition.niveaux.length;
+}
+
+/** Éveil choisi de l'arme, ou null. */
+export function eveilDe(arme: ArmeEquipee): EveilArme | null {
+  return arme.eveil >= 0 ? arme.definition.eveils?.[arme.eveil] ?? null : null;
 }
 
 /**
@@ -72,6 +80,7 @@ export function calculerStats(
   modificateurs: Modificateurs,
   sortie: StatsCalculees,
   talent: BonusArmeCumule | null = null,
+  eveil: EveilArme | null = null,
 ): StatsCalculees {
   Object.assign(sortie, definition.stats);
   for (let r = 0; r < rang - 1; r++) {
@@ -81,6 +90,7 @@ export function calculerStats(
     }
   }
   if (talent) for (const cle in talent.ajout) sortie[cle as keyof StatsArme] += talent.ajout[cle as keyof StatsArme] ?? 0;
+  if (eveil?.ajout) for (const cle in eveil.ajout) sortie[cle as keyof StatsArme] += eveil.ajout[cle as keyof StatsArme] ?? 0;
   const m = definition.mecanique;
   const mod = modificateurs;
   let degats = mod.degats;
@@ -110,6 +120,7 @@ export function calculerStats(
   sortie.portee *= modificateurs.portee;
   sortie.recul *= modificateurs.recul;
   if (talent) for (const cle in talent.part) sortie[cle as keyof StatsArme] *= 1 + (talent.part[cle as keyof StatsArme] ?? 0);
+  if (eveil?.part) for (const cle in eveil.part) sortie[cle as keyof StatsArme] *= 1 + (eveil.part[cle as keyof StatsArme] ?? 0);
   if (PROFITE_PROJECTILES[m.type]) sortie.nombre += Math.min(PLAFONDS.projectilesBonus, modificateurs.projectiles);
   if (m.type === 'invocation') {
     // Les alliés en plus qui dépasseraient le quota deviennent des dégâts

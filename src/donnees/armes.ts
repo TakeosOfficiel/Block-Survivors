@@ -52,6 +52,10 @@ const definitions = {
       { description: 'Dégâts +8', modif: { degats: 8 } },
       { description: 'Portée +0,8 bloc, recul accru', modif: { zone: 0.8, recul: 4 } },
     ],
+    eveils: [
+      { nom: 'Tranchant', description: 'Dégâts +40 %.', icone: 'item/netherite_sword', part: { degats: 0.4 } },
+      { nom: 'Aura de feu', description: 'Chaque coup enflamme (4 dégâts/s pendant 3 s) ; dégâts +10 %.', icone: 'item/blaze_powder', part: { degats: 0.1 }, etat: { type: 'brulure', valeur: 4, duree: 3 } },
+    ],
   },
   arc: {
     son: 'arc',
@@ -68,6 +72,10 @@ const definitions = {
       { description: 'Tire 25 % plus souvent', modif: { cadence: -0.25 } },
       { description: '+1 flèche, dégâts +4', modif: { nombre: 1, degats: 4 } },
     ],
+    eveils: [
+      { nom: 'Frappe', description: 'Dégâts +25 %, recul doublé.', icone: 'item/slime_ball', part: { degats: 0.25, recul: 1 } },
+      { nom: 'Flamme', description: 'Les flèches enflamment (4 dégâts/s pendant 3 s).', icone: 'item/blaze_rod', etat: { type: 'brulure', valeur: 4, duree: 3 } },
+    ],
   },
   trident: {
     son: 'trident',
@@ -83,6 +91,10 @@ const definitions = {
       { description: 'Portée +3 blocs, lancé 20 % plus souvent', modif: { portee: 3, cadence: -0.5 } },
       { description: '+1 trident', modif: { nombre: 1 } },
     ],
+    eveils: [
+      { nom: 'Empalement', description: 'Dégâts +50 %.', icone: 'item/prismarine_shard', part: { degats: 0.5 } },
+      { nom: 'Canalisation', description: '+1 trident ; chaque coup étourdit 0,4 s (pas les boss).', icone: 'item/heart_of_the_sea', ajout: { nombre: 1 }, etat: { type: 'etourdi', valeur: 0.4, duree: 0.4 } },
+    ],
   },
   haches: {
     nom: 'Haches tournoyantes',
@@ -97,6 +109,10 @@ const definitions = {
       { description: 'Rayon +0,4 bloc', modif: { zone: 0.4 } },
       { description: '+1 hache, rotation plus rapide', modif: { nombre: 1, vitesse: 1 } },
       { description: 'Dégâts +6', modif: { degats: 6 } },
+    ],
+    eveils: [
+      { nom: 'Haches fendeuses', description: '+1 hache, dégâts +15 %.', icone: 'item/netherite_axe', ajout: { nombre: 1 }, part: { degats: 0.15 } },
+      { nom: 'Haches givrées', description: 'Ralentissent de 35 % pendant 1,5 s ; rayon +20 %.', icone: 'block/packed_ice', part: { zone: 0.2 }, etat: { type: 'ralenti', valeur: 0.35, duree: 1.5 } },
     ],
   },
   boules_feu: {
@@ -114,6 +130,10 @@ const definitions = {
       { description: 'Lancées 20 % plus souvent', modif: { cadence: -0.45 } },
       { description: 'Rayon +0,5 bloc, dégâts +4', modif: { zone: 0.5, degats: 4 } },
     ],
+    eveils: [
+      { nom: 'Boule de ghast', description: 'Explosion +40 % de zone, dégâts +20 %.', icone: 'item/ghast_tear', part: { zone: 0.4, degats: 0.2 } },
+      { nom: 'Rafale de blaze', description: '+2 boules de feu, dégâts −20 %.', icone: 'item/blaze_powder', ajout: { nombre: 2 }, part: { degats: -0.2 } },
+    ],
   },
   eclairs: {
     son: 'tonnerre',
@@ -128,6 +148,10 @@ const definitions = {
       { description: 'Zone d\'impact +0,4 bloc', modif: { zone: 0.4 } },
       { description: 'Frappe 15 % plus souvent', modif: { cadence: -0.45 } },
       { description: '+1 éclair', modif: { nombre: 1 } },
+    ],
+    eveils: [
+      { nom: 'Canalisation', description: '+2 éclairs.', icone: 'block/lightning_rod', ajout: { nombre: 2 } },
+      { nom: 'Foudre en boule', description: 'Zone +50 % ; étourdit 0,3 s (pas les boss).', icone: 'item/glowstone_dust', part: { zone: 0.5 }, etat: { type: 'etourdi', valeur: 0.3, duree: 0.3 } },
     ],
   },
   onde_choc: {
@@ -144,6 +168,10 @@ const definitions = {
       { description: 'Frappe 20 % plus souvent', modif: { cadence: -0.8 } },
       { description: '+1 fissure ; les ennemis touchés sont ralentis de 30 % pendant 1 s', modif: { nombre: 1, ralenti: 0.3 } },
     ],
+    eveils: [
+      { nom: 'Faille', description: 'Portée +40 %, +1 fissure.', icone: 'block/cracked_deepslate_bricks', ajout: { nombre: 1 }, part: { portee: 0.4 } },
+      { nom: 'Secousse', description: 'Étourdit 0,6 s (pas les boss) ; dégâts +10 %.', icone: 'item/goat_horn', part: { degats: 0.1 }, etat: { type: 'etourdi', valeur: 0.6, duree: 0.6 } },
+    ],
   },
   lame_colossale: {
     nom: 'Lame colossale',
@@ -157,6 +185,10 @@ const definitions = {
       { description: 'Tombe 20 % plus souvent', modif: { cadence: -1.4 } },
       { description: '+1 lame', modif: { nombre: 1 } },
       { description: 'Dégâts +25 ; le sol fissuré ralentit de 20 % pendant 2 s', modif: { degats: 25, ralenti: 0.2 } },
+    ],
+    eveils: [
+      { nom: 'Lame de netherite', description: 'Dégâts +50 %, zone +15 %.', icone: 'item/netherite_ingot', part: { degats: 0.5, zone: 0.15 } },
+      { nom: 'Pluie d\'acier', description: '+1 lame, dégâts −10 %.', icone: 'item/iron_ingot', ajout: { nombre: 1 }, part: { degats: -0.1 } },
     ],
   },
   tourbillon_lames: {
@@ -172,6 +204,10 @@ const definitions = {
       { description: 'Tourne 0,6 s de plus (2 frappes)', modif: { duree: 0.6 } },
       { description: 'Tourne 20 % plus souvent', modif: { cadence: -1 } },
       { description: 'Dégâts +3 ; aspire les ennemis vers lui', modif: { degats: 3, recul: -5 } },
+    ],
+    eveils: [
+      { nom: 'Cyclone', description: 'Dure 1 s de plus, rayon +20 %.', icone: 'item/breeze_rod', ajout: { duree: 1 }, part: { zone: 0.2 } },
+      { nom: 'Lames ardentes', description: 'Chaque coup enflamme (3 dégâts/s pendant 3 s).', icone: 'item/fire_charge', etat: { type: 'brulure', valeur: 3, duree: 3 } },
     ],
   },
   heurt_bouclier: {
@@ -189,6 +225,10 @@ const definitions = {
       { description: 'Frappe 20 % plus souvent', modif: { cadence: -0.6 } },
       { description: 'Dégâts +6 ; renvoie les projectiles ennemis', modif: { degats: 6 } },
     ],
+    eveils: [
+      { nom: 'Bouclier à pointes', description: 'Dégâts +50 %.', icone: 'item/flint', part: { degats: 0.5 } },
+      { nom: 'Bouclier tonnerre', description: 'Étourdit 0,5 s de plus, cône +20 %.', icone: 'item/bell', ajout: { etourdi: 0.5 }, part: { zone: 0.2 } },
+    ],
   },
   tornade_feu: {
     son: 'tornade',
@@ -205,6 +245,10 @@ const definitions = {
       { description: 'Lancée 20 % plus souvent', modif: { cadence: -1.6 } },
       { description: '+1 tornade', modif: { nombre: 1 } },
     ],
+    eveils: [
+      { nom: 'Tornade dévorante', description: 'Rayon +30 %, dure 1 s de plus.', icone: 'item/fire_charge', ajout: { duree: 1 }, part: { zone: 0.3 } },
+      { nom: 'Tornades jumelles', description: '+1 tornade.', icone: 'item/wind_charge', ajout: { nombre: 1 } },
+    ],
   },
   nova_glace: {
     son: 'nova',
@@ -219,6 +263,10 @@ const definitions = {
       { description: 'Ralentit de 45 % pendant 2,5 s', modif: { ralenti: 0.1, duree: 0.5 } },
       { description: 'Lancée 20 % plus souvent', modif: { cadence: -1 } },
       { description: 'Dégâts +4 ; laisse de la neige poudreuse qui ralentit 2 s', modif: { degats: 4 } },
+    ],
+    eveils: [
+      { nom: 'Glace bleue', description: 'Ralentissement +20 points, zone +15 %.', icone: 'block/blue_ice', ajout: { ralenti: 0.2 }, part: { zone: 0.15 } },
+      { nom: 'Éclats de givre', description: 'Dégâts +50 %.', icone: 'item/snowball', part: { degats: 0.5 } },
     ],
   },
   meteore: {
@@ -236,6 +284,10 @@ const definitions = {
       { description: 'Tombe 20 % plus souvent', modif: { cadence: -1.8 } },
       { description: '+1 météore', modif: { nombre: 1 } },
     ],
+    eveils: [
+      { nom: 'Comète', description: 'Dégâts +40 %, zone +15 %.', icone: 'item/nether_star', part: { degats: 0.4, zone: 0.15 } },
+      { nom: 'Essaim de météores', description: '+1 météore.', icone: 'item/magma_cream', ajout: { nombre: 1 } },
+    ],
   },
   orbes_arcaniques: {
     son: 'orbes',
@@ -250,6 +302,10 @@ const definitions = {
       { description: "Orbitent 1 s de plus et blessent au contact", modif: { duree: 1 } },
       { description: 'Lancées 20 % plus souvent', modif: { cadence: -0.8 } },
       { description: '+2 orbes', modif: { nombre: 2 } },
+    ],
+    eveils: [
+      { nom: 'Orbes du néant', description: 'Dégâts +40 %.', icone: 'item/ender_pearl', part: { degats: 0.4 } },
+      { nom: 'Constellation', description: '+2 orbes.', icone: 'item/amethyst_shard', ajout: { nombre: 2 } },
     ],
   },
   salve: {
@@ -267,6 +323,10 @@ const definitions = {
       { description: 'Tire 20 % plus souvent', modif: { cadence: -0.5 } },
       { description: '+2 flèches, elles traversent 1 ennemi de plus', modif: { nombre: 2, perforation: 1 } },
     ],
+    eveils: [
+      { nom: 'Multitir', description: '+2 flèches.', icone: 'item/arrow', ajout: { nombre: 2 } },
+      { nom: 'Flèches perforantes', description: 'Traversent 2 ennemis de plus, dégâts +10 %.', icone: 'item/spectral_arrow', ajout: { perforation: 2 }, part: { degats: 0.1 } },
+    ],
   },
   pluie_fleches: {
     son: 'arc',
@@ -282,6 +342,10 @@ const definitions = {
       { description: 'Dure 0,8 s de plus', modif: { duree: 0.8 } },
       { description: 'Tombe 20 % plus souvent', modif: { cadence: -1.2 } },
       { description: '+1 zone', modif: { nombre: 1 } },
+    ],
+    eveils: [
+      { nom: 'Déluge', description: 'Dure 1,5 s de plus, zone +20 %.', icone: 'item/feather', ajout: { duree: 1.5 }, part: { zone: 0.2 } },
+      { nom: 'Flèches de lenteur', description: 'Ralentissent de 40 % pendant 1,5 s.', icone: 'block/cobweb', etat: { type: 'ralenti', valeur: 0.4, duree: 1.5 } },
     ],
   },
   fleche_ricochet: {
@@ -299,6 +363,10 @@ const definitions = {
       { description: 'Tire 20 % plus souvent', modif: { cadence: -0.4 } },
       { description: '+1 flèche', modif: { nombre: 1 } },
     ],
+    eveils: [
+      { nom: 'Rebond sans fin', description: '2 rebonds de plus.', icone: 'item/echo_shard', ajout: { perforation: 2 } },
+      { nom: 'Flèche du chasseur', description: 'Dégâts +45 %.', icone: 'item/ender_eye', part: { degats: 0.45 } },
+    ],
   },
   fusee: {
     son: 'fusee',
@@ -315,6 +383,10 @@ const definitions = {
       { description: 'Tirée 20 % plus souvent', modif: { cadence: -0.7 } },
       { description: "L'explosion se divise en 4 petites explosions", modif: {} },
     ],
+    eveils: [
+      { nom: 'Étoile de feu', description: 'Explosion +30 % de zone, qui enflamme (3 dégâts/s pendant 3 s).', icone: 'item/firework_star', part: { zone: 0.3 }, etat: { type: 'brulure', valeur: 3, duree: 3 } },
+      { nom: 'Bouquet', description: '+1 fusée.', icone: 'item/gunpowder', ajout: { nombre: 1 } },
+    ],
   },
   piege_ronces: {
     son: 'ronces',
@@ -329,6 +401,10 @@ const definitions = {
       { description: 'Rayon +0,5 bloc, dure 4 s de plus', modif: { zone: 0.5, duree: 4 } },
       { description: 'Posé 20 % plus souvent', modif: { cadence: -1 } },
       { description: 'Ralentit de 55 % et enracine un instant à l\u2019entrée', modif: { ralenti: 0.15 } },
+    ],
+    eveils: [
+      { nom: 'Ronces empoisonnées', description: 'Empoisonnent (3 dégâts/s pendant 4 s).', icone: 'item/poisonous_potato', etat: { type: 'poison', valeur: 3, duree: 4 } },
+      { nom: 'Grand roncier', description: '+1 piège, zone +30 %.', icone: 'item/sweet_berries', ajout: { nombre: 1 }, part: { zone: 0.3 } },
     ],
   },
   esprit_blaze: {
@@ -346,6 +422,10 @@ const definitions = {
       { description: 'Invoqués 20 % plus souvent', modif: { cadence: -2 } },
       { description: '+1 blaze ; leurs tirs enflamment', modif: { nombre: 1 } },
     ],
+    eveils: [
+      { nom: 'Blaze ardent', description: 'Les tirs enflamment (4 dégâts/s pendant 3 s).', icone: 'item/blaze_powder', etat: { type: 'brulure', valeur: 4, duree: 3 } },
+      { nom: 'Blaze tireur', description: 'Portée +30 %, dégâts +20 %.', icone: 'item/blaze_rod', part: { portee: 0.3, degats: 0.2 } },
+    ],
   },
   totem_racines: {
     son: 'racines',
@@ -361,6 +441,10 @@ const definitions = {
       { description: 'Les racines blessent : 3 dégâts par seconde', modif: { degats: 1.5 } },
       { description: 'Planté 20 % plus souvent', modif: { cadence: -2 } },
       { description: '+1 totem', modif: { nombre: 1 } },
+    ],
+    eveils: [
+      { nom: 'Racines profondes', description: 'Zone +30 %, reste 2 s de plus.', icone: 'block/mangrove_roots_side', ajout: { duree: 2 }, part: { zone: 0.3 } },
+      { nom: 'Racines épineuses', description: 'Dégâts +4 à chaque pulsation.', icone: 'item/sweet_berries', ajout: { degats: 4 } },
     ],
   },
   esprit_protecteur: {
@@ -380,6 +464,10 @@ const definitions = {
       { description: '+1 PV de bouclier', modif: { degats: 1 } },
       { description: '+1 allay', modif: { nombre: 1 } },
     ],
+    eveils: [
+      { nom: 'Chant protecteur', description: 'Bouclier +1 PV à chaque chant.', icone: 'block/note_block', ajout: { degats: 1 } },
+      { nom: 'Chant rapide', description: 'Chante 20 % plus souvent.', icone: 'item/clock_00', part: { cadence: -0.2 } },
+    ],
   },
   golems: {
     son: 'golem_invocation',
@@ -396,6 +484,10 @@ const definitions = {
       { description: 'Invoqué 20 % plus souvent', modif: { cadence: -3.2 } },
       { description: 'Le golem reste 3 s de plus', modif: { duree: 3 } },
       { description: '+1 golem, dégâts +10', modif: { nombre: 1, degats: 10 } },
+    ],
+    eveils: [
+      { nom: 'Colosse', description: 'Dégâts +50 %, recul +50 %.', icone: 'block/iron_block', part: { degats: 0.5, recul: 0.5 } },
+      { nom: 'Golem vigilant', description: 'Reste 4 s de plus, dégâts +15 %.', icone: 'block/poppy', ajout: { duree: 4 }, part: { degats: 0.15 } },
     ],
   },
   loups: {
@@ -414,6 +506,10 @@ const definitions = {
       { description: 'Dégâts +3', modif: { degats: 3 } },
       { description: '+1 loup par invocation, dégâts +3', modif: { nombre: 1, degats: 3 } },
     ],
+    eveils: [
+      { nom: 'Meute affamée', description: 'Dégâts +35 %.', icone: 'item/wolf_armor', part: { degats: 0.35 } },
+      { nom: 'Loups des neiges', description: 'Les morsures ralentissent de 30 % pendant 1 s.', icone: 'block/powder_snow', etat: { type: 'ralenti', valeur: 0.3, duree: 1 } },
+    ],
   },
   vex: {
     son: 'vex_invocation',
@@ -430,6 +526,10 @@ const definitions = {
       { description: 'Invoqués 25 % plus souvent', modif: { cadence: -1.5 } },
       { description: 'Dégâts +2', modif: { degats: 2 } },
       { description: '+1 vex par invocation, restent 3 s de plus', modif: { nombre: 1, duree: 3 } },
+    ],
+    eveils: [
+      { nom: 'Vex furieux', description: 'Dégâts +40 %.', icone: 'item/iron_sword', part: { degats: 0.4 } },
+      { nom: 'Essaim de vex', description: '+2 vex.', icone: 'item/totem_of_undying', ajout: { nombre: 2 } },
     ],
   },
 } satisfies Record<string, DefinitionArme>;

@@ -12,7 +12,7 @@ export const PROGRESSION: DefinitionProgression = {
   ],
   cartesParNiveau: 3,
   relances: 3,
-  emplacementsArmes: 6,
+  emplacementsArmes: 4,
   emplacementsPassifs: 6,
   soin: {
     nom: 'Pomme dorée',

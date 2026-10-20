@@ -1,6 +1,6 @@
 /** Icônes des armes et des bonus passifs possédés, avec leur rang (en bas à gauche). */
 import type { BibliothequeTextures } from '../assets/textures';
-import { rangMax } from '../combat/armeEquipee';
+import { eveilDe, rangMax } from '../combat/armeEquipee';
 import type { Arsenal } from '../combat/arsenal';
 import { PASSIFS } from '../donnees/passifs';
 import type { CheminTexture } from '../donnees/types';
@@ -22,8 +22,14 @@ export class BarreCapacites {
   afficher(arsenal: Arsenal, passifs: Passifs): void {
     if (arsenal.version !== this.versionArmes) {
       this.versionArmes = arsenal.version;
-      this.armes.replaceChildren(...arsenal.armes.map((a) =>
-        this.creerCase(a.definition.nom, a.definition.description, a.definition.icone, a.rang, rangMax(a.definition))));
+      this.armes.replaceChildren(...arsenal.armes.map((a) => {
+        // Arme éveillée : nom de l'éveil dans l'infobulle et reflet d'enchantement
+        const eveil = eveilDe(a);
+        const nom = eveil ? `${a.definition.nom} : ${eveil.nom}` : a.definition.nom;
+        const case_ = this.creerCase(nom, eveil?.description ?? a.definition.description, a.definition.icone, a.rang, rangMax(a.definition));
+        case_.classList.toggle('eveillee', eveil !== null);
+        return case_;
+      }));
     }
     if (passifs.version !== this.versionPassifs) {
       this.versionPassifs = passifs.version;

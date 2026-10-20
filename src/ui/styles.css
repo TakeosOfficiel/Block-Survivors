@@ -185,6 +185,7 @@ img { image-rendering: pixelated; }
 /* Couleurs de rareté (cartes, bilan) */
 .rarete-nouvelle_arme { color: var(--mc-aqua); }
 .rarete-arme { color: var(--mc-blanc); }
+.rarete-eveil { color: #d68cff; text-shadow: 0 0 6px rgba(190, 110, 255, 0.7); }
 .rarete-passif { color: var(--mc-vert); }
 .rarete-exclusif { color: var(--mc-rose); }
 .rarete-soin { color: var(--mc-or); }
@@ -499,6 +500,9 @@ img { image-rendering: pixelated; }
   color: var(--mc-blanc);
 }
 .capacite .rang.max { color: var(--mc-jaune); }
+/* Arme éveillée : reflet violet des objets enchantés */
+.capacite.eveillee { box-shadow: 0 0 0 2px #7a3fd0, 0 0 10px 2px rgba(190, 110, 255, 0.75); }
+.capacite.eveillee img { filter: drop-shadow(0 0 3px rgba(200, 130, 255, 0.9)); }
 
 /* --- Cartes d'amélioration : infobulles violettes ------------------------- */
 #cartes-liste { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }

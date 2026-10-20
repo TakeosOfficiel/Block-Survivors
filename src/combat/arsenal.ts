@@ -7,7 +7,7 @@ import { CONFIG } from '../config';
 import { ARMES, type IdArme } from '../donnees/armes';
 import type { MecaniqueArme } from '../donnees/types';
 import type { ArmeEquipee } from './armeEquipee';
-import { calculerStats, creerArmeEquipee, rangMax } from './armeEquipee';
+import { calculerStats, creerArmeEquipee, eveilDe, rangMax } from './armeEquipee';
 import type { Balayages } from './balayages';
 import type { Chutes } from './chutes';
 import type { Fissures } from './fissures';
@@ -77,8 +77,20 @@ export class Arsenal {
     } else {
       if (existante.rang >= rangMax(ARMES[id])) return false;
       existante.rang++;
-      calculerStats(existante.definition, existante.rang, modificateurs, existante.stats, existante.talent);
+      calculerStats(existante.definition, existante.rang, modificateurs, existante.stats, existante.talent, eveilDe(existante));
     }
+    this.version++;
+    return true;
+  }
+
+  /** Éveille l'arme (au rang maximal) avec la variante `variante` ; faux si c'est impossible. */
+  eveiller(id: IdArme, variante: number): boolean {
+    const arme = this.armes.find((a) => a.id === id);
+    const eveil = arme?.definition.eveils?.[variante];
+    if (!arme || !eveil || arme.eveil >= 0 || arme.rang < rangMax(arme.definition)) return false;
+    arme.eveil = variante;
+    calculerStats(arme.definition, arme.rang, this.contexte.etat.modificateurs, arme.stats, arme.talent, eveil);
+    this.contexte.talents.definirEveil(arme.index, eveil);
     this.version++;
     return true;
   }
@@ -86,7 +98,7 @@ export class Arsenal {
   /** À appeler quand les modificateurs des passifs changent. */
   recalculer(): void {
     const modificateurs = this.contexte.etat.modificateurs;
-    for (const arme of this.armes) calculerStats(arme.definition, arme.rang, modificateurs, arme.stats, arme.talent);
+    for (const arme of this.armes) calculerStats(arme.definition, arme.rang, modificateurs, arme.stats, arme.talent, eveilDe(arme));
     this.version++;
   }
 

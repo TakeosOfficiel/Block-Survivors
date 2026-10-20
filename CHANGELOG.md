@@ -5,6 +5,18 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.20.0] — 2026-10-20
+
+Refonte des classes, dernière étape : 4 emplacements d'armes et éveils. Valeurs provisoires, à ajuster après les essais.
+
+### Nouveautés
+- Éveils : une arme au rang maximal propose deux cartes d'éveil exclusives ; en choisir une retire l'autre. 50 éveils au total, deux par arme (par exemple l'Épée : Tranchant ou Aura de feu ; les Haches : fendeuses ou givrées ; les Éclairs : Canalisation ou Foudre en boule ; les Loups : Meute affamée ou Loups des neiges).
+- Un éveil renforce l'arme (dégâts, zone, nombre, durée…) et peut ajouter un état à chaque coup : brûlure, poison, ralentissement ou étourdissement.
+- Les cartes d'éveil ont un nom violet, et l'arme éveillée brille comme un objet enchanté dans la barre des armes.
+
+### Changements
+- 4 emplacements d'armes au lieu de 6 : chaque partie demande de choisir 3 armes en plus de celle de départ, ce qui varie les arsenaux.
+
 ## [0.19.0] — 2026-10-20
 
 Refonte des classes, étape 11 : les talents à mécanique propre de l'Invocateur. Les huit arbres de talents sont désormais complets : plus aucun talent n'est « en préparation ». Valeurs provisoires, à ajuster après les essais.

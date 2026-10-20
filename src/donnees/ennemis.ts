@@ -11,6 +11,7 @@ const CREEPER_SECOURS = { tete: 0x5fb04a, corps: 0x4f9a3e, patteArriereDroite: 0
 const definitions = {
   zombie: {
     nom: 'Zombie',
+    sons: { blessure: 'zombie_blesse', mort: 'zombie_mort' },
     modele: 'zombie',
     skin: 'entity/zombie/zombie',
     couleursSecours: HUMANOIDE_SECOURS,
@@ -24,6 +25,7 @@ const definitions = {
   },
   squelette: {
     nom: 'Squelette',
+    sons: { blessure: 'squelette_blesse', mort: 'squelette_mort' },
     modele: 'squelette',
     skin: 'entity/skeleton/skeleton',
     couleursSecours: SQUELETTE_SECOURS,
@@ -37,6 +39,7 @@ const definitions = {
   },
   araignee: {
     nom: 'Araignée',
+    sons: { blessure: 'araignee_blesse', mort: 'araignee_mort' },
     modele: 'araignee',
     skin: 'entity/spider/spider',
     couleursSecours: {},
@@ -51,6 +54,7 @@ const definitions = {
   },
   creeper: {
     nom: 'Creeper',
+    sons: { blessure: 'creeper_blesse', mort: 'creeper_mort' },
     modele: 'creeper',
     skin: 'entity/creeper/creeper',
     couleursSecours: CREEPER_SECOURS,
@@ -66,6 +70,8 @@ const definitions = {
   // --- Boss ----------------------------------------------------------------
   geant: {
     nom: 'Géant',
+    sons: { blessure: 'zombie_blesse', mort: 'zombie_mort' },
+    hauteurSons: 0.6,
     modele: 'zombie',
     skin: 'entity/zombie/zombie',
     couleursSecours: HUMANOIDE_SECOURS,
@@ -84,6 +90,8 @@ const definitions = {
   },
   seigneur_wither: {
     nom: 'Seigneur wither',
+    sons: { blessure: 'squelette_blesse', mort: 'squelette_mort' },
+    hauteurSons: 0.6,
     modele: 'squelette',
     skin: 'entity/skeleton/wither_skeleton',
     couleursSecours: { tete: 0x2a2a2a, corps: 0x222222, brasDroit: 0x2a2a2a, brasGauche: 0x2a2a2a, jambeDroite: 0x2a2a2a, jambeGauche: 0x2a2a2a },

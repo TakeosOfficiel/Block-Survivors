@@ -9,13 +9,14 @@ import { ENNEMIS, IDS_ENNEMIS, type IdEnnemi } from '../donnees/ennemis';
 import { JOUEUR_BASE } from '../donnees/joueur';
 import { MODELES } from '../donnees/modeles';
 import type { Ombres } from '../effets/ombres';
+import type { Retours } from '../effets/retours';
 import type { Particules } from '../effets/particules';
 import type { EtatPartie } from '../etat';
 import { angleChute, avancerAnimation, calculerRotations, reinitialiserAnimation } from '../modeles/animation';
 import { compilerModele, type ModeleCompile } from '../modeles/compilation';
 import { creerPoseModele, ModeleInstancie, type PoseModele } from '../modeles/rendu';
 import { GrilleSpatiale } from '../utils/grilleSpatiale';
-import { borner, ecartAngle, facteurLissage } from '../utils/maths';
+import { borner, ecartAngle, facteurLissage, longueur } from '../utils/maths';
 import { Pool } from '../utils/pool';
 import type { Point } from '../monde/carte';
 import type { Terrain } from '../monde/navigation';
@@ -47,6 +48,7 @@ export class Ennemis implements SourceEntites {
   private readonly contexte: ContexteComportement;
   private readonly particules: Particules;
   private readonly butin: Butin;
+  private readonly retours: Retours;
   private readonly pool = new Pool<Ennemi>(CONFIG.ennemis.capacite, creerEnnemi);
   private readonly grille: GrilleSpatiale;
   private readonly voisins = new Int32Array(64);
@@ -59,9 +61,11 @@ export class Ennemis implements SourceEntites {
     contexte: ContexteComportement,
     particules: Particules,
     butin: Butin,
+    retours: Retours,
     scene: THREE.Scene,
     textures: BibliothequeTextures,
   ) {
+    this.retours = retours;
     this.etat = etat;
     this.terrain = terrain;
     this.contexte = contexte;
@@ -176,30 +180,55 @@ export class Ennemis implements SourceEntites {
     return choisi;
   }
 
-  /** Blesse l'ennemi si l'arme `source` ne l'a pas touché depuis moins de `delai` secondes. */
-  blesserAvecDelai(e: Ennemi, source: number, delai: number, degats: number, sourceX: number, sourceZ: number, recul: number): boolean {
-    if (e.mort >= 0 || e.immunites[source] > this.etat.tempsJeu) return false;
-    e.immunites[source] = this.etat.tempsJeu + delai;
-    this.blesser(e, degats, sourceX, sourceZ, recul);
+  /** Blesse l'ennemi si l'arme `arme` ne l'a pas touché depuis moins de `delai` secondes. */
+  blesserAvecDelai(e: Ennemi, arme: number, delai: number, degats: number, sourceX: number, sourceZ: number, recul: number): boolean {
+    if (e.mort >= 0 || e.immunites[arme] > this.etat.tempsJeu) return false;
+    e.immunites[arme] = this.etat.tempsJeu + delai;
+    this.blesser(e, degats, sourceX, sourceZ, recul, arme);
     return true;
   }
 
-  /** Blesse l'ennemi et le repousse depuis (sourceX, sourceZ). */
-  blesser(e: Ennemi, degats: number, sourceX: number, sourceZ: number, recul: number): void {
+  /**
+   * Blesse l'ennemi et le repousse depuis (sourceX, sourceZ). `arme` (index
+   * dans IDS_ARMES, −1 hors armes) crédite les dégâts dans les statistiques.
+   */
+  blesser(e: Ennemi, degats: number, sourceX: number, sourceZ: number, recul: number, arme = -1): void {
     if (e.mort >= 0) return;
+    const stats = this.etat.stats;
+    if (arme >= 0) stats.degatsParArme[arme] += Math.min(degats, e.pv);
     e.pv -= degats;
     e.blessure = CONFIG.surcouche.blessure.duree;
     const dx = e.x - sourceX;
     const dz = e.z - sourceZ;
-    const d = Math.hypot(dx, dz) || 1;
+    const d = longueur(dx, dz) || 1;
     const k = recul * (1 - (e.definition.resistanceRecul ?? 0));
     e.vx += (dx / d) * k;
     e.vz += (dz / d) * k;
+    const def = e.definition;
     if (e.pv <= 0) {
       e.mort = 0;
       e.meche = 0;
       this.etat.ennemisTues++;
-      this.butin.lacher(e.definition, e.x, e.z);
+      stats.tuesParType[e.indexType]++;
+      if (def.boss) {
+        stats.bossVaincus++;
+        this.retours.secousse(0.7);
+      }
+      this.butin.lacher(def, e.x, e.z);
+      if (def.sons) this.retours.son(def.sons.mort, def.hauteurSons);
+    } else if (def.sons) {
+      this.retours.son(def.sons.blessure, def.hauteurSons);
+    }
+  }
+
+  /** Fin de partie gagnée : toute la horde tombe, sans butin ni statistiques. */
+  terrasserTous(): void {
+    for (let i = 0; i < this.pool.nombre; i++) {
+      const e = this.pool.elements[i];
+      if (e.mort >= 0) continue;
+      e.mort = 0;
+      e.meche = 0;
+      e.blessure = CONFIG.surcouche.blessure.duree;
     }
   }
 
@@ -312,7 +341,7 @@ export class Ennemis implements SourceEntites {
     const { carte, flux } = this.terrain;
     const versX = j.x - e.x;
     const versZ = j.z - e.z;
-    const distance = Math.hypot(versX, versZ) || 1e-6;
+    const distance = longueur(versX, versZ) || 1e-6;
     const dx = versX / distance;
     const dz = versZ / distance;
     if ((e.minuterieVue -= dt) <= 0) {
@@ -335,7 +364,9 @@ export class Ennemis implements SourceEntites {
       e.dirX = 0;
       e.dirZ = 0;
     } else {
+      const mecheAvant = e.meche;
       e.aExploser = appliquerComportement(e, this.contexte, dt, vers);
+      if (mecheAvant === 0 && e.meche > 0) this.retours.son('meche');
     }
 
     // Séparation : repousse doucement les ennemis qui se chevauchent
@@ -390,7 +421,7 @@ export class Ennemis implements SourceEntites {
 
     // Toujours tourné vers le joueur ; animation selon la marche effective
     e.angle += ecartAngle(e.angle, Math.atan2(dx, dz)) * facteurLissage(g.vitesseRotation, dt);
-    e.vitesseSol = Math.hypot(e.dirX, e.dirZ) * vitesse;
+    e.vitesseSol = longueur(e.dirX, e.dirZ) * vitesse;
     // Un grand modèle fait de grands pas : cycle de marche ralenti d'autant
     avancerAnimation(e.animation, this.rendus[e.indexType].modele, dt, e.vitesseSol / (def.echelle ?? 1));
   }
@@ -401,9 +432,11 @@ export class Ennemis implements SourceEntites {
     if (c.type !== 'explosif') return;
     const p = CONFIG.particules.explosion;
     this.particules.emettre(e.x, 0.8, e.z, p, p.couleurs);
+    this.retours.son('explosion');
+    this.retours.secousse(0.45);
 
     const j = this.etat.joueur;
-    const distance = Math.hypot(j.x - e.x, j.z - e.z);
+    const distance = longueur(j.x - e.x, j.z - e.z);
     if (distance < c.rayon) {
       this.contexte.cible.subirDegats(Math.ceil(c.degats * (1 - distance / c.rayon)));
     }

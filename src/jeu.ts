@@ -4,6 +4,7 @@
  * Convention : maj(dt) = simulation en temps de jeu (ne touche qu'à l'état),
  * majVisuel(...) = recopie de l'état dans la scène et le DOM.
  */
+import type { LecteurSons } from './audio/sons';
 import type { BibliothequeTextures } from './assets/textures';
 import { Arsenal } from './combat/arsenal';
 import { Balayages } from './combat/balayages';
@@ -15,11 +16,12 @@ import { ProjectilesJoueur } from './combat/projectilesJoueur';
 import { CONFIG } from './config';
 import { Entrees } from './controles/entrees';
 import type { IdEnnemi } from './donnees/ennemis';
-import type { IdPersonnage } from './donnees/personnages';
-import type { DefinitionArene } from './donnees/types';
+import { PROGRESSION } from './donnees/progression';
+import type { IdSon } from './donnees/sons';
 import { Ombres } from './effets/ombres';
 import { Particules } from './effets/particules';
 import { RenduProjectiles } from './effets/renduProjectiles';
+import type { Retours } from './effets/retours';
 import { Butin } from './entites/butin';
 import { DirecteurApparitions } from './entites/directeur';
 import { DirecteurBoss } from './entites/directeurBoss';
@@ -30,6 +32,7 @@ import { Orbes } from './entites/orbes';
 import { ProjectilesEnnemis } from './entites/projectilesEnnemis';
 import type { SourceEntites } from './entites/types';
 import { creerEtatPartie, type EtatPartie } from './etat';
+import { lancerPartie, retournerAuMenu, type ChoixPartie } from './lancement';
 import { construireArene } from './monde/arene';
 import type { MondeGenere } from './monde/generation';
 import { ChampDeFlux, type Terrain } from './monde/navigation';
@@ -38,15 +41,29 @@ import { CameraJeu } from './moteur/camera';
 import type { Rendu } from './moteur/rendu';
 import { Ameliorations, type Carte } from './progression/ameliorations';
 import { gagnerXp } from './progression/niveaux';
+import type { Options } from './options';
 import { Passifs } from './progression/passifs';
+import { formaterTemps } from './utils/format';
+import { remplirBilan } from './ui/bilan';
 import { PanneauDebug } from './ui/debug';
 import { EcranCartes } from './ui/ecranCartes';
+import { EcranFin } from './ui/ecranFin';
 import { EcranPause } from './ui/ecranPause';
 import { Hud } from './ui/hud';
+import type { PanneauOptions } from './ui/panneauOptions';
 
-export class Jeu implements CallbacksBoucle {
+/** Services créés avant la partie (dès le menu) et partagés avec elle. */
+export interface ServicesJeu {
+  readonly sons: LecteurSons;
+  readonly options: Options;
+  readonly panneauOptions: PanneauOptions;
+}
+
+export class Jeu implements CallbacksBoucle, Retours {
   private readonly rendu: Rendu;
   private readonly textures: BibliothequeTextures;
+  private readonly choix: ChoixPartie;
+  private readonly sons: LecteurSons;
   private readonly etat: EtatPartie;
   private readonly terrain: Terrain;
   private readonly entrees = new Entrees();
@@ -81,21 +98,27 @@ export class Jeu implements CallbacksBoucle {
   private readonly ameliorations: Ameliorations;
   private readonly ecranCartes: EcranCartes;
   private readonly ecranPause: EcranPause;
+  private readonly ecranFin: EcranFin;
 
   private readonly debug: PanneauDebug;
   private readonly sourcesEntites: readonly SourceEntites[];
-  private mortAnnoncee = false;
+  private niveauAffiche = 1;
+  /** s réelles écoulées depuis la fin de la partie (−1 tant qu'elle continue). */
+  private minuterieFin = -1;
 
   constructor(
     rendu: Rendu,
     textures: BibliothequeTextures,
-    arene: DefinitionArene,
     monde: MondeGenere,
-    personnage: IdPersonnage,
+    choix: ChoixPartie,
+    services: ServicesJeu,
   ) {
     this.rendu = rendu;
     this.textures = textures;
-    this.etat = creerEtatPartie(arene, personnage);
+    this.choix = choix;
+    this.sons = services.sons;
+    const arene = choix.arene;
+    this.etat = creerEtatPartie(arene, choix.personnage);
     const scene = rendu.scene;
 
     // Bonus permanents du personnage
@@ -112,16 +135,17 @@ export class Jeu implements CallbacksBoucle {
     this.renduProjectiles = new RenduProjectiles(textures, scene);
 
     // Entités
-    this.joueur = new Joueur(this.etat, carte, this.entrees, scene, textures);
+    this.joueur = new Joueur(this.etat, carte, this.entrees, this, scene, textures);
     this.projectilesEnnemis = new ProjectilesEnnemis(this.etat, carte, this.joueur);
-    this.orbes = new Orbes(this.etat, scene, textures);
-    this.objets = new Objets(this.etat, this.particules, scene, textures);
+    this.orbes = new Orbes(this.etat, this, scene, textures);
+    this.objets = new Objets(this.etat, this.particules, this, scene, textures);
     this.ennemis = new Ennemis(
       this.etat,
       this.terrain,
       { cible: this.joueur, tireur: this.projectilesEnnemis },
       this.particules,
       new Butin(this.orbes, this.objets),
+      this,
       scene,
       textures,
     );
@@ -133,6 +157,7 @@ export class Jeu implements CallbacksBoucle {
       carte,
       ennemis: this.ennemis,
       particules: this.particules,
+      retours: this,
       declencherGesteJoueur: () => this.joueur.declencherGeste(),
     };
     this.balayages = new Balayages(combat, textures, scene);
@@ -152,12 +177,23 @@ export class Jeu implements CallbacksBoucle {
     // Interface et directeurs d'apparition
     this.hud = new Hud(textures, { etat: this.etat, arsenal: this.arsenal, passifs: this.passifs, ennemis: this.ennemis });
     this.directeur = new DirecteurApparitions(this.etat, this.terrain, this.ennemis, this.camera);
-    this.directeurBoss = new DirecteurBoss(this.etat, this.terrain, this.ennemis, this.camera, this.hud);
+    this.directeurBoss = new DirecteurBoss(this.etat, this.terrain, this.ennemis, this.camera, this.hud, this);
 
-    // Progression
+    // Progression et écrans
     this.ameliorations = new Ameliorations(this.etat, this.arsenal, this.passifs);
     this.ecranCartes = new EcranCartes(textures);
-    this.ecranPause = new EcranPause(() => !this.ecranCartes.ouvert && !this.etat.joueur.mort);
+    const bilan = (conteneur: HTMLElement) => remplirBilan(conteneur, this.etat, this.arsenal.armes, textures);
+    this.ecranPause = new EcranPause({
+      peutPauser: () => !this.ecranCartes.ouvert && this.etat.issue === null,
+      recommencer: () => lancerPartie(this.choix),
+      menuPrincipal: () => retournerAuMenu(this.choix),
+      remplirBilan: bilan,
+    }, services.panneauOptions);
+    this.ecranFin = new EcranFin({
+      rejouer: () => lancerPartie(this.choix),
+      menuPrincipal: () => retournerAuMenu(this.choix),
+      remplirBilan: bilan,
+    });
 
     this.sourcesEntites = [
       this.joueur, this.ennemis, this.projectilesEnnemis, this.projectilesJoueur, this.invocations, this.orbes, this.objets,
@@ -176,8 +212,9 @@ export class Jeu implements CallbacksBoucle {
       ameliorerArme: (id) => { this.arsenal.ameliorer(id); },
       gagnerNiveau: () => gagnerXp(this.etat, this.etat.joueur.xpNiveau - this.etat.joueur.xp),
       apparaitreBoss: () => this.directeurBoss.forcer(),
-      changerPersonnage: (id) => relancerAvec('personnage', id),
-      changerArene: (id) => relancerAvec('arene', id),
+      allerVersFin: () => { this.etat.tempsJeu = Math.max(this.etat.tempsJeu, PROGRESSION.dureePartie - 10); },
+      changerPersonnage: (id) => lancerPartie({ ...this.choix, personnage: id }),
+      changerArene: (arene) => lancerPartie({ ...this.choix, arene }),
       frapper: () => this.frapperAutourDuJoueur(),
     });
     this.boucle = new Boucle(this);
@@ -191,10 +228,29 @@ export class Jeu implements CallbacksBoucle {
     this.boucle.demarrer();
   }
 
+  /** Options modifiables en cours de partie. */
+  appliquerOptions(options: Options): void {
+    this.hud.afficherFps = options.afficherFps;
+    this.camera.secoussesActives = options.secousses;
+  }
+
+  // --- Retours -----------------------------------------------------------
+
+  son(id: IdSon, hauteur?: number): void {
+    this.sons.jouer(id, hauteur);
+  }
+
+  secousse(force: number): void {
+    this.camera.secouer(force);
+  }
+
   // --- CallbacksBoucle ---------------------------------------------------
 
   simuler(dt: number): void {
-    if (!this.etat.joueur.mort) this.etat.tempsJeu += dt;
+    if (this.etat.issue === null) {
+      this.etat.tempsJeu += dt;
+      this.verifierFin();
+    }
     this.joueur.maj(dt);
     this.terrain.flux.maj(this.etat.joueur.x, this.etat.joueur.z);
     this.directeur.maj(dt);
@@ -234,10 +290,8 @@ export class Jeu implements CallbacksBoucle {
 
     this.hud.majVisuel(dtBrut, dtReel);
     this.debug.majVisuel(dtReel);
-    if (this.etat.joueur.mort && !this.mortAnnoncee) {
-      this.mortAnnoncee = true;
-      this.hud.afficherMessage('Vous êtes mort !', Infinity);
-    }
+    this.celebrerNiveau();
+    this.afficherFin(dtReel);
     this.proposerCartes();
   }
 
@@ -246,11 +300,49 @@ export class Jeu implements CallbacksBoucle {
     return this.ecranCartes.ouvert || this.ecranPause.active ? 0 : this.debug.vitesseTemps;
   }
 
+  // --- Fin de partie -----------------------------------------------------
+
+  /** Défaite à la mort du joueur ; victoire s'il tient jusqu'au bout du chrono. */
+  private verifierFin(): void {
+    const etat = this.etat;
+    if (etat.joueur.mort) {
+      etat.issue = 'defaite';
+    } else if (etat.tempsJeu >= PROGRESSION.dureePartie) {
+      etat.tempsJeu = PROGRESSION.dureePartie;
+      etat.issue = 'victoire';
+      this.ennemis.terrasserTous();
+      this.son('victoire');
+      this.secousse(0.5);
+    }
+    if (etat.issue !== null) this.minuterieFin = 0;
+  }
+
+  /** Laisse la chute ou la victoire se jouer, puis affiche le bilan. */
+  private afficherFin(dtReel: number): void {
+    const issue = this.etat.issue;
+    if (issue === null || this.minuterieFin < 0) return;
+    this.minuterieFin += dtReel;
+    if (this.minuterieFin < CONFIG.hud.delaiFin) return;
+    this.minuterieFin = -1;
+    this.ecranPause.definir(false);
+    this.ecranFin.afficher(issue, this.etat.stats.xpTotale, formaterTemps(this.etat.tempsJeu));
+  }
+
   // --- Progression -------------------------------------------------------
+
+  /** Son et gerbe de particules à chaque niveau gagné. */
+  private celebrerNiveau(): void {
+    const j = this.etat.joueur;
+    if (j.niveau === this.niveauAffiche) return;
+    this.niveauAffiche = j.niveau;
+    const p = CONFIG.particules.niveau;
+    this.particules.emettre(j.x, 1, j.z, p, p.couleurs);
+    this.son('niveau');
+  }
 
   /** Ouvre les cartes d'un niveau en attente (un niveau à la fois). */
   private proposerCartes(): void {
-    if (this.etat.niveauxEnAttente === 0 || this.ecranCartes.ouvert || this.etat.joueur.mort) return;
+    if (this.etat.niveauxEnAttente === 0 || this.ecranCartes.ouvert || this.etat.issue !== null) return;
     this.ecranPause.definir(false);
     const niveau = this.etat.joueur.niveau - this.etat.niveauxEnAttente + 1;
     this.ecranCartes.ouvrir(niveau, this.ameliorations.tirer(), (carte: Carte) => {
@@ -286,11 +378,4 @@ export class Jeu implements CallbacksBoucle {
     const j = this.etat.joueur;
     this.ennemis.frapperZone(j.x, j.z, f.rayon, f.degats, f.recul);
   }
-}
-
-/** Recharge la page avec un paramètre d'adresse modifié (choix de personnage ou d'arène). */
-function relancerAvec(parametre: string, valeur: string): void {
-  const adresse = new URL(window.location.href);
-  adresse.searchParams.set(parametre, valeur);
-  window.location.href = adresse.href;
 }

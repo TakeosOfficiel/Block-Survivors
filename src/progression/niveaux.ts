@@ -19,6 +19,7 @@ export function xpPourNiveau(niveau: number): number {
 export function gagnerXp(etat: EtatPartie, valeur: number): void {
   const j = etat.joueur;
   j.xp += valeur;
+  etat.stats.xpTotale += valeur;
   while (j.xp >= j.xpNiveau) {
     j.xp -= j.xpNiveau;
     j.niveau++;

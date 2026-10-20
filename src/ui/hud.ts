@@ -1,14 +1,18 @@
 /**
- * HUD : cœurs, expérience et niveau, armes et passifs possédés, barre du boss,
- * alertes, FPS et messages centraux.
+ * HUD : chrono, ennemis vaincus, cœurs, expérience et niveau, armes et
+ * passifs possédés, barre du boss, alertes, voile de blessure, FPS et
+ * messages centraux.
  */
 import type { BibliothequeTextures } from '../assets/textures';
 import type { Arsenal } from '../combat/arsenal';
 import { CONFIG } from '../config';
+import { JOUEUR_BASE } from '../donnees/joueur';
+import { PROGRESSION } from '../donnees/progression';
 import type { AfficheurAlerte } from '../entites/directeurBoss';
 import type { Ennemis } from '../entites/ennemis';
 import type { EtatPartie } from '../etat';
 import type { Passifs } from '../progression/passifs';
+import { formaterTemps } from '../utils/format';
 import { BarreBoss } from './barreBoss';
 import { BarreCapacites } from './barreCapacites';
 import { BarreXp } from './barreXp';
@@ -27,6 +31,9 @@ export class Hud implements AfficheurAlerte {
   private readonly elementFps = element('hud-fps');
   private readonly elementMessage = element('hud-message');
   private readonly elementAlerte = element('hud-alerte');
+  private readonly elementChrono = element('hud-chrono');
+  private readonly elementTues = element('hud-tues-nombre');
+  private readonly elementVignette = element('vignette');
   private readonly sources: SourcesHud;
   private readonly coeurs: BarreCoeurs;
   private readonly capacites: BarreCapacites;
@@ -37,6 +44,10 @@ export class Hud implements AfficheurAlerte {
   private duree = 0;
   private minuterieMessage = 0;
   private minuterieAlerte = 0;
+  private secondeAffichee = -1;
+  private tuesAffiches = -1;
+  private opaciteVignette = 0;
+  private tempsReel = 0;
 
   /** Dernière mesure (lue aussi par le debug). */
   fps = 0;
@@ -48,6 +59,15 @@ export class Hud implements AfficheurAlerte {
     this.capacites = new BarreCapacites(textures);
     this.xp = new BarreXp(textures);
     this.boss = new BarreBoss(textures);
+    const icone = textures.url(CONFIG.hud.iconeTues);
+    const image = element<HTMLImageElement>('hud-tues-icone');
+    if (icone) image.src = icone;
+    else image.classList.add('cache');
+  }
+
+  /** Affiche ou masque le compteur de FPS (option). */
+  set afficherFps(visible: boolean) {
+    this.elementFps.classList.toggle('cache', !visible);
   }
 
   /** Affiche un message central pendant `duree` secondes (Infinity = jusqu'au prochain message). */
@@ -67,11 +87,19 @@ export class Hud implements AfficheurAlerte {
   /** dtBrut (non borné) mesure les FPS réels ; dtReel (borné) fait avancer les minuteries. */
   majVisuel(dtBrut: number, dtReel: number): void {
     const { etat, arsenal, passifs, ennemis } = this.sources;
+    const j = etat.joueur;
+    this.tempsReel += dtReel;
     this.mesurerFps(dtBrut);
-    this.coeurs.afficher(etat.joueur.pv, etat.joueur.pvMax);
-    this.xp.afficher(etat.joueur);
+    this.coeurs.afficher(j.pv, j.pvMax, dtReel);
+    this.xp.afficher(j);
     this.capacites.afficher(arsenal, passifs);
     this.boss.afficher(ennemis.bossActif());
+    this.afficherChrono(etat.tempsJeu);
+    if (etat.ennemisTues !== this.tuesAffiches) {
+      this.tuesAffiches = etat.ennemisTues;
+      this.elementTues.textContent = String(etat.ennemisTues);
+    }
+    this.afficherVignette(etat);
 
     if (this.minuterieMessage > 0) {
       this.minuterieMessage -= dtReel;
@@ -81,6 +109,28 @@ export class Hud implements AfficheurAlerte {
       this.minuterieAlerte -= dtReel;
       if (this.minuterieAlerte <= 0) this.elementAlerte.classList.add('cache');
     }
+  }
+
+  private afficherChrono(temps: number): void {
+    const seconde = Math.floor(temps);
+    if (seconde === this.secondeAffichee) return;
+    this.secondeAffichee = seconde;
+    this.elementChrono.textContent = formaterTemps(seconde);
+    this.elementChrono.classList.toggle('final', PROGRESSION.dureePartie - seconde <= CONFIG.hud.dernierCompteARebours);
+  }
+
+  /** Voile rouge : fort juste après un coup, pulsant quand la santé est basse. */
+  private afficherVignette(etat: EtatPartie): void {
+    const v = CONFIG.hud.vignette;
+    const j = etat.joueur;
+    const blessure = j.mort ? 0 : Math.max(0, j.invulnerabilite / JOUEUR_BASE.invulnerabilite) * v.blessure;
+    const santeBasse = !j.mort && j.pv / j.pvMax <= v.seuilSanteBasse
+      ? v.santeBasse * (0.6 + 0.4 * Math.sin(this.tempsReel * v.pulsation))
+      : 0;
+    const opacite = Math.max(blessure, santeBasse);
+    if (Math.abs(opacite - this.opaciteVignette) < 0.01) return;
+    this.opaciteVignette = opacite;
+    this.elementVignette.style.opacity = opacite.toFixed(2);
   }
 
   private mesurerFps(dtBrut: number): void {

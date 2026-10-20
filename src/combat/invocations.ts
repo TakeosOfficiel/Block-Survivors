@@ -13,7 +13,7 @@ import type { SourceEntites } from '../entites/types';
 import { avancerAnimation, calculerRotations, creerEtatAnimation, declencherAttaque, reinitialiserAnimation, type EtatAnimation } from '../modeles/animation';
 import { compilerModele, type ModeleCompile } from '../modeles/compilation';
 import { creerPoseModele, ModeleInstancie, type PoseModele } from '../modeles/rendu';
-import { ecartAngle, facteurLissage } from '../utils/maths';
+import { ecartAngle, facteurLissage, longueur } from '../utils/maths';
 import { Pool } from '../utils/pool';
 import type { Point } from '../monde/carte';
 import type { ArmeEquipee } from './armeEquipee';
@@ -100,21 +100,22 @@ export class Invocations implements SourceEntites {
     for (let i = this.pool.nombre - 1; i >= 0; i--) {
       const a = this.pool.elements[i];
       const def = a.definition;
-      const s = a.arme?.stats;
+      const arme = a.arme;
       a.vie -= dt;
-      if (!s || a.vie <= 0) {
+      if (!arme || a.vie <= 0) {
         particules.emettre(a.x, 1, a.z, CONFIG.particules.invocation, this.rendus[a.indexType].couleurs);
         a.arme = null;
         this.pool.liberer(i);
         continue;
       }
+      const s = arme.stats;
       if (a.minuterie > 0) a.minuterie -= dt;
 
       // Cible : l'ennemi le plus proche ; sinon, rester près du joueur
       const cible = ennemis.plusProche(a.x, a.z, def.detection);
       let versX = (cible ? cible.x : j.x) - a.x;
       let versZ = (cible ? cible.z : j.z) - a.z;
-      const distance = Math.hypot(versX, versZ) || 1e-6;
+      const distance = longueur(versX, versZ) || 1e-6;
       versX /= distance;
       versZ /= distance;
       const arret = cible ? def.rayon + cible.definition.rayon + s.zone : CONFIG.armes.golems.distanceSuivi;
@@ -126,7 +127,8 @@ export class Invocations implements SourceEntites {
         a.z = corrige.z;
         a.vitesseSol = def.vitesse;
       } else if (cible && a.minuterie <= 0) {
-        ennemis.blesser(cible, s.degats, a.x, a.z, s.recul);
+        ennemis.blesser(cible, s.degats, a.x, a.z, s.recul, arme.index);
+        this.contexte.retours.son('golem_coup');
         declencherAttaque(a.animation, this.rendus[a.indexType].modele);
         a.minuterie = def.cadenceCoups;
       }

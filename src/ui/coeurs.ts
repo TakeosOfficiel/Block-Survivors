@@ -27,6 +27,8 @@ export class BarreCoeurs {
   private readonly urlMoitie: string;
   private affiche = -1;
   private pvMaxAffiche = -1;
+  private minuterieTremblement = 0;
+  private tremble = false;
 
   constructor(textures: BibliothequeTextures) {
     const sprites = CONFIG.hud.coeurs;
@@ -35,9 +37,10 @@ export class BarreCoeurs {
     this.urlMoitie = textures.url(sprites.moitie) ?? dessinerCoeur(null, '#e01b1b', 5);
   }
 
-  /** Met à jour l'affichage (ne touche le DOM que si les PV ont changé). */
-  afficher(pv: number, pvMax: number): void {
+  /** Met à jour l'affichage (ne touche le DOM que si les PV ont changé, ou pour le tremblement). */
+  afficher(pv: number, pvMax: number, dt: number): void {
     if (pvMax !== this.pvMaxAffiche) this.construire(pvMax);
+    this.trembler(pv > 0 && pv <= CONFIG.hud.tremblement.seuilPv, dt);
     const valeur = Math.ceil(pv);
     if (valeur === this.affiche) return;
     this.affiche = valeur;
@@ -46,6 +49,25 @@ export class BarreCoeurs {
       image.style.visibility = reste > 0 ? 'visible' : 'hidden';
       if (reste > 0) image.src = reste >= 2 ? this.urlPlein : this.urlMoitie;
     });
+  }
+
+  /** Santé basse : chaque cœur saute d'un pixel au hasard, plusieurs fois par seconde. */
+  private trembler(actif: boolean, dt: number): void {
+    const t = CONFIG.hud.tremblement;
+    if (!actif) {
+      if (this.tremble) {
+        this.tremble = false;
+        for (const coeur of this.conteneur.children) (coeur as HTMLElement).style.transform = '';
+      }
+      return;
+    }
+    this.tremble = true;
+    this.minuterieTremblement -= dt;
+    if (this.minuterieTremblement > 0) return;
+    this.minuterieTremblement = t.periode;
+    for (const coeur of this.conteneur.children) {
+      (coeur as HTMLElement).style.transform = Math.random() < 0.5 ? `translateY(-${t.amplitude}px)` : '';
+    }
   }
 
   /** Un emplacement de cœur par tranche de 2 PV maximum. */

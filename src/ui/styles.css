@@ -1,59 +1,335 @@
 /* ==========================================================================
-   STYLES — interface du jeu
+   STYLES — interface façon Minecraft
+   Échelle d'interface ×2 : un pixel de texture = 2 px à l'écran (--px).
+   Les images (--bouton, --panneau…) sont fournies par ui/habillage.ts ;
+   sans elles, des couleurs proches servent de secours.
    ========================================================================== */
+
+:root {
+  --police: "Minecraft", "Courier New", Courier, monospace;
+  --px: 2px;
+  --bouton: none;
+  --bouton-survol: none;
+  --bouton-inactif: none;
+  --curseur: none;
+  --curseur-survol: none;
+  --poignee: none;
+  --poignee-survol: none;
+  --panneau: none;
+  --case: none;
+  --terre: none;
+
+  /* Couleurs de mise en forme du jeu (§0 à §f) */
+  --mc-noir: #000000;
+  --mc-gris-fonce: #555555;
+  --mc-gris: #aaaaaa;
+  --mc-blanc: #ffffff;
+  --mc-jaune: #ffff55;
+  --mc-or: #ffaa00;
+  --mc-vert: #55ff55;
+  --mc-vert-fonce: #00aa00;
+  --mc-aqua: #55ffff;
+  --mc-bleu: #7f7fff;
+  --mc-rouge: #ff5555;
+  --mc-rose: #ff55ff;
+  --mc-texte-panneau: #404040;
+}
 
 /* --- Base ---------------------------------------------------------------- */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 100%; height: 100%; overflow: hidden; background: #78a7ff; }
 body {
-  font-family: "Courier New", Courier, monospace;
-  color: #fff;
+  font-family: var(--police);
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: normal;
+  font-synthesis: none;
+  color: var(--mc-blanc);
   user-select: none;
   -webkit-user-select: none;
+  -webkit-font-smoothing: none;
 }
+h1, h2, h3 { font-weight: normal; }
 canvas { display: block; }
+img { image-rendering: pixelated; }
 .cache { display: none !important; }
 
-/* Ombre de texte façon Minecraft : décalage net, sans flou */
-.texte-mc { text-shadow: 2px 2px 0 #3f3f3f; }
+/* Ombre de texte du jeu : décalée d'un pixel, couleur du texte au quart */
+#hud, .ecran, #menu, #chargement, .infobulle, #debug {
+  text-shadow: var(--px) var(--px) 0 color-mix(in srgb, currentColor 25%, #000);
+}
+.panneau-mc { text-shadow: none; }
 
-/* --- Écran de chargement ------------------------------------------------- */
-#chargement {
-  position: fixed; inset: 0; z-index: 10;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
-  /* Fond de terre tuilé et assombri comme les menus Minecraft (image définie en TS).
-     Sans image, la couleur seule sert de secours. */
+/* Fond de terre assombri des menus */
+.fond-terre {
   background-color: #404040;
+  background-image: var(--terre);
   background-size: 64px 64px;
   background-blend-mode: multiply;
   image-rendering: pixelated;
-  font-size: 18px;
 }
-.chargement-titre { font-size: 40px; font-weight: bold; letter-spacing: 2px; }
+
+/* --- Briques d'interface -------------------------------------------------- */
+
+/* Bouton : sprite vanilla 200x20 en neuf tranches (bord de 3 pixels) */
+.bouton-mc {
+  position: relative;
+  height: 40px; min-width: 196px; padding: 0 12px;
+  font: inherit; color: var(--mc-blanc);
+  text-shadow: var(--px) var(--px) 0 #3f3f3f;
+  border: 6px solid transparent;
+  border-image: var(--bouton) 3 fill / 6px stretch;
+  background: #6f6f6f padding-box;
+  box-shadow: 0 0 0 2px #000;
+  image-rendering: pixelated;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sprites-gui .bouton-mc { background: none; box-shadow: none; }
+.bouton-mc:hover, .bouton-mc:focus-visible {
+  outline: none;
+  color: var(--mc-jaune);
+  border-image-source: var(--bouton-survol);
+}
+:root:not(.sprites-gui) .bouton-mc:hover { background-color: #7f89c4; }
+.bouton-mc:disabled {
+  color: #a0a0a0; cursor: default;
+  border-image-source: var(--bouton-inactif);
+}
+.bouton-mc.large, .curseur-mc.large { width: 400px; }
+
+.pile-boutons { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.rangee-boutons { display: flex; gap: 8px; justify-content: center; }
+.rangee-boutons .bouton-mc { width: 196px; }
+.espace-avant { margin-top: 16px; }
+
+/* Curseur (volume) : piste 200x20 (bord 1) et poignée 8x20 vanilla */
+.curseur-mc {
+  position: relative; display: block;
+  height: 40px;
+  border: 2px solid transparent;
+  border-image: var(--curseur) 1 fill / 2px stretch;
+  background: #2b2b2b padding-box;
+  image-rendering: pixelated;
+  cursor: pointer;
+}
+.sprites-gui .curseur-mc { background: none; }
+.curseur-mc:hover { border-image-source: var(--curseur-survol); }
+.curseur-mc input {
+  -webkit-appearance: none; appearance: none;
+  position: absolute; inset: -2px; width: calc(100% + 4px); height: 40px;
+  background: transparent; cursor: pointer; margin: 0;
+}
+.curseur-mc input:focus { outline: none; }
+.curseur-mc input::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 16px; height: 40px;
+  border: none;
+  background: #c6c6c6 var(--poignee) center / 100% 100%;
+  image-rendering: pixelated;
+}
+.curseur-mc:hover input::-webkit-slider-thumb { background-image: var(--poignee-survol); }
+.curseur-mc input::-moz-range-thumb {
+  width: 16px; height: 40px; border: none; border-radius: 0;
+  background: #c6c6c6 var(--poignee) center / 100% 100%;
+}
+.curseur-mc span {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  text-shadow: var(--px) var(--px) 0 #3f3f3f;
+  pointer-events: none;
+}
+.curseur-mc:hover span { color: var(--mc-jaune); }
+
+/* Panneau d'inventaire gris (image générée en neuf tranches, bord de 4 pixels) */
+.panneau-mc {
+  color: var(--mc-texte-panneau);
+  border: 8px solid transparent;
+  border-image: var(--panneau) 4 fill / 8px;
+  background: #c6c6c6 padding-box;
+  image-rendering: pixelated;
+  padding: 6px 8px;
+}
+.sprites-gui .panneau-mc { background: none; }
+.titre-panneau { font-size: 16px; color: var(--mc-texte-panneau); margin-bottom: 8px; }
+
+/* Case d'inventaire 18x18 (bord de 1 pixel) */
+.case-mc {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  width: 36px; height: 36px;
+  border: 2px solid transparent;
+  border-image: var(--case) 1 fill / 2px;
+  background: #8b8b8b padding-box;
+  image-rendering: pixelated;
+}
+.sprites-gui .case-mc { background: none; }
+.case-mc img { width: 32px; height: 32px; }
+.case-mc.grande { width: 52px; height: 52px; }
+.case-mc.grande img { width: 48px; height: 48px; }
+.case-mc.portrait img { width: 32px; height: 32px; }
+
+/* Infobulle violette du jeu (cartes d'amélioration) */
+.infobulle {
+  background: rgba(16, 0, 16, 0.94);
+  border: 2px solid transparent;
+  border-image: linear-gradient(rgba(80, 0, 255, 0.55), rgba(40, 0, 127, 0.55)) 1;
+  box-shadow: 0 0 0 2px rgba(16, 0, 16, 0.94);
+  color: var(--mc-gris);
+}
+
+/* Couleurs de rareté (cartes, bilan) */
+.rarete-nouvelle_arme { color: var(--mc-aqua); }
+.rarete-arme { color: var(--mc-blanc); }
+.rarete-passif { color: var(--mc-vert); }
+.rarete-exclusif { color: var(--mc-rose); }
+.rarete-soin { color: var(--mc-or); }
+
+/* --- Écran de chargement ------------------------------------------------- */
+#chargement {
+  position: fixed; inset: 0; z-index: 20;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+}
+.chargement-titre { font-size: 32px; line-height: 40px; }
 .chargement-cadre {
-  width: min(420px, 80vw); height: 12px;
+  width: min(400px, 80vw); height: 12px;
   border: 2px solid #000;
   background: #555;
-  box-shadow: inset 2px 2px 0 #333;
 }
-#chargement-barre { height: 100%; width: 0; background: #80ff20; }
-#chargement.erreur #chargement-texte { color: #ff5555; }
+#chargement-barre { height: 100%; width: 0; background: var(--mc-vert); }
+#chargement.erreur #chargement-texte { color: var(--mc-rouge); }
+
+/* --- Menu principal ------------------------------------------------------- */
+#menu {
+  position: fixed; inset: 0; z-index: 10;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+  padding: 16px;
+  overflow-y: auto;
+}
+#menu::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.55) 100%);
+}
+#menu > * { position: relative; }
+.menu-entete { position: relative; z-index: 1; text-align: center; }
+
+/* Logo : texture de pierre découpée dans le texte, relief noir */
+.logo {
+  font-size: 64px; line-height: 72px;
+  color: #d0d0d0;
+  background: #a0a0a0 var(--logo, none) 0 0 / 48px 48px;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(4px 4px 0 #1e1e1e) drop-shadow(0 4px 0 #000);
+  image-rendering: pixelated;
+}
+/* Phrase d'accroche jaune, penchée et pulsante, comme sur l'écran-titre */
+.accroche {
+  position: absolute; right: 0; bottom: 18px;
+  font-size: 16px; color: var(--mc-jaune);
+  transform: translateX(50%) rotate(-20deg);
+  animation: pulsation 0.5s ease-in-out infinite alternate;
+  white-space: nowrap;
+}
+@keyframes pulsation { to { transform: translateX(50%) rotate(-20deg) scale(1.1); } }
+
+.menu-colonnes { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+.menu-section { width: min(440px, 92vw); }
+.menu-choix { display: flex; flex-direction: column; gap: 6px; }
+
+/* Une option du menu : case + textes ; la sélection est encadrée de blanc */
+.option-menu {
+  display: flex; align-items: flex-start; gap: 10px;
+  width: 100%; padding: 6px;
+  font: inherit; color: var(--mc-texte-panneau); text-align: left;
+  background: rgba(0, 0, 0, 0.06);
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+.option-menu:hover { background: rgba(255, 255, 255, 0.35); }
+.option-menu.choisie {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: #fff;
+  box-shadow: 0 0 0 2px #000;
+}
+.option-textes { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.option-nom { color: #202020; }
+.option-description { color: #5a5a5a; }
+.option-stats { display: flex; flex-wrap: wrap; gap: 2px 12px; color: #1f6f1f; }
+.option-arme { display: flex; align-items: center; gap: 4px; color: #2a4a9a; }
+.option-arme img { width: 16px; height: 16px; }
+
+.menu-aide { color: var(--mc-gris); text-align: center; }
+.pied { position: fixed !important; bottom: 6px; color: var(--mc-blanc); }
+.pied-gauche { left: 8px; }
+.pied-droite { right: 8px; }
+
+/* --- Écrans superposés (cartes, pause, options, fin) ------------------------ */
+.ecran {
+  position: fixed; inset: 0; z-index: 12;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  padding: 16px;
+  overflow-y: auto;
+}
+/* Voile sombre des menus en jeu */
+.voile { background: linear-gradient(rgba(16, 16, 16, 0.75), rgba(16, 16, 16, 0.82)); }
+#options { z-index: 15; }
+.ecran-titre { font-size: 16px; color: var(--mc-blanc); }
+.ecran-titre.grand { font-size: 32px; line-height: 40px; }
+.ecran-sous-titre { color: var(--mc-gris); }
+.ecran-corps { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
+.ecran-aide { color: var(--mc-gris); }
+
+/* Fin de partie : voile rouge de l'écran de mort, ou doré pour la victoire */
+#fin { background: linear-gradient(rgba(80, 0, 0, 0.38), rgba(160, 48, 48, 0.63)); }
+#fin.victoire { background: linear-gradient(rgba(90, 70, 0, 0.4), rgba(170, 120, 0, 0.62)); }
+#fin.victoire #fin-titre { color: var(--mc-or); }
+#fin-sous-titre .valeur { color: var(--mc-jaune); }
+
+/* --- Bilan (pause et fin) ------------------------------------------------- */
+.bilan { width: min(620px, 94vw); display: flex; flex-direction: column; gap: 10px; }
+.bilan-grille { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 24px; }
+.bilan-ligne { display: flex; justify-content: space-between; gap: 8px; }
+.bilan-ligne .valeur { color: #202020; text-align: right; }
+.bilan-tues { display: flex; flex-wrap: wrap; gap: 6px; }
+.bilan-tue { display: flex; align-items: center; gap: 4px; }
+.bilan-armes { display: flex; flex-direction: column; gap: 4px; }
+.bilan-arme { display: grid; grid-template-columns: 36px 1fr auto; gap: 8px; align-items: center; }
+.bilan-arme-textes { display: flex; flex-direction: column; min-width: 0; }
+.bilan-arme-nom { color: #202020; }
+.bilan-jauge { height: 6px; background: #8b8b8b; box-shadow: inset 2px 2px 0 #373737; }
+.bilan-jauge > div { height: 100%; background: var(--mc-vert-fonce); }
+.bilan-vide { color: #6a6a6a; }
 
 /* --- HUD (non cliquable) ------------------------------------------------- */
 #hud { position: fixed; inset: 0; pointer-events: none; }
-#hud-fps {
+
+/* Voile rouge de blessure et de santé basse (opacité réglée en TS) */
+#vignette {
+  position: absolute; inset: 0; opacity: 0;
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(200, 0, 0, 0.55) 100%);
+}
+
+#hud-haut {
+  position: absolute; top: 8px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+#hud-chrono { font-size: 24px; line-height: 28px; }
+#hud-chrono.final { color: var(--mc-or); }
+
+#hud-droite {
   position: absolute; top: 10px; right: 12px;
-  font-size: 18px; font-weight: bold;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
 }
-#hud-aide {
-  position: absolute; bottom: 12px; left: 50%;
-  transform: translateX(-50%);
-  font-size: 14px; white-space: nowrap; opacity: 0.85;
-}
+#hud-tues { display: flex; align-items: center; gap: 6px; font-size: 16px; }
+#hud-tues img { width: 32px; height: 32px; }
+
 #hud-message {
-  position: absolute; top: 22%; left: 50%;
+  position: absolute; top: 24%; left: 50%;
   transform: translateX(-50%);
-  font-size: 20px; font-weight: bold; color: #ffff55;
+  color: var(--mc-jaune);
   white-space: nowrap;
   opacity: 0; transition: opacity 0.25s;
 }
@@ -61,24 +337,19 @@ canvas { display: block; }
 
 /* Alerte d'arrivée d'un boss : bandeau rouge clignotant */
 #hud-alerte {
-  position: absolute; top: 15%; left: 50%;
+  position: absolute; top: 18%; left: 50%;
   transform: translateX(-50%);
   padding: 6px 22px;
-  font-size: 26px; font-weight: bold; color: #ff5555;
+  font-size: 24px; line-height: 28px; color: var(--mc-rouge);
   background: rgba(40, 0, 0, 0.55);
-  border: 2px solid #ff5555;
+  border: 2px solid var(--mc-rouge);
   white-space: nowrap;
   animation: clignoter 0.5s steps(2, jump-none) infinite;
 }
 @keyframes clignoter { 50% { opacity: 0.35; } }
 
 /* Barre de vie du boss : sprites 182x5 agrandis ×2, nom au-dessus */
-#hud-boss {
-  position: absolute; top: 14px; left: 50%;
-  transform: translateX(-50%);
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-}
-#hud-boss-nom { font-size: 16px; font-weight: bold; }
+#hud-boss { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 #hud-boss-barre {
   width: 364px; height: 10px;
   background: #4a1a4a center / 100% 100%;
@@ -90,13 +361,15 @@ canvas { display: block; }
   image-rendering: pixelated;
 }
 
-/* Cœurs : sprites 9x9 agrandis ×3, pixels nets, 10 par ligne */
+/* Cœurs : sprites 9x9 agrandis ×3, 10 par ligne ; ils tremblent quand la santé est basse */
 #hud-coeurs {
   position: absolute; bottom: 74px; left: 50%;
   transform: translateX(-50%);
   width: 300px;
   display: flex; flex-wrap: wrap-reverse; gap: 3px;
 }
+.coeur { position: relative; width: 27px; height: 27px; }
+.coeur img { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 /* Barre d'expérience : sprites 182x5 agrandis ×2, niveau en vert au centre */
 #hud-xp {
@@ -113,108 +386,71 @@ canvas { display: block; }
   image-rendering: pixelated;
 }
 #hud-niveau {
-  position: absolute; left: 50%; top: -20px;
+  position: absolute; left: 50%; top: -22px;
   transform: translateX(-50%);
-  font-size: 18px; font-weight: bold; color: #80ff20;
+  color: #80ff20;
   text-shadow: 2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000;
 }
-.coeur { position: relative; width: 27px; height: 27px; }
-.coeur img {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  image-rendering: pixelated;
-}
 
-/* Armes (ligne du bas) et passifs (au-dessus) : icônes 16x16 agrandies ×2 et rang */
+/* Armes (ligne du bas) et passifs (au-dessus) : cases d'inventaire et rang */
 #hud-capacites {
   position: absolute; bottom: 12px; left: 12px;
   display: flex; flex-direction: column; gap: 4px;
 }
-#hud-armes, #hud-passifs { display: flex; gap: 4px; }
-.capacite {
-  position: relative; width: 40px; height: 40px;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(0, 0, 0, 0.45);
-  border: 2px solid #8b8b8b;
-  font-weight: bold;
-}
-.capacite img { width: 32px; height: 32px; image-rendering: pixelated; }
-#hud-passifs .capacite { border-color: #5a7fbf; }
+#hud-armes, #hud-passifs { display: flex; gap: 2px; }
+.capacite { position: relative; width: 40px; height: 40px; }
 .capacite .rang {
-  position: absolute; right: 1px; bottom: -2px;
-  font-size: 13px; font-weight: bold;
+  position: absolute; right: 0; bottom: -2px;
+  color: var(--mc-blanc);
 }
+.capacite .rang.max { color: var(--mc-jaune); }
 
-/* --- Écrans (cartes, pause) ------------------------------------------- */
-.ecran {
-  position: fixed; inset: 0; z-index: 5;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
-  background: rgba(16, 16, 16, 0.72);
-}
-.ecran-titre { font-size: 36px; font-weight: bold; color: #ffff55; }
-.ecran-sous-titre { font-size: 16px; color: #e0e0e0; }
-
-/* Bouton façon Minecraft */
-.bouton-mc {
-  font: inherit; font-size: 18px; color: #fff;
-  text-shadow: 2px 2px 0 #3f3f3f;
-  background: #6f6f6f;
-  border: 2px solid #000;
-  box-shadow: inset 2px 2px 0 #a8a8a8, inset -2px -2px 0 #4a4a4a;
-  padding: 8px 28px; cursor: pointer;
-}
-.bouton-mc:hover { background: #7f89c4; }
-
-/* Cartes : panneaux gris biseautés comme les inventaires */
-#cartes-liste { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
+/* --- Cartes d'amélioration : infobulles violettes ------------------------- */
+#cartes-liste { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
 .carte {
   position: relative;
-  width: 240px; min-height: 290px;
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  padding: 18px 14px;
-  font: inherit; color: #3f3f3f; text-align: center; text-shadow: none;
-  background: #c6c6c6;
-  border: 3px solid #000;
-  box-shadow: inset 3px 3px 0 #ffffff, inset -3px -3px 0 #555555;
+  width: 260px; min-height: 280px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 16px 14px;
+  font: inherit; text-align: center;
   cursor: pointer;
   transition: transform 0.08s;
 }
-.carte:hover { transform: translateY(-4px); background: #d6d6e8; }
-.carte-touche {
-  position: absolute; top: 6px; left: 8px;
-  font-size: 16px; font-weight: bold; color: #555;
+.carte:hover, .carte:focus-visible {
+  outline: none;
+  transform: translateY(-4px);
+  border-image: linear-gradient(rgba(170, 120, 255, 0.95), rgba(90, 40, 200, 0.95)) 1;
 }
-.carte-icone {
-  width: 64px; height: 64px;
-  display: flex; align-items: center; justify-content: center;
-  background: #8b8b8b;
-  box-shadow: inset 2px 2px 0 #373737, inset -2px -2px 0 #ffffff;
-  font-size: 28px; font-weight: bold;
-}
-.carte-icone img { width: 48px; height: 48px; image-rendering: pixelated; }
-.carte-nom { font-size: 18px; font-weight: bold; color: #202020; }
-.carte-etiquette { font-size: 14px; font-weight: bold; color: #b8860b; }
-.carte-description { font-size: 14px; }
-.carte-stats { list-style: none; font-size: 13px; color: #1f6f1f; font-weight: bold; }
+.carte-touche { position: absolute; top: 6px; left: 8px; color: var(--mc-gris-fonce); }
+.carte-nom { margin-top: 4px; }
+.carte-etiquette { color: var(--mc-gris-fonce); }
+.carte-description { color: var(--mc-gris); }
+.carte-stats { list-style: none; color: var(--mc-bleu); margin-top: 4px; }
+.carte .case-mc { margin-top: 4px; }
 
-/* --- Panneau debug (inspiré de l'écran F3 de Minecraft) ------------------ */
+/* --- Panneau debug (inspiré de l'écran F3 du jeu) ------------------------- */
 #debug {
-  position: fixed; top: 10px; left: 10px;
-  font-size: 14px; line-height: 1.4;
+  position: fixed; top: 10px; left: 10px; z-index: 30;
+  line-height: 20px;
 }
 #debug .ligne {
   display: table;
   background: rgba(80, 80, 80, 0.6);
-  padding: 1px 6px; margin-bottom: 2px;
+  padding: 0 4px; margin-bottom: 2px;
 }
-#debug .titre { color: #ffff55; }
-#debug small { color: #c0c0c0; }
+#debug .titre { color: var(--mc-jaune); }
+#debug small { font-size: 16px; color: #c0c0c0; }
 #debug button {
-  font: inherit; font-weight: bold; color: #fff;
+  font: inherit; color: #fff;
   text-shadow: 2px 2px 0 #3f3f3f;
   background: #6f6f6f;
   border: 2px solid #000;
   box-shadow: inset 2px 2px 0 #a8a8a8, inset -2px -2px 0 #4a4a4a;
-  padding: 0 8px; margin: 1px 2px; cursor: pointer;
+  padding: 0 6px; margin: 1px 2px; cursor: pointer;
 }
 #debug button:hover { background: #7f89c4; }
-#debug button.actif { color: #55ff55; }
+#debug button.actif { color: var(--mc-vert); }
+
+/* Petite icône dans une ligne de texte (cœur, arme) */
+.icone-texte { width: 18px; height: 18px; vertical-align: -3px; margin-right: 4px; }
+.case-mc.grande.portrait img { width: 48px; height: 48px; }

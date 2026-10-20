@@ -11,6 +11,7 @@ import type { SourceEntites } from '../entites/types';
 import { Pool } from '../utils/pool';
 import type { ArmeEquipee } from './armeEquipee';
 import type { ContexteCombat } from './contexte';
+import { longueur } from '../utils/maths';
 
 const MAX_TOUCHES = 32;
 const AUCUNE_COULEUR: readonly number[] = [];
@@ -19,6 +20,7 @@ export type ModeProjectile = 'ligne' | 'retour';
 
 interface ProjectileJoueur {
   indexRendu: number;
+  indexArme: number;        // crédite les dégâts à l'arme dans les statistiques
   definition: DefinitionProjectile;
   retour: boolean;          // mode « retour »
   revient: boolean;         // phase de retour en cours
@@ -43,7 +45,7 @@ export class ProjectilesJoueur implements SourceEntites {
   private readonly contexte: ContexteCombat;
   private readonly tampon = new Int32Array(64);
   private readonly pool = new Pool<ProjectileJoueur>(CONFIG.projectiles.capacite, () => ({
-    indexRendu: 0, definition: PROJECTILES[IDS_PROJECTILES[0]], retour: false, revient: false,
+    indexRendu: 0, indexArme: 0, definition: PROJECTILES[IDS_PROJECTILES[0]], retour: false, revient: false,
     x: 0, z: 0, dirX: 0, dirZ: 1, vitesse: 0, parcouru: 0, portee: 0, degats: 0, recul: 0,
     restants: 1, zone: 0, couleurs: AUCUNE_COULEUR, touches: new Int32Array(MAX_TOUCHES), nbTouches: 0, trainee: 0,
   }));
@@ -74,6 +76,7 @@ export class ProjectilesJoueur implements SourceEntites {
     p.parcouru = 0;
     p.portee = s.portee;
     p.degats = s.degats;
+    p.indexArme = arme.index;
     p.recul = s.recul;
     p.restants = p.retour ? Infinity : Math.max(1, s.perforation);
     p.zone = couleursExplosion ? s.zone : 0;
@@ -94,7 +97,7 @@ export class ProjectilesJoueur implements SourceEntites {
       if (p.revient) {
         const dx = j.x - p.x;
         const dz = j.z - p.z;
-        const d = Math.hypot(dx, dz);
+        const d = longueur(dx, dz);
         if (d < CONFIG.armes.distanceRetour) {
           this.pool.liberer(i);
           continue;
@@ -126,7 +129,7 @@ export class ProjectilesJoueur implements SourceEntites {
           detruit = true;
           break;
         }
-        ennemis.blesser(e, p.degats, p.x - p.dirX, p.z - p.dirZ, p.recul);
+        ennemis.blesser(e, p.degats, p.x - p.dirX, p.z - p.dirZ, p.recul, p.indexArme);
         if (p.nbTouches < MAX_TOUCHES) p.touches[p.nbTouches++] = e.id;
         if (--p.restants <= 0) detruit = true;
       }
@@ -168,8 +171,9 @@ export class ProjectilesJoueur implements SourceEntites {
     const { ennemis, particules } = this.contexte;
     const n = ennemis.chercher(p.x, p.z, p.zone, this.tampon);
     for (let k = 0; k < n; k++) {
-      ennemis.blesser(ennemis.obtenir(this.tampon[k]), p.degats, p.x, p.z, p.recul);
+      ennemis.blesser(ennemis.obtenir(this.tampon[k]), p.degats, p.x, p.z, p.recul, p.indexArme);
     }
     particules.emettre(p.x, p.definition.hauteur, p.z, CONFIG.particules.explosionArme, p.couleurs);
+    this.contexte.retours.son('explosion', 1.3);
   }
 }

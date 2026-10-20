@@ -1,4 +1,4 @@
-/** Liste des textures à précharger avant une partie, déduite des données. */
+/** Listes des textures à précharger (menu, puis partie), déduites des données. */
 import { CONFIG } from '../config';
 import { ALLIES, IDS_ALLIES } from '../donnees/allies';
 import { ARMES, IDS_ARMES } from '../donnees/armes';
@@ -7,10 +7,24 @@ import { ENNEMIS, IDS_ENNEMIS } from '../donnees/ennemis';
 import { IDS_OBJETS, OBJETS } from '../donnees/objets';
 import { IDS_PASSIFS, PASSIFS } from '../donnees/passifs';
 import { PROGRESSION } from '../donnees/progression';
+import { ARENES } from '../donnees/arenes';
+import { IDS_PERSONNAGES, PERSONNAGES } from '../donnees/personnages';
 import { IDS_PROJECTILES, PROJECTILES } from '../donnees/projectiles';
 import type { CheminTexture, DefinitionArene, DefinitionPersonnage } from '../donnees/types';
 import type { MondeGenere } from '../monde/generation';
 import { BarreBoss } from '../ui/barreBoss';
+import { SPRITES_INTERFACE } from '../ui/habillage';
+
+/** Textures du menu et des écrans : sprites d'interface, visages, icônes. */
+export function texturesInterface(): Set<CheminTexture> {
+  const chemins = new Set<CheminTexture>(Object.values(SPRITES_INTERFACE));
+  chemins.add(CONFIG.chargement.textureFond);
+  for (const id of IDS_PERSONNAGES) chemins.add(PERSONNAGES[id].skin);
+  for (const id of IDS_ARMES) chemins.add(ARMES[id].icone);
+  for (const arene of ARENES) chemins.add(arene.icone);
+  chemins.add(CONFIG.hud.coeurs.plein);
+  return chemins;
+}
 
 export function texturesRequises(
   arene: DefinitionArene,
@@ -46,5 +60,6 @@ export function texturesRequises(
   chemins.add(CONFIG.orbes.texture);
   for (const sprite of Object.values(CONFIG.hud.coeurs)) chemins.add(sprite);
   for (const sprite of Object.values(CONFIG.hud.barreXp)) chemins.add(sprite);
+  chemins.add(CONFIG.hud.iconeTues);
   return chemins;
 }

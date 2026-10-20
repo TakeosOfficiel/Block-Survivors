@@ -31,6 +31,26 @@ export const SOURCES_TEXTURES = [
   },
 ] as const;
 
+/**
+ * Autres fichiers vanilla (table de la police), relatifs à assets/minecraft/
+ * (ex. « font/include/default.json »). En local, ils rejoignent les textures.
+ */
+export const SOURCES_FICHIERS = [
+  (chemin: string) =>
+    `https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/${VERSION_MINECRAFT}/assets/minecraft/${chemin}`,
+  (chemin: string) => `https://assets.mcasset.cloud/${VERSION_MINECRAFT}/assets/minecraft/${chemin}`,
+  (chemin: string) => `./assets/mc/${chemin}`,
+] as const;
+
+/**
+ * Sources des sons (absents du .jar) : serveur de ressources de Mojang par
+ * empreinte, puis copie locale par nom (./assets/mc/sounds/random/orb.ogg).
+ */
+export const SOURCES_SONS = [
+  (_chemin: string, hachage: string) => `https://resources.download.minecraft.net/${hachage.slice(0, 2)}/${hachage}`,
+  (chemin: string) => `./assets/mc/sounds/${chemin}.ogg`,
+] as const;
+
 export const CONFIG = {
   temps: {
     dtMax: 0.1,          // deltaTime réel maximal (s) : évite les sauts après un onglet en arrière-plan
@@ -48,6 +68,8 @@ export const CONFIG = {
     sensibiliteZoom: 0.0012, // facteur exponentiel par pixel de molette
     suivi: 10,               // raideur du suivi du joueur (1/s)
     lissageZoom: 12,         // raideur du zoom (1/s)
+    // Secousse (explosions, coups, boss) : décalage ∝ intensité², intensité décroissante
+    secousse: { amplitude: 0.55, decroissance: 2.2, frequence: 31 },
   },
 
   rendu: {
@@ -117,6 +139,7 @@ export const CONFIG = {
     impactFoudre: { nombre: 14, vitesse: 5, taille: 0.2, duree: 0.5 },
     invocation: { nombre: 20, vitesse: 3, taille: 0.3, duree: 0.8 },
     explosion: { nombre: 70, vitesse: 8, taille: 0.45, duree: 1, couleurs: [0xffffff, 0xb0b0b0, 0xff9a2e] },
+    niveau: { nombre: 36, vitesse: 4.5, taille: 0.22, duree: 1, couleurs: [0x80ff20, 0xffff55, 0xffffff] },
   },
 
   textures: {
@@ -139,6 +162,13 @@ export const CONFIG = {
   hud: {
     periodeFps: 0.5,         // fenêtre de mesure des FPS (s)
     dureeMessage: 3,         // durée d'affichage d'un message central (s)
+    iconeTues: 'item/bone',  // compteur d'ennemis vaincus
+    dernierCompteARebours: 60,  // le chrono passe en or dans la dernière minute (s)
+    delaiFin: 1.6,           // s entre la fin de partie et l'écran de bilan
+    // Voile rouge : après un coup, et pulsant quand la santé est basse
+    vignette: { blessure: 0.85, santeBasse: 0.5, seuilSanteBasse: 0.3, pulsation: 5 },
+    // Cœurs qui tremblent quand il reste peu de PV (comme en jeu, à 4 PV ou moins)
+    tremblement: { seuilPv: 4, periode: 0.05, amplitude: 3 },
     barreXp: {
       fond: 'gui/sprites/hud/experience_bar_background',
       progression: 'gui/sprites/hud/experience_bar_progress',

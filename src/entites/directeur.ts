@@ -10,6 +10,7 @@ import type { IdEnnemi } from '../donnees/ennemis';
 import type { ChoixEnnemi, Progression } from '../donnees/types';
 import type { EtatPartie } from '../etat';
 import type { Terrain } from '../monde/navigation';
+import { longueur } from '../utils/maths';
 import type { Ennemis } from './ennemis';
 
 /** Ce qui sait dire si un point est visible à l'écran. */
@@ -39,6 +40,7 @@ export class DirecteurApparitions {
   }
 
   maj(dt: number): void {
+    if (this.etat.issue !== null) return;
     if (this.etat.joueur.mort) return;
     const a = APPARITIONS;
     const t = Math.min(this.etat.tempsJeu / a.dureeMontee, 1);
@@ -103,7 +105,7 @@ export class DirecteurApparitions {
     for (let essai = 0; essai < CONFIG.ennemis.essaisApparition; essai++) {
       const x = (Math.random() * 2 - 1) * limite;
       const z = (Math.random() * 2 - 1) * limite;
-      const distance = Math.hypot(x - j.x, z - j.z);
+      const distance = longueur(x - j.x, z - j.z);
       if (distance < APPARITIONS.distanceMin || carte.bloqueMarche(x, z) || !flux.atteignable(x, z)) continue;
       if (!this.vue.estVisible(x, z, 2)) {
         this.pointX = x;

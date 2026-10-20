@@ -6,12 +6,13 @@ import type { Entrees } from '../controles/entrees';
 import { JOUEUR_BASE } from '../donnees/joueur';
 import { MODELES } from '../donnees/modeles';
 import type { Ombres } from '../effets/ombres';
+import type { Retours } from '../effets/retours';
 import type { EtatPartie } from '../etat';
 import type { CarteMonde, Point } from '../monde/carte';
 import { angleChute, avancerAnimation, calculerRotations, creerEtatAnimation, declencherAttaque } from '../modeles/animation';
 import { compilerModele, type ModeleCompile } from '../modeles/compilation';
 import { creerPoseModele, ModeleInstancie, type PoseModele } from '../modeles/rendu';
-import { ecartAngle, facteurLissage } from '../utils/maths';
+import { ecartAngle, facteurLissage, longueur } from '../utils/maths';
 import type { CibleJoueur, SourceEntites } from './types';
 
 const corrige: Point = { x: 0, z: 0 };
@@ -24,15 +25,24 @@ export class Joueur implements SourceEntites, CibleJoueur {
   private readonly etat: EtatPartie;
   private readonly carte: CarteMonde;
   private readonly entrees: Entrees;
+  private readonly retours: Retours;
   private readonly modele: ModeleCompile;
   private readonly rendu: ModeleInstancie;
   private readonly pose: PoseModele;
   private readonly animation = creerEtatAnimation();
 
-  constructor(etat: EtatPartie, carte: CarteMonde, entrees: Entrees, scene: THREE.Scene, textures: BibliothequeTextures) {
+  constructor(
+    etat: EtatPartie,
+    carte: CarteMonde,
+    entrees: Entrees,
+    retours: Retours,
+    scene: THREE.Scene,
+    textures: BibliothequeTextures,
+  ) {
     this.etat = etat;
     this.carte = carte;
     this.entrees = entrees;
+    this.retours = retours;
     const personnage = etat.personnage;
     this.modele = compilerModele(MODELES[personnage.modele]);
     this.rendu = new ModeleInstancie(this.modele, personnage, textures.obtenir(personnage.skin), 1, scene);
@@ -48,12 +58,16 @@ export class Joueur implements SourceEntites, CibleJoueur {
     }
     if (j.invulnerabilite > 0) j.invulnerabilite -= dt;
     const mods = this.etat.modificateurs;
-    if (mods.regeneration > 0) j.pv = Math.min(j.pvMax, j.pv + mods.regeneration * dt);
+    if (mods.regeneration > 0) {
+      const avant = j.pv;
+      j.pv = Math.min(j.pvMax, j.pv + mods.regeneration * dt);
+      this.etat.stats.pvSoignes += j.pv - avant;
+    }
 
     // Direction voulue d'après le clavier
     let dx = (this.entrees.action('droite') ? 1 : 0) - (this.entrees.action('gauche') ? 1 : 0);
     let dz = (this.entrees.action('bas') ? 1 : 0) - (this.entrees.action('haut') ? 1 : 0);
-    const norme = Math.hypot(dx, dz);
+    const norme = longueur(dx, dz);
     if (norme > 0) {
       dx /= norme;
       dz /= norme;
@@ -82,7 +96,7 @@ export class Joueur implements SourceEntites, CibleJoueur {
     if (norme > 0) {
       j.angle += ecartAngle(j.angle, Math.atan2(dx, dz)) * facteurLissage(JOUEUR_BASE.vitesseRotation, dt);
     }
-    avancerAnimation(this.animation, this.modele, dt, Math.hypot(j.vx, j.vz));
+    avancerAnimation(this.animation, this.modele, dt, longueur(j.vx, j.vz));
   }
 
   /** Joue le geste d'attaque (coup d'épée). */
@@ -92,11 +106,14 @@ export class Joueur implements SourceEntites, CibleJoueur {
 
   subirDegats(degats: number): boolean {
     const j = this.etat.joueur;
-    if (j.mort || this.invincible || j.invulnerabilite > 0) return false;
+    if (j.mort || this.invincible || j.invulnerabilite > 0 || this.etat.issue !== null) return false;
     // L'armure retire des dégâts, mais un coup en fait toujours au moins 1
-    const subis = Math.max(1, degats - this.etat.modificateurs.armure);
-    j.pv = Math.max(0, j.pv - subis);
+    const subis = Math.min(j.pv, Math.max(1, degats - this.etat.modificateurs.armure));
+    j.pv -= subis;
     j.invulnerabilite = JOUEUR_BASE.invulnerabilite;
+    this.etat.stats.degatsSubis += subis;
+    this.retours.son('blessure_joueur');
+    this.retours.secousse(0.18 + Math.min(subis, 10) * 0.03);
     if (j.pv === 0) {
       j.mort = true;
       j.vx = 0;

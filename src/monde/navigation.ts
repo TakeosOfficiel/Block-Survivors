@@ -92,7 +92,7 @@ export class ChampDeFlux {
     this.carte.centre(meilleure, centre);
     const dx = centre.x - x;
     const dz = centre.z - z;
-    const longueur = Math.hypot(dx, dz) || 1;
+    const longueur = Math.sqrt(dx * dx + dz * dz) || 1;
     sortie.x = dx / longueur;
     sortie.z = dz / longueur;
     return true;

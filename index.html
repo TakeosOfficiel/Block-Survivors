@@ -8,45 +8,112 @@
 <body>
 
   <!-- Écran de chargement -->
-  <div id="chargement" class="texte-mc">
+  <div id="chargement" class="fond-terre">
     <div class="chargement-titre">Block Survivors</div>
-    <div id="chargement-texte">Chargement des textures…</div>
+    <div id="chargement-texte">Chargement…</div>
     <div class="chargement-cadre"><div id="chargement-barre"></div></div>
   </div>
 
+  <!-- Menu principal : choix du personnage et de l'arène -->
+  <div id="menu" class="fond-terre cache">
+    <div class="menu-entete">
+      <h1 id="menu-titre" class="logo">Block Survivors</h1>
+      <div id="menu-accroche" class="accroche"></div>
+    </div>
+    <div class="menu-colonnes">
+      <section class="panneau-mc menu-section">
+        <h2 class="titre-panneau">Personnage</h2>
+        <div id="menu-personnages" class="menu-choix"></div>
+      </section>
+      <section class="panneau-mc menu-section">
+        <h2 class="titre-panneau">Arène</h2>
+        <div id="menu-arenes" class="menu-choix"></div>
+      </section>
+    </div>
+    <div class="pile-boutons">
+      <button id="menu-jouer" class="bouton-mc large">Jouer</button>
+      <button id="menu-options" class="bouton-mc large">Options…</button>
+    </div>
+    <div class="menu-aide">ZQSD / WASD / Flèches : se déplacer · Molette : zoom · Échap : pause · Entrée : jouer</div>
+    <div class="pied pied-gauche">Block Survivors · textures Minecraft 1.21.4</div>
+    <div class="pied pied-droite">Projet de fan, non affilié à Mojang</div>
+  </div>
+
+  <!-- Options (menu et pause) -->
+  <div id="options" class="ecran voile cache">
+    <h2 class="ecran-titre">Options</h2>
+    <div class="pile-boutons">
+      <label class="curseur-mc large">
+        <input id="option-volume" type="range" min="0" max="100" step="5" />
+        <span id="option-volume-texte">Volume</span>
+      </label>
+      <button id="option-fps" class="bouton-mc large">FPS</button>
+      <button id="option-secousses" class="bouton-mc large">Secousses</button>
+      <button id="options-fermer" class="bouton-mc large espace-avant">Terminé</button>
+    </div>
+  </div>
+
   <!-- HUD (non cliquable) -->
-  <div id="hud" class="texte-mc">
-    <div id="hud-fps">FPS : --</div>
+  <div id="hud">
+    <div id="vignette"></div>
+    <div id="hud-haut">
+      <div id="hud-chrono">00:00</div>
+      <div id="hud-boss" class="cache">
+        <div id="hud-boss-nom"></div>
+        <div id="hud-boss-barre"><div id="hud-boss-remplissage"></div></div>
+      </div>
+    </div>
+    <div id="hud-droite">
+      <div id="hud-tues"><img id="hud-tues-icone" alt="" /><span id="hud-tues-nombre">0</span></div>
+      <div id="hud-fps" class="cache">FPS : --</div>
+    </div>
     <div id="hud-message"></div>
     <div id="hud-alerte" class="cache"></div>
-    <div id="hud-boss" class="cache">
-      <div id="hud-boss-nom"></div>
-      <div id="hud-boss-barre"><div id="hud-boss-remplissage"></div></div>
-    </div>
     <div id="hud-coeurs"></div>
     <div id="hud-xp"><div id="hud-xp-remplissage"></div><span id="hud-niveau">1</span></div>
     <div id="hud-capacites">
       <div id="hud-passifs"></div>
       <div id="hud-armes"></div>
     </div>
-    <div id="hud-aide">ZQSD / WASD / Flèches : se déplacer · Molette : zoom · F3 ou ² : debug</div>
   </div>
 
   <!-- Montée de niveau : choix d'une carte -->
-  <div id="cartes" class="ecran cache texte-mc">
-    <div id="cartes-titre" class="ecran-titre">Niveau 2 !</div>
+  <div id="cartes" class="ecran voile cache">
+    <h2 id="cartes-titre" class="ecran-titre">Niveau 2 !</h2>
     <div class="ecran-sous-titre">Choisissez une amélioration (clic ou touches 1, 2, 3)</div>
     <div id="cartes-liste"></div>
   </div>
 
   <!-- Pause -->
-  <div id="pause" class="ecran cache texte-mc">
-    <div class="ecran-titre">Pause</div>
-    <button id="pause-reprendre" class="bouton-mc">Reprendre (Échap)</button>
+  <div id="pause" class="ecran voile cache">
+    <h2 class="ecran-titre">Jeu en pause</h2>
+    <div class="ecran-corps">
+      <div class="pile-boutons">
+        <button id="pause-reprendre" class="bouton-mc large">Reprendre la partie</button>
+        <button id="pause-options" class="bouton-mc large">Options…</button>
+        <div class="rangee-boutons">
+          <button id="pause-recommencer" class="bouton-mc">Recommencer</button>
+          <button id="pause-menu" class="bouton-mc">Menu principal</button>
+        </div>
+      </div>
+      <div id="pause-bilan" class="panneau-mc bilan"></div>
+    </div>
+    <div class="ecran-aide">ZQSD / WASD / Flèches : se déplacer · Molette : zoom · Échap : reprendre · F3 ou ² : debug</div>
+  </div>
+
+  <!-- Fin de partie -->
+  <div id="fin" class="ecran cache">
+    <h2 id="fin-titre" class="ecran-titre grand">Vous êtes mort !</h2>
+    <div id="fin-sous-titre" class="ecran-sous-titre"></div>
+    <div id="fin-bilan" class="panneau-mc bilan"></div>
+    <div class="rangee-boutons">
+      <button id="fin-rejouer" class="bouton-mc">Rejouer</button>
+      <button id="fin-menu" class="bouton-mc">Menu principal</button>
+    </div>
   </div>
 
   <!-- Panneau debug (F3 ou ²) -->
-  <div id="debug" class="cache texte-mc">
+  <div id="debug" class="cache">
     <div class="ligne titre">Block Survivors — DEBUG</div>
     <div class="ligne">FPS : <span id="dbg-fps">--</span> (<span id="dbg-ms">--</span> ms / image)</div>
     <div class="ligne">Entités actives : <span id="dbg-entites">0</span> · Particules : <span id="dbg-particules">0</span></div>
@@ -72,6 +139,7 @@
     </div>
     <div class="ligne">
       <button id="dbg-boss">Faire apparaître le prochain boss</button> <small>(touche B)</small>
+      <button id="dbg-fin">Aller à 14:50</button>
     </div>
     <div class="ligne">Personnage (relance la partie) : <span id="dbg-personnages"></span></div>
     <div class="ligne">Arène (relance la partie) : <span id="dbg-arenes"></span></div>

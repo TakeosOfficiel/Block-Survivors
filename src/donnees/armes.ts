@@ -20,6 +20,7 @@ const BASE: StatsArme = {
 
 const definitions = {
   epee: {
+    son: 'balayage',
     nom: 'Épée en fer',
     description: "Frappe en arc de cercle devant vous.",
     icone: 'item/iron_sword',
@@ -38,6 +39,7 @@ const definitions = {
     ],
   },
   arc: {
+    son: 'arc',
     nom: 'Arc',
     description: "Tire sur l'ennemi le plus proche.",
     icone: 'item/bow',
@@ -52,6 +54,7 @@ const definitions = {
     ],
   },
   trident: {
+    son: 'trident',
     nom: 'Trident',
     description: 'Lancé à travers les ennemis, il revient dans votre main.',
     icone: 'item/trident',
@@ -80,6 +83,7 @@ const definitions = {
     ],
   },
   boules_feu: {
+    son: 'boule_feu',
     nom: 'Boules de feu',
     description: 'Explosent au contact et brûlent la zone.',
     icone: 'item/fire_charge',
@@ -94,6 +98,7 @@ const definitions = {
     ],
   },
   eclairs: {
+    son: 'tonnerre',
     nom: 'Éclairs',
     description: 'La foudre frappe des ennemis au hasard.',
     icone: 'block/lightning_rod',
@@ -108,6 +113,7 @@ const definitions = {
     ],
   },
   golems: {
+    son: 'golem_invocation',
     nom: 'Golem de fer',
     description: 'Invoque un golem qui écrase les ennemis.',
     icone: 'block/carved_pumpkin',

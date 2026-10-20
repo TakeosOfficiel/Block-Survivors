@@ -65,7 +65,7 @@ export class Arsenal {
   }
 
   maj(dt: number): void {
-    if (this.contexte.etat.joueur.mort) return;
+    if (this.contexte.etat.joueur.mort || this.contexte.etat.issue !== null) return;
     for (let i = 0; i < this.armes.length; i++) {
       const arme = this.armes[i];
       if (arme.definition.mecanique.type === 'orbite') {
@@ -74,7 +74,10 @@ export class Arsenal {
       }
       arme.minuterie -= dt;
       if (arme.minuterie > 0) continue;
-      arme.minuterie = this.declencher(arme) ? arme.stats.cadence : NOUVEL_ESSAI;
+      const declenchee = this.declencher(arme);
+      arme.minuterie = declenchee ? arme.stats.cadence : NOUVEL_ESSAI;
+      const son = arme.definition.son;
+      if (declenchee && son && arme.definition.mecanique.type !== 'invocation') this.contexte.retours.son(son);
     }
   }
 
@@ -118,7 +121,7 @@ export class Arsenal {
 
       case 'invocation':
         // Au maximum d'alliés, on attend simplement la prochaine invocation
-        this.systemes.invocations.invoquer(arme);
+        if (this.systemes.invocations.invoquer(arme) && arme.definition.son) this.contexte.retours.son(arme.definition.son);
         return true;
 
       case 'orbite':

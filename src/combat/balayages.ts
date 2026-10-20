@@ -55,7 +55,7 @@ export class Balayages {
       const dz = e.z - j.z;
       const colle = dx * dx + dz * dz < 0.8 * 0.8;
       if (colle || Math.abs(ecartAngle(j.angle, Math.atan2(dx, dz))) <= m.angle / 2) {
-        ennemis.blesser(e, s.degats, j.x, j.z, s.recul);
+        ennemis.blesser(e, s.degats, j.x, j.z, s.recul, arme.index);
       }
     }
     this.contexte.declencherGesteJoueur();

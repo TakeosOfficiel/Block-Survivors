@@ -117,7 +117,7 @@ export class CarteMonde {
   ligneDeVue(x0: number, z0: number, x1: number, z1: number): boolean {
     const dx = x1 - x0;
     const dz = z1 - z0;
-    const pas = Math.ceil(Math.hypot(dx, dz) * 2);
+    const pas = Math.ceil(Math.sqrt(dx * dx + dz * dz) * 2);
     for (let i = 1; i < pas; i++) {
       const t = i / pas;
       if (this.bloqueMarche(x0 + dx * t, z0 + dz * t)) return false;

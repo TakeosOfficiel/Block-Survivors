@@ -10,7 +10,7 @@ import { IDS_PASSIFS, PASSIFS, type IdPassif } from '../donnees/passifs';
 import { PROGRESSION } from '../donnees/progression';
 import type { CheminTexture, MecaniqueArme, Modificateurs, StatsArme } from '../donnees/types';
 import type { EtatPartie } from '../etat';
-import { creerModificateurs } from './modificateurs';
+import { creerModificateurs, cumulerModificateurs } from './modificateurs';
 import type { Passifs } from './passifs';
 
 export type Amelioration =
@@ -18,9 +18,13 @@ export type Amelioration =
   | { readonly type: 'passif'; readonly id: IdPassif }
   | { readonly type: 'soin' };
 
+/** Famille de la carte, qui donne la couleur de son nom (comme la rareté des objets du jeu). */
+export type RareteCarte = 'nouvelle_arme' | 'arme' | 'passif' | 'exclusif' | 'soin';
+
 /** Tout ce qu'une carte affiche. */
 export interface Carte {
   readonly amelioration: Amelioration;
+  readonly rarete: RareteCarte;
   readonly nom: string;
   readonly icone: CheminTexture;
   /** « Nouveau » ou « Rang 2 → 3 ». */
@@ -115,9 +119,12 @@ export class Ameliorations {
         this.arsenal.recalculer();
         break;
       }
-      case 'soin':
+      case 'soin': {
+        const avant = j.pv;
         j.pv = Math.min(j.pvMax, j.pv + PROGRESSION.soin.pv);
+        this.etat.stats.pvSoignes += j.pv - avant;
         break;
+      }
     }
   }
 
@@ -144,7 +151,7 @@ export class Ameliorations {
       case 'passif': return this.decrirePassif(amelioration.id);
       case 'soin': {
         const s = PROGRESSION.soin;
-        return { amelioration, nom: s.nom, icone: s.icone, etiquette: 'Soin', description: s.description, lignes: [`Santé : +${s.pv} PV`] };
+        return { amelioration, rarete: 'soin', nom: s.nom, icone: s.icone, etiquette: 'Soin', description: s.description, lignes: [`Santé : +${s.pv} PV`] };
       }
     }
   }
@@ -160,6 +167,7 @@ export class Ameliorations {
     if (rang === 0) {
       return {
         amelioration,
+        rarete: 'nouvelle_arme',
         nom: def.nom,
         icone: def.icone,
         etiquette: 'Nouvelle arme',
@@ -170,6 +178,7 @@ export class Ameliorations {
     const avant = calculerStats(def, rang, mods, { ...def.stats });
     return {
       amelioration,
+      rarete: 'arme',
       nom: def.nom,
       icone: def.icone,
       etiquette: `Rang ${rang} → ${rang + 1}`,
@@ -187,15 +196,25 @@ export class Ameliorations {
     const apres = this.passifs.calculer(creerModificateurs(), id);
     return {
       amelioration: { type: 'passif', id },
+      rarete: def.exclusif ? 'exclusif' : 'passif',
       nom: def.nom,
       icone: def.icone,
-      etiquette: rang === 0 ? 'Nouveau bonus' : `Rang ${rang} → ${rang + 1}`,
+      etiquette: rang === 0 ? (def.exclusif ? 'Nouveau bonus exclusif' : 'Nouveau bonus') : `Rang ${rang} → ${rang + 1}`,
       description: rang === 0 ? `${def.description} ${def.niveaux[0].description}.` : def.niveaux[rang].description,
       lignes: (Object.keys(LIBELLES_MODIFICATEURS) as (keyof Modificateurs)[])
         .filter((cle) => Math.abs(apres[cle] - avant[cle]) > 1e-6)
         .map((cle) => `${LIBELLES_MODIFICATEURS[cle].nom} : ${formaterModificateur(cle, avant[cle])} → ${formaterModificateur(cle, apres[cle])}`),
     };
   }
+}
+
+/** Lignes décrivant des bonus permanents (personnages), ex. « Dégâts reçus : −1 par coup ». */
+export function decrireBonus(bonus: Partial<Modificateurs>): string[] {
+  const valeurs = creerModificateurs();
+  cumulerModificateurs(valeurs, bonus);
+  return (Object.keys(bonus) as (keyof Modificateurs)[])
+    .filter((cle) => (bonus[cle] ?? 0) !== 0)
+    .map((cle) => `${LIBELLES_MODIFICATEURS[cle].nom} : ${formaterModificateur(cle, valeurs[cle])}`);
 }
 
 function formaterStat(cle: keyof StatsArme, valeur: number): string {

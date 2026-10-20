@@ -10,6 +10,7 @@ import type { IdModele } from './modeles';
 import type { IdObjet } from './objets';
 import type { IdPassif } from './passifs';
 import type { IdProjectile } from './projectiles';
+import type { IdSon } from './sons';
 import type { IdStructure } from './structures';
 
 /** Chemin d'une texture vanilla, relatif à assets/minecraft/textures/, sans « .png » (ex. « block/dirt »). */
@@ -220,6 +221,10 @@ export interface DefinitionEnnemi extends ApparenceEntite {
   readonly ignoreObstacles?: boolean;
   /** Présent pour les boss : affichage de leur barre de vie. */
   readonly boss?: { readonly couleurBarre: 'purple' | 'red' };
+  /** Sons joués quand il est blessé et quand il meurt. */
+  readonly sons?: { readonly blessure: IdSon; readonly mort: IdSon };
+  /** Hauteur de ses sons (1 = normale ; < 1 = plus grave, pour les boss). */
+  readonly hauteurSons?: number;
 }
 
 // --------------------------------------------------------------------------
@@ -301,6 +306,8 @@ export interface DefinitionArme {
   readonly stats: StatsArme;
   /** Améliorations des rangs 2, 3… ; rang maximal = 1 + longueur. */
   readonly niveaux: readonly NiveauArme[];
+  /** Son joué à chaque déclenchement. */
+  readonly son?: IdSon;
 }
 
 // --------------------------------------------------------------------------
@@ -381,6 +388,8 @@ export interface DefinitionArene {
   readonly id: string;
   readonly nom: string;
   readonly description: string;
+  /** Texture de bloc représentant l'arène dans le menu. */
+  readonly icone: CheminTexture;
   /** Côté de la zone jouable en blocs, centrée sur l'origine. */
   readonly taille: number;
   readonly hauteurMur: number;
@@ -489,6 +498,8 @@ export interface DefinitionPassif {
 export interface DefinitionProgression {
   /** XP pour passer du niveau 1 au niveau 2. */
   readonly xpPremierNiveau: number;
+  /** Durée d'une partie (s) : survivre jusque-là, c'est gagner. */
+  readonly dureePartie: number;
   /** XP supplémentaire demandée à chaque niveau, par tranche de niveaux. */
   readonly paliers: readonly { readonly jusquAuNiveau: number; readonly increment: number }[];
   readonly cartesParNiveau: number;
@@ -498,4 +509,21 @@ export interface DefinitionProgression {
   readonly soin: { readonly nom: string; readonly description: string; readonly icone: CheminTexture; readonly pv: number };
   /** Image de l'orbe (0 à 15 dans la texture) selon sa valeur, de la plus petite à la plus grosse. */
   readonly orbes: readonly { readonly valeurMin: number; readonly image: number }[];
+}
+
+// --------------------------------------------------------------------------
+// Sons
+// --------------------------------------------------------------------------
+export interface DefinitionSon {
+  /** Chemin vanilla relatif à assets/minecraft/sounds/, sans « .ogg ». */
+  readonly chemin: string;
+  /** Empreinte SHA-1 du fichier dans l'index d'assets (serveur de Mojang). */
+  readonly hachage: string;
+  readonly volume: number;
+  /** Hauteur tirée au hasard entre ces bornes à chaque lecture (comme en jeu). */
+  readonly hauteur: readonly [number, number];
+  /** Délai minimal entre deux lectures (s), pour ne pas saturer. */
+  readonly intervalleMin: number;
+  /** Lectures simultanées au maximum. */
+  readonly simultanes: number;
 }

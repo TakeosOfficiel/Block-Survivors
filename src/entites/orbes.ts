@@ -8,8 +8,10 @@ import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG } from '../config';
 import { JOUEUR_BASE } from '../donnees/joueur';
 import { PROGRESSION } from '../donnees/progression';
+import type { Retours } from '../effets/retours';
 import type { EtatPartie } from '../etat';
 import { gagnerXp } from '../progression/niveaux';
+import { longueur } from '../utils/maths';
 import { Pool } from '../utils/pool';
 import type { SourceEntites } from './types';
 
@@ -35,13 +37,15 @@ const couleur = new THREE.Color();
 
 export class Orbes implements SourceEntites, DepotXp {
   private readonly etat: EtatPartie;
+  private readonly retours: Retours;
   private readonly pool = new Pool<Orbe>(CONFIG.orbes.capacite, () => ({ x: 0, z: 0, vx: 0, vz: 0, valeur: 0, phase: 0 }));
   /** Un maillage par palier de taille (PROGRESSION.orbes). */
   private readonly maillages: THREE.InstancedMesh[];
   private readonly comptes: Int32Array;
 
-  constructor(etat: EtatPartie, scene: THREE.Scene, textures: BibliothequeTextures) {
+  constructor(etat: EtatPartie, retours: Retours, scene: THREE.Scene, textures: BibliothequeTextures) {
     this.etat = etat;
+    this.retours = retours;
     const map = textures.obtenir(CONFIG.orbes.texture);
     const inclinaison = (CONFIG.camera.inclinaisonDeg * Math.PI) / 180;
 
@@ -94,9 +98,10 @@ export class Orbes implements SourceEntites, DepotXp {
       const o = this.pool.elements[i];
       const dx = j.x - o.x;
       const dz = j.z - o.z;
-      const d = Math.hypot(dx, dz);
+      const d = longueur(dx, dz);
       if (d < c.distanceCollecte) {
         gagnerXp(this.etat, o.valeur);
+        this.retours.son('orbe');
         this.pool.liberer(i);
         continue;
       }
@@ -104,7 +109,7 @@ export class Orbes implements SourceEntites, DepotXp {
         // Attirée de plus en plus vite vers le joueur
         o.vx += (dx / d) * c.attraction * dt;
         o.vz += (dz / d) * c.attraction * dt;
-        const v = Math.hypot(o.vx, o.vz);
+        const v = longueur(o.vx, o.vz);
         if (v > c.vitesseMax) {
           o.vx *= c.vitesseMax / v;
           o.vz *= c.vitesseMax / v;

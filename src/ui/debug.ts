@@ -8,6 +8,7 @@ import { ARENES } from '../donnees/arenes';
 import { ARMES, IDS_ARMES, type IdArme } from '../donnees/armes';
 import { ENNEMIS, IDS_ENNEMIS, type IdEnnemi } from '../donnees/ennemis';
 import { IDS_PERSONNAGES, PERSONNAGES, type IdPersonnage } from '../donnees/personnages';
+import type { DefinitionArene } from '../donnees/types';
 import type { EtatPartie } from '../etat';
 import type { CameraJeu } from '../moteur/camera';
 import type { Rendu } from '../moteur/rendu';
@@ -30,8 +31,9 @@ export interface SourcesDebug {
   ameliorerArme(id: IdArme): void;
   gagnerNiveau(): void;
   apparaitreBoss(): void;
+  allerVersFin(): void;
   changerPersonnage(id: IdPersonnage): void;
-  changerArene(id: string): void;
+  changerArene(arene: DefinitionArene): void;
   frapper(): void;
 }
 
@@ -60,6 +62,7 @@ export class PanneauDebug {
     frappe: element<HTMLButtonElement>('dbg-frappe'),
     niveau: element<HTMLButtonElement>('dbg-niveau'),
     boss: element<HTMLButtonElement>('dbg-boss'),
+    fin: element<HTMLButtonElement>('dbg-fin'),
     personnages: element('dbg-personnages'),
     arenes: element('dbg-arenes'),
   };
@@ -81,6 +84,7 @@ export class PanneauDebug {
     this.lierBouton(this.dom.frappe, () => this.sources.frapper());
     this.lierBouton(this.dom.niveau, () => this.sources.gagnerNiveau());
     this.lierBouton(this.dom.boss, () => this.sources.apparaitreBoss());
+    this.lierBouton(this.dom.fin, () => this.sources.allerVersFin());
 
     // Un bouton par ennemi et par arme, générés depuis les tables de données
     for (const id of IDS_ENNEMIS) {
@@ -93,7 +97,7 @@ export class PanneauDebug {
       this.dom.personnages.append(this.creerBouton(PERSONNAGES[id].nom, () => this.sources.changerPersonnage(id)));
     }
     for (const arene of ARENES) {
-      this.dom.arenes.append(this.creerBouton(arene.nom, () => this.sources.changerArene(arene.id)));
+      this.dom.arenes.append(this.creerBouton(arene.nom, () => this.sources.changerArene(arene)));
     }
 
     window.addEventListener('keydown', this.surTouche);

@@ -1,15 +1,20 @@
 /**
- * Écran de montée de niveau : 3 cartes d'amélioration, choisies à la souris
- * ou avec les touches 1, 2, 3 (rangée du haut ou pavé numérique).
+ * Écran de montée de niveau : 3 cartes d'amélioration en infobulles du jeu,
+ * nom coloré selon la famille, choisies à la souris ou avec les touches 1, 2, 3
+ * (rangée du haut ou pavé numérique).
  */
 import type { BibliothequeTextures } from '../assets/textures';
 import type { Carte } from '../progression/ameliorations';
+import { caseImage } from './bilan';
 import { element } from './dom';
 
 const TOUCHES: Readonly<Record<string, number>> = {
   Digit1: 0, Digit2: 1, Digit3: 2,
   Numpad1: 0, Numpad2: 1, Numpad3: 2,
 };
+
+/** Délai avant qu'un clic ou une touche soit accepté (évite un choix involontaire en pleine action). */
+const DELAI_ACTIVATION_MS = 350;
 
 export class EcranCartes {
   private readonly racine = element('cartes');
@@ -18,6 +23,7 @@ export class EcranCartes {
   private readonly textures: BibliothequeTextures;
   private cartes: readonly Carte[] = [];
   private surChoix: ((carte: Carte) => void) | null = null;
+  private ouvertureMs = 0;
 
   constructor(textures: BibliothequeTextures) {
     this.textures = textures;
@@ -31,6 +37,7 @@ export class EcranCartes {
   ouvrir(niveau: number, cartes: readonly Carte[], surChoix: (carte: Carte) => void): void {
     this.cartes = cartes;
     this.surChoix = surChoix;
+    this.ouvertureMs = performance.now();
     this.titre.textContent = `Niveau ${niveau} !`;
     this.liste.replaceChildren(...cartes.map((carte, i) => this.creerCarte(carte, i)));
     this.racine.classList.remove('cache');
@@ -44,7 +51,7 @@ export class EcranCartes {
   private choisir(index: number): void {
     const carte = this.cartes[index];
     const rappel = this.surChoix;
-    if (!carte || !rappel) return;
+    if (!carte || !rappel || performance.now() - this.ouvertureMs < DELAI_ACTIVATION_MS) return;
     this.fermer();
     rappel(carte);
   }
@@ -59,27 +66,15 @@ export class EcranCartes {
 
   private creerCarte(carte: Carte, index: number): HTMLElement {
     const bouton = document.createElement('button');
-    bouton.className = 'carte';
+    bouton.className = 'carte infobulle';
     bouton.addEventListener('click', () => this.choisir(index));
 
     const touche = document.createElement('span');
     touche.className = 'carte-touche';
-    touche.textContent = String(index + 1);
-
-    const icone = document.createElement('div');
-    icone.className = 'carte-icone';
-    const url = this.textures.url(carte.icone);
-    if (url) {
-      const image = document.createElement('img');
-      image.src = url;
-      image.alt = '';
-      icone.append(image);
-    } else {
-      icone.textContent = carte.nom.charAt(0);
-    }
+    touche.textContent = `[${index + 1}]`;
 
     const nom = document.createElement('div');
-    nom.className = 'carte-nom';
+    nom.className = `carte-nom rarete-${carte.rarete}`;
     nom.textContent = carte.nom;
 
     const etiquette = document.createElement('div');
@@ -98,7 +93,7 @@ export class EcranCartes {
       lignes.append(item);
     }
 
-    bouton.append(touche, icone, nom, etiquette, description, lignes);
+    bouton.append(touche, caseImage(this.textures.url(carte.icone), carte.nom, 'grande'), nom, etiquette, description, lignes);
     return bouton;
   }
 }

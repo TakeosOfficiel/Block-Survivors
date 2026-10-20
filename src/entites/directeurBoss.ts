@@ -5,8 +5,11 @@
  */
 import { CALENDRIER_BOSS } from '../donnees/boss';
 import { ENNEMIS, type IdEnnemi } from '../donnees/ennemis';
+import { PROGRESSION } from '../donnees/progression';
+import type { Retours } from '../effets/retours';
 import type { EtatPartie } from '../etat';
 import type { Terrain } from '../monde/navigation';
+import { longueur } from '../utils/maths';
 import type { DetecteurVisibilite } from './directeur';
 import type { Ennemis } from './ennemis';
 
@@ -21,11 +24,20 @@ export class DirecteurBoss {
   private readonly ennemis: Ennemis;
   private readonly vue: DetecteurVisibilite;
   private readonly afficheur: AfficheurAlerte;
+  private readonly retours: Retours;
   private prochain = 0;               // index dans l'ordre des boss
   private moment = CALENDRIER_BOSS.premierPassage;
   private annonce = false;
 
-  constructor(etat: EtatPartie, terrain: Terrain, ennemis: Ennemis, vue: DetecteurVisibilite, afficheur: AfficheurAlerte) {
+  constructor(
+    etat: EtatPartie,
+    terrain: Terrain,
+    ennemis: Ennemis,
+    vue: DetecteurVisibilite,
+    afficheur: AfficheurAlerte,
+    retours: Retours,
+  ) {
+    this.retours = retours;
     this.etat = etat;
     this.terrain = terrain;
     this.ennemis = ennemis;
@@ -39,7 +51,8 @@ export class DirecteurBoss {
   }
 
   maj(): void {
-    if (this.etat.joueur.mort) return;
+    // Aucun boss au-delà de la fin de partie (la victoire arrive avant)
+    if (this.etat.joueur.mort || this.etat.issue !== null || this.moment >= PROGRESSION.dureePartie) return;
     const t = this.etat.tempsJeu;
     if (!this.annonce && t >= this.moment - CALENDRIER_BOSS.avertissement) {
       this.annonce = true;
@@ -75,12 +88,14 @@ export class DirecteurBoss {
       const cx = (Math.random() * 2 - 1) * limite;
       const cz = (Math.random() * 2 - 1) * limite;
       if (this.terrain.carte.bloqueMarche(cx, cz)) continue;
-      if (Math.hypot(cx - j.x, cz - j.z) > 12 && !this.vue.estVisible(cx, cz, 3)) {
+      if (longueur(cx - j.x, cz - j.z) > 12 && !this.vue.estVisible(cx, cz, 3)) {
         x = cx;
         z = cz;
         break;
       }
     }
     this.ennemis.apparaitre(id, x, z);
+    this.retours.son('boss');
+    this.retours.secousse(0.6);
   }
 }

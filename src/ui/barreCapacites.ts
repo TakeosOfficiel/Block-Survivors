@@ -36,7 +36,7 @@ export class BarreCapacites {
 
   private creerCase(nom: string, description: string, icone: CheminTexture, rang: number, max: number): HTMLElement {
     const case_ = document.createElement('div');
-    case_.className = 'capacite';
+    case_.className = 'capacite case-mc';
     case_.title = `${nom} — ${description}`;
 
     const url = this.textures.url(icone);
@@ -50,7 +50,7 @@ export class BarreCapacites {
     }
 
     const etiquette = document.createElement('span');
-    etiquette.className = 'rang';
+    etiquette.className = rang >= max ? 'rang max' : 'rang';
     etiquette.textContent = rang >= max ? 'MAX' : String(rang);
     case_.append(etiquette);
     return case_;

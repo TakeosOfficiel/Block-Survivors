@@ -35,3 +35,11 @@ export function choisirPondere<T extends { readonly poids: number }>(choix: read
   if (dernier === undefined) throw new Error('choisirPondere : liste vide');
   return dernier;
 }
+
+/**
+ * Longueur du vecteur (x, z). Préférée à Math.hypot dans les boucles par
+ * image : hypot passe par un chemin générique qui alloue à chaque appel.
+ */
+export function longueur(x: number, z: number): number {
+  return Math.sqrt(x * x + z * z);
+}

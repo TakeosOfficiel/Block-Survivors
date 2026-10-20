@@ -74,7 +74,7 @@ export class Foudre {
       const x = cible.x;
       const z = cible.z;
       const n = ennemis.chercher(x, z, s.zone, this.tampon);
-      for (let i = 0; i < n; i++) ennemis.blesser(ennemis.obtenir(this.tampon[i]), s.degats, x, z, s.recul);
+      for (let i = 0; i < n; i++) ennemis.blesser(ennemis.obtenir(this.tampon[i]), s.degats, x, z, s.recul, arme.index);
       this.creerEclair(x, z, m.couleur);
       particules.emettre(x, 0.3, z, CONFIG.particules.impactFoudre, this.couleursImpact[arme.index]);
     }

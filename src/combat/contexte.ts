@@ -4,6 +4,7 @@ import type { Retours } from '../effets/retours';
 import type { Ennemis } from '../entites/ennemis';
 import type { EtatPartie } from '../etat';
 import type { CarteMonde } from '../monde/carte';
+import type { Talents } from './talents/talents';
 
 export interface ContexteCombat {
   readonly etat: EtatPartie;
@@ -11,6 +12,8 @@ export interface ContexteCombat {
   readonly ennemis: Ennemis;
   readonly particules: Particules;
   readonly retours: Retours;
+  /** Mécaniques des talents de l'arbre actif. */
+  readonly talents: Talents;
   /** Tourne le joueur vers `angle` (rad) et joue son geste d'attaque (coup d'épée). */
   declencherGesteJoueur(angle: number): void;
 }

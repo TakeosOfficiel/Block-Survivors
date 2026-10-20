@@ -36,7 +36,13 @@ export const PALIERS: readonly { readonly ligne: number; readonly rangs: number 
 ];
 
 /** Mécaniques propres déjà en jeu ; les autres sont annoncées « en préparation » sur l'écran des talents. */
-export const MECANIQUES_PRETES: ReadonlySet<string> = new Set<string>([]);
+export const MECANIQUES_PRETES: ReadonlySet<string> = new Set<string>([
+  // Guerrier
+  'enchainement', 'frenesie', 'bourreau', 'elan_critique', 'saignee', 'lame_lourde', 'soif_combat', 'fureur',
+  'fureur_gladiateur', 'champion_arene', 'execution', 'posture_defensive', 'epines', 'rempart', 'inebranlable',
+  'ronces_acier', 'contre_coup', 'peau_de_fer', 'tenir_la_ligne', 'repliques', 'contre_attaque_bastion',
+  'dernier_rempart', 'seisme',
+]);
 
 export const ARBRES: Readonly<Record<IdPersonnage, readonly [DefinitionArbre, DefinitionArbre]>> = {
   guerrier: [

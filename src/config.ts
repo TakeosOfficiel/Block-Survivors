@@ -101,6 +101,7 @@ export const CONFIG = {
     separation: 6,           // force de répulsion entre ennemis (1/s)
     interruption: 1,         // s avant l'attaque suivante d'un ennemi interrompu (coup de bouclier)
     essaisGroupe: 12,        // ennemis examinés pour trouver le plus gros groupe
+    chocMur: 4,              // recul minimal (blocs/s) pour un choc contre un mur (Lame lourde)
     amortissementRecul: 6,   // décroissance du recul (1/s)
     vitesseRotation: 10,     // orientation vers la direction de marche (1/s)
     dureeMort: 0.6,          // chute sur le côté avant disparition (s)
@@ -138,7 +139,9 @@ export const CONFIG = {
     // Onde de choc : blocs soulevés tous les `espacement` blocs, qui jaillissent puis s'enfoncent (s)
     fissure: {
       capacite: 12, blocs: 320, rayonGroupe: 2, depart: 1, espacement: 0.8, tailleBloc: 0.9,
-      montee: 0.08, descente: 0.25, dureeBloc: 0.7, immunite: 0.6,
+      montee: 0.08, descente: 0.25, dureeBloc: 0.7, immunite: 0.45,
+      // Talents : réplique (s après l'onde, part des dégâts par rang), directions du Séisme
+      delaiReplique: 0.5, repliques: [0.4, 0.6], directionsSeisme: 6,
     },
     // Lame colossale : chute (s) depuis `hauteur` blocs, plantée `tenue` s puis effacée en `fondu` s
     chute: { capacite: 6, duree: 0.4, hauteur: 6, enfoncement: 0.12, tenue: 0.4, fondu: 0.3, decalage: 0.25 },
@@ -161,6 +164,9 @@ export const CONFIG = {
     // Piège de ronces : buissons par piège, enracinement à l'entrée (s) et délai avant le suivant (s)
     piege: { capacite: 12, buissons: 5, taille: 0.9, recherche: 12, enracinement: 0.5, delaiEnracinement: 3 },
   },
+
+  // Talents : vitesse (blocs/s) sous laquelle le joueur compte comme immobile
+  talents: { seuilMouvement: 0.5 },
 
   // Chiffres des dégâts au-dessus des ennemis (option)
   chiffresDegats: {

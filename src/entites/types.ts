@@ -17,11 +17,21 @@ export interface SourceEntites {
 
 /** Ce qui peut être blessé par les ennemis. */
 export interface CibleJoueur {
-  /** Applique des dégâts (ignorés pendant l'invulnérabilité) ; renvoie vrai si le coup porte. */
-  subirDegats(degats: number): boolean;
+  /** Applique des dégâts (ignorés pendant l'invulnérabilité) ; renvoie vrai si le coup porte. `boss` : coup d'un boss. */
+  subirDegats(degats: number, boss?: boolean): boolean;
+}
+
+/** Talents branchés sur le joueur (combat/talents) : vitesse, coups reçus, mort évitée. */
+export interface CrochetsJoueur {
+  vitesse(): number;
+  degatsRecus(degats: number, boss: boolean): number;
+  armure(): number;
+  /** `evites` : dégâts retirés par l'armure et absorbés par le bouclier. */
+  apresCoupRecu(subis: number, evites: number): void;
+  eviterMort(): boolean;
 }
 
 /** Ce qui permet aux ennemis de tirer. */
 export interface Tireur {
-  tirer(type: IdProjectile, x: number, z: number, dirX: number, dirZ: number, degats: number): void;
+  tirer(type: IdProjectile, x: number, z: number, dirX: number, dirZ: number, degats: number, boss?: boolean): void;
 }

@@ -16,7 +16,7 @@ import { angleChute, avancerAnimation, calculerRotations, creerEtatAnimation, de
 import { compilerModele, type ModeleCompile } from '../modeles/compilation';
 import { creerPoseModele, ModeleInstancie, type PoseModele } from '../modeles/rendu';
 import { ecartAngle, facteurLissage, longueur } from '../utils/maths';
-import type { CibleJoueur, SourceEntites } from './types';
+import type { CibleJoueur, CrochetsJoueur, SourceEntites } from './types';
 
 const corrige: Point = { x: 0, z: 0 };
 
@@ -24,6 +24,8 @@ export class Joueur implements SourceEntites, CibleJoueur {
   readonly actifs = 1;
   /** Ignore tous les dégâts (debug). */
   invincible = false;
+  /** Talents branchés sur le joueur (après la création des systèmes de combat). */
+  talents: CrochetsJoueur | null = null;
 
   private readonly etat: EtatPartie;
   private readonly carte: CarteMonde;
@@ -86,7 +88,7 @@ export class Joueur implements SourceEntites, CibleJoueur {
 
     // Vitesse : approche exponentielle de la vitesse cible (réactif, sans à-coups)
     const k = facteurLissage(JOUEUR_BASE.reactivite, dt);
-    const vitesse = this.etat.personnage.vitesse * mods.vitesse * this.carte.vitesseSol(j.x, j.z);
+    const vitesse = this.etat.personnage.vitesse * mods.vitesse * (this.talents?.vitesse() ?? 1) * this.carte.vitesseSol(j.x, j.z);
     j.vx += (dx * vitesse - j.vx) * k;
     j.vz += (dz * vitesse - j.vz) * k;
     j.x += j.vx * dt;
@@ -116,11 +118,14 @@ export class Joueur implements SourceEntites, CibleJoueur {
     declencherAttaque(this.animation, this.modele);
   }
 
-  subirDegats(degats: number): boolean {
+  subirDegats(degats: number, boss = false): boolean {
     const j = this.etat.joueur;
     if (j.mort || this.invincible || j.invulnerabilite > 0 || j.protection > 0 || this.etat.issue !== null) return false;
+    const talents = this.talents;
+    if (talents) degats = talents.degatsRecus(degats, boss);
     // Le bouclier absorbe d'abord ; s'il prend tout, le coup ne coûte aucun PV
-    let reste = degatsApresDefense(degats, this.etat.modificateurs.armure);
+    let reste = degatsApresDefense(degats, this.etat.modificateurs.armure + (talents?.armure() ?? 0));
+    const bloque = degats - reste;
     const absorbe = Math.min(j.bouclier, reste);
     j.bouclier -= absorbe;
     reste -= absorbe;
@@ -130,6 +135,8 @@ export class Joueur implements SourceEntites, CibleJoueur {
     this.etat.stats.degatsSubis += subis;
     this.retours.son('blessure_joueur');
     this.retours.secousse(0.18 + Math.min(subis, 10) * 0.03);
+    if (j.pv === 0 && talents?.eviterMort()) return true;
+    if (j.pv > 0) talents?.apresCoupRecu(subis, bloque + absorbe);
     if (j.pv === 0 && this.etat.modificateurs.vies > j.viesUtilisees) {
       this.renaitre();
     } else if (j.pv === 0) {

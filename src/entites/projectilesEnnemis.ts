@@ -24,6 +24,8 @@ interface ProjectileEnnemi {
   vz: number;
   vie: number;
   degats: number;
+  /** Tiré par un boss. */
+  boss: boolean;
   /** Renvoyé par le joueur : il blesse les ennemis, au nom de l'arme `arme`. */
   renvoye: boolean;
   arme: number;
@@ -34,7 +36,7 @@ export class ProjectilesEnnemis implements SourceEntites, Tireur {
   private readonly carte: CarteMonde;
   private readonly cible: CibleJoueur;
   private readonly pool = new Pool<ProjectileEnnemi>(CONFIG.projectiles.capacite, () => ({
-    indexRendu: 0, definition: PROJECTILES[IDS_PROJECTILES[0]], x: 0, z: 0, vx: 0, vz: 0, vie: 0, degats: 0, renvoye: false, arme: -1,
+    indexRendu: 0, definition: PROJECTILES[IDS_PROJECTILES[0]], x: 0, z: 0, vx: 0, vz: 0, vie: 0, degats: 0, boss: false, renvoye: false, arme: -1,
   }));
   private ennemis: Ennemis | null = null;
   private readonly touches = new Int32Array(4);
@@ -79,7 +81,7 @@ export class ProjectilesEnnemis implements SourceEntites, Tireur {
     return n;
   }
 
-  tirer(type: IdProjectile, x: number, z: number, dirX: number, dirZ: number, degats: number): void {
+  tirer(type: IdProjectile, x: number, z: number, dirX: number, dirZ: number, degats: number, boss = false): void {
     const p = this.pool.acquerir();
     if (!p) return;
     const def = PROJECTILES[type];
@@ -91,6 +93,7 @@ export class ProjectilesEnnemis implements SourceEntites, Tireur {
     p.vz = dirZ * def.vitesse;
     p.vie = def.duree;
     p.degats = degats;
+    p.boss = boss;
     p.renvoye = false;
     p.arme = -1;
   }
@@ -116,7 +119,7 @@ export class ProjectilesEnnemis implements SourceEntites, Tireur {
         const dz = p.z - j.z;
         const portee = p.definition.rayon + JOUEUR_BASE.rayon;
         touche = !j.mort && dx * dx + dz * dz < portee * portee;
-        if (touche) this.cible.subirDegats(p.degats);
+        if (touche) this.cible.subirDegats(p.degats, p.boss);
       }
 
       const sortie = p.x < -limite || p.x > limite || p.z < -limite || p.z > limite;

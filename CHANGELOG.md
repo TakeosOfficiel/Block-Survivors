@@ -5,6 +5,16 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.16.0] — 2026-10-20
+
+Refonte des classes, étape 8 : les talents à mécanique propre du Guerrier. Valeurs provisoires, à ajuster après les essais.
+
+### Nouveautés
+- Gladiateur : Enchaînement, Frénésie (et Champion de l'arène), Fureur, Œil du bourreau, Élan critique ou Saignée, Lame lourde (un ennemi projeté contre un mur est blessé), Soif de combat, Fureur du gladiateur (anneau rouge toutes les 5 attaques de mêlée), Exécution.
+- Gardien : Posture défensive, Épines et Ronces d'acier, Rempart ou Inébranlable, Contre-coup (le Heurt renvoie les projectiles dès le rang 1), Peau de fer, Tenir la ligne, Répliques (une 2e onde de choc), Contre-attaque du bastion, Dernier rempart, Séisme (onde en étoile toutes les 3 ondes).
+- Nouvel état : le saignement, en poussière de redstone rouge.
+- Ces talents ne sont plus marqués « Effet en préparation ».
+
 ## [0.15.1] — 2026-10-20
 
 ### Corrections

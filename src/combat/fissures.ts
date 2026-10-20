@@ -3,6 +3,8 @@
  * fissures filent vers le plus gros groupe d'ennemis en soulevant les blocs
  * du sol (texture du sol de l'arène), qui jaillissent puis retombent. Chaque
  * ennemi n'est touché qu'une fois par onde. Un mur arrête la fissure.
+ * Talents : Répliques (une 2e onde plus faible juste après), Séisme (une onde
+ * dans 6 directions).
  */
 import * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
@@ -24,6 +26,9 @@ interface Fissure {
   /** Distance parcourue (blocs) et prochaine distance où soulever des blocs. */
   avance: number;
   prochain: number;
+  /** s avant de partir (réplique), et part des dégâts de l'arme. */
+  attente: number;
+  facteur: number;
 }
 
 interface BlocSouleve {
@@ -53,7 +58,7 @@ export class Fissures {
   constructor(contexte: ContexteCombat, textures: BibliothequeTextures, scene: THREE.Scene) {
     const c = CONFIG.armes.fissure;
     this.contexte = contexte;
-    this.fissures = new Pool<Fissure>(c.capacite, () => ({ arme: null, x: 0, z: 0, dirX: 0, dirZ: 0, avance: 0, prochain: 0 }));
+    this.fissures = new Pool<Fissure>(c.capacite, () => ({ arme: null, x: 0, z: 0, dirX: 0, dirZ: 0, avance: 0, prochain: 0, attente: 0, facteur: 1 }));
     this.blocs = new Pool<BlocSouleve>(c.blocs, () => ({ x: 0, z: 0, age: 0, rotation: 0, inclinaison: 0 }));
     const sol = BLOCS[contexte.etat.arene.exterieur.bloc];
     this.texture = sol.faces.cotes;
@@ -79,21 +84,34 @@ export class Fissures {
     const s = arme.stats;
     if (!ennemis.plusGrosGroupe(j.x, j.z, s.portee, CONFIG.armes.fissure.rayonGroupe, groupe)) return false;
     const angle = Math.atan2(groupe.x - j.x, groupe.z - j.z);
-    for (let k = 0; k < s.nombre; k++) {
-      const f = this.fissures.acquerir();
-      if (!f) break;
-      const a = angle + (k - (s.nombre - 1) / 2) * m.ecart;
-      f.arme = arme;
-      f.x = j.x;
-      f.z = j.z;
-      f.dirX = Math.sin(a);
-      f.dirZ = Math.cos(a);
-      f.avance = 0;
-      f.prochain = CONFIG.armes.fissure.depart;
+    const talents = this.contexte.talents;
+    const c = CONFIG.armes.fissure;
+    // Séisme : 6 fissures en étoile au lieu de l'éventail
+    const circulaire = talents.ondeCirculaire;
+    const nombre = circulaire ? c.directionsSeisme : s.nombre;
+    const replique = talents.valeur('repliques', c.repliques);
+    for (let k = 0; k < nombre; k++) {
+      const a = circulaire ? angle + (k / nombre) * Math.PI * 2 : angle + (k - (nombre - 1) / 2) * m.ecart;
+      this.lancer(arme, j.x, j.z, a, 0, 1);
+      if (replique > 0) this.lancer(arme, j.x, j.z, a, c.delaiReplique, replique);
     }
     this.contexte.declencherGesteJoueur(angle);
     this.contexte.retours.secousse(0.15);
     return true;
+  }
+
+  private lancer(arme: ArmeEquipee, x: number, z: number, angle: number, attente: number, facteur: number): void {
+    const f = this.fissures.acquerir();
+    if (!f) return;
+    f.arme = arme;
+    f.x = x;
+    f.z = z;
+    f.dirX = Math.sin(angle);
+    f.dirZ = Math.cos(angle);
+    f.avance = 0;
+    f.prochain = CONFIG.armes.fissure.depart;
+    f.attente = attente;
+    f.facteur = facteur;
   }
 
   maj(dt: number): void {
@@ -105,6 +123,10 @@ export class Fissures {
       const m = arme?.definition.mecanique;
       if (!arme || m?.type !== 'fissure') {
         this.fissures.liberer(i);
+        continue;
+      }
+      if (f.attente > 0) {
+        f.attente -= dt;
         continue;
       }
       f.avance += m.vitesse * dt;
@@ -120,7 +142,7 @@ export class Fissures {
           finie = true;
           break;
         }
-        this.soulever(arme, x, z, f.dirX, f.dirZ);
+        this.soulever(arme, x, z, f.dirX, f.dirZ, f.facteur);
         f.prochain += c.espacement;
       }
       if (finie) {
@@ -136,7 +158,7 @@ export class Fissures {
   }
 
   /** Soulève les blocs d'un segment de fissure et touche les ennemis dessus (une fois par onde). */
-  private soulever(arme: ArmeEquipee, x: number, z: number, dirX: number, dirZ: number): void {
+  private soulever(arme: ArmeEquipee, x: number, z: number, dirX: number, dirZ: number, facteur: number): void {
     const c = CONFIG.armes.fissure;
     const { ennemis, particules, etat } = this.contexte;
     const s = arme.stats;
@@ -159,7 +181,7 @@ export class Fissures {
       const e = ennemis.obtenir(this.tampon[k]);
       if (e.immunites[arme.index] > etat.tempsJeu) continue;
       e.immunites[arme.index] = etat.tempsJeu + c.immunite;
-      ennemis.toucher(e, arme, x, z);
+      ennemis.toucher(e, arme, x, z, arme.stats.recul, facteur);
     }
   }
 

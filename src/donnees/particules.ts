@@ -90,6 +90,11 @@ const particules = {
     images: ['particle/glow'], animation: 'fixe',
     taille: [0.2, 0.3], duree: [0.5, 0.7], gravite: -0.4, frottement: 0.5, teintes: [0xffd84a], retrecit: true,
   },
+  // Poussière de redstone (dust) : saignement, anneau de la Fureur du gladiateur
+  poussiere: {
+    images: serie('particle/generic_', 7, 0), animation: 'age',
+    taille: [0.12, 0.2], duree: [0.5, 0.9], gravite: 0.5, frottement: 0.4, teintes: [0xff1a0a, 0xc81008],
+  },
   // Éclats d'un objet consommé : un quart de son icône pris au hasard
   morceau: {
     images: [], animation: 'morceau',
@@ -180,6 +185,11 @@ const gerbes = {
   lenteur: [{ particule: 'effetLenteur', nombre: 1, vitesse: 0.3, dispersion: 0.35, montee: 0.5 }],
   etourdi: [{ particule: 'etourdi', nombre: 3, vitesse: 1.5, dispersion: 0.2, montee: 0.4 }],
   marque: [{ particule: 'marque', nombre: 1, vitesse: 0, dispersion: 0.15, montee: 0.3 }],
+  saignement: [{ particule: 'poussiere', nombre: 2, vitesse: 0.4, dispersion: 0.3, montee: 0.2 }],
+  // Talents : anneau rouge (un point du cercle), épines, frappe au sol, onde de recul
+  anneau: [{ particule: 'poussiere', nombre: 2, vitesse: 0.6, dispersion: 0.1, montee: 0.8 }],
+  epines: [{ particule: 'critique', nombre: 3, vitesse: 3, dispersion: 0.15, montee: 2 }],
+  repousse: [{ particule: 'poof', nombre: 2, vitesse: 2.5, dispersion: 0.1, montee: 0.3 }],
 } satisfies Record<string, DefinitionGerbe>;
 
 export type IdGerbe = keyof typeof gerbes;

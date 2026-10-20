@@ -99,8 +99,11 @@ export class Arsenal {
       }
       arme.minuterie -= dt;
       if (arme.minuterie > 0) continue;
+      const talents = this.contexte.talents;
+      talents.avantDeclenchement(arme);
       const declenchee = this.declencher(arme);
-      arme.minuterie = declenchee ? arme.stats.cadence : NOUVEL_ESSAI;
+      talents.apresDeclenchement(arme, declenchee);
+      arme.minuterie = declenchee ? arme.stats.cadence * talents.delai(arme) : NOUVEL_ESSAI;
       const son = arme.definition.son;
       if (declenchee && son && arme.definition.mecanique.type !== 'invocation') this.contexte.retours.son(son);
     }

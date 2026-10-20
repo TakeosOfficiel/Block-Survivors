@@ -35,7 +35,22 @@ import { PLAFONDS } from '../donnees/plafonds';
  * Origine d'un coup : arme du joueur, allié invoqué (profite de la marque),
  * ou dégâts d'un état (jamais critiques, sans recul ni son de blessure).
  */
-export type NatureCoup = 'arme' | 'allie' | 'brulure' | 'poison';
+export type NatureCoup = 'arme' | 'allie' | 'brulure' | 'poison' | 'saignement';
+
+/**
+ * Talents branchés sur les coups portés aux ennemis (combat/talents) : bonus
+ * de dégâts et de critiques avant le coup, réactions après, à la mort et au
+ * choc contre un mur.
+ */
+export interface CrochetsTalents {
+  multiplicateur(e: Ennemi, arme: number, nature: NatureCoup): number;
+  bonusCritique(e: Ennemi, arme: number, nature: NatureCoup): number;
+  /** Multiplicateur final d'un critique, à partir de celui des passifs. */
+  facteurCritique(e: Ennemi, arme: number, nature: NatureCoup, base: number): number;
+  apresCoup(e: Ennemi, degats: number, arme: number, critique: boolean, nature: NatureCoup): void;
+  surMort(e: Ennemi, arme: number, nature: NatureCoup): void;
+  surImpactMur(e: Ennemi): void;
+}
 
 /** Tout ce qu'il faut pour afficher un type d'ennemi. */
 interface RenduType {
@@ -76,6 +91,7 @@ export class Ennemis implements SourceEntites {
   /** Allié visé par l'ennemi en cours de mise à jour, et contexte qui le blesse au lieu du joueur. */
   private allieVise: Allie | null = null;
   private contexteAllie: ContexteComportement | null = null;
+  private talents: CrochetsTalents | null = null;
 
   constructor(
     etat: EtatPartie,
@@ -114,13 +130,17 @@ export class Ennemis implements SourceEntites {
     this.allies = allies;
     this.contexteAllie = {
       cible: {
-        subirDegats: (degats) => {
+        subirDegats: (degats: number) => {
           if (this.allieVise) allies.blesser(this.allieVise, degats);
           return true;
         },
       },
       tireur: this.contexte.tireur,
     };
+  }
+
+  definirTalents(talents: CrochetsTalents): void {
+    this.talents = talents;
   }
 
   /** Rendu du type (créé à la première demande). */
@@ -247,14 +267,17 @@ export class Ennemis implements SourceEntites {
   blesser(e: Ennemi, degats: number, sourceX: number, sourceZ: number, recul: number, arme = -1, nature: NatureCoup = 'arme'): void {
     if (e.mort >= 0) return;
     const stats = this.etat.stats;
-    const periodique = nature === 'brulure' || nature === 'poison';
+    const periodique = nature === 'brulure' || nature === 'poison' || nature === 'saignement';
     if (nature === 'allie' && e.marqueTemps > 0) degats *= 1 + e.marque;
     const mods = this.etat.modificateurs;
+    const talents = this.talents;
     if (e.ralenti > 0 && !periodique) degats *= 1 + mods.degatsRalentis;
+    if (talents) degats *= talents.multiplicateur(e, arme, nature);
     // Coup critique (armes du joueur) : dégâts multipliés et étincelles du jeu
-    const critique = arme >= 0 && !periodique && Math.random() < Math.min(PLAFONDS.critique, mods.critique);
+    const chance = mods.critique + (talents && arme >= 0 && !periodique ? talents.bonusCritique(e, arme, nature) : 0);
+    const critique = arme >= 0 && !periodique && Math.random() < Math.min(PLAFONDS.critique, chance);
     if (critique) {
-      degats *= mods.degatsCritiques;
+      degats *= talents ? talents.facteurCritique(e, arme, nature, mods.degatsCritiques) : mods.degatsCritiques;
       this.particules.emettre(e.x, 1, e.z, GERBES.critique);
     }
     if (arme >= 0) {
@@ -289,15 +312,18 @@ export class Ennemis implements SourceEntites {
       }
       this.butin.lacher(def, e.x, e.z);
       if (def.sons) this.retours.son(def.sons.mort, def.hauteurSons);
+      talents?.surMort(e, arme, nature);
     } else if (def.sons && !periodique) {
       this.retours.son(def.sons.blessure, def.hauteurSons);
     }
+    // Après la mort éventuelle : un ennemi tombé (mort ≥ 0) ignore les coups suivants
+    talents?.apresCoup(e, degats, arme, critique, nature);
   }
 
   /** Coup d'une arme du joueur : ses dégâts, puis le ralentissement et l'étourdissement de ses statistiques. */
-  toucher(e: Ennemi, arme: ArmeEquipee, sourceX: number, sourceZ: number, recul: number = arme.stats.recul): void {
+  toucher(e: Ennemi, arme: ArmeEquipee, sourceX: number, sourceZ: number, recul: number = arme.stats.recul, facteur = 1): void {
     const s = arme.stats;
-    this.blesser(e, s.degats, sourceX, sourceZ, recul, arme.index);
+    this.blesser(e, s.degats * facteur, sourceX, sourceZ, recul, arme.index);
     if (s.ralenti > 0) this.ralentir(e, s.ralenti, s.duree);
     if (s.etourdi > 0) this.etourdir(e, s.etourdi);
   }
@@ -342,6 +368,11 @@ export class Ennemis implements SourceEntites {
       e.brulure, cumuls, degatsParSeconde * (1 + m.degatsBrulure), duree * (1 + m.dureeBrulure), arme,
       cumulsMax + m.cumulsBrulure, ETATS.brulure.tic,
     );
+  }
+
+  /** Saignement (Saignée) : comme le poison, avec ses propres cumuls. */
+  saigner(e: Ennemi, cumuls: number, degatsParSeconde: number, duree: number, arme = -1): void {
+    if (e.mort < 0) appliquerPeriodique(e.saignement, cumuls, degatsParSeconde, duree, arme, ETATS.saignement.cumulsMax, ETATS.saignement.tic);
   }
 
   /** Poison : comme la brûlure, avec ses propres cumuls. */
@@ -391,7 +422,11 @@ export class Ennemis implements SourceEntites {
   private majEtats(e: Ennemi, dt: number): void {
     this.tiquer(e, e.brulure, ETATS.brulure.tic, 'brulure', dt);
     this.tiquer(e, e.poison, ETATS.poison.tic, 'poison', dt);
+    this.tiquer(e, e.saignement, ETATS.saignement.tic, 'saignement', dt);
     if (e.mort >= 0) return;
+    if (e.marqueChasseur > 0) e.marqueChasseur -= dt;
+    if (e.tempsCumuls > 0 && (e.tempsCumuls -= dt) <= 0) e.cumulsTalent = 0;
+    if (e.encercle > 0) e.encercle -= dt;
     if (e.ralentiTemps > 0 && (e.ralentiTemps -= dt) <= 0) e.ralenti = 0;
     if (e.marqueTemps > 0 && (e.marqueTemps -= dt) <= 0) e.marque = 0;
     if (e.enracine > 0) e.enracine -= dt;
@@ -406,6 +441,9 @@ export class Ennemis implements SourceEntites {
     }
     if ((e.ralentiTemps > 0 || e.enracine > 0) && Math.random() < ETATS.brulure.periode / ETATS.ralenti.periode) {
       this.particules.emettre(e.x, h * 0.5, e.z, GERBES[ETATS.ralenti.gerbe]);
+    }
+    if (e.saignement.cumuls > 0 && Math.random() < ETATS.brulure.periode / ETATS.saignement.periode) {
+      this.particules.emettre(e.x, h * 0.5, e.z, GERBES[ETATS.saignement.gerbe]);
     }
     if (e.etourdi > 0) this.particules.emettre(e.x, h - 0.1, e.z, GERBES[ETATS.etourdi.gerbe]);
     if (e.marqueTemps > 0 && Math.random() < ETATS.brulure.periode / ETATS.marque.periode) {
@@ -537,6 +575,7 @@ export class Ennemis implements SourceEntites {
       if (pose.surcouche[3] === 0 && e.mort < 0) {
         if (e.brulure.cumuls > 0) teinter(pose, ETATS.brulure.couleur, ETATS.brulure.force * (0.75 + 0.25 * Math.sin(this.etat.tempsJeu * 23 + e.id)));
         else if (e.poison.cumuls > 0) teinter(pose, ETATS.poison.couleur, ETATS.poison.force);
+        else if (e.saignement.cumuls > 0) teinter(pose, ETATS.saignement.couleur, ETATS.saignement.force);
         else if (e.ralentiTemps > 0 || e.enracine > 0) teinter(pose, ETATS.ralenti.couleur, ETATS.ralenti.force);
       }
 
@@ -673,8 +712,15 @@ export class Ennemis implements SourceEntites {
       e.z = borner(e.z, -limite, limite);
     } else {
       carte.resoudreCollision(e.x, e.z, def.rayon, corrige);
+      // Projeté contre un mur : le recul s'arrête net (Lame lourde)
+      const choc = (corrige.x - e.x) ** 2 + (corrige.z - e.z) ** 2 > 1e-4 && e.vx * e.vx + e.vz * e.vz > CONFIG.ennemis.chocMur ** 2;
       e.x = corrige.x;
       e.z = corrige.z;
+      if (choc) {
+        e.vx = 0;
+        e.vz = 0;
+        this.talents?.surImpactMur(e);
+      }
     }
 
     // Toujours tourné vers sa cible ; animation selon la marche effective
@@ -695,7 +741,7 @@ export class Ennemis implements SourceEntites {
     const j = this.etat.joueur;
     const distance = longueur(j.x - e.x, j.z - e.z);
     if (distance < c.rayon) {
-      this.contexte.cible.subirDegats(Math.ceil(c.degats * (1 - distance / c.rayon)));
+      this.contexte.cible.subirDegats(Math.ceil(c.degats * (1 - distance / c.rayon)), e.definition.boss !== undefined);
     }
     this.allies?.blesserZone(e.x, e.z, c.rayon, c.degats);
   }

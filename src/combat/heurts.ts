@@ -42,7 +42,8 @@ export class Heurts {
       ennemis.toucher(e, arme, j.x, j.z);
       ennemis.interrompre(e);
     }
-    if (arme.rang >= m.renvoi) {
+    // Contre-coup (talent) : renvoie les projectiles dès le rang 1
+    if (arme.rang >= m.renvoi || this.contexte.talents.rang('contre_coup') > 0) {
       this.projectilesEnnemis.renvoyer(j.x, j.z, angle, m.angle / 2, s.zone + CONFIG.armes.heurt.porteeRenvoi, s.degats, arme.index);
     }
 

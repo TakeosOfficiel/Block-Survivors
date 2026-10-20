@@ -7,6 +7,8 @@
 import type { LecteurSons } from './audio/sons';
 import type { BibliothequeTextures } from './assets/textures';
 import { cumulerBonusArmes } from './combat/armeEquipee';
+import { mecaniquesClasse } from './combat/talents/classes';
+import { Talents } from './combat/talents/talents';
 import { Arsenal } from './combat/arsenal';
 import { Balayages } from './combat/balayages';
 import { Chutes } from './combat/chutes';
@@ -118,6 +120,7 @@ export class Jeu implements CallbacksBoucle, Retours {
 
   // Combat du joueur
   private readonly arsenal: Arsenal;
+  private readonly mecaniques: Talents;
   private readonly balayages: Balayages;
   private readonly fissures: Fissures;
   private readonly chutes: Chutes;
@@ -213,12 +216,14 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.camera = new CameraJeu(rendu.camera, this.entrees, this.etat);
 
     // Combat du joueur
+    this.mecaniques = new Talents(this.etat);
     const combat: ContexteCombat = {
       etat: this.etat,
       carte,
       ennemis: this.ennemis,
       particules: this.particules,
       retours: this,
+      talents: this.mecaniques,
       declencherGesteJoueur: (angle) => this.joueur.declencherGeste(angle),
     };
     this.balayages = new Balayages(combat, textures, scene);
@@ -259,6 +264,9 @@ export class Jeu implements CallbacksBoucle, Retours {
     });
     for (const id of this.etat.personnage.armesDepart) this.arsenal.ameliorer(id);
     for (const id of talents.armes) this.arsenal.ameliorer(id);
+    this.mecaniques.brancher(combat, this.arsenal, mecaniquesClasse(choix.personnage));
+    this.ennemis.definirTalents(this.mecaniques);
+    this.joueur.talents = this.mecaniques;
 
     // Interface et directeurs d'apparition
     this.hud = new Hud(textures, {
@@ -380,6 +388,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.directeurBoss.maj();
     this.ennemis.maj(dt);           // reconstruit la grille utilisée par les armes
     this.arsenal.maj(dt);
+    this.mecaniques.maj(dt);
     this.orbes.maj(dt);
     this.objets.maj();
     this.projectilesJoueur.maj(dt);

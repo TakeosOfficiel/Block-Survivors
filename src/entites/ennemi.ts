@@ -46,6 +46,7 @@ export interface Ennemi {
   // États (etats.ts)
   brulure: DegatsPeriodiques;
   poison: DegatsPeriodiques;
+  saignement: DegatsPeriodiques;
   ralenti: number;              // part de vitesse perdue (0 à 1)
   ralentiTemps: number;         // s restantes
   enracine: number;             // s restantes sans pouvoir marcher
@@ -54,6 +55,19 @@ export interface Ennemi {
   marqueTemps: number;
   /** s avant les prochaines particules d'état. */
   minuterieEtats: number;
+  // Talents (voir combat/talents) : marque de l'Archère, cumuls contre un boss, piège, morsures
+  marqueChasseur: number;       // s restantes
+  cumulsTalent: number;
+  tempsCumuls: number;          // s restantes
+  /** Temps de jeu jusqu'auquel l'ennemi compte comme pris dans un piège. */
+  piege: number;
+  dansPiege: boolean;
+  /** Deux derniers loups qui l'ont mordu (id d'invocation) et quand (temps de jeu). */
+  morsureA: number;
+  morsureB: number;
+  tempsMorsureA: number;
+  tempsMorsureB: number;
+  encercle: number;             // s restantes de vulnérabilité (Encerclement)
   animation: EtatAnimation;
 }
 
@@ -65,6 +79,17 @@ function creerDegatsPeriodiques(): DegatsPeriodiques {
 export function effacerEtats(e: Ennemi): void {
   e.brulure.cumuls = 0;
   e.poison.cumuls = 0;
+  e.saignement.cumuls = 0;
+  e.marqueChasseur = 0;
+  e.cumulsTalent = 0;
+  e.tempsCumuls = 0;
+  e.piege = 0;
+  e.dansPiege = false;
+  e.morsureA = 0;
+  e.morsureB = 0;
+  e.tempsMorsureA = -1;
+  e.tempsMorsureB = -1;
+  e.encercle = 0;
   e.ralenti = 0;
   e.ralentiTemps = 0;
   e.enracine = 0;
@@ -91,6 +116,9 @@ export function creerEnnemi(): Ennemi {
     immunites: new Float32Array(IDS_ARMES.length),
     brulure: creerDegatsPeriodiques(),
     poison: creerDegatsPeriodiques(),
+    saignement: creerDegatsPeriodiques(),
+    marqueChasseur: 0, cumulsTalent: 0, tempsCumuls: 0, piege: 0, dansPiege: false,
+    morsureA: 0, morsureB: 0, tempsMorsureA: -1, tempsMorsureB: -1, encercle: 0,
     ralenti: 0, ralentiTemps: 0, enracine: 0, etourdi: 0, marque: 0, marqueTemps: 0, minuterieEtats: 0,
     animation: creerEtatAnimation(),
   };

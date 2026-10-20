@@ -46,7 +46,7 @@ function melee(e: Ennemi, c: ComportementMelee, contexte: ContexteComportement, 
   const distance = vers.distance;
   const contact = e.definition.rayon + JOUEUR_BASE.rayon + c.portee;
   if (distance <= contact && e.minuterie <= 0) {
-    contexte.cible.subirDegats(c.degats);
+    contexte.cible.subirDegats(c.degats, e.definition.boss !== undefined);
     e.minuterie = c.cadence;
   }
 }
@@ -70,7 +70,7 @@ function archer(e: Ennemi, c: ComportementArcher, contexte: ContexteComportement
     const base = Math.atan2(dx, dz);
     for (let k = 0; k < nombre; k++) {
       const a = base + (k - (nombre - 1) / 2) * (c.dispersion ?? 0);
-      contexte.tireur.tirer(c.projectile, e.x + dx * 0.5, e.z + dz * 0.5, Math.sin(a), Math.cos(a), c.degats);
+      contexte.tireur.tirer(c.projectile, e.x + dx * 0.5, e.z + dz * 0.5, Math.sin(a), Math.cos(a), c.degats, e.definition.boss !== undefined);
     }
     e.minuterie = c.cadence;
   }

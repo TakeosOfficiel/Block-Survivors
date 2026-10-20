@@ -43,8 +43,10 @@ tag git `vX.Y.Z` et sa release GitHub avec l'exe ; le lien « derniere-version �
 pointe toujours sur la plus récente. Le détail est dans `CHANGELOG.md`, affiché
 dans le jeu (bouton « Nouveautés » de l'accueil, avec une pastille « Nouveau ! »
 après une mise à jour). L'accueil prévient quand une version plus récente existe,
-d'après `version.json` du dépôt public `Block-Survivors-version` (mis à jour par
-le workflow si le secret `VERSION_TOKEN` est configuré).
+d'après `version.json` du dépôt public `Block-Survivors-version`, et renvoie vers
+les releases de ce même dépôt, où l'exe est aussi publié (le code, lui, reste
+privé). Le workflow publie l'exe et `version.json` si le secret `VERSION_TOKEN`
+(droit « Contents : lecture et écriture » sur `Block-Survivors-version`) est configuré.
 
 ## Structure
 

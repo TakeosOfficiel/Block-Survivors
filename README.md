@@ -159,9 +159,11 @@ tourner), son **pseudo** (bouton « Aléatoire »), « Apparence… » et
 « Talents… », et l'**arène** (mobs, boss et leur heure d'arrivée, record,
 conditions de déblocage). Le grand bouton « Jouer » (ou Entrée) lance la partie.
 
-« Apparence… » : **skin** de la classe, une des 9 skins par défaut du jeu, ou
+« Apparence… » : **skin** de la classe, le **perso** de l'éditeur (panneau
+« Traits » : peau, yeux, coiffure, cheveux, barbe, haut et sa couleur,
+pantalon, chaussures, bouton Aléatoire), une des 9 skins par défaut du jeu, ou
 un PNG importé (64×64, format du jeu, HD acceptée), bras larges ou fins, avec
-le héros en 3D. Le pseudo s'affiche au-dessus du personnage comme dans le jeu ;
+le héros en 3D. La seconde couche des skins (chapeau, veste…) est affichée. Le pseudo s'affiche au-dessus du personnage comme dans le jeu ;
 la skin ne change que l'apparence.
 
 ## Personnages

@@ -679,3 +679,14 @@ img { image-rendering: pixelated; }
 .bilan-degats .nom { color: #202020; min-width: 0; }
 .bilan-degats .jauge { grid-column: 2 / -1; height: 4px; background: #8b8b8b; margin-bottom: 4px; }
 .bilan-degats .jauge > div { height: 100%; background: var(--mc-vert-fonce); }
+
+/* Éditeur de personnage : traits avec flèches */
+.profil-reglages { width: 430px; }
+.profil-skins { grid-template-columns: repeat(3, 1fr); }
+.profil-panneau-traits { width: 330px; display: flex; flex-direction: column; gap: 4px; }
+.profil-traits { display: flex; flex-direction: column; gap: 3px; }
+.profil-trait-nom { color: #5a5a5a; }
+.profil-trait-valeur { display: grid; grid-template-columns: 36px 1fr 36px; align-items: center; gap: 4px; }
+.profil-trait-valeur > span { text-align: center; color: #202020; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.bouton-mc.profil-fleche { width: 36px; min-width: 0; height: 28px; padding: 0; border-width: 4px; }
+.profil-trait-couleur { display: inline-block; width: 14px; height: 14px; border: 2px solid #373737; }

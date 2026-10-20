@@ -57,10 +57,10 @@ export class BibliothequeTextures {
   }
 
   /** Ajoute (ou remplace) une image fournie par le joueur, ex. sa skin importée. */
-  enregistrer(chemin: CheminTexture, image: HTMLImageElement): void {
+  enregistrer(chemin: CheminTexture, image: HTMLImageElement | HTMLCanvasElement): void {
     this.textures.get(chemin)?.dispose();
     this.textures.set(chemin, creerTexture(image));
-    this.urls.set(chemin, image.src);
+    this.urls.set(chemin, image instanceof HTMLCanvasElement ? image.toDataURL() : image.src);
   }
 
   /** Texture prête à l'emploi, ou null si elle n'a pu être chargée. */
@@ -123,7 +123,7 @@ export class BibliothequeTextures {
 }
 
 /** Règles de rendu imposées à toutes les textures Minecraft. */
-function creerTexture(image: HTMLImageElement): THREE.Texture {
+function creerTexture(image: HTMLImageElement | HTMLCanvasElement): THREE.Texture {
   const texture = new THREE.Texture(image);
   // Pixels nets : sans ces deux filtres, les blocs sont lissés et flous
   texture.magFilter = THREE.NearestFilter;

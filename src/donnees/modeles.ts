@@ -42,6 +42,38 @@ const MARCHE_JAMBES: readonly MembreMarche[] = [
   { partie: 'jambeDroite', axe: 'x', amplitude: 1.4, dephasage: 0 },
   { partie: 'jambeGauche', axe: 'x', amplitude: 1.4, dephasage: Math.PI },
 ];
+/**
+ * Seconde couche des skins de joueur (chapeau, veste, manches, jambières) :
+ * les mêmes boîtes, un peu gonflées, lues dans l'autre moitié du patron.
+ * Les pixels transparents laissent voir la première couche.
+ */
+const SECONDE_COUCHE: Readonly<Record<string, { nom: string; uv: readonly [number, number]; gonflement: number }>> = {
+  tete: { nom: 'chapeau', uv: [32, 0], gonflement: 0.5 },
+  corps: { nom: 'veste', uv: [16, 32], gonflement: 0.25 },
+  brasDroit: { nom: 'mancheDroite', uv: [40, 32], gonflement: 0.25 },
+  brasGauche: { nom: 'mancheGauche', uv: [48, 48], gonflement: 0.25 },
+  jambeDroite: { nom: 'jambiereDroite', uv: [0, 32], gonflement: 0.25 },
+  jambeGauche: { nom: 'jambiereGauche', uv: [0, 48], gonflement: 0.25 },
+};
+
+/** Ajoute aux parties d'un joueur leur seconde couche. */
+function avecSecondeCouche(parties: Readonly<Record<string, CubeModele>>): Record<string, CubeModele> {
+  const sortie: Record<string, CubeModele> = { ...parties };
+  for (const [nom, cube] of Object.entries(parties)) {
+    const c = SECONDE_COUCHE[nom];
+    if (c) sortie[c.nom] = { ...cube, uv: c.uv, gonflement: c.gonflement };
+  }
+  return sortie;
+}
+
+/** Les membres de la seconde couche suivent ceux de la première (marche, attaque…). */
+function avecSecondeCoucheMembres<T extends { partie: string }>(membres: readonly T[]): T[] {
+  return membres.flatMap((m) => {
+    const c = SECONDE_COUCHE[m.partie];
+    return c ? [m, { ...m, partie: c.nom }] : [m];
+  });
+}
+
 const REPOS_BRAS = {
   amplitude: 0.05,
   frequenceZ: 1.8,
@@ -184,35 +216,35 @@ const definitions = {
   humanoide: {
     main: mainDroite(-1),
     tailleTexture: [64, 64],
-    parties: {
+    parties: avecSecondeCouche({
       tete: TETE,
       corps: CORPS,
       brasDroit:   { taille: [4, 12, 4], pivot: [-5, 22, 0],   centre: [-1, -4, 0], uv: [40, 16] },
       brasGauche:  { taille: [4, 12, 4], pivot: [5, 22, 0],    centre: [1, -4, 0],  uv: [32, 48] },
       jambeDroite: { taille: [4, 12, 4], pivot: [-1.9, 12, 0], centre: [0, -6, 0],  uv: [0, 16] },
       jambeGauche: { taille: [4, 12, 4], pivot: [1.9, 12, 0],  centre: [0, -6, 0],  uv: [16, 48] },
-    },
-    marche: { ...ALLURE, membres: [...MARCHE_BRAS, ...MARCHE_JAMBES] },
-    repos: REPOS_BRAS,
+    }),
+    marche: { ...ALLURE, membres: avecSecondeCoucheMembres([...MARCHE_BRAS, ...MARCHE_JAMBES]) },
+    repos: { ...REPOS_BRAS, membres: avecSecondeCoucheMembres(REPOS_BRAS.membres) },
     // Coup d'épée : le bras droit se lève vers l'avant
-    attaque: { duree: 0.3, membres: [{ partie: 'brasDroit', amplitude: 1.8 }] },
+    attaque: { duree: 0.3, membres: avecSecondeCoucheMembres([{ partie: 'brasDroit', amplitude: 1.8 }]) },
   },
 
   // Joueur à bras fins (skins « slim », ex. Alex) : bras de 3 px
   humanoide_fin: {
     main: mainDroite(-0.5),
     tailleTexture: [64, 64],
-    parties: {
+    parties: avecSecondeCouche({
       tete: TETE,
       corps: CORPS,
       brasDroit:   { taille: [3, 12, 4], pivot: [-5, 21.5, 0], centre: [-0.5, -4, 0], uv: [40, 16] },
       brasGauche:  { taille: [3, 12, 4], pivot: [5, 21.5, 0],  centre: [0.5, -4, 0],  uv: [32, 48] },
       jambeDroite: { taille: [4, 12, 4], pivot: [-1.9, 12, 0], centre: [0, -6, 0],    uv: [0, 16] },
       jambeGauche: { taille: [4, 12, 4], pivot: [1.9, 12, 0],  centre: [0, -6, 0],    uv: [16, 48] },
-    },
-    marche: { ...ALLURE, membres: [...MARCHE_BRAS, ...MARCHE_JAMBES] },
-    repos: REPOS_BRAS,
-    attaque: { duree: 0.3, membres: [{ partie: 'brasDroit', amplitude: 1.8 }] },
+    }),
+    marche: { ...ALLURE, membres: avecSecondeCoucheMembres([...MARCHE_BRAS, ...MARCHE_JAMBES]) },
+    repos: { ...REPOS_BRAS, membres: avecSecondeCoucheMembres(REPOS_BRAS.membres) },
+    attaque: { duree: 0.3, membres: avecSecondeCoucheMembres([{ partie: 'brasDroit', amplitude: 1.8 }]) },
   },
 
   // Zombie : image 64x64 mais seule la moitié haute est remplie (ancien layout) :

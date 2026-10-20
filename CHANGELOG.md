@@ -8,7 +8,11 @@ Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections
 ## [0.8.0] — 2026-10-20
 
 ### Nouveautés
+- Éditeur de personnage (Apparence → Perso) : couleur de peau, yeux, coiffure, couleur des cheveux, barbe, haut, couleur du haut, pantalon et chaussures, avec flèches et bouton Aléatoire. Le skin est dessiné au format du jeu et utilisé en partie.
 - Les mobs au corps à corps attaquent les invocations (golem, loups, vex) : elles ont des PV, une barre de vie, et peuvent mourir avant la fin. Le golem, avec son armure, attire la horde loin de toi.
+
+### Corrections
+- La seconde couche des skins (chapeau, veste, manches, jambières) s'affiche enfin, pour toutes les skins.
 
 ## [0.7.0] — 2026-10-20
 

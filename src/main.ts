@@ -19,7 +19,8 @@ import { genererMonde } from './monde/generation';
 import { Rendu } from './moteur/rendu';
 import { chargerOptions } from './options';
 import { Sauvegarde } from './progression/sauvegarde';
-import { apparenceJoueur, chargerProfil, CHEMIN_SKIN_IMPORTE } from './profil';
+import { dessinerSkinPerso } from './assets/skinPerso';
+import { apparenceJoueur, chargerProfil, CHEMIN_SKIN_IMPORTE, CHEMIN_SKIN_PERSO } from './profil';
 import { ApercuHeros } from './ui/apercuHeros';
 import { chargerImageSkin, EcranProfil } from './ui/ecranProfil';
 import { EcranChargement } from './ui/ecranChargement';
@@ -53,7 +54,8 @@ async function demarrer(): Promise<void> {
     textures.charger(texturesInterface(), (faites, total) => ecran.progression(faites, total)),
   ]);
   appliquerHabillage(textures);
-  // Skin importée par le joueur : enregistrée comme une texture du jeu
+  // Skins du joueur (éditeur, importée) : enregistrées comme des textures du jeu
+  textures.enregistrer(CHEMIN_SKIN_PERSO, dessinerSkinPerso(profil.traits, profil.brasFins));
   if (profil.skinImporte) {
     const image = await chargerImageSkin(profil.skinImporte);
     if (image) textures.enregistrer(CHEMIN_SKIN_IMPORTE, image);

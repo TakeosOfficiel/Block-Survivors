@@ -12,7 +12,7 @@ import type { Ombres } from '../effets/ombres';
 import type { Retours } from '../effets/retours';
 import type { Particules } from '../effets/particules';
 import type { EtatPartie } from '../etat';
-import { angleChute, avancerAnimation, calculerRotations, reinitialiserAnimation } from '../modeles/animation';
+import { angleChute, avancerAnimation, calculerRotations, hauteurFlottement, reinitialiserAnimation } from '../modeles/animation';
 import { compilerModele, type ModeleCompile } from '../modeles/compilation';
 import { creerPoseModele, ModeleInstancie, type PoseModele } from '../modeles/rendu';
 import { GrilleSpatiale } from '../utils/grilleSpatiale';
@@ -306,6 +306,7 @@ export class Ennemis implements SourceEntites {
       pose.angle = e.angle;
       pose.inclinaison = e.mort >= 0 ? angleChute(e.mort, g.dureeMort) : 0;
       const echelle = e.definition.echelle ?? 1;
+      pose.y = hauteurFlottement(rendu.modele, e.animation) * echelle;
       pose.echelleXZ = echelle;
       pose.echelleY = echelle;
       pose.surcouche[3] = 0;

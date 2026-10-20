@@ -64,6 +64,11 @@ export function calculerRotations(modele: ModeleCompile, etat: EtatAnimation, so
     }
   }
 
+  for (let i = 0; i < modele.tournoiement.length; i++) {
+    const m = modele.tournoiement[i];
+    sortie[m.partie * 3 + 1] += (etat.temps * m.vitesse) % TOUR;
+  }
+
   const attaque = modele.definition.attaque;
   if (attaque && etat.attaque > 0) {
     const levee = Math.sin((1 - etat.attaque / attaque.duree) * Math.PI);
@@ -72,6 +77,14 @@ export function calculerRotations(modele: ModeleCompile, etat: EtatAnimation, so
       sortie[m.partie * 3] -= levee * m.amplitude;
     }
   }
+}
+
+/** Hauteur de flottement ou de bond du modèle (blocs, avant mise à l'échelle). */
+export function hauteurFlottement(modele: ModeleCompile, etat: EtatAnimation): number {
+  const f = modele.definition.flottement;
+  if (!f) return 0;
+  const onde = Math.sin(etat.temps * f.frequence);
+  return f.hauteur + (f.bonds ? Math.abs(onde) : onde) * f.amplitude;
 }
 
 /** Angle de chute sur le côté après la mort (courbe du jeu : rapide puis amortie). */

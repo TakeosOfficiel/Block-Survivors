@@ -24,10 +24,13 @@ const CORPS: CubeModele = { taille: [8, 12, 4], pivot: [0, 24, 0], centre: [0, -
 
 /**
  * Main droite : l'objet est tenu au bout du bras droit, pointe vers l'avant.
+ * La diagonale du sprite (manche en bas à gauche, bout en haut à droite)
+ * suit le prolongement de la main ; son côté haut-gauche (la courbe de l'arc)
+ * est tourné vers l'avant du bras, la corde vers le corps, comme en jeu.
  * `x` = milieu du bras (−1 pour les bras de 4 pixels, 0 pour ceux de 2 ou 3).
  */
 function mainDroite(x: number): MainModele {
-  return { partie: 'brasDroit', position: [x, -10, 6], rotation: [Math.PI / 4, 0, 0], taille: 12 };
+  return { partie: 'brasDroit', position: [x, -10, 6], rotation: [-Math.PI / 4, 0, Math.PI], taille: 12 };
 }
 
 // Valeurs de Minecraft : 0,6662 rad par pas d'animation, bras ×1, jambes ×1,4
@@ -86,6 +89,91 @@ function marcheAraignee(): MembreMarche[] {
     { partie: `patteDroite${p.nom}`, axe: 'z', amplitude: -0.4, dephasage: p.phase, absolu: true },
     { partie: `patteGauche${p.nom}`, axe: 'z', amplitude: 0.4, dephasage: p.phase, absolu: true },
   ] satisfies MembreMarche[]);
+}
+
+// --------------------------------------------------------------------------
+// Blaze : tête et 12 bâtons sur 3 anneaux qui tournent (modèle vanilla)
+// --------------------------------------------------------------------------
+// Chaque bâton pivote autour de l'axe du blaze : son articulation est au
+// centre, la boîte décalée du rayon ; la rotation continue le fait tourner.
+const ANNEAUX_BLAZE = [
+  { hauteur: 22, rayon: 8, vitesse: -3.1 },
+  { hauteur: 17, rayon: 6, vitesse: 1.9 },
+  { hauteur: 10, rayon: 4, vitesse: -2.4 },
+] as const;
+
+function partiesBlaze(): Record<string, CubeModele> {
+  const parties: Record<string, CubeModele> = {
+    tete: { taille: [8, 8, 8], pivot: [0, 24, 0], centre: [0, 0, 0], uv: [0, 0] },
+  };
+  ANNEAUX_BLAZE.forEach((anneau, a) => {
+    for (let k = 0; k < 4; k++) {
+      parties[`baton${a}${k}`] = {
+        taille: [2, 8, 2], pivot: [0, anneau.hauteur, 0], centre: [anneau.rayon, 0, 0], uv: [0, 16],
+        rotation: [0, (k * Math.PI) / 2 + a * 0.4, 0],
+      };
+    }
+  });
+  return parties;
+}
+
+function tournoiementBlaze(): { partie: string; vitesse: number }[] {
+  return ANNEAUX_BLAZE.flatMap((anneau, a) =>
+    [0, 1, 2, 3].map((k) => ({ partie: `baton${a}${k}`, vitesse: anneau.vitesse })));
+}
+
+// --------------------------------------------------------------------------
+// Cube de magma : 8 tranches empilées et un noyau (modèle vanilla)
+// --------------------------------------------------------------------------
+function partiesCubeMagma(): Record<string, CubeModele> {
+  const parties: Record<string, CubeModele> = {
+    noyau: { taille: [4, 4, 4], pivot: [0, 0, 0], centre: [0, 4, 0], uv: [0, 16] },
+  };
+  for (let i = 0; i < 8; i++) {
+    // Les tranches 2 et 3 prennent leur texture ailleurs dans la planche, comme en jeu
+    const uv: readonly [number, number] = i === 2 ? [24, 10] : i === 3 ? [24, 19] : [0, i];
+    parties[`tranche${i}`] = { taille: [8, 1, 8], pivot: [0, 0, 0], centre: [0, 7.5 - i, 0], uv };
+  }
+  return parties;
+}
+
+// --------------------------------------------------------------------------
+// Poisson d'argent : 7 segments qui ondulent et 3 écailles (modèle vanilla)
+// --------------------------------------------------------------------------
+const SEGMENTS_POISSON = [
+  { taille: [3, 2, 2], uv: [0, 0], z: 3.5 },
+  { taille: [4, 3, 2], uv: [0, 4], z: 1.5 },
+  { taille: [6, 4, 3], uv: [0, 9], z: -1 },
+  { taille: [3, 3, 3], uv: [0, 16], z: -4 },
+  { taille: [2, 2, 3], uv: [0, 22], z: -7 },
+  { taille: [2, 1, 2], uv: [11, 0], z: -9.5 },
+  { taille: [1, 1, 2], uv: [13, 4], z: -11.5 },
+] as const;
+const ECAILLES_POISSON = [
+  { taille: [10, 8, 3], uv: [20, 0], segment: 2 },
+  { taille: [6, 4, 3], uv: [20, 11], segment: 4 },
+  { taille: [6, 5, 2], uv: [20, 18], segment: 1 },
+] as const;
+
+function partiesPoisson(): Record<string, CubeModele> {
+  const parties: Record<string, CubeModele> = {};
+  SEGMENTS_POISSON.forEach((seg, i) => {
+    parties[`segment${i}`] = { taille: seg.taille, pivot: [0, 0, seg.z], centre: [0, seg.taille[1] / 2, 0], uv: seg.uv };
+  });
+  ECAILLES_POISSON.forEach((ecaille, i) => {
+    const z = SEGMENTS_POISSON[ecaille.segment].z;
+    parties[`ecaille${i}`] = { taille: ecaille.taille, pivot: [0, 0, z], centre: [0, ecaille.taille[1] / 2, 0], uv: ecaille.uv };
+  });
+  return parties;
+}
+
+/** Ondulation latérale : de plus en plus ample vers la queue (valeurs du jeu). */
+function ondulationPoisson(): MembreMarche[] {
+  const segment = (i: number) => ({ axe: 'y', amplitude: Math.PI * 0.05 * (1 + Math.abs(i - 2)), dephasage: i * 0.15 * Math.PI, frequence: 2.5 }) as const;
+  return [
+    ...SEGMENTS_POISSON.map((_, i) => ({ partie: `segment${i}`, ...segment(i) })),
+    ...ECAILLES_POISSON.map((e, i) => ({ partie: `ecaille${i}`, ...segment(e.segment) })),
+  ];
 }
 
 // --------------------------------------------------------------------------
@@ -220,6 +308,49 @@ const definitions = {
     tailleTexture: [64, 32],
     parties: partiesAraignee(),
     marche: { ...ALLURE, membres: marcheAraignee() },
+  },
+
+  // Piglin zombifié : tête large avec groin et oreilles, corps de joueur, bras tendus
+  piglin: {
+    main: mainDroite(-1),
+    tailleTexture: [64, 64],
+    parties: {
+      tete:          { taille: [10, 8, 8], pivot: [0, 24, 0], centre: [0, 4, 0], uv: [0, 0] },
+      groin:         { taille: [4, 4, 1], pivot: [0, 24, 0], centre: [0, 2, 4.5], uv: [31, 1] },
+      defenseDroite: { taille: [1, 2, 1], pivot: [0, 24, 0], centre: [-2.5, 1, 4.5], uv: [2, 0] },
+      defenseGauche: { taille: [1, 2, 1], pivot: [0, 24, 0], centre: [2.5, 1, 4.5], uv: [2, 4] },
+      oreilleDroite: { taille: [1, 5, 4], pivot: [-4.5, 30, 0], centre: [-0.5, -2.5, 0], uv: [39, 6], rotation: [0, 0, -Math.PI / 6] },
+      oreilleGauche: { taille: [1, 5, 4], pivot: [4.5, 30, 0], centre: [0.5, -2.5, 0], uv: [51, 6], rotation: [0, 0, Math.PI / 6] },
+      corps: CORPS,
+      brasDroit:   { taille: [4, 12, 4], pivot: [-5, 22, 0],   centre: [-1, -4, 0], uv: [40, 16], rotation: [-DEMI_PI, 0, 0] },
+      brasGauche:  { taille: [4, 12, 4], pivot: [5, 22, 0],    centre: [1, -4, 0],  uv: [32, 48], rotation: [-DEMI_PI, 0, 0] },
+      jambeDroite: { taille: [4, 12, 4], pivot: [-1.9, 12, 0], centre: [0, -6, 0],  uv: [0, 16] },
+      jambeGauche: { taille: [4, 12, 4], pivot: [1.9, 12, 0],  centre: [0, -6, 0],  uv: [16, 48] },
+    },
+    marche: { ...ALLURE, membres: MARCHE_JAMBES },
+    repos: REPOS_BRAS,
+  },
+
+  // Blaze : skin 64x32, flotte au-dessus du sol, ses bâtons tournent
+  blaze: {
+    tailleTexture: [64, 32],
+    parties: partiesBlaze(),
+    tournoiement: tournoiementBlaze(),
+    flottement: { hauteur: 0.35, amplitude: 0.12, frequence: 2.2 },
+  },
+
+  // Cube de magma : skin 64x32, avance par bonds
+  cube_magma: {
+    tailleTexture: [64, 32],
+    parties: partiesCubeMagma(),
+    flottement: { hauteur: 0, amplitude: 0.45, frequence: 4.5, bonds: true },
+  },
+
+  // Poisson d'argent : skin 64x32, corps segmenté qui ondule
+  poisson_argent: {
+    tailleTexture: [64, 32],
+    parties: partiesPoisson(),
+    marche: { frequence: 2.665, vitesseReference: 4, lissage: 8, membres: ondulationPoisson() },
   },
 } satisfies Record<string, DefinitionModele>;
 

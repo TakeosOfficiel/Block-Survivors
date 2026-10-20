@@ -176,7 +176,13 @@ export class Jeu implements CallbacksBoucle, Retours {
     for (const id of this.etat.personnage.armesDepart) this.arsenal.ameliorer(id);
 
     // Interface et directeurs d'apparition
-    this.hud = new Hud(textures, { etat: this.etat, arsenal: this.arsenal, passifs: this.passifs, ennemis: this.ennemis });
+    this.hud = new Hud(textures, {
+      etat: this.etat,
+      arsenal: this.arsenal,
+      passifs: this.passifs,
+      ennemis: this.ennemis,
+      tempsAvantBoss: () => this.directeurBoss.tempsAvantProchain,
+    });
     this.directeur = new DirecteurApparitions(this.etat, this.terrain, this.ennemis, this.camera);
     this.directeurBoss = new DirecteurBoss(this.etat, this.terrain, this.ennemis, this.camera, this.hud, this);
 

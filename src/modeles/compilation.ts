@@ -26,6 +26,11 @@ export interface MembreReposCompile {
   readonly signe: number;
 }
 
+export interface MembreTournoiementCompile {
+  readonly partie: number;
+  readonly vitesse: number;
+}
+
 export interface MembreAttaqueCompile {
   readonly partie: number;
   readonly amplitude: number;
@@ -39,6 +44,7 @@ export interface ModeleCompile {
   readonly marche: readonly MembreMarcheCompile[];
   readonly repos: readonly MembreReposCompile[];
   readonly attaque: readonly MembreAttaqueCompile[];
+  readonly tournoiement: readonly MembreTournoiementCompile[];
 }
 
 const INDEX_AXE: Record<Axe, number> = { x: 0, y: 1, z: 2 };
@@ -75,5 +81,6 @@ export function compilerModele(definition: DefinitionModele): ModeleCompile {
     })),
     repos: (definition.repos?.membres ?? []).map((m) => ({ partie: indexPartie(m.partie), signe: m.signe })),
     attaque: (definition.attaque?.membres ?? []).map((m) => ({ partie: indexPartie(m.partie), amplitude: m.amplitude })),
+    tournoiement: (definition.tournoiement ?? []).map((m) => ({ partie: indexPartie(m.partie), vitesse: m.vitesse })),
   };
 }

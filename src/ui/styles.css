@@ -333,6 +333,8 @@ img { image-rendering: pixelated; }
 }
 #hud-chrono { font-size: 24px; line-height: 28px; }
 #hud-chrono.final { color: var(--mc-or); }
+#hud-prochain-boss { color: var(--mc-gris); margin-top: -4px; }
+#hud-prochain-boss.proche { color: var(--mc-rouge); }
 
 #hud-droite {
   position: absolute; top: 10px; right: 12px;

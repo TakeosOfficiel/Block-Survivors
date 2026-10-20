@@ -36,6 +36,16 @@ const definitions = {
   araignee_blesse: { chemin: 'mob/spider/say1', hachage: '8a687fb7ea955d58a8e758a7e6ca8147c48dd477', volume: 0.3, hauteur: [0.8, 1.2], intervalleMin: 0.07, simultanes: 3 },
   araignee_mort: { chemin: 'mob/spider/death', hachage: 'eec5d186206792d2c650e1dbaa9c8796c56d2ea3', volume: 0.3, hauteur: [0.8, 1.2], intervalleMin: 0.07, simultanes: 3 },
   creeper_blesse: { chemin: 'mob/creeper/say1', hachage: '6fc976d65fc742451db2049a2a38a1007b976bc1', volume: 0.3, hauteur: [0.8, 1.2], intervalleMin: 0.07, simultanes: 3 },
+  piglin_blesse: { chemin: 'mob/zombified_piglin/zpighurt1', hachage: '7be727ea16b9a261665b8419397115f13a0966b6', volume: 0.3, hauteur: [0.8, 1.2], intervalleMin: 0.07, simultanes: 3 },
+  piglin_mort: { chemin: 'mob/zombified_piglin/zpigdeath', hachage: '6b82e81c0122b8edad442925a532f7574ce7c8d2', volume: 0.3, hauteur: [0.8, 1.2], intervalleMin: 0.07, simultanes: 3 },
+  blaze_blesse: { chemin: 'mob/blaze/hit1', hachage: '6e958c47928b592951feacce8015e0b308e39934', volume: 0.3, hauteur: [0.8, 1.2], intervalleMin: 0.07, simultanes: 3 },
+  blaze_mort: { chemin: 'mob/blaze/death', hachage: 'cd7bf7e231c8fbf316bbcbd77278ac021e428834', volume: 0.3, hauteur: [0.8, 1.2], intervalleMin: 0.07, simultanes: 3 },
+  wither_squelette_blesse: { chemin: 'mob/wither_skeleton/hurt1', hachage: 'aca61491c1ed4f91b2f97ad221ba279cb7629579', volume: 0.3, hauteur: [0.8, 1.2], intervalleMin: 0.07, simultanes: 3 },
+  wither_squelette_mort: { chemin: 'mob/wither_skeleton/death1', hachage: '5c016e18ac7a942da00fa06522166b6210c8b3e6', volume: 0.3, hauteur: [0.8, 1.2], intervalleMin: 0.07, simultanes: 3 },
+  magma_blesse: { chemin: 'mob/magmacube/jump1', hachage: '1e00e965fd5a742ae5557c5dfb9091d65fb1db59', volume: 0.3, hauteur: [0.8, 1.2], intervalleMin: 0.07, simultanes: 3 },
+  magma_mort: { chemin: 'mob/magmacube/big1', hachage: 'c72dc968c642afa06e6e93d996185ada18f82154', volume: 0.3, hauteur: [0.8, 1.2], intervalleMin: 0.07, simultanes: 3 },
+  poisson_blesse: { chemin: 'mob/silverfish/hit1', hachage: '8112d96f4f017bd0fb7d01b1b1167727c78a72b4', volume: 0.25, hauteur: [0.8, 1.2], intervalleMin: 0.07, simultanes: 3 },
+  poisson_mort: { chemin: 'mob/silverfish/kill', hachage: 'e22688b99a704b528f438bf70af8a91c47f1d4b1', volume: 0.25, hauteur: [0.8, 1.2], intervalleMin: 0.07, simultanes: 3 },
   creeper_mort: { chemin: 'mob/creeper/death', hachage: 'bd090d4d049f06217d1436552525d96ea1fa53b0', volume: 0.3, hauteur: [0.8, 1.2], intervalleMin: 0.07, simultanes: 3 },
 } satisfies Record<string, DefinitionSon>;
 

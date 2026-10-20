@@ -62,6 +62,22 @@ const definitions = {
     trainee: [0xffd23a, 0xff8a1e, 0x5a5a5a],
     couleurSecours: 0xff7a1a,
   },
+  // Petite boule de feu tirée par les blazes
+  boule_feu_blaze: {
+    nom: 'Petite boule de feu',
+    forme: 'face_camera',
+    texture: 'item/fire_charge',
+    tailleTexture: [16, 16],
+    uv: ICONE,
+    longueur: 0.55,
+    largeur: 0,
+    vitesse: 9,
+    duree: 2.5,
+    rayon: 0.3,
+    hauteur: 1.2,
+    trainee: [0xffd23a, 0xff8a1e],
+    couleurSecours: 0xff7a1a,
+  },
 } satisfies Record<string, DefinitionProjectile>;
 
 export type IdProjectile = keyof typeof definitions;

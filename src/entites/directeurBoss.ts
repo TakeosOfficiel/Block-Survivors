@@ -45,7 +45,13 @@ export class DirecteurBoss {
     this.afficheur = afficheur;
   }
 
-  /** Nom du prochain boss (debug). */
+  /** Secondes avant le prochain boss, ou −1 s'il n'en viendra plus avant la fin de la partie. */
+  get tempsAvantProchain(): number {
+    if (this.moment >= PROGRESSION.dureePartie) return -1;
+    return Math.max(0, this.moment - this.etat.tempsJeu);
+  }
+
+  /** Nom du prochain boss (HUD, alerte). */
   get prochainNom(): string {
     return ENNEMIS[this.idProchain()].nom;
   }
@@ -72,7 +78,7 @@ export class DirecteurBoss {
   }
 
   private idProchain(): IdEnnemi {
-    const ordre = CALENDRIER_BOSS.ordre;
+    const ordre = this.etat.arene.boss;
     return ordre[this.prochain % ordre.length];
   }
 

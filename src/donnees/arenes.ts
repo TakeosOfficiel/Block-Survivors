@@ -40,6 +40,7 @@ const prairie: DefinitionArene = {
   ciel: 0x78a7ff,
   brouillard: { debut: 45, fin: 120 },
   lumiere: { ambiante: 0.35, soleil: 0.75, couleurAmbiante: 0xffffff, couleurSoleil: 0xffffff },
+  boss: ['geant', 'seigneur_wither'],
   ennemis: [
     { ennemi: 'zombie', depuis: 0, poids: 6 },
     { ennemi: 'araignee', depuis: 20, poids: 6 },
@@ -94,9 +95,11 @@ const mine: DefinitionArene = {
   ciel: 0x0b0b10,
   brouillard: { debut: 28, fin: 70 },
   lumiere: { ambiante: 0.22, soleil: 0.4, couleurAmbiante: 0x9aa0c0, couleurSoleil: 0xffe0b0 },
+  boss: ['reine_araignee', 'geant'],
   ennemis: [
-    { ennemi: 'zombie', depuis: 0, poids: 6 },
-    { ennemi: 'araignee', depuis: 0, poids: 5 },
+    { ennemi: 'zombie', depuis: 0, poids: 5 },
+    { ennemi: 'araignee_venimeuse', depuis: 0, poids: 5 },
+    { ennemi: 'poisson_argent', depuis: 30, poids: 4 },
     { ennemi: 'squelette', depuis: 40, poids: 5 },
     { ennemi: 'creeper', depuis: 75, poids: 3 },
   ],
@@ -105,15 +108,15 @@ const mine: DefinitionArene = {
       nom: 'Galerie des toiles',
       rect: [-30, -30, -4, -4],
       ennemis: [
-        { ennemi: 'araignee', depuis: 0, poids: 12 },
-        { ennemi: 'zombie', depuis: 0, poids: 2 },
+        { ennemi: 'araignee_venimeuse', depuis: 0, poids: 12 },
+        { ennemi: 'poisson_argent', depuis: 15, poids: 4 },
       ],
     },
     {
       nom: 'Filon profond',
       rect: [6, 6, 30, 30],
       ennemis: [
-        { ennemi: 'zombie', depuis: 0, poids: 3 },
+        { ennemi: 'poisson_argent', depuis: 0, poids: 6 },
         { ennemi: 'squelette', depuis: 20, poids: 8 },
         { ennemi: 'creeper', depuis: 50, poids: 4 },
       ],
@@ -149,27 +152,28 @@ const nether: DefinitionArene = {
   ciel: 0x2a0606,
   brouillard: { debut: 25, fin: 80 },
   lumiere: { ambiante: 0.4, soleil: 0.45, couleurAmbiante: 0xffb0a0, couleurSoleil: 0xff9060 },
+  boss: ['magma_geant', 'seigneur_wither'],
   ennemis: [
-    { ennemi: 'squelette', depuis: 0, poids: 5 },
-    { ennemi: 'araignee', depuis: 0, poids: 5 },
-    { ennemi: 'zombie', depuis: 0, poids: 3 },
-    { ennemi: 'creeper', depuis: 30, poids: 5 },
+    { ennemi: 'piglin_zombifie', depuis: 0, poids: 7 },
+    { ennemi: 'cube_magma', depuis: 15, poids: 5 },
+    { ennemi: 'blaze', depuis: 45, poids: 4 },
+    { ennemi: 'squelette_wither', depuis: 90, poids: 3 },
   ],
   zones: [
     {
       nom: 'Forteresse',
       rect: [-30, -30, -12, 30],
       ennemis: [
-        { ennemi: 'squelette', depuis: 0, poids: 12 },
-        { ennemi: 'zombie', depuis: 0, poids: 3 },
+        { ennemi: 'squelette_wither', depuis: 0, poids: 10 },
+        { ennemi: 'blaze', depuis: 20, poids: 5 },
       ],
     },
     {
       nom: 'Lacs de lave',
       rect: [6, -30, 30, 30],
       ennemis: [
-        { ennemi: 'creeper', depuis: 20, poids: 8 },
-        { ennemi: 'araignee', depuis: 0, poids: 4 },
+        { ennemi: 'cube_magma', depuis: 0, poids: 8 },
+        { ennemi: 'blaze', depuis: 30, poids: 4 },
       ],
     },
   ],

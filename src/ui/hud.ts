@@ -25,6 +25,8 @@ export interface SourcesHud {
   readonly arsenal: Arsenal;
   readonly passifs: Passifs;
   readonly ennemis: Ennemis;
+  /** Secondes avant le prochain boss (−1 = plus aucun avant la fin). */
+  tempsAvantBoss(): number;
 }
 
 export class Hud implements AfficheurAlerte {
@@ -32,6 +34,7 @@ export class Hud implements AfficheurAlerte {
   private readonly elementMessage = element('hud-message');
   private readonly elementAlerte = element('hud-alerte');
   private readonly elementChrono = element('hud-chrono');
+  private readonly elementProchainBoss = element('hud-prochain-boss');
   private readonly elementTues = element('hud-tues-nombre');
   private readonly elementVignette = element('vignette');
   private readonly elementTotems = element('hud-totems');
@@ -48,6 +51,7 @@ export class Hud implements AfficheurAlerte {
   private minuterieMessage = 0;
   private minuterieAlerte = 0;
   private secondeAffichee = -1;
+  private secondeBossAffichee = -2;
   private tuesAffiches = -1;
   private opaciteVignette = 0;
   private totemsAffiches = -1;
@@ -105,6 +109,7 @@ export class Hud implements AfficheurAlerte {
     this.capacites.afficher(arsenal, passifs);
     this.boss.afficher(ennemis.bossActif());
     this.afficherChrono(etat.tempsJeu);
+    this.afficherProchainBoss();
     if (etat.ennemisTues !== this.tuesAffiches) {
       this.tuesAffiches = etat.ennemisTues;
       this.elementTues.textContent = String(etat.ennemisTues);
@@ -128,6 +133,17 @@ export class Hud implements AfficheurAlerte {
     this.secondeAffichee = seconde;
     this.elementChrono.textContent = formaterTemps(seconde);
     this.elementChrono.classList.toggle('final', PROGRESSION.dureePartie - seconde <= CONFIG.hud.dernierCompteARebours);
+  }
+
+  /** « Prochain boss dans 02:13 » sous le chrono ; rouge dans les 10 dernières secondes. */
+  private afficherProchainBoss(): void {
+    const dans = this.sources.tempsAvantBoss();
+    const seconde = dans < 0 ? -1 : Math.ceil(dans);
+    if (seconde === this.secondeBossAffichee) return;  // le DOM ne change qu'une fois par seconde
+    this.secondeBossAffichee = seconde;
+    this.elementProchainBoss.textContent = dans < 0 ? '' : `Prochain boss dans ${formaterTemps(seconde)}`;
+    this.elementProchainBoss.classList.toggle('cache', dans < 0);
+    this.elementProchainBoss.classList.toggle('proche', dans >= 0 && dans <= 10);
   }
 
   /** Totems restants, et animation du totem qui jaillit à chaque résurrection. */

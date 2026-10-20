@@ -168,10 +168,12 @@ export class ModeleInstancie {
     for (let p = 0; p < this.maillages.length; p++) {
       const maillage = this.maillages[p];
       maillage.count = this.compte;
+      maillage.visible = this.compte > 0;  // pas d'appel de dessin pour un type absent
       maillage.instanceMatrix.needsUpdate = true;
     }
     if (this.objet) {
       this.objet.maillage.count = this.compte;
+      this.objet.maillage.visible = this.compte > 0;
       this.objet.maillage.instanceMatrix.needsUpdate = true;
     }
     this.surcouche.needsUpdate = true;

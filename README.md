@@ -119,7 +119,13 @@ Guerrier (épée), Archère (arc) ou Mage (boules de feu).
 
 ## Arènes
 
-Prairie du village abandonné, Mine souterraine, Zone volcanique.
+Chaque arène a ses propres mobs et ses boss (5:00 puis 10:00) :
+
+| Arène | Mobs | Boss |
+| --- | --- | --- |
+| Prairie du village abandonné | zombie, araignée, creeper, squelette | Géant, Seigneur wither |
+| Mine souterraine | zombie, araignée venimeuse, poisson d'argent, squelette, creeper | Reine araignée, Géant |
+| Zone volcanique | piglin zombifié, cube de magma, blaze, squelette wither | Cube de magma géant, Seigneur wither |
 
 Une arène se décrit entièrement dans `src/donnees/arenes.ts` : sol, taches de
 sol, murs, structures (dessinées couche par couche dans `structures.ts`)

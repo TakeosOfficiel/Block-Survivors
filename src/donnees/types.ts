@@ -134,6 +134,15 @@ export interface DefinitionModele {
     readonly frequenceX: number;  // rad/s
     readonly membres: readonly MembreRepos[];
   };
+  /** Rotation continue autour de l'axe vertical (bâtons du blaze), en rad/s. */
+  readonly tournoiement?: readonly { readonly partie: string; readonly vitesse: number }[];
+  /** Le modèle flotte (blaze) ou bondit (cube de magma) au-dessus du sol. */
+  readonly flottement?: {
+    readonly hauteur: number;     // blocs au-dessus du sol au repos
+    readonly amplitude: number;   // blocs
+    readonly frequence: number;   // rad/s
+    readonly bonds?: boolean;     // |sin| : retombe au sol à chaque bond
+  };
   /** Geste d'attaque : les membres listés se lèvent vers l'avant puis retombent. */
   readonly attaque?: {
     readonly duree: number;       // s
@@ -235,7 +244,7 @@ export interface DefinitionEnnemi extends ApparenceEntite {
   /** Trop grand pour être gêné par le décor : traverse les obstacles. */
   readonly ignoreObstacles?: boolean;
   /** Présent pour les boss : affichage de leur barre de vie. */
-  readonly boss?: { readonly couleurBarre: 'purple' | 'red' };
+  readonly boss?: { readonly couleurBarre: CouleurBarreBoss };
   /** Sons joués quand il est blessé et quand il meurt. */
   readonly sons?: { readonly blessure: IdSon; readonly mort: IdSon };
   /** Hauteur de ses sons (1 = normale ; < 1 = plus grave, pour les boss). */
@@ -399,6 +408,9 @@ export interface ZoneEnnemis {
   readonly ennemis: readonly ChoixEnnemi[];
 }
 
+/** Couleurs des barres de boss vanilla (gui/sprites/boss_bar). */
+export type CouleurBarreBoss = 'pink' | 'blue' | 'red' | 'green' | 'yellow' | 'purple' | 'white';
+
 export interface DefinitionArene {
   readonly id: string;
   readonly nom: string;
@@ -429,6 +441,8 @@ export interface DefinitionArene {
     readonly couleurAmbiante: number;
     readonly couleurSoleil: number;
   };
+  /** Boss de l'arène, dans l'ordre d'arrivée (puis en boucle). */
+  readonly boss: readonly IdEnnemi[];
   /** Population hors zones. */
   readonly ennemis: readonly ChoixEnnemi[];
   /** Zones à population propre (la première qui contient le point d'apparition l'emporte). */
@@ -456,8 +470,6 @@ export interface DefinitionCalendrierBoss {
   readonly premierPassage: number;   // s de jeu avant le premier boss
   readonly intervalle: number;       // s entre deux boss
   readonly avertissement: number;    // s d'alerte avant l'apparition
-  /** Boss dans l'ordre d'apparition ; la liste recommence quand elle est épuisée. */
-  readonly ordre: readonly IdEnnemi[];
 }
 
 // --------------------------------------------------------------------------

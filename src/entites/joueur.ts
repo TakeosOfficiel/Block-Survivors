@@ -1,10 +1,12 @@
 /** Joueur : déplacement, collisions avec les bords, vie, modèle animé du personnage choisi. */
 import type * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
+import { degatsApresDefense } from '../combat/defense';
 import { CONFIG } from '../config';
 import type { Entrees } from '../controles/entrees';
 import { JOUEUR_BASE } from '../donnees/joueur';
 import { MODELES } from '../donnees/modeles';
+import { PLAFONDS } from '../donnees/plafonds';
 import type { Ombres } from '../effets/ombres';
 import type { Retours } from '../effets/retours';
 import type { ApparenceEntite } from '../donnees/types';
@@ -67,7 +69,8 @@ export class Joueur implements SourceEntites, CibleJoueur {
     const mods = this.etat.modificateurs;
     if (mods.regeneration > 0) {
       const avant = j.pv;
-      j.pv = Math.min(j.pvMax, j.pv + mods.regeneration * dt);
+      const regeneration = Math.min(mods.regeneration, PLAFONDS.regeneration * j.pvMax);
+      j.pv = Math.min(j.pvMax, j.pv + regeneration * dt);
       this.etat.stats.pvSoignes += j.pv - avant;
     }
 
@@ -115,8 +118,7 @@ export class Joueur implements SourceEntites, CibleJoueur {
   subirDegats(degats: number): boolean {
     const j = this.etat.joueur;
     if (j.mort || this.invincible || j.invulnerabilite > 0 || j.protection > 0 || this.etat.issue !== null) return false;
-    // L'armure retire des dégâts, mais un coup en fait toujours au moins 1
-    const subis = Math.min(j.pv, Math.max(1, degats - this.etat.modificateurs.armure));
+    const subis = Math.min(j.pv, degatsApresDefense(degats, this.etat.modificateurs.armure));
     j.pv -= subis;
     j.invulnerabilite = JOUEUR_BASE.invulnerabilite;
     this.etat.stats.degatsSubis += subis;

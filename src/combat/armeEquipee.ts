@@ -1,5 +1,7 @@
 /** Arme possédée par le joueur : rang, statistiques calculées, minuterie. */
+import { ALLIES } from '../donnees/allies';
 import { ARMES, IDS_ARMES, type IdArme } from '../donnees/armes';
+import { PLAFONDS, PROFITE_PROJECTILES } from '../donnees/plafonds';
 import type { DefinitionArme, Modificateurs, StatsArme } from '../donnees/types';
 
 export type StatsCalculees = { -readonly [K in keyof StatsArme]: number };
@@ -35,7 +37,8 @@ export function rangMax(definition: DefinitionArme): number {
 
 /**
  * Statistiques d'une arme au rang donné : base + améliorations des rangs
- * atteints, puis modificateurs globaux des passifs. Écrit dans `sortie`.
+ * atteints, puis modificateurs globaux des passifs, dans leurs plafonds.
+ * Écrit dans `sortie`.
  */
 export function calculerStats(
   definition: DefinitionArme,
@@ -50,11 +53,19 @@ export function calculerStats(
       sortie[cle] += modif[cle] ?? 0;
     }
   }
+  const m = definition.mecanique;
   sortie.degats *= modificateurs.degats;
-  sortie.cadence *= modificateurs.cadence;
+  sortie.cadence *= Math.max(PLAFONDS.delaiMin, modificateurs.cadence);
   sortie.zone *= modificateurs.zone;
   sortie.portee *= modificateurs.portee;
-  // Le balayage frappe une seule fois : il n'a pas de « nombre »
-  if (definition.mecanique.type !== 'balayage') sortie.nombre += modificateurs.projectiles;
+  if (PROFITE_PROJECTILES[m.type]) sortie.nombre += Math.min(PLAFONDS.projectilesBonus, modificateurs.projectiles);
+  if (m.type === 'invocation') {
+    // Les alliés en plus qui dépasseraient le quota deviennent des dégâts
+    const allie = ALLIES[m.allie];
+    if (allie.renforts) sortie.nombre += modificateurs.allies;
+    const surplus = Math.max(0, sortie.nombre - allie.quota);
+    sortie.nombre -= surplus;
+    sortie.degats *= 1 + surplus * PLAFONDS.surplusAllie;
+  }
   return sortie;
 }

@@ -123,8 +123,8 @@ export class Arsenal {
         return this.systemes.foudre.frapper(arme);
 
       case 'invocation':
-        // Au maximum d'alliés, on attend simplement la prochaine invocation
-        if (this.systemes.invocations.invoquer(arme) && arme.definition.son) this.contexte.retours.son(arme.definition.son);
+        // Au quota, l'invocation renouvelle les alliés présents (sans son)
+        if (this.systemes.invocations.invoquer(arme) > 0 && arme.definition.son) this.contexte.retours.son(arme.definition.son);
         return true;
 
       case 'orbite':

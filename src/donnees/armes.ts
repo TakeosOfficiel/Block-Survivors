@@ -10,7 +10,8 @@
  *   orbite     degats, cadence (délai avant de retoucher un ennemi), nombre, vitesse (rad/s), zone (rayon), recul
  *   explosif   degats, cadence, nombre, vitesse, portee, zone (rayon d'explosion), recul
  *   foudre     degats, cadence, nombre, portee (rayon de recherche), zone (rayon d'impact), recul
- *   invocation degats (par coup), cadence, nombre (alliés simultanés), duree, zone (allonge), recul
+ *   invocation degats (par coup), cadence, nombre (alliés par invocation), duree, zone (allonge), recul ;
+ *              le nombre présent est limité par le quota de l'allié (allies.ts)
  */
 import type { DefinitionArme, StatsArme } from './types';
 
@@ -119,12 +120,13 @@ const definitions = {
     description: 'Invoque un golem qui écrase les ennemis.',
     icone: 'block/carved_pumpkin',
     mecanique: { type: 'invocation', allie: 'golem_fer' },
-    stats: { ...BASE, degats: 30, cadence: 12, nombre: 1, duree: 15, zone: 1.4, recul: 10 },
+    // Revient toutes les 16 s et reste 10 s : permanent à partir du rang 5
+    stats: { ...BASE, degats: 30, cadence: 16, nombre: 1, duree: 10, zone: 1.4, recul: 10 },
     niveaux: [
-      { description: 'Le golem reste 5 s de plus', modif: { duree: 5 } },
+      { description: 'Le golem reste 3 s de plus', modif: { duree: 3 } },
       { description: 'Dégâts +10', modif: { degats: 10 } },
-      { description: '+1 golem', modif: { nombre: 1 } },
-      { description: 'Invoqué 25 % plus souvent', modif: { cadence: -3 } },
+      { description: 'Invoqué 20 % plus souvent', modif: { cadence: -3.2 } },
+      { description: 'Le golem reste 3 s de plus', modif: { duree: 3 } },
       { description: '+1 golem, dégâts +10', modif: { nombre: 1, degats: 10 } },
     ],
   },
@@ -134,13 +136,14 @@ const definitions = {
     description: 'Des loups apprivoisés traquent et mordent les ennemis.',
     icone: 'item/bone',
     mecanique: { type: 'invocation', allie: 'loup' },
-    stats: { ...BASE, degats: 5, cadence: 3, nombre: 2, duree: 14, zone: 0.6, recul: 2 },
+    // 2 loups toutes les 7 s qui vivent 10 s : environ 3 présents au rang 1 (quota 6)
+    stats: { ...BASE, degats: 5, cadence: 7, nombre: 2, duree: 10, zone: 0.6, recul: 2 },
     niveaux: [
-      { description: '+1 loup', modif: { nombre: 1 } },
       { description: 'Dégâts +3', modif: { degats: 3 } },
-      { description: 'Les loups restent 6 s de plus', modif: { duree: 6 } },
-      { description: '+1 loup, dégâts +3', modif: { nombre: 1, degats: 3 } },
-      { description: '+2 loups', modif: { nombre: 2 } },
+      { description: '+1 loup par invocation', modif: { nombre: 1 } },
+      { description: 'Les loups restent 4 s de plus', modif: { duree: 4 } },
+      { description: 'Dégâts +3', modif: { degats: 3 } },
+      { description: '+1 loup par invocation, dégâts +3', modif: { nombre: 1, degats: 3 } },
     ],
   },
   vex: {
@@ -149,13 +152,14 @@ const definitions = {
     description: 'Des esprits volants foncent sur les ennemis à travers le décor.',
     icone: 'item/echo_shard',
     mecanique: { type: 'invocation', allie: 'vex' },
-    stats: { ...BASE, degats: 4, cadence: 4, nombre: 2, duree: 8, zone: 0.4, recul: 1 },
+    // 2 vex toutes les 6 s qui vivent 8 s : environ 3 présents au rang 1 (quota 6)
+    stats: { ...BASE, degats: 4, cadence: 6, nombre: 2, duree: 8, zone: 0.4, recul: 1 },
     niveaux: [
-      { description: '+1 vex', modif: { nombre: 1 } },
+      { description: '+1 vex par invocation', modif: { nombre: 1 } },
       { description: 'Dégâts +3', modif: { degats: 3 } },
-      { description: 'Invoqués 25 % plus souvent', modif: { cadence: -1 } },
-      { description: '+1 vex, restent 3 s de plus', modif: { nombre: 1, duree: 3 } },
-      { description: '+2 vex, dégâts +2', modif: { nombre: 2, degats: 2 } },
+      { description: 'Invoqués 25 % plus souvent', modif: { cadence: -1.5 } },
+      { description: 'Dégâts +2', modif: { degats: 2 } },
+      { description: '+1 vex par invocation, restent 3 s de plus', modif: { nombre: 1, duree: 3 } },
     ],
   },
 } satisfies Record<string, DefinitionArme>;

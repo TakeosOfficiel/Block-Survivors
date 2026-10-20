@@ -357,8 +357,12 @@ export interface DefinitionAllie extends ApparenceEntite {
   readonly sonMort: IdSon;
   /** Points de vie : les ennemis au corps à corps l'attaquent, il peut mourir avant la fin. */
   readonly pv: number;
-  /** Dégâts retirés à chaque coup reçu (au moins 1 dégât passe). */
+  /** Dégâts retirés à chaque coup reçu (voir defense.ts). */
   readonly armure?: number;
+  /** Nombre maximal en même temps ; au-delà, une invocation renouvelle la durée d'un allié présent. */
+  readonly quota: number;
+  /** Profite des « +1 allié » permanents (Appel de la meute…) ; pas les golems. */
+  readonly renforts: boolean;
   /** Distance (blocs) à laquelle il détourne les ennemis du joueur. */
   readonly provocation: number;
   /** Vole à cette hauteur (blocs) en traversant le décor (vex). */
@@ -518,10 +522,11 @@ export interface Modificateurs {
   cadence: number;       // < 1 : armes plus rapides
   zone: number;
   portee: number;
-  projectiles: number;   // projectiles, haches, éclairs, golems en plus
+  projectiles: number;   // projectiles en plus (armes qui en profitent, voir plafonds.ts)
+  allies: number;        // alliés en plus à chaque invocation
   vitesse: number;
   pvMax: number;
-  armure: number;        // dégâts retirés à chaque coup reçu (minimum 1 dégât)
+  armure: number;        // dégâts retirés à chaque coup reçu (voir defense.ts)
   regeneration: number;  // PV / s
   vies: number;          // totems d'immortalité : résurrections à la mort
   collecte: number;

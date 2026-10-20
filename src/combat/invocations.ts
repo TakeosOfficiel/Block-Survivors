@@ -3,6 +3,9 @@
  * frapper l'ennemi le plus proche pendant un temps limité, puis disparaissent.
  * Ils ont des PV : les ennemis au corps à corps qu'ils attirent les frappent,
  * et ils peuvent mourir avant la fin de leur temps.
+ *
+ * Chaque type a son quota : une invocation qui ne trouve pas de place renouvelle
+ * la durée de l'allié de ce type qui a le moins de temps restant.
  */
 import type * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
@@ -22,6 +25,7 @@ import { Pool } from '../utils/pool';
 import type { Point } from '../monde/carte';
 import type { ArmeEquipee } from './armeEquipee';
 import type { ContexteCombat } from './contexte';
+import { degatsApresDefense } from './defense';
 
 export interface Allie {
   /** Identifiant unique de l'invocation (les index du pool changent). */
@@ -76,19 +80,51 @@ export class Invocations implements SourceEntites {
     return this.pool.nombre;
   }
 
-  /** Invoque un allié près du joueur si l'arme n'a pas atteint son nombre maximal. */
-  invoquer(arme: ArmeEquipee): boolean {
+  /**
+   * Invoque `nombre` alliés près du joueur ; au quota, chacun renouvelle à la
+   * place l'allié de ce type qui a le moins de temps restant. Renvoie le nombre
+   * de nouveaux alliés.
+   */
+  invoquer(arme: ArmeEquipee): number {
+    const m = arme.definition.mecanique;
+    if (m.type !== 'invocation') return 0;
+    const indexType = IDS_ALLIES.indexOf(m.allie);
+    let nouveaux = 0;
+    for (let k = 0; k < arme.stats.nombre; k++) {
+      if (this.presents(indexType) < ALLIES[m.allie].quota && this.creer(arme, indexType)) nouveaux++;
+      else this.renouveler(indexType, arme.stats.duree);
+    }
+    return nouveaux;
+  }
+
+  /** Alliés vivants de ce type. */
+  private presents(indexType: number): number {
+    let n = 0;
+    for (let i = 0; i < this.pool.nombre; i++) {
+      const a = this.pool.elements[i];
+      if (a.indexType === indexType && a.arme && a.pv > 0) n++;
+    }
+    return n;
+  }
+
+  /** Remet à `duree` le temps restant de l'allié de ce type qui en a le moins. */
+  private renouveler(indexType: number, duree: number): void {
+    let choisi: Allie | null = null;
+    for (let i = 0; i < this.pool.nombre; i++) {
+      const a = this.pool.elements[i];
+      if (a.indexType === indexType && a.arme && a.pv > 0 && (!choisi || a.vie < choisi.vie)) choisi = a;
+    }
+    if (choisi && choisi.vie < duree) choisi.vie = duree;
+  }
+
+  private creer(arme: ArmeEquipee, indexType: number): boolean {
     const m = arme.definition.mecanique;
     if (m.type !== 'invocation') return false;
-    let presents = 0;
-    for (let i = 0; i < this.pool.nombre; i++) if (this.pool.elements[i].arme === arme) presents++;
-    if (presents >= arme.stats.nombre) return false;
-
     const a = this.pool.acquerir();
     if (!a) return false;
     const j = this.contexte.etat.joueur;
     const angle = Math.random() * Math.PI * 2;
-    a.indexType = IDS_ALLIES.indexOf(m.allie);
+    a.indexType = indexType;
     a.definition = ALLIES[m.allie];
     a.arme = arme;
     a.x = j.x + Math.sin(angle) * 1.5;
@@ -184,7 +220,7 @@ export class Invocations implements SourceEntites {
 
   blesser(a: Allie, degats: number): void {
     if (a.pv <= 0 || !a.arme) return;
-    a.pv -= Math.max(1, degats - (a.definition.armure ?? 0));
+    a.pv -= degatsApresDefense(degats, a.definition.armure ?? 0);
     a.blessure = CONFIG.surcouche.blessure.duree;
     const retours = this.contexte.retours;
     if (a.pv > 0) {

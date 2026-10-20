@@ -26,6 +26,7 @@ import { creerEnnemi, type Ennemi } from './ennemi';
 import type { Butin } from './butin';
 import type { CiblesAllies, SourceEntites } from './types';
 import type { Allie } from '../combat/invocations';
+import { PLAFONDS } from '../donnees/plafonds';
 
 /** Tout ce qu'il faut pour afficher un type d'ennemi. */
 interface RenduType {
@@ -237,7 +238,7 @@ export class Ennemis implements SourceEntites {
     const stats = this.etat.stats;
     // Coup critique (armes du joueur) : dégâts multipliés et étincelles du jeu
     const mods = this.etat.modificateurs;
-    const critique = arme >= 0 && Math.random() < mods.critique;
+    const critique = arme >= 0 && Math.random() < Math.min(PLAFONDS.critique, mods.critique);
     if (critique) {
       degats *= mods.degatsCritiques;
       this.particules.emettre(e.x, 1, e.z, GERBES.critique);

@@ -67,6 +67,7 @@ const LIBELLES_MODIFICATEURS: Record<keyof Modificateurs, { nom: string; pourcen
   zone: { nom: 'Zone des armes', pourcentage: true, unite: '' },
   portee: { nom: 'Portée des armes', pourcentage: true, unite: '' },
   projectiles: { nom: 'Projectiles en plus', pourcentage: false, unite: '' },
+  allies: { nom: 'Alliés par invocation', pourcentage: false, unite: '' },
   vitesse: { nom: 'Vitesse', pourcentage: true, unite: '' },
   pvMax: { nom: 'Santé maximale', pourcentage: false, unite: ' PV' },
   armure: { nom: 'Dégâts reçus', pourcentage: false, unite: '' },

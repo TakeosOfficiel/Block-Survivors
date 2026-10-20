@@ -18,6 +18,8 @@ const definitions = {
     sonMort: 'golem_mort',
     pv: 120,
     armure: 2,
+    quota: 2,
+    renforts: false,
     provocation: 7,   // il attire la horde loin du joueur
   },
   loup: {
@@ -35,6 +37,8 @@ const definitions = {
     sonBlessure: 'loup_blesse',
     sonMort: 'loup_mort',
     pv: 24,
+    quota: 6,
+    renforts: true,
     provocation: 3,
   },
   vex: {
@@ -52,6 +56,8 @@ const definitions = {
     sonBlessure: 'vex_blesse',
     sonMort: 'vex_mort',
     pv: 14,
+    quota: 6,
+    renforts: true,
     provocation: 2,
     vol: 1.1,
   },

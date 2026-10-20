@@ -143,9 +143,13 @@ export class Ameliorations {
     const exclusifs: readonly IdPassif[] = this.etat.personnage.cartesExclusives;
     for (const id of IDS_PASSIFS) {
       if (PASSIFS[id].exclusif && !exclusifs.includes(id)) continue;
+      const consommable = PASSIFS[id].consommable;
+      if (consommable) {
+        if (this.reserve() < consommable.reserveMax) liste.push({ type: 'passif', id });
+        continue;
+      }
       const rang = this.passifs.rang(id);
-      const place = placePassif || PASSIFS[id].consommable === true;
-      if (rang === 0 ? place : rang < PASSIFS[id].niveaux.length) liste.push({ type: 'passif', id });
+      if (rang === 0 ? placePassif : rang < PASSIFS[id].niveaux.length) liste.push({ type: 'passif', id });
     }
     return liste;
   }
@@ -194,8 +198,26 @@ export class Ameliorations {
     };
   }
 
+  /** Vies (totems) gagnées mais pas encore utilisées. */
+  private reserve(): number {
+    return this.etat.modificateurs.vies - this.etat.joueur.viesUtilisees;
+  }
+
   private decrirePassif(id: IdPassif): Carte {
     const def = PASSIFS[id];
+    if (def.consommable) {
+      // Pas de rangs : un exemplaire de plus dans la réserve
+      const reserve = this.reserve();
+      return {
+        amelioration: { type: 'passif', id },
+        rarete: def.exclusif ? 'exclusif' : 'passif',
+        nom: def.nom,
+        icone: def.icone,
+        etiquette: 'Consommable',
+        description: `${def.description} ${def.niveaux[0].description}.`,
+        lignes: [`${def.consommable.libelle} : ${reserve} → ${reserve + 1}`],
+      };
+    }
     const rang = this.passifs.rang(id);
     const avant = this.passifs.calculer(creerModificateurs());
     const apres = this.passifs.calculer(creerModificateurs(), id);

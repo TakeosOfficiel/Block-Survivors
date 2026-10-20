@@ -24,13 +24,13 @@ export class Passifs {
     return this.possedes.find((p) => p.id === id)?.rang ?? 0;
   }
 
-  /** Ajoute le passif au rang 1, ou le monte d'un rang ; faux s'il est déjà au maximum. */
+  /** Ajoute le passif au rang 1, ou le monte d'un rang ; faux s'il est déjà au maximum (un consommable s'empile sans limite ici). */
   ameliorer(id: IdPassif): boolean {
     const existant = this.possedes.find((p) => p.id === id);
     if (!existant) {
       this.possedes.push({ id, rang: 1 });
     } else {
-      if (existant.rang >= PASSIFS[id].niveaux.length) return false;
+      if (!PASSIFS[id].consommable && existant.rang >= PASSIFS[id].niveaux.length) return false;
       existant.rang++;
     }
     this.version++;
@@ -48,7 +48,8 @@ export class Passifs {
     if (ajout) ids.add(ajout);
     for (const id of ids) {
       const rang = this.rang(id) + (id === ajout ? 1 : 0);
-      for (let r = 0; r < rang; r++) cumulerModificateurs(sortie, PASSIFS[id].niveaux[r].modif);
+      const niveaux = PASSIFS[id].niveaux;
+      for (let r = 0; r < rang; r++) cumulerModificateurs(sortie, niveaux[Math.min(r, niveaux.length - 1)].modif);
     }
     return sortie;
   }

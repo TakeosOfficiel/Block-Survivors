@@ -523,11 +523,12 @@ export interface DefinitionPassif {
   /** Réservé aux personnages qui le listent dans `cartesExclusives`. */
   readonly exclusif?: boolean;
   /**
-   * Objet à usage unique (totem) : n'occupe pas d'emplacement de bonus et
-   * n'apparaît pas dans la barre ; son compteur s'affiche près des cœurs.
+   * Objet à usage unique (totem) : sans rangs, chaque carte en donne un de
+   * plus tant que la réserve (vies pas encore utilisées) est sous `reserveMax`.
+   * N'occupe pas d'emplacement de bonus ; son compteur s'affiche près des cœurs.
    */
-  readonly consommable?: boolean;
-  /** Effets des rangs 1, 2… ; rang maximal = longueur. */
+  readonly consommable?: { readonly reserveMax: number; readonly libelle: string };
+  /** Effets des rangs 1, 2… ; rang maximal = longueur (un consommable n'en a qu'un, répété). */
   readonly niveaux: readonly NiveauPassif[];
 }
 

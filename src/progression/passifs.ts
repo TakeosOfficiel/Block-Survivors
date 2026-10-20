@@ -12,6 +12,12 @@ export class Passifs {
   readonly possedes: PassifPossede[] = [];
   /** Incrémenté à chaque changement (pour rafraîchir l'interface). */
   version = 0;
+  /** Bonus permanents du personnage, toujours comptés. */
+  private readonly bonus: Partial<Modificateurs>;
+
+  constructor(bonus: Partial<Modificateurs>) {
+    this.bonus = bonus;
+  }
 
   /** Rang possédé (0 = absent). */
   rang(id: IdPassif): number {
@@ -31,9 +37,13 @@ export class Passifs {
     return true;
   }
 
-  /** Recalcule `sortie` depuis zéro ; `ajout` permet de simuler un passif monté d'un rang. */
+  /**
+   * Recalcule `sortie` depuis zéro (bonus du personnage + passifs) ;
+   * `ajout` permet de simuler un passif monté d'un rang.
+   */
   calculer(sortie: Modificateurs, ajout?: IdPassif): Modificateurs {
     Object.assign(sortie, creerModificateurs());
+    cumulerModificateurs(sortie, this.bonus);
     const ids = new Set<IdPassif>(this.possedes.map((p) => p.id));
     if (ajout) ids.add(ajout);
     for (const id of ids) {

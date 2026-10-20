@@ -1,12 +1,12 @@
 /**
  * Panneau debug (F3 ou ²) : mesures, vitesse du temps, invincibilité,
- * apparition d'ennemis et de boss, armes, frappe de zone.
+ * apparition d'ennemis et de boss, armes, niveaux, personnage, frappe de zone.
  */
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG, SOURCES_TEXTURES } from '../config';
 import { ARMES, IDS_ARMES, type IdArme } from '../donnees/armes';
-import { BOSS } from '../donnees/boss';
 import { ENNEMIS, IDS_ENNEMIS, type IdEnnemi } from '../donnees/ennemis';
+import { IDS_PERSONNAGES, PERSONNAGES, type IdPersonnage } from '../donnees/personnages';
 import type { EtatPartie } from '../etat';
 import type { CameraJeu } from '../moteur/camera';
 import type { Rendu } from '../moteur/rendu';
@@ -28,6 +28,8 @@ export interface SourcesDebug {
   apparaitreEnnemi(id: IdEnnemi): void;
   ameliorerArme(id: IdArme): void;
   gagnerNiveau(): void;
+  apparaitreBoss(): void;
+  changerPersonnage(id: IdPersonnage): void;
   frapper(): void;
 }
 
@@ -56,6 +58,7 @@ export class PanneauDebug {
     frappe: element<HTMLButtonElement>('dbg-frappe'),
     niveau: element<HTMLButtonElement>('dbg-niveau'),
     boss: element<HTMLButtonElement>('dbg-boss'),
+    personnages: element('dbg-personnages'),
   };
 
   private visible: boolean = CONFIG.debug.actifAuDemarrage;
@@ -74,7 +77,7 @@ export class PanneauDebug {
     this.lierBouton(this.dom.invincible, () => this.basculerInvincibilite());
     this.lierBouton(this.dom.frappe, () => this.sources.frapper());
     this.lierBouton(this.dom.niveau, () => this.sources.gagnerNiveau());
-    this.lierBouton(this.dom.boss, () => this.apparitionBoss());
+    this.lierBouton(this.dom.boss, () => this.sources.apparaitreBoss());
 
     // Un bouton par ennemi et par arme, générés depuis les tables de données
     for (const id of IDS_ENNEMIS) {
@@ -82,6 +85,9 @@ export class PanneauDebug {
     }
     for (const id of IDS_ARMES) {
       this.dom.armes.append(this.creerBouton(ARMES[id].nom, () => this.sources.ameliorerArme(id)));
+    }
+    for (const id of IDS_PERSONNAGES) {
+      this.dom.personnages.append(this.creerBouton(PERSONNAGES[id].nom, () => this.sources.changerPersonnage(id)));
     }
 
     window.addEventListener('keydown', this.surTouche);
@@ -125,7 +131,7 @@ export class PanneauDebug {
     else if (e.code === 'KeyI') this.basculerInvincibilite();
     else if (e.code === 'KeyK') this.sources.frapper();
     else if (e.code === 'KeyL') this.sources.gagnerNiveau();
-    else if (e.code === 'KeyB') this.apparitionBoss();
+    else if (e.code === 'KeyB') this.sources.apparaitreBoss();
   };
 
   private basculer(): void {
@@ -150,11 +156,6 @@ export class PanneauDebug {
     this.sources.definirInvincibilite(this.invincible);
     this.dom.invincible.textContent = this.invincible ? 'ON' : 'OFF';
     this.dom.invincible.classList.toggle('actif', this.invincible);
-  }
-
-  /** Fait apparaître immédiatement le prochain boss de la table BOSS. */
-  private apparitionBoss(): void {
-    if (BOSS.length === 0) this.sources.hud.afficherMessage('Aucun boss déclaré dans la table BOSS');
   }
 
   private rafraichir(): void {

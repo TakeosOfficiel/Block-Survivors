@@ -10,6 +10,7 @@ import { texturesRequises } from './assets/manifeste';
 import { BibliothequeTextures } from './assets/textures';
 import { CONFIG, SOURCES_TEXTURES } from './config';
 import { ARENES } from './donnees/arenes';
+import { IDS_PERSONNAGES, PERSONNAGE_PAR_DEFAUT, PERSONNAGES, type IdPersonnage } from './donnees/personnages';
 import { Jeu } from './jeu';
 import { Rendu } from './moteur/rendu';
 import { EcranChargement } from './ui/ecranChargement';
@@ -26,15 +27,22 @@ async function demarrer(): Promise<void> {
   }
 
   const arene = ARENES[0];
+  const personnage = personnageDemande();
   const textures = new BibliothequeTextures();
-  await textures.charger(texturesRequises(arene), (faites, total) => ecran.progression(faites, total));
+  await textures.charger(texturesRequises(arene, PERSONNAGES[personnage]), (faites, total) => ecran.progression(faites, total));
 
-  const jeu = new Jeu(rendu, textures, arene);
+  const jeu = new Jeu(rendu, textures, arene, personnage);
   ecran.masquer();
   jeu.demarrer();
 
   // En développement uniquement : accès à la scène depuis la console du navigateur
   if (import.meta.env.DEV) Object.assign(window, { blockSurvivors: { jeu, rendu } });
+}
+
+/** Personnage choisi dans l'adresse (?personnage=archer), sinon celui par défaut. */
+function personnageDemande(): IdPersonnage {
+  const demande = new URLSearchParams(window.location.search).get('personnage');
+  return IDS_PERSONNAGES.find((id) => id === demande) ?? PERSONNAGE_PAR_DEFAUT;
 }
 
 void demarrer();

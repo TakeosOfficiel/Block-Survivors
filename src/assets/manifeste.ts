@@ -4,13 +4,14 @@ import { ALLIES, IDS_ALLIES } from '../donnees/allies';
 import { ARMES, IDS_ARMES } from '../donnees/armes';
 import { BLOCS, type IdBloc } from '../donnees/blocs';
 import { ENNEMIS, IDS_ENNEMIS } from '../donnees/ennemis';
-import { JOUEUR_BASE } from '../donnees/joueur';
+import { IDS_OBJETS, OBJETS } from '../donnees/objets';
 import { IDS_PASSIFS, PASSIFS } from '../donnees/passifs';
 import { PROGRESSION } from '../donnees/progression';
 import { IDS_PROJECTILES, PROJECTILES } from '../donnees/projectiles';
-import type { CheminTexture, DefinitionArene } from '../donnees/types';
+import type { CheminTexture, DefinitionArene, DefinitionPersonnage } from '../donnees/types';
+import { BarreBoss } from '../ui/barreBoss';
 
-export function texturesRequises(arene: DefinitionArene): Set<CheminTexture> {
+export function texturesRequises(arene: DefinitionArene, personnage: DefinitionPersonnage): Set<CheminTexture> {
   const chemins = new Set<CheminTexture>();
   const ajouterBloc = (id: IdBloc) => {
     const faces = BLOCS[id].faces;
@@ -21,8 +22,13 @@ export function texturesRequises(arene: DefinitionArene): Set<CheminTexture> {
   for (const choix of arene.murs) ajouterBloc(choix.bloc);
   ajouterBloc(arene.exterieur.bloc);
 
-  chemins.add(JOUEUR_BASE.skin);
-  for (const id of IDS_ENNEMIS) chemins.add(ENNEMIS[id].skin);
+  chemins.add(personnage.skin);
+  for (const id of IDS_ENNEMIS) {
+    const ennemi = ENNEMIS[id];
+    chemins.add(ennemi.skin);
+    if (ennemi.boss) for (const sprite of BarreBoss.sprites(ennemi.boss.couleurBarre)) chemins.add(sprite);
+  }
+  for (const id of IDS_OBJETS) chemins.add(OBJETS[id].icone);
   for (const id of IDS_PROJECTILES) chemins.add(PROJECTILES[id].texture);
   for (const id of IDS_ALLIES) chemins.add(ALLIES[id].skin);
   for (const id of IDS_ARMES) {

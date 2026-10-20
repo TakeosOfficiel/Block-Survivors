@@ -15,14 +15,17 @@ import { ProjectilesJoueur } from './combat/projectilesJoueur';
 import { CONFIG } from './config';
 import { Entrees } from './controles/entrees';
 import type { IdEnnemi } from './donnees/ennemis';
-import { JOUEUR_BASE } from './donnees/joueur';
+import type { IdPersonnage } from './donnees/personnages';
 import type { DefinitionArene } from './donnees/types';
 import { Ombres } from './effets/ombres';
 import { Particules } from './effets/particules';
 import { RenduProjectiles } from './effets/renduProjectiles';
+import { Butin } from './entites/butin';
 import { DirecteurApparitions } from './entites/directeur';
+import { DirecteurBoss } from './entites/directeurBoss';
 import { Ennemis } from './entites/ennemis';
 import { Joueur } from './entites/joueur';
+import { Objets } from './entites/objets';
 import { Orbes } from './entites/orbes';
 import { ProjectilesEnnemis } from './entites/projectilesEnnemis';
 import type { SourceEntites } from './entites/types';
@@ -58,7 +61,9 @@ export class Jeu implements CallbacksBoucle {
   private readonly ennemis: Ennemis;
   private readonly projectilesEnnemis: ProjectilesEnnemis;
   private readonly orbes: Orbes;
+  private readonly objets: Objets;
   private readonly directeur: DirecteurApparitions;
+  private readonly directeurBoss: DirecteurBoss;
 
   // Combat du joueur
   private readonly arsenal: Arsenal;
@@ -69,7 +74,7 @@ export class Jeu implements CallbacksBoucle {
   private readonly invocations: Invocations;
 
   // Progression
-  private readonly passifs = new Passifs();
+  private readonly passifs: Passifs;
   private readonly ameliorations: Ameliorations;
   private readonly ecranCartes: EcranCartes;
   private readonly ecranPause: EcranPause;
@@ -78,14 +83,17 @@ export class Jeu implements CallbacksBoucle {
   private readonly sourcesEntites: readonly SourceEntites[];
   private mortAnnoncee = false;
 
-  constructor(rendu: Rendu, textures: BibliothequeTextures, arene: DefinitionArene) {
+  constructor(rendu: Rendu, textures: BibliothequeTextures, arene: DefinitionArene, personnage: IdPersonnage) {
     this.rendu = rendu;
     this.textures = textures;
-    this.etat = creerEtatPartie(arene);
+    this.etat = creerEtatPartie(arene, personnage);
     const scene = rendu.scene;
 
+    // Bonus permanents du personnage
+    this.passifs = new Passifs(this.etat.personnage.bonus);
+    this.passifs.calculer(this.etat.modificateurs);
+
     construireArene(arene, textures, scene);
-    this.hud = new Hud(textures);
     this.ombres = new Ombres(textures.obtenir(CONFIG.ombre.texture), scene);
     this.particules = new Particules(scene);
     this.renduProjectiles = new RenduProjectiles(textures, scene);
@@ -94,16 +102,16 @@ export class Jeu implements CallbacksBoucle {
     this.joueur = new Joueur(this.etat, this.entrees, scene, textures);
     this.projectilesEnnemis = new ProjectilesEnnemis(this.etat, this.joueur);
     this.orbes = new Orbes(this.etat, scene, textures);
+    this.objets = new Objets(this.etat, this.particules, scene, textures);
     this.ennemis = new Ennemis(
       this.etat,
       { cible: this.joueur, tireur: this.projectilesEnnemis },
       this.particules,
-      this.orbes,
+      new Butin(this.orbes, this.objets),
       scene,
       textures,
     );
     this.camera = new CameraJeu(rendu.camera, this.entrees, this.etat);
-    this.directeur = new DirecteurApparitions(this.etat, this.ennemis, this.camera);
 
     // Combat du joueur
     const combat: ContexteCombat = {
@@ -124,7 +132,12 @@ export class Jeu implements CallbacksBoucle {
       foudre: this.foudre,
       invocations: this.invocations,
     });
-    for (const id of JOUEUR_BASE.armesDepart) this.arsenal.ameliorer(id);
+    for (const id of this.etat.personnage.armesDepart) this.arsenal.ameliorer(id);
+
+    // Interface et directeurs d'apparition
+    this.hud = new Hud(textures, { etat: this.etat, arsenal: this.arsenal, passifs: this.passifs, ennemis: this.ennemis });
+    this.directeur = new DirecteurApparitions(this.etat, this.ennemis, this.camera);
+    this.directeurBoss = new DirecteurBoss(this.etat, this.ennemis, this.camera, this.hud);
 
     // Progression
     this.ameliorations = new Ameliorations(this.etat, this.arsenal, this.passifs);
@@ -132,7 +145,7 @@ export class Jeu implements CallbacksBoucle {
     this.ecranPause = new EcranPause(() => !this.ecranCartes.ouvert && !this.etat.joueur.mort);
 
     this.sourcesEntites = [
-      this.joueur, this.ennemis, this.projectilesEnnemis, this.projectilesJoueur, this.invocations, this.orbes,
+      this.joueur, this.ennemis, this.projectilesEnnemis, this.projectilesJoueur, this.invocations, this.orbes, this.objets,
     ];
 
     this.debug = new PanneauDebug({
@@ -147,6 +160,12 @@ export class Jeu implements CallbacksBoucle {
       apparaitreEnnemi: (id) => this.apparaitreAutourDuJoueur(id),
       ameliorerArme: (id) => { this.arsenal.ameliorer(id); },
       gagnerNiveau: () => gagnerXp(this.etat, this.etat.joueur.xpNiveau - this.etat.joueur.xp),
+      apparaitreBoss: () => this.directeurBoss.forcer(),
+      changerPersonnage: (id) => {
+        const adresse = new URL(window.location.href);
+        adresse.searchParams.set('personnage', id);
+        window.location.href = adresse.href;
+      },
       frapper: () => this.frapperAutourDuJoueur(),
     });
     this.boucle = new Boucle(this);
@@ -166,9 +185,11 @@ export class Jeu implements CallbacksBoucle {
     if (!this.etat.joueur.mort) this.etat.tempsJeu += dt;
     this.joueur.maj(dt);
     this.directeur.maj(dt);
+    this.directeurBoss.maj();
     this.ennemis.maj(dt);           // reconstruit la grille utilisée par les armes
     this.arsenal.maj(dt);
     this.orbes.maj(dt);
+    this.objets.maj();
     this.projectilesJoueur.maj(dt);
     this.invocations.maj(dt);
     this.foudre.maj(dt);
@@ -190,13 +211,14 @@ export class Jeu implements CallbacksBoucle {
     this.renduProjectiles.terminer();
 
     this.orbes.majVisuel(this.etat.tempsJeu);
+    this.objets.majVisuel(this.etat.tempsJeu);
     this.balayages.majVisuel(dtJeu);
     this.foudre.majVisuel();
     this.particules.majVisuel();
     this.camera.majVisuel(dtJeu, dtReel);
     this.rendu.dessiner();
 
-    this.hud.majVisuel(dtBrut, dtReel, this.etat.joueur, this.arsenal, this.passifs);
+    this.hud.majVisuel(dtBrut, dtReel);
     this.debug.majVisuel(dtReel);
     if (this.etat.joueur.mort && !this.mortAnnoncee) {
       this.mortAnnoncee = true;

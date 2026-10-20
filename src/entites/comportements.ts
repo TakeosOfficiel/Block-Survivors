@@ -55,7 +55,13 @@ function archer(e: Ennemi, c: ComportementArcher, contexte: ContexteComportement
   e.dirX = dx * sens;
   e.dirZ = dz * sens;
   if (distance <= c.portee && e.minuterie <= 0) {
-    contexte.tireur.tirer(c.projectile, e.x + dx * 0.5, e.z + dz * 0.5, dx, dz, c.degats);
+    // Salve en éventail autour de la direction du joueur
+    const nombre = c.nombre ?? 1;
+    const base = Math.atan2(dx, dz);
+    for (let k = 0; k < nombre; k++) {
+      const a = base + (k - (nombre - 1) / 2) * (c.dispersion ?? 0);
+      contexte.tireur.tirer(c.projectile, e.x + dx * 0.5, e.z + dz * 0.5, Math.sin(a), Math.cos(a), c.degats);
+    }
     e.minuterie = c.cadence;
   }
 }

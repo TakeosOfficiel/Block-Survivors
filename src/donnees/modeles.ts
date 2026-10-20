@@ -101,6 +101,22 @@ const definitions = {
     attaque: { duree: 0.3, membres: [{ partie: 'brasDroit', amplitude: 1.8 }] },
   },
 
+  // Joueur à bras fins (skins « slim », ex. Alex) : bras de 3 px
+  humanoide_fin: {
+    tailleTexture: [64, 64],
+    parties: {
+      tete: TETE,
+      corps: CORPS,
+      brasDroit:   { taille: [3, 12, 4], pivot: [-5, 21.5, 0], centre: [-0.5, -4, 0], uv: [40, 16] },
+      brasGauche:  { taille: [3, 12, 4], pivot: [5, 21.5, 0],  centre: [0.5, -4, 0],  uv: [32, 48] },
+      jambeDroite: { taille: [4, 12, 4], pivot: [-1.9, 12, 0], centre: [0, -6, 0],    uv: [0, 16] },
+      jambeGauche: { taille: [4, 12, 4], pivot: [1.9, 12, 0],  centre: [0, -6, 0],    uv: [16, 48] },
+    },
+    marche: { ...ALLURE, membres: [...MARCHE_BRAS, ...MARCHE_JAMBES] },
+    repos: REPOS_BRAS,
+    attaque: { duree: 0.3, membres: [{ partie: 'brasDroit', amplitude: 1.8 }] },
+  },
+
   // Zombie : image 64x64 mais seule la moitié haute est remplie (ancien layout) :
   // bras et jambe gauches = côté droit en miroir. Bras tendus vers l'avant.
   zombie: {

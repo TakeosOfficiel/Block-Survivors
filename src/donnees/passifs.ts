@@ -70,6 +70,50 @@ const definitions = {
     icone: 'item/ender_eye',
     niveaux: rangs(5, { description: 'Rayon de collecte +30 %', modif: { collecte: 0.3 } }),
   },
+
+  // --- Exclusifs aux personnages (voir personnages.ts) -----------------------
+  cuirasse: {
+    nom: 'Cuirasse en netherite',
+    description: 'Guerrier : une armure presque impénétrable.',
+    icone: 'item/netherite_chestplate',
+    exclusif: true,
+    niveaux: rangs(3, { description: 'Dégâts reçus −2', modif: { armure: 2 } }),
+  },
+  totem: {
+    nom: "Totem d'immortalité",
+    description: 'Guerrier : plus de santé et une régénération accrue.',
+    icone: 'item/totem_of_undying',
+    exclusif: true,
+    niveaux: rangs(3, { description: '+3 cœurs, +0,2 PV par seconde', modif: { pvMax: 6, regeneration: 0.2 } }),
+  },
+  fleches_spectrales: {
+    nom: 'Flèches spectrales',
+    description: 'Archère : des tirs en plus, qui portent plus loin.',
+    icone: 'item/spectral_arrow',
+    exclusif: true,
+    niveaux: rangs(2, { description: '+1 projectile, portée +10 %', modif: { projectiles: 1, portee: 0.1 } }),
+  },
+  patte_de_lapin: {
+    nom: 'Patte de lapin',
+    description: 'Archère : plus vive, elle ramasse l\'expérience de plus loin.',
+    icone: 'item/rabbit_foot',
+    exclusif: true,
+    niveaux: rangs(3, { description: 'Vitesse +12 %, collecte +20 %', modif: { vitesse: 0.12, collecte: 0.2 } }),
+  },
+  grimoire: {
+    nom: 'Grimoire enchanté',
+    description: 'Mage : des sorts plus vastes et plus puissants.',
+    icone: 'item/enchanted_book',
+    exclusif: true,
+    niveaux: rangs(3, { description: 'Zone +15 %, dégâts +10 %', modif: { zone: 0.15, degats: 0.1 } }),
+  },
+  cristal: {
+    nom: "Éclat d'améthyste",
+    description: 'Mage : les sorts se rechargent plus vite.',
+    icone: 'item/amethyst_shard',
+    exclusif: true,
+    niveaux: rangs(3, { description: 'Délai des armes −10 %', modif: { cadence: -0.1 } }),
+  },
 } satisfies Record<string, DefinitionPassif>;
 
 export type IdPassif = keyof typeof definitions;

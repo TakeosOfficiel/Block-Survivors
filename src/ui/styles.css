@@ -59,6 +59,37 @@ canvas { display: block; }
 }
 #hud-message.visible { opacity: 1; }
 
+/* Alerte d'arrivée d'un boss : bandeau rouge clignotant */
+#hud-alerte {
+  position: absolute; top: 15%; left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 22px;
+  font-size: 26px; font-weight: bold; color: #ff5555;
+  background: rgba(40, 0, 0, 0.55);
+  border: 2px solid #ff5555;
+  white-space: nowrap;
+  animation: clignoter 0.5s steps(2, jump-none) infinite;
+}
+@keyframes clignoter { 50% { opacity: 0.35; } }
+
+/* Barre de vie du boss : sprites 182x5 agrandis ×2, nom au-dessus */
+#hud-boss {
+  position: absolute; top: 14px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+#hud-boss-nom { font-size: 16px; font-weight: bold; }
+#hud-boss-barre {
+  width: 364px; height: 10px;
+  background: #4a1a4a center / 100% 100%;
+  image-rendering: pixelated;
+}
+#hud-boss-remplissage {
+  height: 100%; width: 100%;
+  background: #e040e0 left center / 364px 10px no-repeat;
+  image-rendering: pixelated;
+}
+
 /* Cœurs : sprites 9x9 agrandis ×3, pixels nets, 10 par ligne */
 #hud-coeurs {
   position: absolute; bottom: 74px; left: 50%;

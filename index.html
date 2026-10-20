@@ -18,6 +18,11 @@
   <div id="hud" class="texte-mc">
     <div id="hud-fps">FPS : --</div>
     <div id="hud-message"></div>
+    <div id="hud-alerte" class="cache"></div>
+    <div id="hud-boss" class="cache">
+      <div id="hud-boss-nom"></div>
+      <div id="hud-boss-barre"><div id="hud-boss-remplissage"></div></div>
+    </div>
     <div id="hud-coeurs"></div>
     <div id="hud-xp"><div id="hud-xp-remplissage"></div><span id="hud-niveau">1</span></div>
     <div id="hud-capacites">
@@ -66,8 +71,9 @@
       <button id="dbg-niveau">+1 niveau</button> <small>(touche L)</small>
     </div>
     <div class="ligne">
-      <button id="dbg-boss">Faire apparaître un boss</button> <small>(touche B)</small>
+      <button id="dbg-boss">Faire apparaître le prochain boss</button> <small>(touche B)</small>
     </div>
+    <div class="ligne">Personnage (relance la partie) : <span id="dbg-personnages"></span></div>
   </div>
 
   <script type="module" src="./src/main.ts"></script>

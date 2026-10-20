@@ -25,11 +25,13 @@ src/
   jeu.ts                assemble les systèmes et fixe l'ordre de mise à jour
   config.ts             réglages techniques + version et sources des textures
   etat.ts               état de la partie (source de vérité de la simulation)
-  donnees/              CONTENU data-driven : blocs, modèles, joueur, arènes, boss
+  donnees/              CONTENU data-driven : blocs, modèles, personnages, ennemis et boss,
+                        armes, passifs, objets, progression, arènes
   assets/               chargement des textures et liste des textures requises
   moteur/               rendu, boucle de jeu, caméra, géométries UV
   monde/                construction de l'arène en blocs
-  entites/              joueur, ennemis et comportements, projectiles ennemis, orbes d'XP, directeur d'apparition
+  entites/              joueur, ennemis et comportements, projectiles ennemis, orbes d'XP,
+                        objets de soin, butin, directeurs d'apparition (hordes et boss)
   combat/               armes du joueur : arsenal et une classe par mécanique
   progression/          niveaux, bonus passifs, modificateurs, cartes d'amélioration
   modeles/              modèles cubiques : compilation, animation, rendu instancié
@@ -57,6 +59,12 @@ Pour le local, extrais les PNG de `assets/minecraft/textures/` du `.jar` de ton
 client. Les navigateurs refusent les PNG locaux en `file://` : utilise
 `npm run dev` ou `npm run preview`.
 
+## Personnages
+
+Guerrier (épée), Archère (arc) ou Mage (boules de feu). En attendant le menu de
+sélection, le personnage se choisit dans l'adresse : `index.html?personnage=archer`
+(ou depuis le panneau debug).
+
 ## Contrôles
 
 ZQSD / WASD / flèches : se déplacer · molette : zoom · `1` `2` `3` ou clic :
@@ -66,8 +74,8 @@ choisir une carte · `Échap` : pause.
 
 `F3` ou `²` : FPS, entités, appels de dessin, textures, vitesse du temps
 (`-` / `+`), invincibilité (`I`), apparition de chaque ennemi, ajout ou rang
-supérieur de chaque arme, frappe de zone (`K`), +1 niveau (`L`), apparition
-d'un boss (`B`).
+supérieur de chaque arme, frappe de zone (`K`), +1 niveau (`L`), prochain boss
+(`B`), changement de personnage.
 
 En `npm run dev`, la partie est accessible dans la console du navigateur via
 `window.blockSurvivors`.

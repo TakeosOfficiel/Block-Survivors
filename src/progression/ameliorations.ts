@@ -129,7 +129,9 @@ export class Ameliorations {
       const rang = this.arsenal.rang(id);
       if (rang === 0 ? placeArme : rang < rangMax(ARMES[id])) liste.push({ type: 'arme', id });
     }
+    const exclusifs: readonly IdPassif[] = this.etat.personnage.cartesExclusives;
     for (const id of IDS_PASSIFS) {
+      if (PASSIFS[id].exclusif && !exclusifs.includes(id)) continue;
       const rang = this.passifs.rang(id);
       if (rang === 0 ? placePassif : rang < PASSIFS[id].niveaux.length) liste.push({ type: 'passif', id });
     }

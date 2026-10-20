@@ -62,6 +62,42 @@ const definitions = {
     xp: 3,
     couleurParticules: 0x5fb04a,
   },
+
+  // --- Boss ----------------------------------------------------------------
+  geant: {
+    nom: 'Géant',
+    modele: 'zombie',
+    skin: 'entity/zombie/zombie',
+    couleursSecours: HUMANOIDE_SECOURS,
+    echelle: 3.5,
+    rayonOmbre: 1.6,
+    pv: 900,
+    vitesse: 1.8,
+    rayon: 1.1,
+    resistanceRecul: 0.95,
+    comportement: { type: 'melee', degats: 8, portee: 0.8, cadence: 1.5 },
+    xp: 60,
+    butin: 'pomme_doree',
+    couleurParticules: 0x4f7a3a,
+    boss: { couleurBarre: 'purple' },
+  },
+  seigneur_wither: {
+    nom: 'Seigneur wither',
+    modele: 'squelette',
+    skin: 'entity/skeleton/wither_skeleton',
+    couleursSecours: { tete: 0x2a2a2a, corps: 0x222222, brasDroit: 0x2a2a2a, brasGauche: 0x2a2a2a, jambeDroite: 0x2a2a2a, jambeGauche: 0x2a2a2a },
+    echelle: 2.5,
+    rayonOmbre: 1.2,
+    pv: 1200,
+    vitesse: 2.4,
+    rayon: 0.8,
+    resistanceRecul: 0.9,
+    comportement: { type: 'archer', projectile: 'fleche', degats: 4, distanceIdeale: 10, portee: 16, cadence: 1.4, nombre: 5, dispersion: 0.15 },
+    xp: 100,
+    butin: 'pomme_doree',
+    couleurParticules: 0x2a2a2a,
+    boss: { couleurBarre: 'red' },
+  },
 } satisfies Record<string, DefinitionEnnemi>;
 
 export type IdEnnemi = keyof typeof definitions;

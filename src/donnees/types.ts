@@ -7,6 +7,8 @@ import type { IdArme } from './armes';
 import type { IdBloc } from './blocs';
 import type { IdEnnemi } from './ennemis';
 import type { IdModele } from './modeles';
+import type { IdObjet } from './objets';
+import type { IdPassif } from './passifs';
 import type { IdProjectile } from './projectiles';
 
 /** Chemin d'une texture vanilla, relatif à assets/minecraft/textures/, sans « .png » (ex. « block/dirt »). */
@@ -113,17 +115,29 @@ export interface ApparenceEntite {
 }
 
 // --------------------------------------------------------------------------
-// Joueur
+// Joueur et personnages
 // --------------------------------------------------------------------------
-export interface DefinitionJoueur extends ApparenceEntite {
-  readonly pv: number;               // 20 = 10 cœurs
+/** Réglages communs à tous les personnages. */
+export interface DefinitionJoueur {
   readonly invulnerabilite: number;  // s d'invulnérabilité après un coup
   readonly rayon: number;            // rayon de collision (blocs)
-  readonly vitesse: number;          // blocs / seconde
   readonly reactivite: number;       // rapidité d'atteinte de la vitesse cible (1/s)
   readonly vitesseRotation: number;  // rapidité d'orientation vers la direction de marche (1/s)
   readonly collecte: number;         // rayon d'attraction des orbes d'XP (blocs)
+  readonly rayonRamassage: number;   // distance de ramassage des objets (blocs)
+}
+
+/** Personnage jouable : apparence, statistiques, arme de départ, cartes exclusives. */
+export interface DefinitionPersonnage extends ApparenceEntite {
+  readonly nom: string;
+  readonly description: string;
+  readonly pv: number;               // 20 = 10 cœurs
+  readonly vitesse: number;          // blocs / seconde
   readonly armesDepart: readonly IdArme[];
+  /** Bonus permanents, ajoutés aux modificateurs dès le début. */
+  readonly bonus: Partial<Modificateurs>;
+  /** Bonus passifs exclusifs que seul ce personnage peut tirer. */
+  readonly cartesExclusives: readonly IdPassif[];
 }
 
 // --------------------------------------------------------------------------
@@ -145,6 +159,9 @@ export interface ComportementArcher {
   readonly distanceIdeale: number;
   readonly portee: number;
   readonly cadence: number;
+  /** Flèches par salve (1 par défaut), écartées de `dispersion` rad. */
+  readonly nombre?: number;
+  readonly dispersion?: number;
 }
 
 /** S'approche, gonfle puis explose (annulé si le joueur s'éloigne). */
@@ -169,6 +186,14 @@ export interface DefinitionEnnemi extends ApparenceEntite {
   readonly xp: number;
   /** Couleur des particules à la mort. */
   readonly couleurParticules: number;
+  /** Taille du modèle (1 par défaut) ; le rayon et l'ombre sont donnés à cette taille. */
+  readonly echelle?: number;
+  /** Part du recul ignorée (0 = normal, 1 = inébranlable). */
+  readonly resistanceRecul?: number;
+  /** Objet toujours lâché à la mort (en plus des tirages au sort). */
+  readonly butin?: IdObjet;
+  /** Présent pour les boss : affichage de leur barre de vie. */
+  readonly boss?: { readonly couleurBarre: 'purple' | 'red' };
 }
 
 // --------------------------------------------------------------------------
@@ -313,9 +338,26 @@ export interface DefinitionArene {
 // --------------------------------------------------------------------------
 // Boss
 // --------------------------------------------------------------------------
-export interface DefinitionBoss {
-  readonly id: string;
+/** Calendrier des boss : apparitions à intervalles réguliers, annoncées à l'écran. */
+export interface DefinitionCalendrierBoss {
+  readonly premierPassage: number;   // s de jeu avant le premier boss
+  readonly intervalle: number;       // s entre deux boss
+  readonly avertissement: number;    // s d'alerte avant l'apparition
+  /** Boss dans l'ordre d'apparition ; la liste recommence quand elle est épuisée. */
+  readonly ordre: readonly IdEnnemi[];
+}
+
+// --------------------------------------------------------------------------
+// Objets ramassables
+// --------------------------------------------------------------------------
+export interface DefinitionObjet {
   readonly nom: string;
+  readonly icone: CheminTexture;
+  readonly soin: number;             // PV rendus
+  /** Probabilité d'être lâché par un ennemi ordinaire. */
+  readonly chance: number;
+  readonly taille: number;           // blocs
+  readonly couleurParticules: readonly number[];
 }
 
 // --------------------------------------------------------------------------
@@ -349,6 +391,8 @@ export interface DefinitionPassif {
   readonly nom: string;
   readonly description: string;
   readonly icone: CheminTexture;
+  /** Réservé aux personnages qui le listent dans `cartesExclusives`. */
+  readonly exclusif?: boolean;
   /** Effets des rangs 1, 2… ; rang maximal = longueur. */
   readonly niveaux: readonly NiveauPassif[];
 }

@@ -19,7 +19,7 @@ import { borner, ecartAngle, facteurLissage } from '../utils/maths';
 import { Pool } from '../utils/pool';
 import { appliquerComportement, type ContexteComportement } from './comportements';
 import { creerEnnemi, type Ennemi } from './ennemi';
-import type { DepotXp } from './orbes';
+import type { Butin } from './butin';
 import type { SourceEntites } from './types';
 
 /** Tout ce qu'il faut pour afficher un type d'ennemi. */
@@ -36,7 +36,7 @@ export class Ennemis implements SourceEntites {
   private readonly etat: EtatPartie;
   private readonly contexte: ContexteComportement;
   private readonly particules: Particules;
-  private readonly depotXp: DepotXp;
+  private readonly butin: Butin;
   private readonly pool = new Pool<Ennemi>(CONFIG.ennemis.capacite, creerEnnemi);
   private readonly grille: GrilleSpatiale;
   private readonly voisins = new Int32Array(64);
@@ -47,14 +47,14 @@ export class Ennemis implements SourceEntites {
     etat: EtatPartie,
     contexte: ContexteComportement,
     particules: Particules,
-    depotXp: DepotXp,
+    butin: Butin,
     scene: THREE.Scene,
     textures: BibliothequeTextures,
   ) {
     this.etat = etat;
     this.contexte = contexte;
     this.particules = particules;
-    this.depotXp = depotXp;
+    this.butin = butin;
     this.grille = new GrilleSpatiale(etat.arene.taille / 2 + 1, CONFIG.ennemis.celluleGrille, CONFIG.ennemis.capacite);
     this.rendus = IDS_ENNEMIS.map((id) => {
       const def = ENNEMIS[id];
@@ -124,6 +124,15 @@ export class Ennemis implements SourceEntites {
     return n;
   }
 
+  /** Premier boss vivant (pour sa barre de vie), ou null. */
+  bossActif(): Ennemi | null {
+    for (let i = 0; i < this.pool.nombre; i++) {
+      const e = this.pool.elements[i];
+      if (e.definition.boss && e.mort < 0) return e;
+    }
+    return null;
+  }
+
   /** Ennemi vivant le plus proche à moins de `portee`, ou null. */
   plusProche(x: number, z: number, portee: number): Ennemi | null {
     let meilleur: Ennemi | null = null;
@@ -169,13 +178,14 @@ export class Ennemis implements SourceEntites {
     const dx = e.x - sourceX;
     const dz = e.z - sourceZ;
     const d = Math.hypot(dx, dz) || 1;
-    e.vx += (dx / d) * recul;
-    e.vz += (dz / d) * recul;
+    const k = recul * (1 - (e.definition.resistanceRecul ?? 0));
+    e.vx += (dx / d) * k;
+    e.vz += (dz / d) * k;
     if (e.pv <= 0) {
       e.mort = 0;
       e.meche = 0;
       this.etat.ennemisTues++;
-      this.depotXp.deposer(e.x, e.z, e.definition.xp);
+      this.butin.lacher(e.definition, e.x, e.z);
     }
   }
 
@@ -238,8 +248,9 @@ export class Ennemis implements SourceEntites {
       pose.z = e.z;
       pose.angle = e.angle;
       pose.inclinaison = e.mort >= 0 ? angleChute(e.mort, g.dureeMort) : 0;
-      pose.echelleXZ = 1;
-      pose.echelleY = 1;
+      const echelle = e.definition.echelle ?? 1;
+      pose.echelleXZ = echelle;
+      pose.echelleY = echelle;
       pose.surcouche[3] = 0;
       calculerRotations(rendu.modele, e.animation, pose.rotations);
 
@@ -249,8 +260,8 @@ export class Ennemis implements SourceEntites {
         const progression = Math.min(e.meche / c.duree, 1);
         const tremblement = 1 + Math.sin(progression * 100) * progression * 0.01;
         const gonflement = progression ** 3;
-        pose.echelleXZ = (1 + gonflement * g.gonflementLargeur) * tremblement;
-        pose.echelleY = (1 + gonflement * g.gonflementHauteur) / tremblement;
+        pose.echelleXZ = echelle * (1 + gonflement * g.gonflementLargeur) * tremblement;
+        pose.echelleY = echelle * (1 + gonflement * g.gonflementHauteur) / tremblement;
         if (Math.floor(progression * 10) % 2 === 1) {
           pose.surcouche[0] = flash.couleur[0];
           pose.surcouche[1] = flash.couleur[1];
@@ -268,7 +279,7 @@ export class Ennemis implements SourceEntites {
       }
 
       rendu.instances.ajouter(pose);
-      ombres.ajouter(e.x, e.z, e.definition.rayonOmbre * pose.echelleXZ);
+      ombres.ajouter(e.x, e.z, e.definition.rayonOmbre * (pose.echelleXZ / echelle));
     }
 
     for (let t = 0; t < this.rendus.length; t++) this.rendus[t].instances.terminer();
@@ -342,7 +353,8 @@ export class Ennemis implements SourceEntites {
     // Toujours tourné vers le joueur ; animation selon la marche effective
     e.angle += ecartAngle(e.angle, Math.atan2(dx, dz)) * facteurLissage(g.vitesseRotation, dt);
     e.vitesseSol = Math.hypot(e.dirX, e.dirZ) * def.vitesse;
-    avancerAnimation(e.animation, this.rendus[e.indexType].modele, dt, e.vitesseSol);
+    // Un grand modèle fait de grands pas : cycle de marche ralenti d'autant
+    avancerAnimation(e.animation, this.rendus[e.indexType].modele, dt, e.vitesseSol / (def.echelle ?? 1));
   }
 
   /** Explosion : particules et dégâts au joueur décroissants avec la distance. */

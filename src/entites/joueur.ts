@@ -1,4 +1,4 @@
-/** Joueur : déplacement, collisions avec les bords, vie, modèle animé. */
+/** Joueur : déplacement, collisions avec les bords, vie, modèle animé du personnage choisi. */
 import type * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG } from '../config';
@@ -28,8 +28,9 @@ export class Joueur implements SourceEntites, CibleJoueur {
   constructor(etat: EtatPartie, entrees: Entrees, scene: THREE.Scene, textures: BibliothequeTextures) {
     this.etat = etat;
     this.entrees = entrees;
-    this.modele = compilerModele(MODELES[JOUEUR_BASE.modele]);
-    this.rendu = new ModeleInstancie(this.modele, JOUEUR_BASE, textures.obtenir(JOUEUR_BASE.skin), 1, scene);
+    const personnage = etat.personnage;
+    this.modele = compilerModele(MODELES[personnage.modele]);
+    this.rendu = new ModeleInstancie(this.modele, personnage, textures.obtenir(personnage.skin), 1, scene);
     this.pose = creerPoseModele(this.modele);
   }
 
@@ -55,7 +56,7 @@ export class Joueur implements SourceEntites, CibleJoueur {
 
     // Vitesse : approche exponentielle de la vitesse cible (réactif, sans à-coups)
     const k = facteurLissage(JOUEUR_BASE.reactivite, dt);
-    const vitesse = JOUEUR_BASE.vitesse * mods.vitesse;
+    const vitesse = this.etat.personnage.vitesse * mods.vitesse;
     j.vx += (dx * vitesse - j.vx) * k;
     j.vz += (dz * vitesse - j.vz) * k;
     j.x += j.vx * dt;
@@ -111,7 +112,7 @@ export class Joueur implements SourceEntites, CibleJoueur {
     this.rendu.commencer();
     this.rendu.ajouter(pose);
     this.rendu.terminer();
-    ombres.ajouter(j.x, j.z, JOUEUR_BASE.rayonOmbre);
+    ombres.ajouter(j.x, j.z, this.etat.personnage.rayonOmbre);
   }
 
   /** Maintient le joueur dans la zone jouable ; la vitesse contre un mur est annulée. */

@@ -11,6 +11,10 @@ import type { Balayages } from './balayages';
 import type { Chutes } from './chutes';
 import type { Fissures } from './fissures';
 import type { Heurts } from './heurts';
+import type { Meteores } from './meteores';
+import type { Novas } from './novas';
+import type { OrbesArcaniques } from './orbesArcaniques';
+import type { Tornades } from './tornades';
 import type { Tourbillons } from './tourbillons';
 import type { ContexteCombat } from './contexte';
 import type { Foudre } from './foudre';
@@ -31,6 +35,10 @@ export interface SystemesCombat {
   readonly chutes: Chutes;
   readonly tourbillons: Tourbillons;
   readonly heurts: Heurts;
+  readonly tornades: Tornades;
+  readonly novas: Novas;
+  readonly meteores: Meteores;
+  readonly orbesArcaniques: OrbesArcaniques;
 }
 
 export class Arsenal {
@@ -149,6 +157,18 @@ export class Arsenal {
 
       case 'heurt':
         return this.systemes.heurts.frapper(arme);
+
+      case 'tornade':
+        return this.systemes.tornades.frapper(arme);
+
+      case 'nova':
+        return this.systemes.novas.frapper(arme);
+
+      case 'meteore':
+        return this.systemes.meteores.frapper(arme);
+
+      case 'orbes':
+        return this.systemes.orbesArcaniques.frapper(arme);
     }
   }
 }

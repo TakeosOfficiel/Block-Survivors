@@ -17,6 +17,10 @@
  *   chute      degats, cadence, nombre, portee (recherche du groupe), zone (rayon d'impact), recul, ralenti, duree
  *   tourbillon degats (par frappe), cadence, zone (rayon), duree (de rotation), recul (négatif : aspire)
  *   heurt      degats, cadence, zone (portée du cône), recul, etourdi
+ *   tornade    degats, cadence, nombre, duree, zone (rayon), recul (négatif : aspire)
+ *   nova       degats, cadence, zone (rayon final), recul, ralenti et duree (ralentissement)
+ *   meteore    degats, cadence, nombre, portee (recherche du groupe), zone (rayon), duree (feu au sol), recul
+ *   orbes      degats, cadence, nombre, portee, zone (rayon d'orbite), duree (d'orbite), vitesse (de vol)
  */
 import type { DefinitionArme, StatsArme } from './types';
 
@@ -175,6 +179,66 @@ const definitions = {
       { description: 'Étourdit 0,5 s', modif: { etourdi: 0.5 } },
       { description: 'Frappe 20 % plus souvent', modif: { cadence: -0.6 } },
       { description: 'Dégâts +6 ; renvoie les projectiles ennemis', modif: { degats: 6 } },
+    ],
+  },
+  tornade_feu: {
+    son: 'tornade',
+    nom: 'Tornade de feu',
+    description: 'Une colonne de braises tourbillonne vers les ennemis et les aspire.',
+    icone: 'item/blaze_powder',
+    mecanique: { type: 'tornade', texture: 'block/magma', vitesse: 3.5, intervalle: 0.4 },
+    stats: { ...BASE, degats: 6, cadence: 8, duree: 4, zone: 1.5, recul: -2 },
+    niveaux: [
+      { description: 'La tornade dure 2 s de plus', modif: { duree: 2 } },
+      { description: 'Dégâts +3', modif: { degats: 3 } },
+      { description: 'Rayon +0,4 bloc', modif: { zone: 0.4 } },
+      { description: 'Lancée 20 % plus souvent', modif: { cadence: -1.6 } },
+      { description: '+1 tornade', modif: { nombre: 1 } },
+    ],
+  },
+  nova_glace: {
+    son: 'nova',
+    nom: 'Nova de glace',
+    description: "Un anneau d'éclats de glace jaillit autour de lui, blesse et ralentit.",
+    icone: 'block/packed_ice',
+    mecanique: { type: 'nova', texture: 'block/packed_ice', expansion: 0.4, sol: 'block/powder_snow', solAuRang: 6, dureeSol: 2 },
+    stats: { ...BASE, degats: 10, cadence: 5, zone: 4, recul: 2, ralenti: 0.35, duree: 2 },
+    niveaux: [
+      { description: 'Rayon +1 bloc', modif: { zone: 1 } },
+      { description: 'Dégâts +6', modif: { degats: 6 } },
+      { description: 'Ralentit de 45 % pendant 2,5 s', modif: { ralenti: 0.1, duree: 0.5 } },
+      { description: 'Lancée 20 % plus souvent', modif: { cadence: -1 } },
+      { description: 'Dégâts +4 ; laisse de la neige poudreuse qui ralentit 2 s', modif: { degats: 4 } },
+    ],
+  },
+  meteore: {
+    son: 'boule_feu',
+    nom: 'Météore',
+    description: 'Un bloc de magma tombe sur un groupe et laisse le sol en feu.',
+    icone: 'block/magma',
+    mecanique: { type: 'meteore', texture: 'block/magma', feu: 'block/fire_0', degatsSol: 0.15 },
+    stats: { ...BASE, degats: 35, cadence: 9, portee: 12, zone: 2.5, duree: 3, recul: 6 },
+    niveaux: [
+      { description: 'Dégâts +15', modif: { degats: 15 } },
+      { description: 'Le feu au sol dure 2 s de plus', modif: { duree: 2 } },
+      { description: "Rayon d'impact +0,5 bloc", modif: { zone: 0.5 } },
+      { description: 'Tombe 20 % plus souvent', modif: { cadence: -1.8 } },
+      { description: '+1 météore', modif: { nombre: 1 } },
+    ],
+  },
+  orbes_arcaniques: {
+    son: 'orbes',
+    nom: 'Orbes arcaniques',
+    description: "Des orbes d'améthyste tournent autour de lui puis foncent sur les ennemis.",
+    icone: 'item/amethyst_shard',
+    mecanique: { type: 'orbes', texture: 'block/amethyst_block', contactAuRang: 4, contact: 0.45 },
+    stats: { ...BASE, degats: 9, cadence: 4, nombre: 3, portee: 10, zone: 1.3, duree: 2, vitesse: 12 },
+    niveaux: [
+      { description: '+1 orbe', modif: { nombre: 1 } },
+      { description: 'Dégâts +4', modif: { degats: 4 } },
+      { description: "Orbitent 1 s de plus et blessent au contact", modif: { duree: 1 } },
+      { description: 'Lancées 20 % plus souvent', modif: { cadence: -0.8 } },
+      { description: '+2 orbes', modif: { nombre: 2 } },
     ],
   },
   golems: {

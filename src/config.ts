@@ -141,6 +141,14 @@ export const CONFIG = {
     tourbillon: { vitesseRotation: 12, declenchement: 1.3 },
     // Heurt de bouclier : marge de recherche de cible et portée du renvoi des projectiles (blocs)
     heurt: { marge: 1.2, porteeRenvoi: 1.5 },
+    // Tornade de feu : cubes par colonne, rotation (rad/s), hauteur (blocs), recherche de cible (blocs)
+    tornade: { capacite: 6, cubes: 14, portee: 10, recherche: 8, rotation: 7, hauteur: 2.6, periodeBraises: 0.12, imagesParSeconde: 2.5 },
+    // Nova de glace : éclats de l'anneau, dalles de neige, et leurs durées (s)
+    nova: { capacite: 4, eclats: 28, dalles: 16, immunite: 0.6, eclatsRestent: 0.35, periodeSol: 0.25, tailleEclat: 0.4, tailleDalle: 0.7 },
+    // Météore : chute en biais (départ décalé de departX/Z, depuis `hauteur`), flammes au sol animées
+    meteore: { capacite: 6, flammes: 10, imagesFeu: 20, duree: 0.6, hauteur: 9, departX: -4, departZ: -4, taille: 1.1, tic: 0.5, decalage: 0.3 },
+    // Orbes arcaniques : vol max (s) après l'orbite, vitesse d'orbite (rad/s), contact (blocs, s)
+    orbes: { capacite: 32, volMax: 3, periodeLueur: 0.08, vitesseOrbite: 3, rayonContact: 0.45, delaiContact: 0.5, hauteur: 1, taille: 0.32 },
   },
 
   // Chiffres des dégâts au-dessus des ennemis (option)

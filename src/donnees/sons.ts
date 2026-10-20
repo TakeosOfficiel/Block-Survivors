@@ -27,6 +27,9 @@ const definitions = {
   fissure: { categorie: 'armes', chemin: 'dig/stone1', hachage: '4ec831592ae2bcbac1b4047a9f9f72a2de5ca834', volume: 0.5, hauteur: [0.6, 0.8], intervalleMin: 0.15, simultanes: 2 },
   lame_colossale: { categorie: 'armes', chemin: 'random/anvil_land', hachage: '781d4bfc6ee0aff2a61b0d78f0da34610a28aa62', volume: 0.35, hauteur: [0.7, 0.85], intervalleMin: 0.2, simultanes: 2 },
   bouclier: { categorie: 'armes', chemin: 'item/shield/block1', hachage: 'f3b8dcde479d572a5c6973d5b73314eecd785dd6', volume: 0.5, hauteur: [0.8, 1.2], intervalleMin: 0.15, simultanes: 2 },
+  tornade: { categorie: 'armes', chemin: 'mob/blaze/breathe1', hachage: 'f9e4ff760b11244522bce898a4a0ebab1dd4520e', volume: 0.45, hauteur: [0.8, 1], intervalleMin: 0.3, simultanes: 2 },
+  nova: { categorie: 'armes', chemin: 'random/glass1', hachage: 'fa35a51bb74a4a6cf0c48161342db5a8577f13e5', volume: 0.4, hauteur: [0.9, 1.2], intervalleMin: 0.2, simultanes: 2 },
+  orbes: { categorie: 'armes', chemin: 'block/amethyst/shimmer', hachage: 'a62c6054fe1ac8137b22f29959b562c0d821b6ed', volume: 0.6, hauteur: [0.9, 1.3], intervalleMin: 0.2, simultanes: 2 },
   explosion: { categorie: 'armes', chemin: 'random/explode1', hachage: 'fa85b9e7e54c36c9f9d0249ca739444b5e3bb66c', volume: 0.45, hauteur: [0.8, 1.1], intervalleMin: 0.08, simultanes: 3 },
 
   loup_aboiement: { categorie: 'armes', chemin: 'mob/wolf/bark1', hachage: '527618d2fbb9712950357c4d5e95cfb86ffee417', volume: 0.35, hauteur: [0.9, 1.2], intervalleMin: 0.3, simultanes: 2 },

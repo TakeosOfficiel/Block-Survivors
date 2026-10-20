@@ -69,6 +69,11 @@ const particules = {
     images: ['particle/enchanted_hit'], animation: 'fixe',
     taille: [0.15, 0.25], duree: [0.3, 0.5], gravite: 0, frottement: 0.5, gris: [1, 1], retrecit: true,
   },
+  // Lueur violette des orbes arcaniques
+  arcane: {
+    images: ['particle/glow'], animation: 'fixe',
+    taille: [0.15, 0.25], duree: [0.3, 0.5], gravite: -0.3, frottement: 0.6, teintes: [0xb36cff, 0xd9a6ff], retrecit: true,
+  },
   // Lueur dorée au-dessus d'un ennemi marqué
   marque: {
     images: ['particle/glow'], animation: 'fixe',
@@ -130,6 +135,22 @@ const gerbes = {
     { particule: 'critique', nombre: 10, vitesse: 4, dispersion: 0.5, montee: 1.5 },
     { particule: 'poof', nombre: 5, vitesse: 2, dispersion: 0.4, montee: 0.4 },
   ],
+  // Mage : braises de la tornade, éclats de la nova, impact du météore, orbes
+  tornade: [
+    { particule: 'flamme', nombre: 2, vitesse: 1.5, dispersion: 0.5, montee: 2.5 },
+    { particule: 'fumee', nombre: 1, vitesse: 0.6, dispersion: 0.4, montee: 1.5 },
+  ],
+  gel: [
+    { particule: 'morceau', nombre: 3, vitesse: 3, dispersion: 0.2, montee: 2.5 },
+    { particule: 'effetLenteur', nombre: 1, vitesse: 1, dispersion: 0.3, montee: 0.6 },
+  ],
+  impactMeteore: [
+    { particule: 'explosion', nombre: 6, vitesse: 0, dispersion: 1.6, montee: 0 },
+    { particule: 'lave', nombre: 10, vitesse: 4, dispersion: 0.6, montee: 6 },
+    { particule: 'fumee', nombre: 8, vitesse: 2, dispersion: 1, montee: 1.5 },
+  ],
+  arcane: [{ particule: 'arcane', nombre: 1, vitesse: 0.2, dispersion: 0.05, montee: 0.2 }],
+  impactArcane: [{ particule: 'arcane', nombre: 8, vitesse: 2.5, dispersion: 0.2, montee: 1.5 }],
   // États des ennemis (émis régulièrement tant qu'ils durent)
   brulure: [{ particule: 'flamme', nombre: 3, vitesse: 0.4, dispersion: 0.4, montee: 1 }],
   poison: [{ particule: 'effetPoison', nombre: 1, vitesse: 0.3, dispersion: 0.35, montee: 0.5 }],

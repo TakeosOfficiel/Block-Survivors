@@ -337,7 +337,24 @@ export type MecaniqueArme =
   /** Le joueur tourne sur lui-même et frappe tout autour toutes les `intervalle` s. */
   | { readonly type: 'tourbillon'; readonly intervalle: number; readonly effet: readonly CheminTexture[] }
   /** Coup de bouclier en cône : repousse et interrompt ; renvoie les projectiles dès le rang `renvoi`. */
-  | { readonly type: 'heurt'; readonly angle: number; readonly renvoi: number };
+  | { readonly type: 'heurt'; readonly angle: number; readonly renvoi: number }
+  /** Colonne de cubes (`texture`) qui avance vers les ennemis et blesse autour d'elle toutes les `intervalle` s. */
+  | { readonly type: 'tornade'; readonly texture: CheminTexture; readonly vitesse: number; readonly intervalle: number }
+  /**
+   * Anneau d'éclats (`texture`) qui s'étend autour du joueur en `expansion` s ; dès le rang `solAuRang`,
+   * il laisse un sol (`sol`) qui ralentit pendant `dureeSol` s.
+   */
+  | {
+      readonly type: 'nova'; readonly texture: CheminTexture; readonly expansion: number;
+      readonly sol: CheminTexture; readonly solAuRang: number; readonly dureeSol: number;
+    }
+  /** Bloc (`texture`) qui tombe sur un groupe, puis feu au sol (`feu`) : `degatsSol` × dégâts toutes les 0,5 s. */
+  | { readonly type: 'meteore'; readonly texture: CheminTexture; readonly feu: CheminTexture; readonly degatsSol: number }
+  /**
+   * Orbes (`texture`) qui tournent autour du joueur pendant la durée, puis foncent sur les ennemis ;
+   * dès le rang `contactAuRang`, elles blessent au contact (`contact` × dégâts) pendant l'orbite.
+   */
+  | { readonly type: 'orbes'; readonly texture: CheminTexture; readonly contactAuRang: number; readonly contact: number };
 
 export interface NiveauArme {
   /** Texte de la carte d'amélioration. */

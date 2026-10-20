@@ -63,18 +63,33 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "Block Survivors — dernière version ($VERSION)" \
             --notes-file notes.md
-      # Fichier de version public (dépôt TakeosOfficiel/Block-Survivors-version, qui ne
-      # contient que ce fichier) : le jeu y lit le numéro de la dernière version pour
-      # prévenir les joueurs. Sans le secret VERSION_TOKEN, l'étape ne fait rien.
-      - name: Publier le numéro de version
+      # Dépôt public TakeosOfficiel/Block-Survivors-version : le code reste privé, mais
+      # les joueurs doivent pouvoir télécharger l'exe. On y publie donc la release
+      # « vX.Y.Z » avec l'exe, puis version.json, où le jeu lit le numéro de la
+      # dernière version pour prévenir les joueurs (l'exe d'abord : on n'annonce
+      # pas une version qu'on ne peut pas encore télécharger).
+      # Sans le secret VERSION_TOKEN, l'étape ne fait rien.
+      - name: Publier l'exe et le numéro de version sur le dépôt public
         shell: bash
         env:
           VERSION_TOKEN: ${{ secrets.VERSION_TOKEN }}
         run: |
-          if [ -z "$VERSION_TOKEN" ]; then echo "Secret VERSION_TOKEN absent : fichier de version non publié."; exit 0; fi
+          if [ -z "$VERSION_TOKEN" ]; then echo "Secret VERSION_TOKEN absent : rien de publié sur le dépôt public."; exit 0; fi
           VERSION=$(node -p "require('./package.json').version")
-          API=https://api.github.com/repos/TakeosOfficiel/Block-Survivors-version/contents/version.json
-          printf '{\n  "version": "%s",\n  "telechargement": "https://github.com/TakeosOfficiel/Block-Survivors/releases/latest"\n}\n' "$VERSION" > version.json
+          DEPOT=TakeosOfficiel/Block-Survivors-version
+
+          # Notes sans la ligne « Construit depuis <branche> (<commit>) » du dépôt privé
+          awk '/^---$/ { exit } { print }' notes.md > notes-publiques.md
+          [ -s notes-publiques.md ] || echo "Version $VERSION." > notes-publiques.md
+          GH_TOKEN="$VERSION_TOKEN" gh release delete "v$VERSION" --repo "$DEPOT" --yes --cleanup-tag || true
+          GH_TOKEN="$VERSION_TOKEN" gh release create "v$VERSION" "release/BlockSurvivors-v$VERSION.exe" \
+            --repo "$DEPOT" \
+            --title "Block Survivors $VERSION" \
+            --notes-file notes-publiques.md \
+            --latest
+
+          API=https://api.github.com/repos/$DEPOT/contents/version.json
+          printf '{\n  "version": "%s",\n  "telechargement": "https://github.com/%s/releases/latest"\n}\n' "$VERSION" "$DEPOT" > version.json
           SHA=$(curl -s -H "Authorization: Bearer $VERSION_TOKEN" "$API" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{try{console.log(JSON.parse(d).sha||'')}catch{console.log('')}})")
           node -e "const fs=require('fs');const corps={message:'Version '+process.argv[1],content:fs.readFileSync('version.json').toString('base64')};if(process.argv[2])corps.sha=process.argv[2];fs.writeFileSync('corps.json',JSON.stringify(corps))" "$VERSION" "$SHA"
           curl -sf -X PUT -H "Authorization: Bearer $VERSION_TOKEN" -H "Accept: application/vnd.github+json" "$API" --data @corps.json > /dev/null

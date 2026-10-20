@@ -102,7 +102,7 @@ export function creerEtatPartie(arene: DefinitionArene, idPersonnage: IdPersonna
     modificateurs: creerModificateurs(),
     talents: { armes: {}, mecaniques: {} },
     joueur: {
-      x: 0, z: 0, vx: 0, vz: 0, angle: 0,
+      x: arene.depart?.x ?? 0, z: arene.depart?.z ?? 0, vx: 0, vz: 0, angle: 0,
       pv: personnage.pv,
       pvMax: personnage.pv,
       invulnerabilite: 0,

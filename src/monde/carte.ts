@@ -6,7 +6,7 @@
 
 /** Case infranchissable à pied (bloc plein ou liquide à hauteur de corps). */
 export const BLOQUE_MARCHE = 1;
-/** Case qui arrête les projectiles (bloc plein à hauteur de tir). */
+/** Case qui arrête les projectiles (bloc plein, même un muret d'un bloc). */
 export const BLOQUE_TIR = 2;
 
 export interface Point {
@@ -15,35 +15,42 @@ export interface Point {
 }
 
 export class CarteMonde {
-  readonly taille: number;
-  readonly demi: number;
+  /** Cases d'ouest en est, et du nord au sud. */
+  readonly largeur: number;
+  readonly profondeur: number;
+  /** Demi-côtés : l'arène va de −demiX à demiX et de −demiZ à demiZ. */
+  readonly demiX: number;
+  readonly demiZ: number;
   readonly drapeaux: Uint8Array;
   readonly ralentissement: Float32Array;
   /** Même chose sans les toiles (pour les araignées). */
   readonly ralentissementHorsToiles: Float32Array;
   readonly degats: Float32Array;
 
-  constructor(taille: number) {
-    this.taille = taille;
-    this.demi = taille / 2;
-    this.drapeaux = new Uint8Array(taille * taille);
-    this.ralentissement = new Float32Array(taille * taille).fill(1);
-    this.ralentissementHorsToiles = new Float32Array(taille * taille).fill(1);
-    this.degats = new Float32Array(taille * taille);
+  constructor(largeur: number, profondeur: number) {
+    this.largeur = largeur;
+    this.profondeur = profondeur;
+    this.demiX = largeur / 2;
+    this.demiZ = profondeur / 2;
+    const cases = largeur * profondeur;
+    this.drapeaux = new Uint8Array(cases);
+    this.ralentissement = new Float32Array(cases).fill(1);
+    this.ralentissementHorsToiles = new Float32Array(cases).fill(1);
+    this.degats = new Float32Array(cases);
   }
 
   /** Index de la case contenant (x, z), ou −1 hors de l'arène. */
   cellule(x: number, z: number): number {
-    const ix = Math.floor(x + this.demi);
-    const iz = Math.floor(z + this.demi);
-    if (ix < 0 || iz < 0 || ix >= this.taille || iz >= this.taille) return -1;
-    return iz * this.taille + ix;
+    const ix = Math.floor(x + this.demiX);
+    const iz = Math.floor(z + this.demiZ);
+    if (ix < 0 || iz < 0 || ix >= this.largeur || iz >= this.profondeur) return -1;
+    return iz * this.largeur + ix;
   }
 
   /** Centre de la case `index`. */
   centre(index: number, sortie: Point): Point {
-    sortie.x = (index % this.taille) - this.demi + 0.5;
-    sortie.z = Math.floor(index / this.taille) - this.demi + 0.5;
+    sortie.x = (index % this.largeur) - this.demiX + 0.5;
+    sortie.z = Math.floor(index / this.largeur) - this.demiZ + 0.5;
     return sortie;
   }
 
@@ -75,20 +82,21 @@ export class CarteMonde {
    * dans l'arène ; il glisse le long des obstacles. Écrit dans `sortie`.
    */
   resoudreCollision(x: number, z: number, rayon: number, sortie: Point): Point {
-    const limite = this.demi - rayon;
-    let px = x < -limite ? -limite : x > limite ? limite : x;
-    let pz = z < -limite ? -limite : z > limite ? limite : z;
+    const limiteX = this.demiX - rayon;
+    const limiteZ = this.demiZ - rayon;
+    let px = x < -limiteX ? -limiteX : x > limiteX ? limiteX : x;
+    let pz = z < -limiteZ ? -limiteZ : z > limiteZ ? limiteZ : z;
 
-    const ix0 = Math.max(0, Math.floor(px - rayon + this.demi));
-    const ix1 = Math.min(this.taille - 1, Math.floor(px + rayon + this.demi));
-    const iz0 = Math.max(0, Math.floor(pz - rayon + this.demi));
-    const iz1 = Math.min(this.taille - 1, Math.floor(pz + rayon + this.demi));
+    const ix0 = Math.max(0, Math.floor(px - rayon + this.demiX));
+    const ix1 = Math.min(this.largeur - 1, Math.floor(px + rayon + this.demiX));
+    const iz0 = Math.max(0, Math.floor(pz - rayon + this.demiZ));
+    const iz1 = Math.min(this.profondeur - 1, Math.floor(pz + rayon + this.demiZ));
     for (let iz = iz0; iz <= iz1; iz++) {
       for (let ix = ix0; ix <= ix1; ix++) {
-        if ((this.drapeaux[iz * this.taille + ix] & BLOQUE_MARCHE) === 0) continue;
+        if ((this.drapeaux[iz * this.largeur + ix] & BLOQUE_MARCHE) === 0) continue;
         // Point de la case le plus proche du centre du cercle
-        const x0 = ix - this.demi;
-        const z0 = iz - this.demi;
+        const x0 = ix - this.demiX;
+        const z0 = iz - this.demiZ;
         const qx = px < x0 ? x0 : px > x0 + 1 ? x0 + 1 : px;
         const qz = pz < z0 ? z0 : pz > z0 + 1 ? z0 + 1 : pz;
         const dx = px - qx;
@@ -116,6 +124,40 @@ export class CarteMonde {
     sortie.x = px;
     sortie.z = pz;
     return sortie;
+  }
+
+  /**
+   * Vrai si un cercle de rayon `rayon` en (x, z) touche une case qui arrête
+   * les tirs (hors de l'arène : faux, la sortie est gérée à part).
+   */
+  toucheTir(x: number, z: number, rayon: number): boolean {
+    const ix0 = Math.max(0, Math.floor(x - rayon + this.demiX));
+    const ix1 = Math.min(this.largeur - 1, Math.floor(x + rayon + this.demiX));
+    const iz0 = Math.max(0, Math.floor(z - rayon + this.demiZ));
+    const iz1 = Math.min(this.profondeur - 1, Math.floor(z + rayon + this.demiZ));
+    for (let iz = iz0; iz <= iz1; iz++) {
+      for (let ix = ix0; ix <= ix1; ix++) {
+        if ((this.drapeaux[iz * this.largeur + ix] & BLOQUE_TIR) === 0) continue;
+        const x0 = ix - this.demiX;
+        const z0 = iz - this.demiZ;
+        const dx = x - (x < x0 ? x0 : x > x0 + 1 ? x0 + 1 : x);
+        const dz = z - (z < z0 ? z0 : z > z0 + 1 ? z0 + 1 : z);
+        if (dx * dx + dz * dz < rayon * rayon) return true;
+      }
+    }
+    return false;
+  }
+
+  /** Vrai si un projectile tiré de (x0, z0) vers (x1, z1) n'est arrêté par aucun bloc. */
+  ligneDeTir(x0: number, z0: number, x1: number, z1: number, rayon: number): boolean {
+    const dx = x1 - x0;
+    const dz = z1 - z0;
+    const pas = Math.ceil(Math.sqrt(dx * dx + dz * dz) * 4);
+    for (let i = 1; i < pas; i++) {
+      const t = i / pas;
+      if (this.toucheTir(x0 + dx * t, z0 + dz * t, rayon)) return false;
+    }
+    return true;
   }
 
   /** Vrai si aucune case infranchissable ne coupe le segment (pas de 0,5 bloc). */

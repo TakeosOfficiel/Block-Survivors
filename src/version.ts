@@ -2,8 +2,9 @@
  * Version du jeu : numéro et commit injectés à la construction. Pour prévenir
  * le joueur d'une mise à jour sans rien publier du code, le jeu lit un petit
  * fichier public (version.json) qui ne contient que le numéro de la dernière
- * version et l'adresse où la télécharger ; le workflow le met à jour à chaque
- * version publiée.
+ * version et l'adresse où la télécharger (les releases de ce même dépôt
+ * public, où le workflow publie aussi l'exe) ; le workflow le met à jour à
+ * chaque version publiée.
  */
 
 export const VERSION = __VERSION__;

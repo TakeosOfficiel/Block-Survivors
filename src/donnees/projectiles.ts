@@ -25,7 +25,7 @@ const definitions = {
     nom: 'Trident',
     forme: 'modele',
     modele: 'trident',
-    texture: 'entity/trident',
+    texture: 'entity/trident/trident',
     tailleTexture: [32, 32],
     uv: [0, 0, 32, 32],
     longueur: 1.4,
@@ -70,7 +70,7 @@ const definitions = {
   fleche_spectrale: {
     nom: 'Flèche spectrale',
     forme: 'croisee',
-    texture: 'entity/projectiles/spectral_arrow',
+    texture: 'entity/projectiles/arrow_spectral',
     tailleTexture: [32, 32],
     uv: [0, 0, 16, 5],
     longueur: 0.9,
@@ -87,7 +87,7 @@ const definitions = {
   fleche_geante: {
     nom: 'Flèche spectrale géante',
     forme: 'croisee',
-    texture: 'entity/projectiles/spectral_arrow',
+    texture: 'entity/projectiles/arrow_spectral',
     tailleTexture: [32, 32],
     uv: [0, 0, 16, 5],
     longueur: 2.6,

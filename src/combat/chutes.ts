@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG } from '../config';
 import { ARMES, IDS_ARMES } from '../donnees/armes';
+import { blocDuSol } from '../donnees/arenes';
 import { BLOCS } from '../donnees/blocs';
 import { GERBES } from '../donnees/particules';
 import type { Ombres } from '../effets/ombres';
@@ -42,7 +43,7 @@ export class Chutes {
     const c = CONFIG.armes.chute;
     this.contexte = contexte;
     this.chutes = new Pool<Chute>(c.capacite, () => ({ arme: null, x: 0, z: 0, t: 0, tombee: false }));
-    this.eboulis = BLOCS[contexte.etat.arene.exterieur.bloc].faces.cotes;
+    this.eboulis = BLOCS[blocDuSol(contexte.etat.arene)].faces.cotes;
     // L'épée en relief, comme les objets du jeu, debout face à la caméra (qui ne pivote jamais),
     // pointe en bas : le sprite a la pointe en haut à droite
     const premiere = IDS_ARMES.map((id) => ARMES[id].mecanique).find((m) => m.type === 'chute');

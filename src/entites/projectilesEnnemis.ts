@@ -100,30 +100,41 @@ export class ProjectilesEnnemis implements SourceEntites, Tireur {
 
   maj(dt: number): void {
     const j = this.etat.joueur;
-    const limite = this.etat.arene.taille / 2;
+    const limiteX = this.etat.arene.largeur / 2;
+    const limiteZ = this.etat.arene.profondeur / 2;
+    const { pasCollision, rayonDecor } = CONFIG.projectiles;
     for (let i = this.pool.nombre - 1; i >= 0; i--) {
       const p = this.pool.elements[i];
       p.vie -= dt;
-      p.x += p.vx * dt;
-      p.z += p.vz * dt;
 
-      let touche = false;
-      if (p.renvoye) {
-        // Renvoyé : blesse le premier ennemi rencontré
-        if (this.ennemis && this.ennemis.chercher(p.x, p.z, p.definition.rayon, this.touches) > 0) {
-          this.ennemis.blesser(this.ennemis.obtenir(this.touches[0]), p.degats, p.x - p.vx, p.z - p.vz, 4, p.arme);
-          touche = true;
+      // Par pas courts, le décor avant la cible : un projectile ne frappe jamais à travers un mur
+      const portee = p.definition.rayon + JOUEUR_BASE.rayon;
+      const nbPas = Math.max(1, Math.ceil(Math.hypot(p.vx, p.vz) * dt / pasCollision));
+      let fini = p.vie <= 0;
+      for (let k = 0; k < nbPas && !fini; k++) {
+        p.x += (p.vx * dt) / nbPas;
+        p.z += (p.vz * dt) / nbPas;
+        const sortie = p.x < -limiteX || p.x > limiteX || p.z < -limiteZ || p.z > limiteZ;
+        if (sortie || this.carte.toucheTir(p.x, p.z, rayonDecor)) {
+          fini = true;
+          break;
         }
-      } else {
-        const dx = p.x - j.x;
-        const dz = p.z - j.z;
-        const portee = p.definition.rayon + JOUEUR_BASE.rayon;
-        touche = !j.mort && dx * dx + dz * dz < portee * portee;
-        if (touche) this.cible.subirDegats(p.degats, p.boss);
+        if (p.renvoye) {
+          // Renvoyé : blesse le premier ennemi rencontré
+          if (this.ennemis && this.ennemis.chercher(p.x, p.z, p.definition.rayon, this.touches) > 0) {
+            this.ennemis.blesser(this.ennemis.obtenir(this.touches[0]), p.degats, p.x - p.vx, p.z - p.vz, 4, p.arme);
+            fini = true;
+          }
+        } else {
+          const dx = p.x - j.x;
+          const dz = p.z - j.z;
+          if (!j.mort && dx * dx + dz * dz < portee * portee) {
+            this.cible.subirDegats(p.degats, p.boss);
+            fini = true;
+          }
+        }
       }
-
-      const sortie = p.x < -limite || p.x > limite || p.z < -limite || p.z > limite;
-      if (touche || sortie || p.vie <= 0 || this.carte.bloqueTir(p.x, p.z)) this.pool.liberer(i);
+      if (fini) this.pool.liberer(i);
     }
   }
 

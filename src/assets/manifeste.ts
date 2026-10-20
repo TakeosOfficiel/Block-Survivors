@@ -8,7 +8,7 @@ import { IDS_OBJETS, OBJETS } from '../donnees/objets';
 import { IDS_PARTICULES, PARTICULES } from '../donnees/particules';
 import { IDS_PASSIFS, PASSIFS } from '../donnees/passifs';
 import { PROGRESSION } from '../donnees/progression';
-import { ARENES } from '../donnees/arenes';
+import { ARENES, blocDuSol } from '../donnees/arenes';
 import { IDS_PERSONNAGES, PERSONNAGES } from '../donnees/personnages';
 import { ARBRES, RECOMPENSES } from '../donnees/talents';
 import { IDS_PROJECTILES, PROJECTILES } from '../donnees/projectiles';
@@ -58,7 +58,7 @@ export function texturesRequises(
   };
 
   for (const id of monde.blocs.keys()) ajouterBloc(id);
-  ajouterBloc(arene.exterieur.bloc);
+  ajouterBloc(blocDuSol(arene));
 
   chemins.add(personnage.skin);
   if (personnage.objetEnMain) chemins.add(personnage.objetEnMain);

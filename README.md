@@ -43,8 +43,10 @@ tag git `vX.Y.Z` et sa release GitHub avec l'exe ; le lien « derniere-version �
 pointe toujours sur la plus récente. Le détail est dans `CHANGELOG.md`, affiché
 dans le jeu (bouton « Nouveautés » de l'accueil, avec une pastille « Nouveau ! »
 après une mise à jour). L'accueil prévient quand une version plus récente existe,
-d'après `version.json` du dépôt public `Block-Survivors-version` (mis à jour par
-le workflow si le secret `VERSION_TOKEN` est configuré).
+d'après `version.json` du dépôt public `Block-Survivors-version`, et renvoie vers
+les releases de ce même dépôt, où l'exe est aussi publié (le code, lui, reste
+privé). Le workflow publie l'exe et `version.json` si le secret `VERSION_TOKEN`
+(droit « Contents : lecture et écriture » sur `Block-Survivors-version`) est configuré.
 
 ## Structure
 
@@ -52,6 +54,7 @@ le workflow si le secret `VERSION_TOKEN` est configuré).
 electron/               application de bureau : fenêtre, pont vers la page (Quitter)
 scripts/app-dev.mjs     Vite + Electron avec rechargement à chaud
 scripts/icone.py        génère l'icône de l'application (electron/icone.png)
+cartes/                 maps construites dans Minecraft (.schem, .nbt) et leurs réglages (.json)
 .github/workflows/      construction automatique de l'exe Windows
 index.html              balisage de l'interface (chargement, menu, HUD, écrans, debug)
 src/
@@ -67,6 +70,8 @@ src/
   audio/                lecture des sons vanilla
   moteur/               rendu, boucle de jeu, caméra, géométries UV
   monde/                génération des arènes, affichage, carte de collision, navigation
+  minecraft/            maps Minecraft : lecture NBT et schématiques, modèles de blocs vanilla,
+                        atlas et maillage, zone jouable
   entites/              joueur, ennemis et comportements, projectiles ennemis, orbes d'XP,
                         objets de soin, butin, directeurs d'apparition (hordes et boss)
   combat/               armes du joueur : arsenal et une classe par mécanique
@@ -85,7 +90,7 @@ expose `maj(dt)` (simulation, ne touche qu'à l'état) et `majVisuel(...)`
 
 ## Textures
 
-Textures vanilla de Minecraft **1.21.4** (`VERSION_MINECRAFT` dans
+Textures vanilla de Minecraft **26.3** (`VERSION_MINECRAFT` dans
 `src/config.ts`), cherchées dans l'ordre :
 
 1. `raw.githubusercontent.com/InventivetalentDev/minecraft-assets`
@@ -186,6 +191,21 @@ Chaque arène a ses propres mobs et ses boss (5:00 puis 10:00) :
 Une arène se décrit entièrement dans `src/donnees/arenes.ts` : sol, taches de
 sol, murs, structures (dessinées couche par couche dans `structures.ts`)
 placées ou dispersées, ambiance, et population d'ennemis par zone.
+
+### Maps construites dans Minecraft
+
+Chaque schématique du dossier `cartes/` devient une arène, au nom du fichier :
+`.schem` de WorldEdit / FAWE (`//copy` puis `//schem save nom`) ou `.nbt` de
+bloc de structure. Tous les blocs vanilla s'affichent avec leur vraie forme :
+le jeu lit les fichiers officiels `blockstates/` et `models/` (même source que
+les textures) et les assemble en trois maillages (opaque, découpé,
+translucide), sans les faces cachées.
+
+La zone jouable est le sol plat où se trouve un panneau `depart` (sinon le
+centre de la schématique), avec tout ce qui y est relié à pied au même
+niveau ; le reste de la construction est le décor. Réglages facultatifs (nom,
+icône, ennemis, boss, ambiance) dans un `.json` du même nom : voir
+`cartes/LISEZMOI.md`. Code : `src/minecraft/`.
 
 ## Contrôles
 

@@ -26,6 +26,8 @@ export default defineConfig({
     __COMMIT__: JSON.stringify(commit()),
     __DATE_CONSTRUCTION__: JSON.stringify(new Date().toISOString()),
   },
+  // Maps Minecraft (dossier cartes/) : intégrées au jeu comme des fichiers binaires
+  assetsInclude: ['**/*.schem', '**/*.nbt'],
   build: {
     target: 'es2022',
   },

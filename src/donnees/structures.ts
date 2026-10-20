@@ -1,7 +1,7 @@
 /**
  * Structures de décor, dessinées couche par couche (couche 0 posée sur le sol).
  * Chaque couche : lignes du nord au sud, caractères d'ouest en est ; « . » = vide.
- * Seules les couches 0 et 1 gênent le passage (au-dessus, on passe dessous).
+ * Seules les couches 0 et 1 gênent le passage et les tirs (au-dessus, on passe dessous).
  * Ajouter une structure = ajouter une entrée.
  */
 import type { DefinitionStructure } from './types';

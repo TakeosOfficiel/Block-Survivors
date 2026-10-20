@@ -5,6 +5,24 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.21.0] — 2026-10-20
+
+Une seule version : le travail des maps Minecraft (fait à côté) rejoint la refonte des classes.
+
+### Nouveautés
+- Maps construites dans Minecraft : chaque fichier `.schem` (WorldEdit / FAWE) ou `.nbt` (bloc de structure) du dossier `cartes/` devient une arène. Première map : le **Jardin des champignons**.
+- Tous les blocs vanilla s'affichent avec leur vraie forme (escaliers, dalles, portillons, plantes, vitres teintées, champignons géants…), lus dans les fichiers officiels de Minecraft.
+- La zone jouable est trouvée toute seule (le sol plat où l'on démarre, ou celui d'un panneau « depart ») ; le reste de la construction sert de décor autour de l'arène.
+
+### Changements
+- Textures de Minecraft 26.3 (au lieu de 1.21.4).
+- Les arènes peuvent être rectangulaires.
+- Les squelettes et les blazes ne tirent plus à l'aveugle : si tu es caché, ils se déplacent pour te viser.
+- L'exe est aussi publié sur le dépôt public : le lien « nouvelle version disponible » s'ouvre pour tous les joueurs.
+
+### Corrections
+- Les flèches ne traversent plus les murs, dans les deux sens : un muret d'un bloc protège désormais, et aucun tir ne passe dans un coin entre deux blocs ni ne saute un mur en temps accéléré.
+
 ## [0.20.1] — 2026-10-20
 
 ### Corrections

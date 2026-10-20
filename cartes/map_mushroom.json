@@ -1,0 +1,6 @@
+{
+  "nom": "Jardin des champignons",
+  "description": "Une arène clôturée entre collines de mousse et champignons géants.",
+  "icone": "block/red_mushroom_block",
+  "base": "prairie"
+}

@@ -543,8 +543,9 @@ export interface DefinitionArene {
   readonly description: string;
   /** Texture de bloc représentant l'arène dans le menu. */
   readonly icone: CheminTexture;
-  /** Côté de la zone jouable en blocs, centrée sur l'origine. */
-  readonly taille: number;
+  /** Zone jouable en blocs, centrée sur l'origine : d'ouest en est, et du nord au sud. */
+  readonly largeur: number;
+  readonly profondeur: number;
   readonly hauteurMur: number;
   readonly sol: readonly ChoixBloc[];
   /** Appliquées dans l'ordre, après le sol de base. */
@@ -553,12 +554,12 @@ export interface DefinitionArene {
   readonly decor: readonly ElementDecor[];
   /** Rayon laissé libre autour du point de départ (blocs). */
   readonly zoneDepart: number;
-  /** Terrain décoratif hors arène : dessus du bloc répété, assombri. */
+  /** Terrain décoratif hors arène : dessus du bloc répété, assombri (aucun : null). */
   readonly exterieur: {
     readonly bloc: IdBloc;
     readonly assombrissement: number;
     readonly taille: number;
-  };
+  } | null;
   readonly ciel: number;
   readonly brouillard: { readonly debut: number; readonly fin: number };
   readonly lumiere: {
@@ -573,6 +574,10 @@ export interface DefinitionArene {
   readonly ennemis: readonly ChoixEnnemi[];
   /** Zones à population propre (la première qui contient le point d'apparition l'emporte). */
   readonly zones: readonly ZoneEnnemis[];
+  /** Point de départ du joueur (centre de l'arène par défaut). */
+  readonly depart?: { readonly x: number; readonly z: number };
+  /** Arène construite dans Minecraft : schématique (adresse, souvent en data:), lue au lancement. */
+  readonly source?: { readonly fichier: string };
 }
 
 // --------------------------------------------------------------------------

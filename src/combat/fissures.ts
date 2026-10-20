@@ -9,6 +9,7 @@
 import * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG } from '../config';
+import { blocDuSol } from '../donnees/arenes';
 import { BLOCS } from '../donnees/blocs';
 import { GERBES } from '../donnees/particules';
 import type { CheminTexture } from '../donnees/types';
@@ -60,7 +61,7 @@ export class Fissures {
     this.contexte = contexte;
     this.fissures = new Pool<Fissure>(c.capacite, () => ({ arme: null, x: 0, z: 0, dirX: 0, dirZ: 0, avance: 0, prochain: 0, attente: 0, facteur: 1 }));
     this.blocs = new Pool<BlocSouleve>(c.blocs, () => ({ x: 0, z: 0, age: 0, rotation: 0, inclinaison: 0 }));
-    const sol = BLOCS[contexte.etat.arene.exterieur.bloc];
+    const sol = BLOCS[blocDuSol(contexte.etat.arene)];
     this.texture = sol.faces.cotes;
     const map = textures.obtenir(this.texture);
     this.maillage = new THREE.InstancedMesh(

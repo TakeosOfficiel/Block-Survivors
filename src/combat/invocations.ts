@@ -5,6 +5,7 @@
 import type * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG } from '../config';
+import { GERBES } from '../donnees/particules';
 import { ALLIES, IDS_ALLIES } from '../donnees/allies';
 import { MODELES } from '../donnees/modeles';
 import type { DefinitionAllie } from '../donnees/types';
@@ -38,7 +39,6 @@ interface RenduType {
   readonly modele: ModeleCompile;
   readonly instances: ModeleInstancie;
   readonly pose: PoseModele;
-  readonly couleurs: readonly number[];
 }
 
 export class Invocations implements SourceEntites {
@@ -58,7 +58,6 @@ export class Invocations implements SourceEntites {
         modele,
         instances: new ModeleInstancie(modele, def, textures, CONFIG.armes.golems.capacite, scene),
         pose: creerPoseModele(modele),
-        couleurs: [0xffffff, def.couleurParticules],
       };
     });
   }
@@ -89,7 +88,7 @@ export class Invocations implements SourceEntites {
     a.minuterie = 0;
     a.vitesseSol = 0;
     reinitialiserAnimation(a.animation);
-    this.contexte.particules.emettre(a.x, 1, a.z, CONFIG.particules.invocation, this.rendus[a.indexType].couleurs);
+    this.contexte.particules.emettre(a.x, 1, a.z, GERBES.invocation);
     return true;
   }
 
@@ -103,7 +102,7 @@ export class Invocations implements SourceEntites {
       const arme = a.arme;
       a.vie -= dt;
       if (!arme || a.vie <= 0) {
-        particules.emettre(a.x, 1, a.z, CONFIG.particules.invocation, this.rendus[a.indexType].couleurs);
+        particules.emettre(a.x, 1, a.z, GERBES.invocation);
         a.arme = null;
         this.pool.liberer(i);
         continue;

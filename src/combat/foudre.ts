@@ -5,7 +5,7 @@
  */
 import * as THREE from 'three';
 import { CONFIG } from '../config';
-import { ARMES, IDS_ARMES } from '../donnees/armes';
+import { GERBES } from '../donnees/particules';
 import { Pool } from '../utils/pool';
 import type { ArmeEquipee } from './armeEquipee';
 import type { ContexteCombat } from './contexte';
@@ -30,15 +30,9 @@ export class Foudre {
   private readonly tampon = new Int32Array(64);
   private readonly pool: Pool<Eclair>;
   private readonly maillage: THREE.InstancedMesh;
-  /** Couleurs des particules d'impact, par index d'arme. */
-  private readonly couleursImpact: readonly (readonly number[])[];
 
   constructor(contexte: ContexteCombat, scene: THREE.Scene) {
     this.contexte = contexte;
-    this.couleursImpact = IDS_ARMES.map((id) => {
-      const m = ARMES[id].mecanique;
-      return m.type === 'foudre' ? [m.couleur, 0xffffff] : [];
-    });
     const f = CONFIG.armes.foudre;
     this.pool = new Pool<Eclair>(f.capacite, () => ({
       points: new Float32Array((f.segments + 1) * 3),
@@ -76,7 +70,7 @@ export class Foudre {
       const n = ennemis.chercher(x, z, s.zone, this.tampon);
       for (let i = 0; i < n; i++) ennemis.blesser(ennemis.obtenir(this.tampon[i]), s.degats, x, z, s.recul, arme.index);
       this.creerEclair(x, z, m.couleur);
-      particules.emettre(x, 0.3, z, CONFIG.particules.impactFoudre, this.couleursImpact[arme.index]);
+      particules.emettre(x, 0.3, z, GERBES.impactFoudre);
     }
     return frappe;
   }

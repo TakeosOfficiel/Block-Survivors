@@ -22,7 +22,6 @@ const definitions = {
     rayon: 0.35,
     comportement: { type: 'melee', degats: 3, portee: 0.4, cadence: 1 },
     xp: 1,
-    couleurParticules: 0x4f7a3a,
   },
   squelette: {
     nom: 'Squelette',
@@ -37,7 +36,6 @@ const definitions = {
     rayon: 0.35,
     comportement: { type: 'archer', projectile: 'fleche', degats: 3, distanceIdeale: 9, portee: 13, cadence: 2.2 },
     xp: 2,
-    couleurParticules: 0xd0d0d0,
   },
   araignee: {
     nom: 'Araignée',
@@ -52,7 +50,6 @@ const definitions = {
     rayon: 0.6,
     comportement: { type: 'melee', degats: 2, portee: 0.3, cadence: 0.8 },
     xp: 1,
-    couleurParticules: 0x3a2e28,
   },
   creeper: {
     nom: 'Creeper',
@@ -66,7 +63,6 @@ const definitions = {
     rayon: 0.35,
     comportement: { type: 'explosif', distanceAmorcage: 2.5, distanceAnnulation: 5, duree: 1.5, rayon: 3.5, degats: 10 },
     xp: 3,
-    couleurParticules: 0x5fb04a,
   },
 
   // --- Mine ----------------------------------------------------------------
@@ -85,7 +81,6 @@ const definitions = {
     rayon: 0.45,
     comportement: { type: 'melee', degats: 2, portee: 0.3, cadence: 0.6 },
     xp: 1,
-    couleurParticules: 0x1f3a4a,
   },
   poisson_argent: {
     nom: "Poisson d'argent",
@@ -101,7 +96,6 @@ const definitions = {
     rayon: 0.25,
     comportement: { type: 'melee', degats: 1, portee: 0.2, cadence: 0.5 },
     xp: 1,
-    couleurParticules: 0x8a8f96,
   },
 
   // --- Nether --------------------------------------------------------------
@@ -119,7 +113,6 @@ const definitions = {
     rayon: 0.4,
     comportement: { type: 'melee', degats: 4, portee: 0.4, cadence: 1 },
     xp: 2,
-    couleurParticules: 0xd88a86,
   },
   squelette_wither: {
     nom: 'Squelette wither',
@@ -136,7 +129,6 @@ const definitions = {
     rayon: 0.4,
     comportement: { type: 'melee', degats: 5, portee: 0.5, cadence: 1.1 },
     xp: 3,
-    couleurParticules: 0x2a2a2a,
   },
   blaze: {
     nom: 'Blaze',
@@ -152,7 +144,6 @@ const definitions = {
     ignoreObstacles: true,  // vole par-dessus la lave et les murets
     comportement: { type: 'archer', projectile: 'boule_feu_blaze', degats: 3, distanceIdeale: 8, portee: 12, cadence: 2.6, nombre: 3, dispersion: 0.12 },
     xp: 3,
-    couleurParticules: 0xf0b030,
   },
   cube_magma: {
     nom: 'Cube de magma',
@@ -169,7 +160,6 @@ const definitions = {
     resistanceRecul: 0.5,
     comportement: { type: 'melee', degats: 4, portee: 0.3, cadence: 1 },
     xp: 2,
-    couleurParticules: 0xd84a10,
   },
 
   // --- Boss ----------------------------------------------------------------
@@ -190,7 +180,6 @@ const definitions = {
     comportement: { type: 'melee', degats: 8, portee: 0.8, cadence: 1.5 },
     xp: 60,
     butin: 'pomme_doree',
-    couleurParticules: 0x4f7a3a,
     boss: { couleurBarre: 'purple' },
   },
   seigneur_wither: {
@@ -211,7 +200,6 @@ const definitions = {
     comportement: { type: 'archer', projectile: 'fleche', degats: 4, distanceIdeale: 10, portee: 16, cadence: 1.4, nombre: 5, dispersion: 0.15 },
     xp: 100,
     butin: 'pomme_doree',
-    couleurParticules: 0x2a2a2a,
     boss: { couleurBarre: 'red' },
   },
   reine_araignee: {
@@ -232,7 +220,6 @@ const definitions = {
     comportement: { type: 'melee', degats: 6, portee: 0.6, cadence: 0.9 },
     xp: 70,
     butin: 'pomme_doree',
-    couleurParticules: 0x1f3a4a,
     boss: { couleurBarre: 'blue' },
   },
   magma_geant: {
@@ -253,7 +240,6 @@ const definitions = {
     comportement: { type: 'melee', degats: 8, portee: 0.6, cadence: 1.4 },
     xp: 80,
     butin: 'pomme_doree',
-    couleurParticules: 0xd84a10,
     boss: { couleurBarre: 'yellow' },
   },
 } satisfies Record<string, DefinitionEnnemi>;

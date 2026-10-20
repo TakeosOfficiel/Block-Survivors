@@ -131,15 +131,7 @@ export const CONFIG = {
   },
 
   particules: {
-    capacite: 1024,
-    gravite: 14,
-    mort: { nombre: 10, vitesse: 2.5, taille: 0.18, duree: 0.7 },
-    trainee: { nombre: 1, vitesse: 0.6, taille: 0.16, duree: 0.4 },
-    explosionArme: { nombre: 28, vitesse: 6, taille: 0.35, duree: 0.8 },
-    impactFoudre: { nombre: 14, vitesse: 5, taille: 0.2, duree: 0.5 },
-    invocation: { nombre: 20, vitesse: 3, taille: 0.3, duree: 0.8 },
-    explosion: { nombre: 70, vitesse: 8, taille: 0.45, duree: 1, couleurs: [0xffffff, 0xb0b0b0, 0xff9a2e] },
-    niveau: { nombre: 36, vitesse: 4.5, taille: 0.22, duree: 1, couleurs: [0x80ff20, 0xffff55, 0xffffff] },
+    capacite: 1024,          // sprites vanilla simultanés (gerbes : donnees/particules.ts)
   },
 
   // Shaders (option) : ombres du soleil, feuillage et plantes qui ondulent au vent
@@ -200,7 +192,6 @@ export const CONFIG = {
       rayonRecul: 6,         // les ennemis proches sont repoussés…
       recul: 14,             // …avec cette force
       icone: 'item/totem_of_undying',
-      particules: { nombre: 60, vitesse: 6, taille: 0.25, duree: 1.4, couleurs: [0xf4e04d, 0x7ed957, 0x3fae3f, 0xfff7a8] },
     },
   },
 

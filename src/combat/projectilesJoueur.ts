@@ -4,6 +4,7 @@
  * joueur, traverse tout) et « explosif » (explose au premier contact).
  */
 import { CONFIG } from '../config';
+import { GERBES } from '../donnees/particules';
 import { IDS_PROJECTILES, PROJECTILES, type IdProjectile } from '../donnees/projectiles';
 import type { DefinitionProjectile } from '../donnees/types';
 import { RenduProjectiles } from '../effets/renduProjectiles';
@@ -14,7 +15,6 @@ import type { ContexteCombat } from './contexte';
 import { longueur } from '../utils/maths';
 
 const MAX_TOUCHES = 32;
-const AUCUNE_COULEUR: readonly number[] = [];
 
 export type ModeProjectile = 'ligne' | 'retour';
 
@@ -35,7 +35,6 @@ interface ProjectileJoueur {
   recul: number;
   restants: number;         // ennemis encore traversables
   zone: number;             // rayon d'explosion (0 = n'explose pas)
-  couleurs: readonly number[];
   touches: Int32Array;      // id des ennemis déjà touchés (pendant cette phase)
   nbTouches: number;
   trainee: number;          // s avant la prochaine particule de traînée
@@ -47,7 +46,7 @@ export class ProjectilesJoueur implements SourceEntites {
   private readonly pool = new Pool<ProjectileJoueur>(CONFIG.projectiles.capacite, () => ({
     indexRendu: 0, indexArme: 0, definition: PROJECTILES[IDS_PROJECTILES[0]], retour: false, revient: false,
     x: 0, z: 0, dirX: 0, dirZ: 1, vitesse: 0, parcouru: 0, portee: 0, degats: 0, recul: 0,
-    restants: 1, zone: 0, couleurs: AUCUNE_COULEUR, touches: new Int32Array(MAX_TOUCHES), nbTouches: 0, trainee: 0,
+    restants: 1, zone: 0, touches: new Int32Array(MAX_TOUCHES), nbTouches: 0, trainee: 0,
   }));
 
   constructor(contexte: ContexteCombat) {
@@ -59,7 +58,7 @@ export class ProjectilesJoueur implements SourceEntites {
   }
 
   /** Lance un projectile depuis le joueur dans la direction (dirX, dirZ) unitaire. */
-  lancer(arme: ArmeEquipee, type: IdProjectile, mode: ModeProjectile, dirX: number, dirZ: number, couleursExplosion?: readonly number[]): void {
+  lancer(arme: ArmeEquipee, type: IdProjectile, mode: ModeProjectile, dirX: number, dirZ: number, explose = false): void {
     const p = this.pool.acquerir();
     if (!p) return;
     const j = this.contexte.etat.joueur;
@@ -79,8 +78,7 @@ export class ProjectilesJoueur implements SourceEntites {
     p.indexArme = arme.index;
     p.recul = s.recul;
     p.restants = p.retour ? Infinity : Math.max(1, s.perforation);
-    p.zone = couleursExplosion ? s.zone : 0;
-    p.couleurs = couleursExplosion ?? AUCUNE_COULEUR;
+    p.zone = explose ? s.zone : 0;
     p.nbTouches = 0;
     p.trainee = 0;
   }
@@ -115,7 +113,7 @@ export class ProjectilesJoueur implements SourceEntites {
       const trainee = p.definition.trainee;
       if (trainee && (p.trainee -= dt) <= 0) {
         p.trainee = CONFIG.projectiles.intervalleTrainee;
-        particules.emettre(p.x, p.definition.hauteur, p.z, CONFIG.particules.trainee, trainee);
+        particules.emettre(p.x, p.definition.hauteur, p.z, GERBES[trainee]);
       }
 
       // Collisions avec les ennemis
@@ -173,7 +171,7 @@ export class ProjectilesJoueur implements SourceEntites {
     for (let k = 0; k < n; k++) {
       ennemis.blesser(ennemis.obtenir(this.tampon[k]), p.degats, p.x, p.z, p.recul, p.indexArme);
     }
-    particules.emettre(p.x, p.definition.hauteur, p.z, CONFIG.particules.explosionArme, p.couleurs);
+    particules.emettre(p.x, p.definition.hauteur, p.z, GERBES.explosionArme);
     this.contexte.retours.son('explosion', 1.3);
   }
 }

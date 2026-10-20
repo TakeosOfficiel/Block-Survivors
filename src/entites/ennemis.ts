@@ -5,6 +5,7 @@
 import type * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG } from '../config';
+import { GERBES } from '../donnees/particules';
 import { ENNEMIS, IDS_ENNEMIS, type IdEnnemi } from '../donnees/ennemis';
 import { JOUEUR_BASE } from '../donnees/joueur';
 import { MODELES } from '../donnees/modeles';
@@ -30,7 +31,6 @@ interface RenduType {
   readonly modele: ModeleCompile;
   readonly instances: ModeleInstancie;
   readonly pose: PoseModele;
-  readonly couleursMort: readonly number[];
 }
 
 const RAYON_MAX = Math.max(...IDS_ENNEMIS.map((id) => ENNEMIS[id].rayon));
@@ -79,7 +79,6 @@ export class Ennemis implements SourceEntites {
         modele,
         instances: new ModeleInstancie(modele, def, textures, CONFIG.ennemis.capacite, scene),
         pose: creerPoseModele(modele),
-        couleursMort: [0xffffff, 0xd8d8d8, def.couleurParticules],
       };
     });
   }
@@ -279,7 +278,7 @@ export class Ennemis implements SourceEntites {
         this.exploser(e);
         this.pool.liberer(i);
       } else if (e.mort >= CONFIG.ennemis.dureeMort) {
-        this.particules.emettre(e.x, 0.6, e.z, CONFIG.particules.mort, this.rendus[e.indexType].couleursMort);
+        this.particules.emettre(e.x, 0.6, e.z, GERBES.mort);
         this.pool.liberer(i);
       }
     }
@@ -445,8 +444,7 @@ export class Ennemis implements SourceEntites {
   private exploser(e: Ennemi): void {
     const c = e.definition.comportement;
     if (c.type !== 'explosif') return;
-    const p = CONFIG.particules.explosion;
-    this.particules.emettre(e.x, 0.8, e.z, p, p.couleurs);
+    this.particules.emettre(e.x, 0.8, e.z, GERBES.explosion);
     this.retours.son('explosion');
     this.retours.secousse(0.45);
 

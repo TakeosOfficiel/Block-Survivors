@@ -59,7 +59,7 @@ const definitions = {
     duree: 3,
     rayon: 0.45,
     hauteur: 1,
-    trainee: [0xffd23a, 0xff8a1e, 0x5a5a5a],
+    trainee: 'traineeFeu',
     couleurSecours: 0xff7a1a,
   },
   // Petite boule de feu tirée par les blazes
@@ -75,7 +75,7 @@ const definitions = {
     duree: 2.5,
     rayon: 0.3,
     hauteur: 1.2,
-    trainee: [0xffd23a, 0xff8a1e],
+    trainee: 'traineeFeu',
     couleurSecours: 0xff7a1a,
   },
 } satisfies Record<string, DefinitionProjectile>;

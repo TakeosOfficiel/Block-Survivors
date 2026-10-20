@@ -13,7 +13,6 @@ const definitions = {
     rayon: 0.7,
     cadenceCoups: 1,
     detection: 20,
-    couleurParticules: 0xc8c0b8,
   },
 } satisfies Record<string, DefinitionAllie>;
 

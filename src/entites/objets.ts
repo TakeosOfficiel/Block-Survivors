@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG } from '../config';
+import { GERBES } from '../donnees/particules';
 import { JOUEUR_BASE } from '../donnees/joueur';
 import { IDS_OBJETS, OBJETS, type IdObjet } from '../donnees/objets';
 import type { Particules } from '../effets/particules';
@@ -21,7 +22,6 @@ interface Objet {
 }
 
 const CAPACITE = 64;
-const GERBE_RAMASSAGE = { nombre: 12, vitesse: 3, taille: 0.18, duree: 0.6 };
 
 const matrice = new THREE.Matrix4();
 
@@ -46,7 +46,7 @@ export class Objets {
       geometrie.rotateX(-inclinaison);  // face à la caméra (qui ne tourne pas)
       const materiau = map
         ? new THREE.MeshBasicMaterial({ map, alphaTest: 0.5 })
-        : new THREE.MeshBasicMaterial({ color: def.couleurParticules[0] });
+        : new THREE.MeshBasicMaterial({ color: def.couleurSecours });
       const maillage = new THREE.InstancedMesh(geometrie, materiau, CAPACITE);
       maillage.name = `objet:${id}`;
       maillage.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -83,7 +83,7 @@ export class Objets {
       j.pv = Math.min(j.pvMax, j.pv + def.soin);
       this.etat.stats.pvSoignes += j.pv - avant;
       this.retours.son('manger');
-      this.particules.emettre(o.x, 0.8, o.z, GERBE_RAMASSAGE, def.couleurParticules);
+      this.particules.emettre(o.x, 0.8, o.z, GERBES.ramassage, def.icone);
       this.pool.liberer(i);
     }
   }

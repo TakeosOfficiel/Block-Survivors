@@ -16,6 +16,8 @@ import { ProjectilesJoueur } from './combat/projectilesJoueur';
 import { CONFIG } from './config';
 import { Entrees } from './controles/entrees';
 import type { IdEnnemi } from './donnees/ennemis';
+import { IDS_OBJETS, OBJETS } from './donnees/objets';
+import { GERBES } from './donnees/particules';
 import { PROGRESSION } from './donnees/progression';
 import type { IdSon } from './donnees/sons';
 import { Ombres } from './effets/ombres';
@@ -135,7 +137,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.terrain = { carte: monde.carte, flux: new ChampDeFlux(monde.carte) };
     const carte = monde.carte;
     this.ombres = new Ombres(textures.obtenir(CONFIG.ombre.texture), scene);
-    this.particules = new Particules(scene);
+    this.particules = new Particules(scene, rendu.camera, textures, IDS_OBJETS.map((id) => OBJETS[id].icone));
     this.renduProjectiles = new RenduProjectiles(textures, scene);
 
     // Entités
@@ -289,7 +291,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.viesTraitees = j.viesUtilisees;
     const t = CONFIG.joueur.totem;
     this.ennemis.repousser(j.x, j.z, t.rayonRecul, t.recul);
-    this.particules.emettre(j.x, 1.2, j.z, t.particules, t.particules.couleurs);
+    this.particules.emettre(j.x, 1.2, j.z, GERBES.totem);
   }
 
   afficher(dtJeu: number, dtReel: number, dtBrut: number): void {
@@ -361,8 +363,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     const j = this.etat.joueur;
     if (j.niveau === this.niveauAffiche) return;
     this.niveauAffiche = j.niveau;
-    const p = CONFIG.particules.niveau;
-    this.particules.emettre(j.x, 1, j.z, p, p.couleurs);
+    this.particules.emettre(j.x, 1, j.z, GERBES.niveau);
     this.son('niveau');
   }
 

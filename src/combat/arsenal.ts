@@ -110,7 +110,7 @@ export class Arsenal {
           const cible = ennemis.auHasard(j.x, j.z, s.portee);
           if (!cible) break;
           const a = Math.atan2(cible.x - j.x, cible.z - j.z);
-          this.systemes.projectiles.lancer(arme, m.projectile, 'ligne', Math.sin(a), Math.cos(a), m.couleurs);
+          this.systemes.projectiles.lancer(arme, m.projectile, 'ligne', Math.sin(a), Math.cos(a), true);
           lance = true;
         }
         return lance;

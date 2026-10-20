@@ -7,12 +7,12 @@
 import * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG } from '../config';
+import { GERBES } from '../donnees/particules';
 import { ARMES, IDS_ARMES } from '../donnees/armes';
 import { ecartAngle } from '../utils/maths';
 import type { ArmeEquipee } from './armeEquipee';
 import type { ContexteCombat } from './contexte';
 
-const COULEURS_SECOURS = [0xffffff, 0xe0e0e0];
 
 export class Balayages {
   private readonly contexte: ContexteCombat;
@@ -87,7 +87,7 @@ export class Balayages {
       this.effet.rotation.y = angle + Math.PI;  // le haut de l'image vers l'avant
       this.effet.scale.setScalar(s.zone * 1.6);
     } else {
-      particules.emettre(j.x + avantX, 1, j.z + avantZ, CONFIG.particules.mort, COULEURS_SECOURS);
+      particules.emettre(j.x + avantX, 1, j.z + avantZ, GERBES.coup);
     }
     return true;
   }

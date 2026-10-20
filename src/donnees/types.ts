@@ -8,6 +8,7 @@ import type { IdBloc } from './blocs';
 import type { IdEnnemi } from './ennemis';
 import type { IdModele } from './modeles';
 import type { IdObjet } from './objets';
+import type { IdGerbe, IdParticule } from './particules';
 import type { IdPassif } from './passifs';
 import type { IdProjectile } from './projectiles';
 import type { IdSon } from './sons';
@@ -235,8 +236,6 @@ export interface DefinitionEnnemi extends ApparenceEntite {
   readonly comportement: ComportementEnnemi;
   /** Expérience lâchée à la mort. */
   readonly xp: number;
-  /** Couleur des particules à la mort. */
-  readonly couleurParticules: number;
   /** Taille du modèle (1 par défaut) ; le rayon et l'ombre sont donnés à cette taille. */
   readonly echelle?: number;
   /** Part du recul ignorée (0 = normal, 1 = inébranlable). */
@@ -279,8 +278,8 @@ export interface DefinitionProjectile {
   readonly hauteur: number;    // altitude de vol (blocs)
   /** Rotation sur lui-même (rad/s), pour les haches. */
   readonly rotationPropre?: number;
-  /** Couleurs des particules laissées derrière lui. */
-  readonly trainee?: readonly number[];
+  /** Particules laissées derrière lui. */
+  readonly trainee?: IdGerbe;
   readonly couleurSecours: number;
 }
 
@@ -310,7 +309,7 @@ export type MecaniqueArme =
   /** Objets qui tournent en permanence autour du joueur. */
   | { readonly type: 'orbite'; readonly projectile: IdProjectile }
   /** Projectile qui explose au premier ennemi touché. */
-  | { readonly type: 'explosif'; readonly projectile: IdProjectile; readonly couleurs: readonly number[] }
+  | { readonly type: 'explosif'; readonly projectile: IdProjectile }
   /** Éclairs qui frappent des ennemis au hasard autour du joueur. */
   | { readonly type: 'foudre'; readonly couleur: number }
   /** Alliés qui combattent seuls pendant un temps limité. */
@@ -345,7 +344,6 @@ export interface DefinitionAllie extends ApparenceEntite {
   readonly rayon: number;        // blocs
   readonly cadenceCoups: number; // s entre deux coups
   readonly detection: number;    // distance de recherche d'une cible (blocs)
-  readonly couleurParticules: number;
 }
 
 // --------------------------------------------------------------------------
@@ -484,7 +482,8 @@ export interface DefinitionObjet {
   /** Probabilité d'être lâché par un ennemi ordinaire. */
   readonly chance: number;
   readonly taille: number;           // blocs
-  readonly couleurParticules: readonly number[];
+  /** Couleur de l'objet posé si son icône manque. */
+  readonly couleurSecours: number;
 }
 
 // --------------------------------------------------------------------------
@@ -564,3 +563,40 @@ export interface DefinitionSon {
   /** Lectures simultanées au maximum. */
   readonly simultanes: number;
 }
+
+// --------------------------------------------------------------------------
+// Particules
+// --------------------------------------------------------------------------
+/**
+ * Choix de l'image : `age` parcourt la série au fil de la vie de la particule,
+ * `fixe` garde la première, `morceau` prend un quart de l'icône donnée à l'émission.
+ */
+export type AnimationParticule = 'age' | 'fixe' | 'morceau';
+
+export interface DefinitionParticule {
+  readonly images: readonly CheminTexture[];
+  readonly animation: AnimationParticule;
+  readonly taille: readonly [number, number];   // côté (blocs), tiré entre ces bornes
+  readonly duree: readonly [number, number];    // s
+  /** blocs/s² vers le bas (négatif : la particule monte). */
+  readonly gravite: number;
+  /** Part de la vitesse perdue par seconde (0 à 1). */
+  readonly frottement: number;
+  /** Teinte grise tirée entre ces bornes (1 = image telle quelle)… */
+  readonly gris?: readonly [number, number];
+  /** … ou une de ces couleurs. */
+  readonly teintes?: readonly number[];
+  /** Rétrécit en fin de vie (flammes, étincelles). */
+  readonly retrecit?: boolean;
+}
+
+/** Une salve de particules d'un même type ; une gerbe en enchaîne plusieurs. */
+export interface SalveParticules {
+  readonly particule: IdParticule;
+  readonly nombre: number;
+  readonly vitesse: number;     // blocs/s, horizontale, tirée jusqu'à cette valeur
+  readonly dispersion: number;  // rayon autour du point d'émission (blocs)
+  readonly montee: number;      // vitesse verticale initiale max (blocs/s)
+}
+
+export type DefinitionGerbe = readonly SalveParticules[];

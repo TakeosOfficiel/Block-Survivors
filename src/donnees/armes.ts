@@ -87,7 +87,7 @@ const definitions = {
     nom: 'Boules de feu',
     description: 'Explosent au contact et brûlent la zone.',
     icone: 'item/fire_charge',
-    mecanique: { type: 'explosif', projectile: 'boule_feu', couleurs: [0xffe066, 0xff9a2e, 0xe0401a, 0x505050] },
+    mecanique: { type: 'explosif', projectile: 'boule_feu' },
     stats: { ...BASE, degats: 14, cadence: 2.2, vitesse: 10, portee: 13, zone: 2.2, recul: 6 },
     niveaux: [
       { description: 'Rayon d\'explosion +0,6 bloc', modif: { zone: 0.6 } },

@@ -8,7 +8,7 @@ const definitions = {
     soin: 4,
     chance: 0.02,
     taille: 0.7,
-    couleurParticules: [0xff4040, 0xffffff],
+    couleurSecours: 0xff4040,
   },
   pomme_doree: {
     nom: 'Pomme dorée',
@@ -16,7 +16,7 @@ const definitions = {
     soin: 12,
     chance: 0.004,
     taille: 0.8,
-    couleurParticules: [0xffd23a, 0xff4040, 0xffffff],
+    couleurSecours: 0xffd23a,
   },
 } satisfies Record<string, DefinitionObjet>;
 

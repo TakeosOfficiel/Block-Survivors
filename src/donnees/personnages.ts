@@ -1,7 +1,10 @@
 /**
  * Personnages jouables. Ajouter un personnage = ajouter une entrée.
  * Les cartes exclusives sont des bonus passifs marqués `exclusif` (passifs.ts).
+ * Chaque classe a son arsenal : quand il est complet, les cartes ne proposent
+ * que ses attaques (les bonus passifs restent communs).
  */
+import type { IdArme } from './armes';
 import type { DefinitionPersonnage } from './types';
 
 const HUMAIN_SECOURS = {
@@ -20,6 +23,8 @@ const definitions = {
     pv: 24,
     vitesse: 4.8,
     armesDepart: ['epee'],
+    arsenal: ['epee', 'haches', 'trident', 'onde_choc', 'lame_colossale', 'tourbillon_lames', 'heurt_bouclier'],
+    arsenalComplet: true,
     bonus: { armure: 1 },
     cartesExclusives: ['cuirasse', 'totem'],
   },
@@ -34,6 +39,8 @@ const definitions = {
     pv: 18,
     vitesse: 5.6,
     armesDepart: ['arc'],
+    arsenal: ['arc'],
+    arsenalComplet: false,
     bonus: { portee: 0.15 },
     cartesExclusives: ['fleches_spectrales', 'patte_de_lapin'],
   },
@@ -48,6 +55,8 @@ const definitions = {
     pv: 16,
     vitesse: 5,
     armesDepart: ['boules_feu'],
+    arsenal: ['boules_feu', 'eclairs'],
+    arsenalComplet: false,
     bonus: { zone: 0.15, degats: 0.1 },
     cartesExclusives: ['grimoire', 'cristal'],
   },
@@ -62,6 +71,8 @@ const definitions = {
     pv: 18,
     vitesse: 5.1,
     armesDepart: ['loups'],
+    arsenal: ['loups', 'golems', 'vex'],
+    arsenalComplet: false,
     bonus: { regeneration: 0.05 },
     cartesExclusives: ['meute', 'pacte'],
   },
@@ -74,3 +85,13 @@ export const PERSONNAGES: Readonly<Record<IdPersonnage, DefinitionPersonnage>> =
 export const IDS_PERSONNAGES = Object.keys(definitions) as IdPersonnage[];
 
 export const PERSONNAGE_PAR_DEFAUT: IdPersonnage = 'guerrier';
+
+/** Armes réservées aux classes dont l'arsenal est complet. */
+const ARMES_RESERVEES = new Set<IdArme>(
+  IDS_PERSONNAGES.filter((id) => PERSONNAGES[id].arsenalComplet).flatMap((id) => PERSONNAGES[id].arsenal),
+);
+
+/** L'arme peut-elle être proposée en carte à ce personnage ? */
+export function armeProposable(personnage: DefinitionPersonnage, arme: IdArme): boolean {
+  return personnage.arsenal.includes(arme) || (!personnage.arsenalComplet && !ARMES_RESERVEES.has(arme));
+}

@@ -99,6 +99,8 @@ export const CONFIG = {
     capacite: 600,           // ennemis simultanés au maximum (pool)
     celluleGrille: 2,        // taille d'une cellule de la grille spatiale (blocs)
     separation: 6,           // force de répulsion entre ennemis (1/s)
+    interruption: 1,         // s avant l'attaque suivante d'un ennemi interrompu (coup de bouclier)
+    essaisGroupe: 12,        // ennemis examinés pour trouver le plus gros groupe
     amortissementRecul: 6,   // décroissance du recul (1/s)
     vitesseRotation: 10,     // orientation vers la direction de marche (1/s)
     dureeMort: 0.6,          // chute sur le côté avant disparition (s)
@@ -128,6 +130,17 @@ export const CONFIG = {
     dureeBalayage: 0.25,       // durée de l'effet de balayage (s)
     foudre: { hauteur: 18, segments: 10, largeur: 0.18, ecart: 0.7, duree: 0.25, capacite: 24 },
     golems: { capacite: 32, distanceSuivi: 3 },   // alliés invoqués (golems, loups, vex)
+    // Onde de choc : blocs soulevés tous les `espacement` blocs, qui jaillissent puis s'enfoncent (s)
+    fissure: {
+      capacite: 12, blocs: 320, rayonGroupe: 2, depart: 1, espacement: 0.8, tailleBloc: 0.9,
+      montee: 0.08, descente: 0.25, dureeBloc: 0.7, immunite: 0.6,
+    },
+    // Lame colossale : chute (s) depuis `hauteur` blocs, plantée `tenue` s puis effacée en `fondu` s
+    chute: { capacite: 6, duree: 0.4, hauteur: 6, enfoncement: 0.12, tenue: 0.4, fondu: 0.3, decalage: 0.25 },
+    // Tourbillon de lames : vitesse de rotation (rad/s), déclenché si un ennemi est à zone × declenchement
+    tourbillon: { vitesseRotation: 12, declenchement: 1.3 },
+    // Heurt de bouclier : marge de recherche de cible et portée du renvoi des projectiles (blocs)
+    heurt: { marge: 1.2, porteeRenvoi: 1.5 },
   },
 
   // Chiffres des dégâts au-dessus des ennemis (option)

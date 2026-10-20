@@ -24,6 +24,9 @@ const definitions = {
   tonnerre: { categorie: 'armes', chemin: 'ambient/weather/thunder1', hachage: 'a20f0a846d7becf5d08756207f86acf24fac1a8d', volume: 0.18, hauteur: [0.9, 1.2], intervalleMin: 0.3, simultanes: 2 },
   golem_invocation: { categorie: 'armes', chemin: 'mob/irongolem/throw', hachage: 'f30080c54b46aa2dcaa260018cb07ef0561408ac', volume: 0.5, hauteur: [1, 1], intervalleMin: 0.3, simultanes: 1 },
   golem_coup: { categorie: 'armes', chemin: 'mob/irongolem/hit1', hachage: '9d528a24b3aaf8e4210b570316ef4fe125f813d8', volume: 0.35, hauteur: [0.9, 1.1], intervalleMin: 0.15, simultanes: 2 },
+  fissure: { categorie: 'armes', chemin: 'dig/stone1', hachage: '4ec831592ae2bcbac1b4047a9f9f72a2de5ca834', volume: 0.5, hauteur: [0.6, 0.8], intervalleMin: 0.15, simultanes: 2 },
+  lame_colossale: { categorie: 'armes', chemin: 'random/anvil_land', hachage: '781d4bfc6ee0aff2a61b0d78f0da34610a28aa62', volume: 0.35, hauteur: [0.7, 0.85], intervalleMin: 0.2, simultanes: 2 },
+  bouclier: { categorie: 'armes', chemin: 'item/shield/block1', hachage: 'f3b8dcde479d572a5c6973d5b73314eecd785dd6', volume: 0.5, hauteur: [0.8, 1.2], intervalleMin: 0.15, simultanes: 2 },
   explosion: { categorie: 'armes', chemin: 'random/explode1', hachage: 'fa85b9e7e54c36c9f9d0249ca739444b5e3bb66c', volume: 0.45, hauteur: [0.8, 1.1], intervalleMin: 0.08, simultanes: 3 },
 
   loup_aboiement: { categorie: 'armes', chemin: 'mob/wolf/bark1', hachage: '527618d2fbb9712950357c4d5e95cfb86ffee417', volume: 0.35, hauteur: [0.9, 1.2], intervalleMin: 0.3, simultanes: 2 },

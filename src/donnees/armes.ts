@@ -12,12 +12,17 @@
  *   foudre     degats, cadence, nombre, portee (rayon de recherche), zone (rayon d'impact), recul
  *   invocation degats (par coup), cadence, nombre (alliés par invocation), duree, zone (allonge), recul ;
  *              le nombre présent est limité par le quota de l'allié (allies.ts)
+ *   fissure    degats, cadence, nombre (fissures en éventail), portee (longueur), zone (largeur), recul,
+ *              ralenti et duree (ralentissement des ennemis touchés)
+ *   chute      degats, cadence, nombre, portee (recherche du groupe), zone (rayon d'impact), recul, ralenti, duree
+ *   tourbillon degats (par frappe), cadence, zone (rayon), duree (de rotation), recul (négatif : aspire)
+ *   heurt      degats, cadence, zone (portée du cône), recul, etourdi
  */
 import type { DefinitionArme, StatsArme } from './types';
 
 /** Statistiques neutres : chaque arme ne précise que ce qu'elle utilise. */
 const BASE: StatsArme = {
-  degats: 0, cadence: 1, nombre: 1, portee: 0, vitesse: 0, zone: 0, duree: 0, perforation: 1, recul: 0,
+  degats: 0, cadence: 1, nombre: 1, portee: 0, vitesse: 0, zone: 0, duree: 0, perforation: 1, recul: 0, ralenti: 0, etourdi: 0,
 };
 
 const definitions = {
@@ -112,6 +117,64 @@ const definitions = {
       { description: 'Zone d\'impact +0,4 bloc', modif: { zone: 0.4 } },
       { description: 'Frappe 15 % plus souvent', modif: { cadence: -0.45 } },
       { description: '+1 éclair', modif: { nombre: 1 } },
+    ],
+  },
+  onde_choc: {
+    son: 'fissure',
+    nom: 'Onde de choc',
+    description: 'Frappe le sol : une fissure soulève les blocs vers le plus gros groupe.',
+    icone: 'block/cracked_stone_bricks',
+    mecanique: { type: 'fissure', ecart: 0.5, vitesse: 14 },
+    stats: { ...BASE, degats: 14, cadence: 4, portee: 6, zone: 1.5, recul: 3, duree: 1 },
+    niveaux: [
+      { description: 'Dégâts +4', modif: { degats: 4 } },
+      { description: 'Fissure plus longue : +2 blocs', modif: { portee: 2 } },
+      { description: '+1 fissure en éventail', modif: { nombre: 1 } },
+      { description: 'Frappe 20 % plus souvent', modif: { cadence: -0.8 } },
+      { description: '+1 fissure ; les ennemis touchés sont ralentis de 30 % pendant 1 s', modif: { nombre: 1, ralenti: 0.3 } },
+    ],
+  },
+  lame_colossale: {
+    nom: 'Lame colossale',
+    description: "Une épée géante s'abat sur le plus gros groupe d'ennemis.",
+    icone: 'item/netherite_sword',
+    mecanique: { type: 'chute', image: 'item/netherite_sword', taille: 5 },
+    stats: { ...BASE, degats: 40, cadence: 7, portee: 10, zone: 2.5, recul: 9, duree: 2 },
+    niveaux: [
+      { description: 'Dégâts +15', modif: { degats: 15 } },
+      { description: "Rayon d'impact +0,7 bloc", modif: { zone: 0.7 } },
+      { description: 'Tombe 20 % plus souvent', modif: { cadence: -1.4 } },
+      { description: '+1 lame', modif: { nombre: 1 } },
+      { description: 'Dégâts +25 ; le sol fissuré ralentit de 20 % pendant 2 s', modif: { degats: 25, ralenti: 0.2 } },
+    ],
+  },
+  tourbillon_lames: {
+    nom: 'Tourbillon de lames',
+    description: 'Tourne sur lui-même et frappe tout autour, plusieurs fois.',
+    icone: 'item/golden_sword',
+    mecanique: { type: 'tourbillon', intervalle: 0.3, effet: Array.from({ length: 8 }, (_, i) => `particle/sweep_${i}`) },
+    stats: { ...BASE, degats: 5, cadence: 5, zone: 2.2, duree: 1.2, recul: 2 },
+    niveaux: [
+      { description: 'Dégâts +3 par frappe', modif: { degats: 3 } },
+      { description: 'Rayon +0,5 bloc', modif: { zone: 0.5 } },
+      { description: 'Tourne 0,6 s de plus (2 frappes)', modif: { duree: 0.6 } },
+      { description: 'Tourne 20 % plus souvent', modif: { cadence: -1 } },
+      { description: 'Dégâts +3 ; aspire les ennemis vers lui', modif: { degats: 3, recul: -5 } },
+    ],
+  },
+  heurt_bouclier: {
+    son: 'bouclier',
+    nom: 'Heurt de bouclier',
+    description: 'Coup de bouclier devant lui : repousse fort et interrompt les attaques.',
+    icone: 'block/iron_trapdoor',
+    mecanique: { type: 'heurt', angle: 1.6, renvoi: 6 },
+    stats: { ...BASE, degats: 8, cadence: 3, zone: 1.8, recul: 12 },
+    niveaux: [
+      { description: 'Repousse plus fort', modif: { recul: 6 } },
+      { description: 'Dégâts +6', modif: { degats: 6 } },
+      { description: 'Étourdit 0,5 s', modif: { etourdi: 0.5 } },
+      { description: 'Frappe 20 % plus souvent', modif: { cadence: -0.6 } },
+      { description: 'Dégâts +6 ; renvoie les projectiles ennemis', modif: { degats: 6 } },
     ],
   },
   golems: {

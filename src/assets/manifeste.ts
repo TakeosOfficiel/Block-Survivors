@@ -71,7 +71,9 @@ export function texturesRequises(
   for (const id of IDS_ARMES) {
     const arme = ARMES[id];
     chemins.add(arme.icone);
-    if (arme.mecanique.type === 'balayage') for (const image of arme.mecanique.effet) chemins.add(image);
+    const m = arme.mecanique;
+    if (m.type === 'balayage' || m.type === 'tourbillon') for (const image of m.effet) chemins.add(image);
+    if (m.type === 'chute') chemins.add(m.image);
   }
   chemins.add(CONFIG.ombre.texture);
   for (const id of IDS_PARTICULES) for (const image of PARTICULES[id].images) chemins.add(image);

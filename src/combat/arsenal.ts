@@ -8,6 +8,10 @@ import type { MecaniqueArme } from '../donnees/types';
 import type { ArmeEquipee } from './armeEquipee';
 import { calculerStats, creerArmeEquipee, rangMax } from './armeEquipee';
 import type { Balayages } from './balayages';
+import type { Chutes } from './chutes';
+import type { Fissures } from './fissures';
+import type { Heurts } from './heurts';
+import type { Tourbillons } from './tourbillons';
 import type { ContexteCombat } from './contexte';
 import type { Foudre } from './foudre';
 import type { Invocations } from './invocations';
@@ -23,6 +27,10 @@ export interface SystemesCombat {
   readonly orbites: Orbites;
   readonly foudre: Foudre;
   readonly invocations: Invocations;
+  readonly fissures: Fissures;
+  readonly chutes: Chutes;
+  readonly tourbillons: Tourbillons;
+  readonly heurts: Heurts;
 }
 
 export class Arsenal {
@@ -129,6 +137,18 @@ export class Arsenal {
 
       case 'orbite':
         return true;
+
+      case 'fissure':
+        return this.systemes.fissures.frapper(arme);
+
+      case 'chute':
+        return this.systemes.chutes.frapper(arme);
+
+      case 'tourbillon':
+        return this.systemes.tourbillons.frapper(arme);
+
+      case 'heurt':
+        return this.systemes.heurts.frapper(arme);
     }
   }
 }

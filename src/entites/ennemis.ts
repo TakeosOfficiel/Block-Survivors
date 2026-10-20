@@ -27,6 +27,7 @@ import { appliquerComportement, type ContexteComportement, type Vers } from './c
 import { creerEnnemi, effacerEtats, type DegatsPeriodiques, type Ennemi } from './ennemi';
 import type { Butin } from './butin';
 import type { CiblesAllies, SourceEntites } from './types';
+import type { ArmeEquipee } from '../combat/armeEquipee';
 import type { Allie } from '../combat/invocations';
 import { PLAFONDS } from '../donnees/plafonds';
 
@@ -62,6 +63,7 @@ export class Ennemis implements SourceEntites {
   private readonly pool = new Pool<Ennemi>(CONFIG.ennemis.capacite, creerEnnemi);
   private readonly grille: GrilleSpatiale;
   private readonly voisins = new Int32Array(64);
+  private readonly groupe = new Int32Array(64);
   /** Rendu par type ; seuls ceux de l'arène existent au départ (les autres à la première apparition). */
   private readonly rendus: (RenduType | null)[];
   private readonly scene: THREE.Scene;
@@ -289,6 +291,41 @@ export class Ennemis implements SourceEntites {
     } else if (def.sons && !periodique) {
       this.retours.son(def.sons.blessure, def.hauteurSons);
     }
+  }
+
+  /** Coup d'une arme du joueur : ses dégâts, puis le ralentissement et l'étourdissement de ses statistiques. */
+  toucher(e: Ennemi, arme: ArmeEquipee, sourceX: number, sourceZ: number, recul: number = arme.stats.recul): void {
+    const s = arme.stats;
+    this.blesser(e, s.degats, sourceX, sourceZ, recul, arme.index);
+    if (s.ralenti > 0) this.ralentir(e, s.ralenti, s.duree);
+    if (s.etourdi > 0) this.etourdir(e, s.etourdi);
+  }
+
+  /** Coupe l'attaque en préparation (mèche du creeper, arc bandé) et retarde la suivante. */
+  interrompre(e: Ennemi): void {
+    if (e.mort >= 0) return;
+    e.meche = 0;
+    e.minuterie = Math.max(e.minuterie, CONFIG.ennemis.interruption);
+  }
+
+  /**
+   * Centre du plus gros groupe d'ennemis à moins de `portee` de (x, z) : parmi
+   * quelques ennemis tirés au hasard, celui qui a le plus de voisins dans
+   * `rayon`. Écrit dans `sortie` ; faux s'il n'y a personne.
+   */
+  plusGrosGroupe(x: number, z: number, portee: number, rayon: number, sortie: Point): boolean {
+    let meilleur = -1;
+    for (let essai = 0; essai < CONFIG.ennemis.essaisGroupe; essai++) {
+      const e = this.auHasard(x, z, portee);
+      if (!e) return meilleur >= 0;
+      const voisins = this.chercher(e.x, e.z, rayon, this.groupe);
+      if (voisins > meilleur) {
+        meilleur = voisins;
+        sortie.x = e.x;
+        sortie.z = e.z;
+      }
+    }
+    return meilleur >= 0;
   }
 
   // --- États ---------------------------------------------------------------

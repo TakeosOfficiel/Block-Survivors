@@ -117,6 +117,19 @@ const gerbes = {
   niveau: [{ particule: 'joie', nombre: 16, vitesse: 1, dispersion: 0.8, montee: 1.5 }],
   totem: [{ particule: 'totem', nombre: 70, vitesse: 5, dispersion: 0.4, montee: 5 }],
   ramassage: [{ particule: 'morceau', nombre: 10, vitesse: 2.2, dispersion: 0.2, montee: 3 }],
+  // Éclats de blocs (Onde de choc, Lame colossale) : morceaux de la texture du sol
+  eboulis: [
+    { particule: 'morceau', nombre: 5, vitesse: 2.5, dispersion: 0.4, montee: 5 },
+    { particule: 'fumee', nombre: 2, vitesse: 0.8, dispersion: 0.4, montee: 0.8 },
+  ],
+  impactLame: [
+    { particule: 'explosion', nombre: 3, vitesse: 0, dispersion: 1.2, montee: 0 },
+    { particule: 'critique', nombre: 14, vitesse: 5, dispersion: 0.8, montee: 3 },
+  ],
+  heurt: [
+    { particule: 'critique', nombre: 10, vitesse: 4, dispersion: 0.5, montee: 1.5 },
+    { particule: 'poof', nombre: 5, vitesse: 2, dispersion: 0.4, montee: 0.4 },
+  ],
   // États des ennemis (émis régulièrement tant qu'ils durent)
   brulure: [{ particule: 'flamme', nombre: 3, vitesse: 0.4, dispersion: 0.4, montee: 1 }],
   poison: [{ particule: 'effetPoison', nombre: 1, vitesse: 0.3, dispersion: 0.35, montee: 0.5 }],

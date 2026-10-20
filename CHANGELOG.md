@@ -5,6 +5,20 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.11.0] — 2026-10-20
+
+Refonte des classes, étape 3 : l'arsenal du Guerrier. Valeurs provisoires, à ajuster après les essais.
+
+### Nouveautés
+- Le Guerrier a son propre arsenal de 7 attaques, et ses cartes ne proposent plus que celles-ci : Épée en fer, Haches tournoyantes, Trident, et quatre nouvelles.
+- Onde de choc : il frappe le sol, une fissure file vers le plus gros groupe et soulève les blocs du sol de l'arène, qui jaillissent puis retombent. Jusqu'à 3 fissures en éventail ; au dernier rang, les ennemis touchés sont ralentis.
+- Lame colossale : une épée en netherite géante tombe du ciel sur le plus gros groupe (son ombre annonce l'impact), avec éboulis, secousse et le son de l'enclume.
+- Tourbillon de lames : il tourne sur lui-même et frappe tout autour plusieurs fois, entouré de balayages ; au dernier rang, il aspire les ennemis.
+- Heurt de bouclier : coup de bouclier devant lui qui repousse fort et interrompt les attaques (la mèche du creeper repart de zéro) ; il étourdit à partir du rang 4 et renvoie les flèches ennemies contre leurs tireurs au dernier rang.
+
+### Changements
+- Haches tournoyantes et Trident sont désormais réservés au Guerrier. Les autres classes gardent les autres armes en attendant leur propre arsenal.
+
 ## [0.10.0] — 2026-10-20
 
 Refonte des classes, étape 2 : les états des ennemis. Ils serviront aux nouvelles attaques et aux talents ; on peut déjà les essayer depuis le panneau F3.

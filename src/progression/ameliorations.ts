@@ -7,6 +7,7 @@ import { calculerStats, rangMax } from '../combat/armeEquipee';
 import type { Arsenal } from '../combat/arsenal';
 import { ARMES, IDS_ARMES, type IdArme } from '../donnees/armes';
 import { IDS_PASSIFS, PASSIFS, type IdPassif } from '../donnees/passifs';
+import { armeProposable } from '../donnees/personnages';
 import { PROGRESSION } from '../donnees/progression';
 import type { CheminTexture, MecaniqueArme, Modificateurs, StatsArme } from '../donnees/types';
 import type { EtatPartie } from '../etat';
@@ -47,6 +48,8 @@ const LIBELLES_STATS: Record<keyof StatsArme, { nom: string; unite: string }> = 
   duree: { nom: 'Durée', unite: ' s' },
   perforation: { nom: 'Perforation', unite: '' },
   recul: { nom: 'Recul', unite: '' },
+  ralenti: { nom: 'Ralentissement', unite: '' },
+  etourdi: { nom: 'Étourdissement', unite: ' s' },
 };
 
 /** Statistiques utiles à chaque mécanique (les autres ne sont pas affichées). */
@@ -58,6 +61,10 @@ const STATS_UTILES: Record<MecaniqueArme['type'], readonly (keyof StatsArme)[]> 
   explosif: ['degats', 'cadence', 'nombre', 'zone'],
   foudre: ['degats', 'cadence', 'nombre', 'zone'],
   invocation: ['degats', 'cadence', 'nombre', 'duree'],
+  fissure: ['degats', 'cadence', 'nombre', 'portee', 'ralenti'],
+  chute: ['degats', 'cadence', 'nombre', 'zone', 'ralenti'],
+  tourbillon: ['degats', 'cadence', 'zone', 'duree'],
+  heurt: ['degats', 'cadence', 'recul', 'etourdi'],
 };
 
 /** Modificateurs multiplicatifs (affichés en %) ; les autres sont des ajouts. */
@@ -138,6 +145,7 @@ export class Ameliorations {
     const occupes = this.passifs.possedes.filter((p) => !PASSIFS[p.id].consommable).length;
     const placePassif = occupes < PROGRESSION.emplacementsPassifs;
     for (const id of IDS_ARMES) {
+      if (!armeProposable(this.etat.personnage, id)) continue;
       const rang = this.arsenal.rang(id);
       if (rang === 0 ? placeArme : rang < rangMax(ARMES[id])) liste.push({ type: 'arme', id });
     }
@@ -248,6 +256,7 @@ export function decrireBonus(bonus: Partial<Modificateurs>): string[] {
 }
 
 function formaterStat(cle: keyof StatsArme, valeur: number): string {
+  if (cle === 'ralenti') return `${Math.round(valeur * 100)} %`;
   return `${FORMAT.format(valeur)}${LIBELLES_STATS[cle].unite}`;
 }
 

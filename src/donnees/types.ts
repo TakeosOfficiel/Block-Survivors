@@ -190,6 +190,13 @@ export interface DefinitionPersonnage extends ApparenceEntite {
   readonly pv: number;               // 20 = 10 cœurs
   readonly vitesse: number;          // blocs / seconde
   readonly armesDepart: readonly IdArme[];
+  /** Attaques de la classe : seules elles sont proposées en carte si l'arsenal est complet. */
+  readonly arsenal: readonly IdArme[];
+  /**
+   * Arsenal encore incomplet (refonte en cours) : la classe peut aussi tirer les
+   * armes qui n'appartiennent à aucun arsenal complet.
+   */
+  readonly arsenalComplet: boolean;
   /** Bonus permanents, ajoutés aux modificateurs dès le début. */
   readonly bonus: Partial<Modificateurs>;
   /** Bonus passifs exclusifs que seul ce personnage peut tirer. */
@@ -300,9 +307,11 @@ export interface StatsArme {
   readonly portee: number;       // blocs : recherche de cible, distance de vol
   readonly vitesse: number;      // blocs/s (orbite : rad/s)
   readonly zone: number;         // blocs : rayon de balayage, d'orbite, d'explosion, d'impact, d'allonge
-  readonly duree: number;        // s de vie (golems)
+  readonly duree: number;        // s de vie (golems), de rotation (tourbillon), de ralentissement
   readonly perforation: number;  // ennemis traversés avant de disparaître
-  readonly recul: number;        // blocs/s donnés aux ennemis touchés
+  readonly recul: number;        // blocs/s donnés aux ennemis touchés (négatif : les attire)
+  readonly ralenti: number;      // part de vitesse retirée aux ennemis touchés, pendant `duree` (0 : aucun)
+  readonly etourdi: number;      // s d'étourdissement des ennemis touchés (0 : aucun)
 }
 
 export type MecaniqueArme =
@@ -320,7 +329,15 @@ export type MecaniqueArme =
   /** Éclairs qui frappent des ennemis au hasard autour du joueur. */
   | { readonly type: 'foudre'; readonly couleur: number }
   /** Alliés qui combattent seuls pendant un temps limité. */
-  | { readonly type: 'invocation'; readonly allie: IdAllie };
+  | { readonly type: 'invocation'; readonly allie: IdAllie }
+  /** Fissures qui soulèvent les blocs du sol en ligne vers le plus gros groupe (`ecart` : rad entre fissures). */
+  | { readonly type: 'fissure'; readonly ecart: number; readonly vitesse: number }
+  /** Arme géante (`image`, `taille` blocs) qui tombe du ciel sur le plus gros groupe d'ennemis. */
+  | { readonly type: 'chute'; readonly image: CheminTexture; readonly taille: number }
+  /** Le joueur tourne sur lui-même et frappe tout autour toutes les `intervalle` s. */
+  | { readonly type: 'tourbillon'; readonly intervalle: number; readonly effet: readonly CheminTexture[] }
+  /** Coup de bouclier en cône : repousse et interrompt ; renvoie les projectiles dès le rang `renvoi`. */
+  | { readonly type: 'heurt'; readonly angle: number; readonly renvoi: number };
 
 export interface NiveauArme {
   /** Texte de la carte d'amélioration. */

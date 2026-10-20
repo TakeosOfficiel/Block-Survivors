@@ -31,4 +31,8 @@ export const PROFITE_PROJECTILES: Readonly<Record<MecaniqueArme['type'], boolean
   explosif: true,
   foudre: true,
   invocation: false,
+  fissure: false,
+  chute: false,
+  tourbillon: false,
+  heurt: false,
 };

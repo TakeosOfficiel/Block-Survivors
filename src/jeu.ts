@@ -54,6 +54,7 @@ import { Passifs } from './progression/passifs';
 import type { Recompense, Sauvegarde } from './progression/sauvegarde';
 import { formaterTemps } from './utils/format';
 import { remplirBilan } from './ui/bilan';
+import { CompteurDegats } from './ui/compteurDegats';
 import { PanneauDebug } from './ui/debug';
 import { EcranCartes } from './ui/ecranCartes';
 import { EcranFin } from './ui/ecranFin';
@@ -118,11 +119,15 @@ export class Jeu implements CallbacksBoucle, Retours {
   private readonly ecranFin: EcranFin;
 
   private readonly debug: PanneauDebug;
+  private readonly compteurDegats: CompteurDegats;
+  private readonly panneauOptions: PanneauOptions;
   private readonly sourcesEntites: readonly SourceEntites[];
   private niveauAffiche = 1;
   private viesTraitees = 0;
   /** s réelles écoulées depuis la fin de la partie (−1 tant qu'elle continue). */
   private minuterieFin = -1;
+  /** 15:00 passé mais un boss vit encore : la victoire attend sa mort. */
+  private prolongation = false;
 
   constructor(
     rendu: Rendu,
@@ -173,7 +178,7 @@ export class Jeu implements CallbacksBoucle, Retours {
       this.terrain,
       { cible: this.joueur, tireur: this.projectilesEnnemis },
       this.particules,
-      new Butin(this.orbes, this.objets),
+      new Butin(this.orbes, this.objets, this.terrain),
       this,
       scene,
       textures,
@@ -211,6 +216,7 @@ export class Jeu implements CallbacksBoucle, Retours {
       passifs: this.passifs,
       ennemis: this.ennemis,
       tempsAvantBoss: () => this.directeurBoss.tempsAvantProchain,
+      bossAVaincre: () => this.prolongation,
     });
     this.directeur = new DirecteurApparitions(this.etat, this.terrain, this.ennemis, this.camera);
     this.directeurBoss = new DirecteurBoss(this.etat, this.terrain, this.ennemis, this.camera, this.hud, this);
@@ -218,6 +224,14 @@ export class Jeu implements CallbacksBoucle, Retours {
     // Progression et écrans
     this.ameliorations = new Ameliorations(this.etat, this.arsenal, this.passifs);
     this.ecranCartes = new EcranCartes(textures);
+    this.compteurDegats = new CompteurDegats(this.etat, this.arsenal.armes, textures);
+    this.panneauOptions = services.panneauOptions;
+    // Tab : afficher ou masquer le compteur de dégâts (retenu dans les options)
+    window.addEventListener('keydown', (e) => {
+      if (e.code !== 'Tab') return;
+      e.preventDefault();
+      if (!e.repeat) this.panneauOptions.modifier((o) => { o.compteurDegats = !o.compteurDegats; });
+    });
     const bilan = (conteneur: HTMLElement) => remplirBilan(conteneur, this.etat, this.arsenal.armes, textures);
     this.ecranPause = new EcranPause({
       peutPauser: () => !this.ecranCartes.ouvert && this.etat.issue === null,
@@ -282,6 +296,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.hud.afficherFps = options.afficherFps;
     this.camera.secoussesActives = options.secousses;
     this.chiffres.actif = options.chiffresDegats;
+    this.compteurDegats.definir(options.compteurDegats);
     this.vegetation.definirShaders(options.shaders !== 'aucun');
     this.rendu.definirShaders(options.shaders);
   }
@@ -361,6 +376,7 @@ export class Jeu implements CallbacksBoucle, Retours {
 
     this.hud.majVisuel(dtBrut, dtReel);
     this.debug.majVisuel(dtReel);
+    this.compteurDegats.majVisuel(dtReel);
     this.celebrerNiveau();
     this.afficherFin(dtReel);
     this.proposerCartes();
@@ -379,7 +395,16 @@ export class Jeu implements CallbacksBoucle, Retours {
     if (etat.joueur.mort) {
       etat.issue = 'defaite';
     } else if (etat.tempsJeu >= PROGRESSION.dureePartie) {
-      etat.tempsJeu = PROGRESSION.dureePartie;
+      // Pas de victoire tant qu'un boss est en vie : il faut le vaincre
+      if (this.ennemis.bossActif()) {
+        if (!this.prolongation) {
+          this.prolongation = true;
+          this.hud.alerter('Vainquez le boss pour gagner !', 4);
+        }
+        return;
+      }
+      if (!this.prolongation) etat.tempsJeu = PROGRESSION.dureePartie;
+      this.prolongation = false;
       etat.issue = 'victoire';
       this.ennemis.terrasserTous();
       this.son('victoire');

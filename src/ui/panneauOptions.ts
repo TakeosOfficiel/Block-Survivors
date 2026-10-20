@@ -31,6 +31,7 @@ export class PanneauOptions {
   private readonly boutonSecousses = element<HTMLButtonElement>('option-secousses');
   private readonly boutonShaders = element<HTMLButtonElement>('option-shaders');
   private readonly boutonDegats = element<HTMLButtonElement>('option-degats');
+  private readonly boutonCompteur = element<HTMLButtonElement>('option-compteur');
   private readonly options: Options;
   private readonly appliquer: (options: Options) => void;
   private surFermeture: (() => void) | null = null;
@@ -76,6 +77,7 @@ export class PanneauOptions {
       this.options.chiffresDegats = !this.options.chiffresDegats;
       this.changer();
     });
+    this.boutonCompteur.addEventListener('click', () => this.modifier((o) => { o.compteurDegats = !o.compteurDegats; }));
     element<HTMLButtonElement>('options-fermer').addEventListener('click', () => this.fermer());
     // Enregistré avant les autres écrans : Échap ferme d'abord les options
     window.addEventListener('keydown', this.surTouche);
@@ -101,6 +103,12 @@ export class PanneauOptions {
     rappel?.();
   }
 
+  /** Change une option depuis le jeu (ex. touche Tab), enregistrée et appliquée comme un clic. */
+  modifier(changement: (options: Options) => void): void {
+    changement(this.options);
+    this.changer();
+  }
+
   private changer(): void {
     enregistrerOptions(this.options);
     this.appliquer(this.options);
@@ -121,6 +129,7 @@ export class PanneauOptions {
     this.boutonSecousses.textContent = `Secousses de l'écran : ${o.secousses ? 'OUI' : 'NON'}`;
     this.boutonShaders.textContent = `Ombres et vent : ${LIBELLES_SHADERS[o.shaders]}`;
     this.boutonDegats.textContent = `Chiffres des dégâts : ${o.chiffresDegats ? 'OUI' : 'NON'}`;
+    this.boutonCompteur.textContent = `Compteur de dégâts (Tab) : ${o.compteurDegats ? 'OUI' : 'NON'}`;
   }
 
   private readonly surTouche = (e: KeyboardEvent): void => {

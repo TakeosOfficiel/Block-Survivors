@@ -363,18 +363,12 @@ img { image-rendering: pixelated; }
 #fin-sous-titre .valeur { color: var(--mc-jaune); }
 
 /* --- Bilan (pause et fin) ------------------------------------------------- */
-.bilan { width: min(620px, 94vw); display: flex; flex-direction: column; gap: 10px; }
+.bilan { width: min(720px, 94vw); display: flex; flex-direction: column; gap: 10px; }
 .bilan-grille { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 24px; }
 .bilan-ligne { display: flex; justify-content: space-between; gap: 8px; }
 .bilan-ligne .valeur { color: #202020; text-align: right; }
 .bilan-tues { display: flex; flex-wrap: wrap; gap: 6px; }
 .bilan-tue { display: flex; align-items: center; gap: 4px; }
-.bilan-armes { display: flex; flex-direction: column; gap: 4px; }
-.bilan-arme { display: grid; grid-template-columns: 36px 1fr auto; gap: 8px; align-items: center; }
-.bilan-arme-textes { display: flex; flex-direction: column; min-width: 0; }
-.bilan-arme-nom { color: #202020; }
-.bilan-jauge { height: 6px; background: #8b8b8b; box-shadow: inset 2px 2px 0 #373737; }
-.bilan-jauge > div { height: 100%; background: var(--mc-vert-fonce); }
 .bilan-vide { color: #6a6a6a; }
 
 /* --- HUD (non cliquable) ------------------------------------------------- */
@@ -647,3 +641,41 @@ img { image-rendering: pixelated; }
 .nouveautes-titre.actuelle { color: #1f6f1f; }
 .nouveautes-section { color: #5a5a5a; margin-top: 4px; }
 .nouveautes-version ul { margin: 2px 0 0 18px; color: #303030; }
+
+/* PV exacts, à droite des cœurs */
+#hud-pv {
+  position: absolute; bottom: 78px; left: calc(50% + 160px);
+  color: var(--mc-blanc); white-space: nowrap;
+}
+
+/* --- Compteur de dégâts (en jeu, Tab) ----------------------------------- */
+#compteur-degats {
+  position: absolute; top: 64px; right: 10px; width: 420px;
+  padding: 6px; background: rgba(0, 0, 0, 0.45);
+  display: flex; flex-direction: column; gap: 3px;
+}
+.compteur-titre { color: var(--mc-jaune); pointer-events: auto; cursor: move; user-select: none; touch-action: none; }
+.compteur-aide { color: var(--mc-gris); }
+#compteur-degats-liste { display: flex; flex-direction: column; gap: 2px; }
+.compteur-ligne {
+  position: relative; display: grid; grid-template-columns: 24px 1fr 76px 48px 60px;
+  align-items: center; column-gap: 6px; height: 24px; padding-right: 4px;
+}
+.compteur-ligne > span { position: relative; }
+.compteur-ligne .nombre { text-align: right; }
+.compteur-entete { height: 18px; color: var(--mc-gris); }
+.compteur-barre { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(85, 255, 85, 0.22); }
+.compteur-ligne .case-mc { width: 24px; height: 24px; border-width: 1px; position: relative; }
+.compteur-ligne .case-mc img { width: 20px; height: 20px; }
+.compteur-nom { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.compteur-total { color: var(--mc-gris); border-top: 2px solid rgba(255, 255, 255, 0.2); padding-top: 2px; }
+
+/* Tableau des dégâts du bilan */
+.bilan-degats { display: grid; grid-template-columns: 28px 1fr repeat(7, auto); gap: 2px 10px; align-items: center; }
+.bilan-degats .entete { color: #5a5a5a; }
+.bilan-degats .nombre { text-align: right; color: #202020; }
+.bilan-degats .case-mc { width: 28px; height: 28px; }
+.bilan-degats .case-mc img { width: 24px; height: 24px; }
+.bilan-degats .nom { color: #202020; min-width: 0; }
+.bilan-degats .jauge { grid-column: 2 / -1; height: 4px; background: #8b8b8b; margin-bottom: 4px; }
+.bilan-degats .jauge > div { height: 100%; background: var(--mc-vert-fonce); }

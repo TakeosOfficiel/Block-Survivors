@@ -76,7 +76,7 @@
       <button id="menu-jouer" class="bouton-mc bouton-jouer"><span id="menu-jouer-titre">Jouer</span><span id="menu-jouer-sous-titre"></span></button>
       <button id="menu-quitter" class="bouton-mc cache">Quitter le jeu</button>
     </div>
-    <div class="menu-aide">ZQSD / WASD / Flèches : se déplacer · 1 2 3 : choisir une carte · R : relancer · Échap : pause · Entrée : jouer</div>
+    <div class="menu-aide">ZQSD / WASD / Flèches : se déplacer · 1 2 3 : carte · R : relancer · Tab : dégâts · Échap : pause · Entrée : jouer</div>
     <div class="pied pied-gauche">Block Survivors <span id="menu-version"></span> · <span id="menu-rendu"></span> · textures Minecraft 1.21.4</div>
     <a id="menu-mise-a-jour" class="mise-a-jour cache" target="_blank" rel="noopener">Nouvelle version disponible ! Cliquez pour la télécharger</a>
     <div class="pied pied-droite">Projet de fan, non affilié à Mojang</div>
@@ -139,6 +139,7 @@
       <button id="option-secousses" class="bouton-mc large">Secousses</button>
       <button id="option-shaders" class="bouton-mc large">Ombres et vent</button>
       <button id="option-degats" class="bouton-mc large">Chiffres des dégâts</button>
+      <button id="option-compteur" class="bouton-mc large">Compteur de dégâts</button>
       <button id="options-fermer" class="bouton-mc large espace-avant">Terminé</button>
     </div>
   </div>
@@ -158,9 +159,15 @@
       <div id="hud-tues"><img id="hud-tues-icone" alt="" /><span id="hud-tues-nombre">0</span></div>
       <div id="hud-fps" class="cache">FPS : --</div>
     </div>
+    <div id="compteur-degats" class="cache">
+      <div id="compteur-degats-titre" class="compteur-titre" title="Glisser pour déplacer">Dégâts <span class="compteur-aide">(Tab · glisser pour déplacer)</span></div>
+      <div id="compteur-degats-liste"></div>
+      <div id="compteur-degats-total" class="compteur-total"></div>
+    </div>
     <div id="hud-message"></div>
     <div id="hud-alerte" class="cache"></div>
     <div id="hud-coeurs"></div>
+    <div id="hud-pv"></div>
     <div id="hud-totems" class="cache"><img id="hud-totems-icone" alt="" /><span id="hud-totems-nombre"></span></div>
     <img id="hud-totem-anim" class="cache" alt="" />
     <div id="hud-xp"><div id="hud-xp-remplissage"></div><span id="hud-niveau">1</span></div>

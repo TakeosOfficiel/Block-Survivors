@@ -222,7 +222,12 @@ export class Ennemis implements SourceEntites {
       this.particules.emettre(e.x, 1, e.z, GERBES.critique);
     }
     if (arme >= 0) this.retours.degats(e.x, this.hauteurs[e.indexType], e.z, degats, critique);
-    if (arme >= 0) stats.degatsParArme[arme] += Math.min(degats, e.pv);
+    if (arme >= 0) {
+      stats.degatsParArme[arme] += Math.min(degats, e.pv);
+      stats.coupsParArme[arme]++;
+      if (critique) stats.critiquesParArme[arme]++;
+      if (degats > stats.plusGrosCoupParArme[arme]) stats.plusGrosCoupParArme[arme] = degats;
+    }
     e.pv -= degats;
     e.blessure = CONFIG.surcouche.blessure.duree;
     const dx = e.x - sourceX;
@@ -237,6 +242,7 @@ export class Ennemis implements SourceEntites {
       e.meche = 0;
       this.etat.ennemisTues++;
       stats.tuesParType[e.indexType]++;
+      if (arme >= 0) stats.tuesParArme[arme]++;
       if (def.boss) {
         stats.bossVaincus++;
         this.retours.secousse(0.7);

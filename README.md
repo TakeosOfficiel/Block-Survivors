@@ -186,7 +186,7 @@ placées ou dispersées, ambiance, et population d'ennemis par zone.
 ## Contrôles
 
 ZQSD / WASD / flèches : se déplacer · molette : zoom · `1` `2` `3` ou clic :
-choisir une carte · `R` : relancer les cartes (3 fois par partie) · `Échap` : pause · `Entrée` : jouer (menu) ou rejouer (fin).
+choisir une carte · `R` : relancer les cartes (3 fois par partie) · `Tab` : compteur de dégâts (déplaçable par son titre) · `Échap` : pause · `Entrée` : jouer (menu) ou rejouer (fin).
 
 La pause propose Reprendre, Options (volume général et volumes séparés
 joueur / armes / créatures / interface, compteur de FPS, secousses de l'écran,

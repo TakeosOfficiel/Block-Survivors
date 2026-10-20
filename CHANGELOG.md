@@ -5,6 +5,19 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.7.0] — 2026-10-20
+
+### Nouveautés
+- Compteur de dégâts en jeu (touche Tab), déplaçable à la souris : dégâts, part et dégâts par seconde de chaque arme, en colonnes.
+- Bilan détaillé par arme : dégâts, part, dégâts par seconde, coups, critiques, plus gros coup, ennemis achevés.
+- Les cœurs se remplissent pixel par pixel et les PV exacts s'affichent à côté : la régénération se voit.
+
+### Changements
+- Pour gagner, il faut avoir vaincu tous les boss : après 15:00, la partie continue tant qu'un boss est en vie.
+
+### Corrections
+- L'XP et les objets ne tombent plus dans la lave, l'eau ou les murs : ils vont sur la case accessible la plus proche.
+
 ## [0.6.0] — 2026-10-20
 
 ### Nouveautés

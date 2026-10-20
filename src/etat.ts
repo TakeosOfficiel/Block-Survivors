@@ -32,8 +32,14 @@ export interface EtatJoueur {
 export interface StatistiquesPartie {
   /** Ennemis tués, par index dans IDS_ENNEMIS. */
   readonly tuesParType: Int32Array;
-  /** Dégâts infligés, par index dans IDS_ARMES. */
+  /** Par index dans IDS_ARMES : dégâts infligés, coups portés, coups critiques, plus gros coup, ennemis achevés. */
   readonly degatsParArme: Float64Array;
+  readonly coupsParArme: Int32Array;
+  readonly critiquesParArme: Int32Array;
+  readonly plusGrosCoupParArme: Float64Array;
+  readonly tuesParArme: Int32Array;
+  /** Temps de jeu où chaque arme a été obtenue (−1 = jamais), pour ses dégâts par seconde. */
+  readonly acquisitionArme: Float64Array;
   degatsSubis: number;
   pvSoignes: number;
   xpTotale: number;
@@ -74,6 +80,11 @@ export function creerEtatPartie(arene: DefinitionArene, idPersonnage: IdPersonna
     stats: {
       tuesParType: new Int32Array(IDS_ENNEMIS.length),
       degatsParArme: new Float64Array(IDS_ARMES.length),
+      coupsParArme: new Int32Array(IDS_ARMES.length),
+      critiquesParArme: new Int32Array(IDS_ARMES.length),
+      plusGrosCoupParArme: new Float64Array(IDS_ARMES.length),
+      tuesParArme: new Int32Array(IDS_ARMES.length),
+      acquisitionArme: new Float64Array(IDS_ARMES.length).fill(-1),
       degatsSubis: 0,
       pvSoignes: 0,
       xpTotale: 0,

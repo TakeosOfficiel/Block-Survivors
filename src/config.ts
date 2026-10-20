@@ -190,7 +190,6 @@ export const CONFIG = {
     },
     coeurs: {
       plein: 'gui/sprites/hud/heart/full',
-      moitie: 'gui/sprites/hud/heart/half',
       conteneur: 'gui/sprites/hud/heart/container',
     },
   },

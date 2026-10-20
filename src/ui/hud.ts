@@ -27,6 +27,8 @@ export interface SourcesHud {
   readonly ennemis: Ennemis;
   /** Secondes avant le prochain boss (−1 = plus aucun avant la fin). */
   tempsAvantBoss(): number;
+  /** Vrai après 15:00 tant qu'un boss reste à vaincre (la victoire attend). */
+  bossAVaincre(): boolean;
 }
 
 export class Hud implements AfficheurAlerte {
@@ -138,12 +140,16 @@ export class Hud implements AfficheurAlerte {
   /** « Prochain boss dans 02:13 » sous le chrono ; rouge dans les 10 dernières secondes. */
   private afficherProchainBoss(): void {
     const dans = this.sources.tempsAvantBoss();
-    const seconde = dans < 0 ? -1 : Math.ceil(dans);
+    const aVaincre = this.sources.bossAVaincre();
+    // −2 : temps écoulé, boss encore vivant
+    const seconde = aVaincre ? -2 : dans < 0 ? -1 : Math.ceil(dans);
     if (seconde === this.secondeBossAffichee) return;  // le DOM ne change qu'une fois par seconde
     this.secondeBossAffichee = seconde;
-    this.elementProchainBoss.textContent = dans < 0 ? '' : `Prochain boss dans ${formaterTemps(seconde)}`;
-    this.elementProchainBoss.classList.toggle('cache', dans < 0);
-    this.elementProchainBoss.classList.toggle('proche', dans >= 0 && dans <= 10);
+    this.elementProchainBoss.textContent = aVaincre
+      ? 'Vainquez le boss pour gagner !'
+      : dans < 0 ? '' : `Prochain boss dans ${formaterTemps(seconde)}`;
+    this.elementProchainBoss.classList.toggle('cache', dans < 0 && !aVaincre);
+    this.elementProchainBoss.classList.toggle('proche', aVaincre || (dans >= 0 && dans <= 10));
   }
 
   /** Totems restants, et animation du totem qui jaillit à chaque résurrection. */

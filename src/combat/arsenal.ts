@@ -48,7 +48,9 @@ export class Arsenal {
     const modificateurs = this.contexte.etat.modificateurs;
     const existante = this.armes.find((a) => a.id === id);
     if (!existante) {
-      this.armes.push(creerArmeEquipee(id, modificateurs));
+      const arme = creerArmeEquipee(id, modificateurs);
+      this.armes.push(arme);
+      this.contexte.etat.stats.acquisitionArme[arme.index] = this.contexte.etat.tempsJeu;
     } else {
       if (existante.rang >= rangMax(ARMES[id])) return false;
       existante.rang++;

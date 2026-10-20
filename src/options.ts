@@ -16,6 +16,8 @@ export interface Options {
   shaders: NiveauShaders;
   /** Chiffres des dégâts au-dessus des ennemis. */
   chiffresDegats: boolean;
+  /** Panneau des dégâts par arme en jeu (touche Tab). */
+  compteurDegats: boolean;
 }
 
 export type NiveauShaders = 'aucun' | 'legers' | 'complets';
@@ -32,6 +34,7 @@ const PAR_DEFAUT: Readonly<Options> = {
   secousses: true,
   shaders: 'legers',
   chiffresDegats: true,
+  compteurDegats: true,
 };
 
 /**
@@ -53,6 +56,7 @@ export function chargerOptions(): Options {
     if (typeof lu.secousses === 'boolean') options.secousses = lu.secousses;
     if (lu.version === VERSION && NIVEAUX_SHADERS.includes(lu.shaders as NiveauShaders)) options.shaders = lu.shaders as NiveauShaders;
     if (typeof lu.chiffresDegats === 'boolean') options.chiffresDegats = lu.chiffresDegats;
+    if (typeof lu.compteurDegats === 'boolean') options.compteurDegats = lu.compteurDegats;
   }
   return options;
 }

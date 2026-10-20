@@ -63,3 +63,19 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "Block Survivors — dernière version ($VERSION)" \
             --notes-file notes.md
+      # Fichier de version public (dépôt TakeosOfficiel/Block-Survivors-version, qui ne
+      # contient que ce fichier) : le jeu y lit le numéro de la dernière version pour
+      # prévenir les joueurs. Sans le secret VERSION_TOKEN, l'étape ne fait rien.
+      - name: Publier le numéro de version
+        shell: bash
+        env:
+          VERSION_TOKEN: ${{ secrets.VERSION_TOKEN }}
+        run: |
+          if [ -z "$VERSION_TOKEN" ]; then echo "Secret VERSION_TOKEN absent : fichier de version non publié."; exit 0; fi
+          VERSION=$(node -p "require('./package.json').version")
+          API=https://api.github.com/repos/TakeosOfficiel/Block-Survivors-version/contents/version.json
+          printf '{\n  "version": "%s",\n  "telechargement": "https://github.com/TakeosOfficiel/Block-Survivors/releases/latest"\n}\n' "$VERSION" > version.json
+          SHA=$(curl -s -H "Authorization: Bearer $VERSION_TOKEN" "$API" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{try{console.log(JSON.parse(d).sha||'')}catch{console.log('')}})")
+          node -e "const fs=require('fs');const corps={message:'Version '+process.argv[1],content:fs.readFileSync('version.json').toString('base64')};if(process.argv[2])corps.sha=process.argv[2];fs.writeFileSync('corps.json',JSON.stringify(corps))" "$VERSION" "$SHA"
+          curl -sf -X PUT -H "Authorization: Bearer $VERSION_TOKEN" -H "Accept: application/vnd.github+json" "$API" --data @corps.json > /dev/null
+          echo "version.json → $VERSION"

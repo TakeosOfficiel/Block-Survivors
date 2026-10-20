@@ -20,7 +20,7 @@ import { decrireBonus } from '../progression/ameliorations';
 import type { Sauvegarde } from '../progression/sauvegarde';
 import { apparenceJoueur, enregistrerProfil, LONGUEUR_PSEUDO, nettoyerPseudo, pseudoAleatoire } from '../profil';
 import { formaterTemps } from '../utils/format';
-import { libelleVersion, miseAJourDisponible, URL_TELECHARGEMENT } from '../version';
+import { libelleVersion, miseAJourDisponible } from '../version';
 import type { ApercuHeros } from './apercuHeros';
 import { caseImage } from './bilan';
 import { element } from './dom';
@@ -72,10 +72,11 @@ export class EcranMenu {
 
     element('menu-accroche').textContent = ACCROCHES[Math.floor(Math.random() * ACCROCHES.length)];
     element('menu-version').textContent = libelleVersion();
-    void miseAJourDisponible().then((disponible) => {
-      if (!disponible) return;
+    void miseAJourDisponible().then((publiee) => {
+      if (!publiee) return;
       const lien = element<HTMLAnchorElement>('menu-mise-a-jour');
-      lien.href = URL_TELECHARGEMENT;
+      lien.href = publiee.telechargement;
+      lien.textContent = `Version ${publiee.version} disponible ! Cliquez pour la télécharger`;
       lien.classList.remove('cache');
     });
 
@@ -103,7 +104,7 @@ export class EcranMenu {
   attendreChoix(): Promise<ChoixPartie> {
     this.racine.classList.remove('cache');
     this.rafraichir();
-    this.nouveautes.ouvrirSiNouvelleVersion();
+    this.nouveautes.signalerNouvelleVersion();
     return new Promise((resoudre) => {
       this.surJouer = resoudre;
     });

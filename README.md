@@ -41,8 +41,10 @@ charge tel quel dans Electron (`win.loadFile('dist/index.html')`).
 Chaque version a son numéro (`0.x.0` nouveautés, `0.x.y` corrections), son
 tag git `vX.Y.Z` et sa release GitHub avec l'exe ; le lien « derniere-version »
 pointe toujours sur la plus récente. Le détail est dans `CHANGELOG.md`, affiché
-dans le jeu (bouton « Nouveautés » de l'accueil, ouvert tout seul après une
-mise à jour).
+dans le jeu (bouton « Nouveautés » de l'accueil, avec une pastille « Nouveau ! »
+après une mise à jour). L'accueil prévient quand une version plus récente existe,
+d'après `version.json` du dépôt public `Block-Survivors-version` (mis à jour par
+le workflow si le secret `VERSION_TOKEN` est configuré).
 
 ## Structure
 

@@ -1,7 +1,7 @@
 /**
  * Nouveautés (depuis le menu) : le journal des versions, lu dans CHANGELOG.md
- * au moment de la construction. S'ouvre tout seul la première fois qu'une
- * nouvelle version est lancée.
+ * au moment de la construction. Tant qu'il n'a pas été lu pour la version
+ * installée, le bouton du menu porte une pastille « Nouveau ! ».
  */
 import journal from '../../CHANGELOG.md?raw';
 import { ecrireStockage, lireStockage } from '../options';
@@ -54,15 +54,15 @@ export class EcranNouveautes {
   }
 
   ouvrir(): void {
+    ecrireStockage(CLE, VERSION);
+    element('menu-nouveautes').classList.remove('nouveau');
     this.racine.classList.remove('cache');
     element('nouveautes-liste').scrollTop = 0;
   }
 
-  /** Ouvre l'écran si cette version n'a encore jamais été lancée ici. */
-  ouvrirSiNouvelleVersion(): void {
-    if (lireStockage<string>(CLE) === VERSION) return;
-    ecrireStockage(CLE, VERSION);
-    this.ouvrir();
+  /** Pastille « Nouveau ! » sur le bouton si les nouveautés de cette version n'ont pas été lues. */
+  signalerNouvelleVersion(): void {
+    element('menu-nouveautes').classList.toggle('nouveau', lireStockage<string>(CLE) !== VERSION);
   }
 
   private fermer(): void {

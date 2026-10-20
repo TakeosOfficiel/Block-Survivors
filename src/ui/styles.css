@@ -690,3 +690,9 @@ img { image-rendering: pixelated; }
 .profil-trait-valeur > span { text-align: center; color: #202020; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .bouton-mc.profil-fleche { width: 36px; min-width: 0; height: 28px; padding: 0; border-width: 4px; }
 .profil-trait-couleur { display: inline-block; width: 14px; height: 14px; border: 2px solid #373737; }
+/* Pastille sur « Nouveautés » tant que celles de la version n'ont pas été lues */
+#menu-nouveautes.nouveau::after {
+  content: "Nouveau !"; position: absolute; top: -10px; right: -14px;
+  padding: 0 4px; font-size: 16px; color: var(--mc-jaune);
+  background: #2a1a3a; border: 2px solid var(--mc-jaune); transform: rotate(8deg);
+}

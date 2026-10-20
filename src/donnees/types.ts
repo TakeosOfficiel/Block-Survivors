@@ -336,7 +336,7 @@ export type MecaniqueArme =
   /** Éclairs qui frappent des ennemis au hasard autour du joueur. */
   | { readonly type: 'foudre'; readonly couleur: number }
   /** Alliés qui combattent seuls pendant un temps limité. */
-  | { readonly type: 'invocation'; readonly allie: IdAllie }
+  | { readonly type: 'invocation'; readonly allie: IdAllie; readonly brulureAuRang?: number }
   /** Fissures qui soulèvent les blocs du sol en ligne vers le plus gros groupe (`ecart` : rad entre fissures). */
   | { readonly type: 'fissure'; readonly ecart: number; readonly vitesse: number }
   /** Arme géante (`image`, `taille` blocs) qui tombe du ciel sur le plus gros groupe d'ennemis. */
@@ -393,6 +393,10 @@ export interface DefinitionArme {
   readonly niveaux: readonly NiveauArme[];
   /** Son joué à chaque déclenchement. */
   readonly son?: IdSon;
+  /** Noms des statistiques sur les cartes, s'ils diffèrent (« Bouclier » au lieu de « Dégâts »). */
+  readonly libelles?: Partial<Record<keyof StatsArme, string>>;
+  /** Statistiques montrées sur les cartes, si elles diffèrent de celles de sa mécanique. */
+  readonly statsAffichees?: readonly (keyof StatsArme)[];
 }
 
 // --------------------------------------------------------------------------
@@ -420,6 +424,19 @@ export interface DefinitionAllie extends ApparenceEntite {
   readonly provocation: number;
   /** Vole à cette hauteur (blocs) en traversant le décor (vex). */
   readonly vol?: number;
+  /** Combat à distance : salves de `salve` projectiles écartés de `ecart` rad, à `distance` blocs de la cible. */
+  readonly tir?: { readonly projectile: IdProjectile; readonly salve: number; readonly ecart: number; readonly distance: number };
+  /** Soutien : ne combat pas, suit le joueur, lui donne du bouclier puis soigne les alliés blessés. */
+  readonly soutien?: boolean;
+  /**
+   * Immobile, posé sur le plus gros groupe ; toutes les `intervalle` s, ralentit et blesse autour de lui,
+   * et enracine `enracinement` s les ennemis qui entrent (une fois toutes les `delai` s).
+   */
+  readonly aura?: { readonly intervalle: number; readonly enracinement: number; readonly delai: number };
+  /** Dessiné en blocs empilés (`empilement`, de bas en haut) entourés de `racines`, au lieu de son modèle. */
+  readonly blocs?: { readonly empilement: readonly CheminTexture[]; readonly racines: CheminTexture };
+  /** Au quota, le plus ancien est replanté sur le nouveau groupe au lieu d'être renouvelé sur place. */
+  readonly remplacement?: boolean;
 }
 
 // --------------------------------------------------------------------------

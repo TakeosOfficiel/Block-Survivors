@@ -5,6 +5,17 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.14.0] — 2026-10-20
+
+Refonte des classes, étape 6 : l'arsenal de l'Invocateur. Les quatre classes ont maintenant chacune leur propre arsenal. Valeurs provisoires, à ajuster après les essais.
+
+### Nouveautés
+- L'Invocateur a son propre arsenal de 6 invocations, et ses cartes ne proposent plus que celles-ci : Meute de loups, Golem de fer, Vex, et trois nouvelles.
+- Esprit de blaze : des blazes alliés flottent à distance des ennemis et tirent des salves de 3 boules de feu ; au dernier rang, leurs tirs enflamment.
+- Totem des racines : un totem en bois de palétuvier, entouré de racines, se plante dans le plus gros groupe. Il attire les mobs, ralentit et enracine ceux qui y entrent (les racines blessent à partir du rang 4) ; quand les deux totems sont posés, le plus ancien est replanté sur le nouveau groupe.
+- Esprit protecteur : l'allay du jeu suit l'Invocateur et lui donne régulièrement du bouclier ; quand le bouclier est plein, il soigne l'allié le plus blessé.
+- Bouclier : des PV d'absorption, affichés en cœurs dorés après les cœurs (comme l'effet Absorption du jeu), perdus avant les PV. La réserve est limitée à 25 % des PV max.
+
 ## [0.13.0] — 2026-10-20
 
 Refonte des classes, étape 5 : l'arsenal de l'Archère. Valeurs provisoires, à ajuster après les essais.

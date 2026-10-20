@@ -9,6 +9,7 @@ import { IDS_PROJECTILES, PROJECTILES, type IdProjectile } from '../donnees/proj
 import type { IdSon } from '../donnees/sons';
 import type { DefinitionGerbe, DefinitionProjectile } from '../donnees/types';
 import { RenduProjectiles } from '../effets/renduProjectiles';
+import type { NatureCoup } from '../entites/ennemis';
 import type { SourceEntites } from '../entites/types';
 import { Pool } from '../utils/pool';
 import type { ArmeEquipee } from './armeEquipee';
@@ -40,6 +41,8 @@ interface ProjectileJoueur {
   gerbe: DefinitionGerbe;   // particules et son de l'explosion
   sonExplosion: IdSon;
   eclats: number;           // petites explosions lancées autour à l'explosion
+  brulure: number;          // dégâts par seconde de la brûlure infligée (0 : aucune)
+  nature: NatureCoup;       // tiré par le joueur ou par un allié (marque)
   touches: Int32Array;      // id des ennemis déjà touchés (pendant cette phase)
   nbTouches: number;
   trainee: number;          // s avant la prochaine particule de traînée
@@ -51,7 +54,7 @@ export class ProjectilesJoueur implements SourceEntites {
   private readonly pool = new Pool<ProjectileJoueur>(CONFIG.projectiles.capacite, () => ({
     indexRendu: 0, indexArme: 0, definition: PROJECTILES[IDS_PROJECTILES[0]], retour: false, revient: false,
     x: 0, z: 0, dirX: 0, dirZ: 1, vitesse: 0, parcouru: 0, portee: 0, degats: 0, recul: 0,
-    restants: 1, zone: 0, gerbe: GERBES.explosionArme, sonExplosion: 'explosion', eclats: 0,
+    restants: 1, zone: 0, gerbe: GERBES.explosionArme, sonExplosion: 'explosion', eclats: 0, brulure: 0, nature: 'arme',
     touches: new Int32Array(MAX_TOUCHES), nbTouches: 0, trainee: 0,
   }));
 
@@ -63,18 +66,24 @@ export class ProjectilesJoueur implements SourceEntites {
     return this.pool.nombre;
   }
 
-  /** Lance un projectile depuis le joueur dans la direction (dirX, dirZ) unitaire. */
-  lancer(arme: ArmeEquipee, type: IdProjectile, mode: ModeProjectile, dirX: number, dirZ: number, explose = false): void {
+  /**
+   * Lance un projectile dans la direction (dirX, dirZ) unitaire, depuis le
+   * joueur ou depuis (origineX, origineZ) pour un allié qui tire. `brulure` :
+   * dégâts par seconde d'une brûlure infligée à chaque ennemi touché.
+   */
+  lancer(
+    arme: ArmeEquipee, type: IdProjectile, mode: ModeProjectile, dirX: number, dirZ: number, explose = false,
+    origineX = this.contexte.etat.joueur.x, origineZ = this.contexte.etat.joueur.z, brulure = 0, nature: NatureCoup = 'arme',
+  ): void {
     const p = this.pool.acquerir();
     if (!p) return;
-    const j = this.contexte.etat.joueur;
     const s = arme.stats;
     p.indexRendu = RenduProjectiles.indexDe(type);
     p.definition = PROJECTILES[type];
     p.retour = mode === 'retour';
     p.revient = false;
-    p.x = j.x;
-    p.z = j.z;
+    p.x = origineX;
+    p.z = origineZ;
     p.dirX = dirX;
     p.dirZ = dirZ;
     p.vitesse = s.vitesse;
@@ -91,6 +100,8 @@ export class ProjectilesJoueur implements SourceEntites {
     p.eclats = m.type === 'explosif' && m.eclatsAuRang !== undefined && arme.rang >= m.eclatsAuRang ? CONFIG.projectiles.eclats.nombre : 0;
     p.nbTouches = 0;
     p.trainee = 0;
+    p.brulure = brulure;
+    p.nature = nature;
   }
 
   maj(dt: number): void {
@@ -137,7 +148,8 @@ export class ProjectilesJoueur implements SourceEntites {
           detruit = true;
           break;
         }
-        ennemis.blesser(e, p.degats, p.x - p.dirX, p.z - p.dirZ, p.recul, p.indexArme);
+        ennemis.blesser(e, p.degats, p.x - p.dirX, p.z - p.dirZ, p.recul, p.indexArme, p.nature);
+        if (p.brulure > 0) ennemis.bruler(e, 1, p.brulure, CONFIG.armes.brulureTirs, p.indexArme);
         if (p.nbTouches < MAX_TOUCHES) p.touches[p.nbTouches++] = e.id;
         if (--p.restants <= 0) detruit = true;
       }

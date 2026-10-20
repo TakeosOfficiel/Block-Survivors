@@ -35,6 +35,11 @@ const definitions = {
   artifice: { categorie: 'armes', chemin: 'fireworks/blast1', hachage: '71d9ad77da5febc1b2b7bd5916ca730c2b9ab6a8', volume: 0.45, hauteur: [0.9, 1.2], intervalleMin: 0.08, simultanes: 3 },
   impact_fleche: { categorie: 'armes', chemin: 'random/bowhit1', hachage: '8648a8dcbe82c047b60d74783f7b1c9eb5826290', volume: 0.2, hauteur: [0.9, 1.3], intervalleMin: 0.06, simultanes: 3 },
   ronces: { categorie: 'armes', chemin: 'block/sweet_berry_bush/place1', hachage: '5d7690eecfec6ee9ebd6e2731374747ae6b57c2f', volume: 0.5, hauteur: [0.9, 1.1], intervalleMin: 0.2, simultanes: 1 },
+  bois: { categorie: 'armes', chemin: 'dig/wood1', hachage: 'ef59a7ee4163d8b06fcda67e356ffe717756adda', volume: 0.35, hauteur: [0.8, 1], intervalleMin: 0.15, simultanes: 2 },
+  racines: { categorie: 'armes', chemin: 'block/mangrove_roots/break1', hachage: '96314f3d851ca570a0f167121963d7c53f61c60f', volume: 0.6, hauteur: [0.8, 1], intervalleMin: 0.3, simultanes: 1 },
+  allay: { categorie: 'armes', chemin: 'mob/allay/idle_with_item1', hachage: '12b5fed32bcf0492dbe0ab8fea19262a25c49526', volume: 0.4, hauteur: [0.9, 1.2], intervalleMin: 0.5, simultanes: 1 },
+  allay_blesse: { categorie: 'armes', chemin: 'mob/allay/hurt1', hachage: 'a58f05597ae455373587e39f5d04eb7035d37cad', volume: 0.3, hauteur: [0.9, 1.2], intervalleMin: 0.2, simultanes: 1 },
+  allay_mort: { categorie: 'armes', chemin: 'mob/allay/death1', hachage: '5661b57b68464a0cd49e34349b2fffc4ae158182', volume: 0.4, hauteur: [1, 1], intervalleMin: 0.3, simultanes: 1 },
   explosion: { categorie: 'armes', chemin: 'random/explode1', hachage: 'fa85b9e7e54c36c9f9d0249ca739444b5e3bb66c', volume: 0.45, hauteur: [0.8, 1.1], intervalleMin: 0.08, simultanes: 3 },
 
   loup_aboiement: { categorie: 'armes', chemin: 'mob/wolf/bark1', hachage: '527618d2fbb9712950357c4d5e95cfb86ffee417', volume: 0.35, hauteur: [0.9, 1.2], intervalleMin: 0.3, simultanes: 2 },

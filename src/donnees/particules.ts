@@ -172,6 +172,8 @@ const gerbes = {
   spectrale: [{ particule: 'spectrale', nombre: 1, vitesse: 0.1, dispersion: 0.05, montee: 0 }],
   impactFleche: [{ particule: 'critique', nombre: 3, vitesse: 2, dispersion: 0.2, montee: 2 }],
   ronces: [{ particule: 'morceau', nombre: 6, vitesse: 2, dispersion: 0.5, montee: 3 }],
+  // Bouclier donné par l'allay : paillettes dorées du totem
+  bouclier: [{ particule: 'totem', nombre: 14, vitesse: 1.5, dispersion: 0.4, montee: 1.5 }],
   // États des ennemis (émis régulièrement tant qu'ils durent)
   brulure: [{ particule: 'flamme', nombre: 3, vitesse: 0.4, dispersion: 0.4, montee: 1 }],
   poison: [{ particule: 'effetPoison', nombre: 1, vitesse: 0.3, dispersion: 0.35, montee: 0.5 }],

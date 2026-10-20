@@ -13,6 +13,8 @@ export const PLAFONDS = {
   critique: 0.6,
   /** Régénération : part des PV max rendue par seconde, toutes sources confondues. */
   regeneration: 0.02,
+  /** Réserve de bouclier du joueur : part de ses PV max. */
+  bouclier: 0.25,
   /** Part d'un coup reçu que l'armure peut retirer. */
   armure: 0.5,
   /** Dégâts en plus d'une invocation par allié au-delà de son quota. */

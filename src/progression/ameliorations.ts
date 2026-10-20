@@ -186,7 +186,7 @@ export class Ameliorations {
     const rang = this.arsenal.rang(id);
     const mods = this.etat.modificateurs;
     const apres = calculerStats(def, rang + 1, mods, { ...def.stats });
-    const utiles = STATS_UTILES[def.mecanique.type];
+    const utiles = def.statsAffichees ?? STATS_UTILES[def.mecanique.type];
     const amelioration: Amelioration = { type: 'arme', id };
 
     if (rang === 0) {
@@ -197,13 +197,13 @@ export class Ameliorations {
         icone: def.icone,
         etiquette: 'Nouvelle arme',
         description: def.description,
-        lignes: utiles.map((cle) => `${LIBELLES_STATS[cle].nom} : ${formaterStat(cle, apres[cle])}`),
+        lignes: utiles.map((cle) => `${def.libelles?.[cle] ?? LIBELLES_STATS[cle].nom} : ${formaterStat(cle, apres[cle])}`),
       };
     }
     const avant = calculerStats(def, rang, mods, { ...def.stats });
     const lignes = (Object.keys(LIBELLES_STATS) as (keyof StatsArme)[])
       .filter((cle) => Math.abs(apres[cle] - avant[cle]) > 1e-6)
-      .map((cle) => `${LIBELLES_STATS[cle].nom} : ${formaterStat(cle, avant[cle])} → ${formaterStat(cle, apres[cle])}`);
+      .map((cle) => `${def.libelles?.[cle] ?? LIBELLES_STATS[cle].nom} : ${formaterStat(cle, avant[cle])} → ${formaterStat(cle, apres[cle])}`);
     if (def.mecanique.type === 'retour' && rang + 1 === def.mecanique.loyaute) lignes.push('Revient : non → oui');
     return {
       amelioration,

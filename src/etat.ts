@@ -20,6 +20,7 @@ export interface EtatJoueur {
   pvMax: number;
   invulnerabilite: number;  // s restantes sans pouvoir être blessé (après un coup)
   protection: number;     // s d'invincibilité après une résurrection (totem)
+  bouclier: number;       // PV d'absorption (cœurs dorés), pris avant les PV
   viesUtilisees: number;  // totems déjà consommés
   mort: boolean;
   tempsMort: number;      // s écoulées depuis la mort
@@ -97,6 +98,7 @@ export function creerEtatPartie(arene: DefinitionArene, idPersonnage: IdPersonna
       pvMax: personnage.pv,
       invulnerabilite: 0,
       protection: 0,
+      bouclier: 0,
       viesUtilisees: 0,
       mort: false,
       tempsMort: 0,

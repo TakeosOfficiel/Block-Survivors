@@ -31,7 +31,7 @@ export function texturesInterface(): Set<CheminTexture> {
   }
   for (const id of IDS_ARMES) chemins.add(ARMES[id].icone);
   for (const arene of ARENES) chemins.add(arene.icone);
-  chemins.add(CONFIG.hud.coeurs.plein);
+  chemins.add(CONFIG.hud.coeurs.plein).add(CONFIG.hud.coeurs.dore);
   chemins.add(RECOMPENSES.icone);
   for (const nom of SKINS_VANILLA) chemins.add(cheminSkinVanilla(nom, false)).add(cheminSkinVanilla(nom, true));
   for (const id of IDS_PERSONNAGES) {
@@ -67,7 +67,14 @@ export function texturesRequises(
   }
   for (const id of IDS_OBJETS) chemins.add(OBJETS[id].icone);
   for (const id of IDS_PROJECTILES) chemins.add(PROJECTILES[id].texture);
-  for (const id of IDS_ALLIES) chemins.add(ALLIES[id].skin);
+  for (const id of IDS_ALLIES) {
+    const allie = ALLIES[id];
+    chemins.add(allie.skin);
+    if (allie.blocs) {
+      for (const texture of allie.blocs.empilement) chemins.add(texture);
+      chemins.add(allie.blocs.racines);
+    }
+  }
   for (const id of IDS_ARMES) {
     const arme = ARMES[id];
     chemins.add(arme.icone);

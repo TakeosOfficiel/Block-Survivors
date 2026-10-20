@@ -223,7 +223,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.projectilesJoueur = new ProjectilesJoueur(combat);
     this.orbites = new Orbites(combat);
     this.foudre = new Foudre(combat, scene);
-    this.invocations = new Invocations(combat, scene, textures, new BarresVie(scene, rendu.camera, CONFIG.armes.golems.capacite));
+    this.invocations = new Invocations(combat, scene, textures, new BarresVie(scene, rendu.camera, CONFIG.armes.golems.capacite), this.projectilesJoueur);
     this.ennemis.definirAllies(this.invocations);
     this.projectilesEnnemis.definirEnnemis(this.ennemis);
     this.fissures = new Fissures(combat, textures, scene);

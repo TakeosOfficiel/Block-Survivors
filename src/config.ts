@@ -132,6 +132,9 @@ export const CONFIG = {
     dureeBalayage: 0.25,       // durée de l'effet de balayage (s)
     foudre: { hauteur: 18, segments: 10, largeur: 0.18, ecart: 0.7, duree: 0.25, capacite: 24 },
     golems: { capacite: 32, distanceSuivi: 3 },   // alliés invoqués (golems, loups, vex)
+    brulureTirs: 3,            // s de brûlure des tirs qui enflamment (blazes alliés)
+    // Alliés : distance de pose du totem, soin au plus une fois par allié toutes les `delaiSoin` s
+    invocations: { porteeTotem: 9, delaiSoin: 8, degatsBrulure: 3, racines: 6 },
     // Onde de choc : blocs soulevés tous les `espacement` blocs, qui jaillissent puis s'enfoncent (s)
     fissure: {
       capacite: 12, blocs: 320, rayonGroupe: 2, depart: 1, espacement: 0.8, tailleBloc: 0.9,
@@ -222,6 +225,7 @@ export const CONFIG = {
     },
     coeurs: {
       plein: 'gui/sprites/hud/heart/full',
+      dore: 'gui/sprites/hud/heart/absorbing_full',     // bouclier (effet Absorption)
       conteneur: 'gui/sprites/hud/heart/container',
     },
   },

@@ -118,7 +118,12 @@ export class Joueur implements SourceEntites, CibleJoueur {
   subirDegats(degats: number): boolean {
     const j = this.etat.joueur;
     if (j.mort || this.invincible || j.invulnerabilite > 0 || j.protection > 0 || this.etat.issue !== null) return false;
-    const subis = Math.min(j.pv, degatsApresDefense(degats, this.etat.modificateurs.armure));
+    // Le bouclier absorbe d'abord ; s'il prend tout, le coup ne coûte aucun PV
+    let reste = degatsApresDefense(degats, this.etat.modificateurs.armure);
+    const absorbe = Math.min(j.bouclier, reste);
+    j.bouclier -= absorbe;
+    reste -= absorbe;
+    const subis = Math.min(j.pv, reste);
     j.pv -= subis;
     j.invulnerabilite = JOUEUR_BASE.invulnerabilite;
     this.etat.stats.degatsSubis += subis;

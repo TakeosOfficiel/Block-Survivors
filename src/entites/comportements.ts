@@ -19,6 +19,8 @@ export interface Vers {
   dx: number;
   dz: number;
   distance: number;
+  /** Aucun bloc n'arrête un tir vers lui. */
+  ligneDeTir: boolean;
   /** Direction unitaire à suivre pour aller vers lui en contournant le décor. */
   cheminX: number;
   cheminZ: number;
@@ -51,10 +53,13 @@ function melee(e: Ennemi, c: ComportementMelee, contexte: ContexteComportement, 
   }
 }
 
-/** Se place à sa distance idéale (avance ou recule) et tire quand le joueur est à portée. */
+/**
+ * Se place à sa distance idéale (avance ou recule) et tire quand le joueur est
+ * à portée ; s'il est caché derrière un bloc, le contourne au lieu de tirer.
+ */
 function archer(e: Ennemi, c: ComportementArcher, contexte: ContexteComportement, vers: Vers): void {
-  const { dx, dz, distance } = vers;
-  if (distance > c.distanceIdeale + 1) {
+  const { dx, dz, distance, ligneDeTir } = vers;
+  if (!ligneDeTir || distance > c.distanceIdeale + 1) {
     e.dirX = vers.cheminX;
     e.dirZ = vers.cheminZ;
   } else if (distance < c.distanceIdeale - 1.5) {
@@ -64,7 +69,7 @@ function archer(e: Ennemi, c: ComportementArcher, contexte: ContexteComportement
     e.dirX = 0;
     e.dirZ = 0;
   }
-  if (distance <= c.portee && e.minuterie <= 0) {
+  if (ligneDeTir && distance <= c.portee && e.minuterie <= 0) {
     // Salve en éventail autour de la direction du joueur
     const nombre = c.nombre ?? 1;
     const base = Math.atan2(dx, dz);

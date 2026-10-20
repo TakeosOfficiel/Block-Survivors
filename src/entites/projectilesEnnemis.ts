@@ -55,20 +55,31 @@ export class ProjectilesEnnemis implements SourceEntites, Tireur {
   maj(dt: number): void {
     const j = this.etat.joueur;
     const limite = this.etat.arene.taille / 2;
+    const { pasCollision, rayonDecor } = CONFIG.projectiles;
     for (let i = this.pool.nombre - 1; i >= 0; i--) {
       const p = this.pool.elements[i];
       p.vie -= dt;
-      p.x += p.vx * dt;
-      p.z += p.vz * dt;
 
-      const dx = p.x - j.x;
-      const dz = p.z - j.z;
+      // Par pas courts, le décor avant le joueur : une flèche ne frappe jamais à travers un mur
       const portee = p.definition.rayon + JOUEUR_BASE.rayon;
-      const touche = !j.mort && dx * dx + dz * dz < portee * portee;
-      if (touche) this.cible.subirDegats(p.degats);
-
-      const sortie = p.x < -limite || p.x > limite || p.z < -limite || p.z > limite;
-      if (touche || sortie || p.vie <= 0 || this.carte.bloqueTir(p.x, p.z)) this.pool.liberer(i);
+      const nbPas = Math.max(1, Math.ceil(Math.hypot(p.vx, p.vz) * dt / pasCollision));
+      let fini = p.vie <= 0;
+      for (let k = 0; k < nbPas && !fini; k++) {
+        p.x += (p.vx * dt) / nbPas;
+        p.z += (p.vz * dt) / nbPas;
+        const sortie = p.x < -limite || p.x > limite || p.z < -limite || p.z > limite;
+        if (sortie || this.carte.toucheTir(p.x, p.z, rayonDecor)) {
+          fini = true;
+          break;
+        }
+        const dx = p.x - j.x;
+        const dz = p.z - j.z;
+        if (!j.mort && dx * dx + dz * dz < portee * portee) {
+          this.cible.subirDegats(p.degats);
+          fini = true;
+        }
+      }
+      if (fini) this.pool.liberer(i);
     }
   }
 

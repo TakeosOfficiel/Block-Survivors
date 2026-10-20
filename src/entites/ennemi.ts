@@ -28,6 +28,8 @@ export interface Ennemi {
   aExploser: boolean;
   /** Ligne de vue directe vers le joueur (sinon : suit le champ de flux). */
   voitJoueur: boolean;
+  /** Tireur : aucun bloc n'arrête son tir vers le joueur (sinon il se déplace au lieu de tirer). */
+  ligneDeTir: boolean;
   minuterieVue: number;         // s avant de revérifier la ligne de vue
   /** Allié invoqué qui l'a attiré (corps à corps), et son identifiant pour le reconnaître. */
   cibleAllie: Allie | null;
@@ -48,6 +50,7 @@ export function creerEnnemi(): Ennemi {
     minuterie: 0, blessure: 0, meche: 0, mort: -1,
     aExploser: false,
     voitJoueur: true,
+    ligneDeTir: true,
     minuterieVue: 0,
     cibleAllie: null,
     cibleAllieId: 0,

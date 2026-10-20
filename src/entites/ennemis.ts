@@ -39,7 +39,7 @@ const RAYON_MAX = Math.max(...IDS_ENNEMIS.map((id) => ENNEMIS[id].rayon));
 const PERIODE_VUE = 0.25;
 
 // Temporaires réutilisés
-const vers: Vers = { dx: 0, dz: 0, distance: 0, cheminX: 0, cheminZ: 0 };
+const vers: Vers = { dx: 0, dz: 0, distance: 0, ligneDeTir: true, cheminX: 0, cheminZ: 0 };
 const chemin: Point = { x: 0, z: 0 };
 const corrige: Point = { x: 0, z: 0 };
 
@@ -152,6 +152,7 @@ export class Ennemis implements SourceEntites {
     e.mort = -1;
     e.aExploser = false;
     e.voitJoueur = true;
+    e.ligneDeTir = true;
     e.cibleAllie = null;
     e.minuterieVue = Math.random() * PERIODE_VUE;  // étale les vérifications
     e.immunites.fill(0);
@@ -417,6 +418,9 @@ export class Ennemis implements SourceEntites {
     if ((e.minuterieVue -= dt) <= 0) {
       e.minuterieVue = PERIODE_VUE;
       e.voitJoueur = def.ignoreObstacles === true || carte.ligneDeVue(e.x, e.z, j.x, j.z);
+      if (def.comportement.type === 'archer') {
+        e.ligneDeTir = carte.ligneDeTir(e.x, e.z, j.x, j.z, CONFIG.projectiles.rayonDecor);
+      }
       // Un allié proche (plus que le joueur) attire les ennemis au corps à corps
       if (auContact && this.allies) {
         const a = this.allies.provocateur(e.x, e.z, distance);
@@ -427,6 +431,7 @@ export class Ennemis implements SourceEntites {
     vers.dx = dx;
     vers.dz = dz;
     vers.distance = distance;
+    vers.ligneDeTir = e.ligneDeTir;
     if (!e.voitJoueur && flux.direction(e.x, e.z, chemin)) {
       vers.cheminX = chemin.x;
       vers.cheminZ = chemin.z;

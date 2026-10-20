@@ -203,8 +203,9 @@ class Generateur {
 
   /**
    * Couches 0 et 1 (hauteur du corps) : blocs pleins et liquides bloquent la
-   * marche ; la couche 1 (hauteur de tir) arrête les projectiles. Les sols et
-   * les croix (toiles) donnent leurs effets.
+   * marche ; les blocs pleins arrêtent aussi les projectiles (un muret protège,
+   * comme il en a l'air vu de dessus). Les sols et les croix (toiles) donnent
+   * leurs effets.
    */
   private construireCarte(): CarteMonde {
     const carte = new CarteMonde(this.taille);
@@ -221,7 +222,7 @@ class Generateur {
         const bloc = BLOCS[id];
         if (bloqueLePassage(bloc)) {
           carte.drapeaux[c] |= BLOQUE_MARCHE;
-          if (couche === 1 && bloc.forme !== 'liquide') carte.drapeaux[c] |= BLOQUE_TIR;
+          if (bloc.forme !== 'liquide') carte.drapeaux[c] |= BLOQUE_TIR;
         } else if (bloc.ralentit !== undefined) {
           carte.ralentissement[c] = Math.min(carte.ralentissement[c], bloc.ralentit);
           if (!bloc.toile) carte.ralentissementHorsToiles[c] = Math.min(carte.ralentissementHorsToiles[c], bloc.ralentit);

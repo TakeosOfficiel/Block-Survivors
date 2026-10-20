@@ -85,7 +85,8 @@ export class ProjectilesJoueur implements SourceEntites {
   }
 
   maj(dt: number): void {
-    const { etat, ennemis, particules } = this.contexte;
+    const { etat, ennemis, particules, carte } = this.contexte;
+    const { pasCollision, rayonDecor } = CONFIG.projectiles;
     const j = etat.joueur;
     const limite = etat.arene.taille / 2;
 
@@ -105,10 +106,35 @@ export class ProjectilesJoueur implements SourceEntites {
         p.dirZ = dz / d;
       }
 
+      // Par pas courts, le décor avant les ennemis : aucun tir ne touche à travers un mur
+      // (le trident, magique, traverse le décor)
       const pas = p.vitesse * dt;
-      p.x += p.dirX * pas;
-      p.z += p.dirZ * pas;
-      p.parcouru += pas;
+      const nbPas = Math.max(1, Math.ceil(pas / pasCollision));
+      let detruit = false;
+      let sortie = false;
+      for (let s = 0; s < nbPas && !detruit && !sortie; s++) {
+        p.x += (p.dirX * pas) / nbPas;
+        p.z += (p.dirZ * pas) / nbPas;
+        p.parcouru += pas / nbPas;
+        sortie = p.x < -limite || p.x > limite || p.z < -limite || p.z > limite
+          || (!p.retour && carte.toucheTir(p.x, p.z, rayonDecor));
+        if (sortie) break;
+
+        // Collisions avec les ennemis
+        const n = ennemis.chercher(p.x, p.z, p.definition.rayon, this.tampon);
+        for (let k = 0; k < n && !detruit; k++) {
+          const e = ennemis.obtenir(this.tampon[k]);
+          if (this.dejaTouche(p, e.id)) continue;
+          if (p.zone > 0) {
+            this.exploser(p);
+            detruit = true;
+            break;
+          }
+          ennemis.blesser(e, p.degats, p.x - p.dirX, p.z - p.dirZ, p.recul, p.indexArme);
+          if (p.nbTouches < MAX_TOUCHES) p.touches[p.nbTouches++] = e.id;
+          if (--p.restants <= 0) detruit = true;
+        }
+      }
 
       // Traînée de particules
       const trainee = p.definition.trainee;
@@ -117,25 +143,7 @@ export class ProjectilesJoueur implements SourceEntites {
         particules.emettre(p.x, p.definition.hauteur, p.z, GERBES[trainee]);
       }
 
-      // Collisions avec les ennemis
-      let detruit = false;
-      const n = ennemis.chercher(p.x, p.z, p.definition.rayon, this.tampon);
-      for (let k = 0; k < n && !detruit; k++) {
-        const e = ennemis.obtenir(this.tampon[k]);
-        if (this.dejaTouche(p, e.id)) continue;
-        if (p.zone > 0) {
-          this.exploser(p);
-          detruit = true;
-          break;
-        }
-        ennemis.blesser(e, p.degats, p.x - p.dirX, p.z - p.dirZ, p.recul, p.indexArme);
-        if (p.nbTouches < MAX_TOUCHES) p.touches[p.nbTouches++] = e.id;
-        if (--p.restants <= 0) detruit = true;
-      }
-
-      // Fin de course (le trident, magique, traverse le décor)
-      const sortie = p.x < -limite || p.x > limite || p.z < -limite || p.z > limite
-        || (!p.retour && this.contexte.carte.bloqueTir(p.x, p.z));
+      // Fin de course
       if (!detruit && (p.parcouru >= p.portee || sortie)) {
         if (p.retour) {
           if (!p.revient) {

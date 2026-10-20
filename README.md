@@ -85,7 +85,7 @@ expose `maj(dt)` (simulation, ne touche qu'à l'état) et `majVisuel(...)`
 
 ## Textures
 
-Textures vanilla de Minecraft **1.21.4** (`VERSION_MINECRAFT` dans
+Textures vanilla de Minecraft **26.3** (`VERSION_MINECRAFT` dans
 `src/config.ts`), cherchées dans l'ordre :
 
 1. `raw.githubusercontent.com/InventivetalentDev/minecraft-assets`

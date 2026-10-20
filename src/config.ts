@@ -4,7 +4,7 @@
  */
 
 /** Version de Minecraft dont proviennent les textures (branche vérifiée du dépôt d'assets). */
-export const VERSION_MINECRAFT = '1.21.4';
+export const VERSION_MINECRAFT = '26.3';
 
 /**
  * Sources de textures, essayées dans l'ordre. `chemin` est relatif à
@@ -110,7 +110,7 @@ export const CONFIG = {
 
   orbes: {
     capacite: 1200,
-    texture: 'entity/experience_orb',
+    texture: 'entity/experience/experience_orb',
     taille: 0.4,             // côté de l'orbe la plus petite (blocs)
     hauteur: 0.35,
     attraction: 30,          // accélération vers le joueur (blocs/s²)
@@ -121,6 +121,10 @@ export const CONFIG = {
   projectiles: {
     capacite: 256,
     intervalleTrainee: 0.05,   // s entre deux particules de traînée
+    // Collision avec le décor : avance par pas courts (aucun mur sauté, même en temps accéléré)
+    // et projectile vu comme un petit cercle (il ne se glisse pas entre deux blocs en diagonale)
+    pasCollision: 0.25,        // blocs
+    rayonDecor: 0.1,           // blocs
   },
 
   armes: {

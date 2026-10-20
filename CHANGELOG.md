@@ -5,6 +5,15 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.8.3] — 2026-10-20
+
+### Changements
+- Textures de Minecraft 26.3 (au lieu de 1.21.4).
+- Les squelettes et les blazes ne tirent plus à l'aveugle : si tu es caché, ils se déplacent pour te viser.
+
+### Corrections
+- Les flèches ne traversent plus les murs, dans les deux sens : un muret d'un bloc protège désormais, et aucun tir ne passe dans un coin entre deux blocs ni ne saute un mur en temps accéléré.
+
 ## [0.8.2] — 2026-10-20
 
 ### Changements

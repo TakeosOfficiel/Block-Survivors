@@ -650,25 +650,35 @@ img { image-rendering: pixelated; }
 
 /* --- Compteur de dégâts (en jeu, Tab) ----------------------------------- */
 #compteur-degats {
-  position: absolute; top: 64px; right: 10px; width: 420px;
-  padding: 6px; background: rgba(0, 0, 0, 0.45);
+  position: absolute; top: 64px; right: 10px; width: 340px;
+  padding: 4px 6px 5px;
+  background: rgba(16, 0, 16, 0.82);
   display: flex; flex-direction: column; gap: 3px;
 }
-.compteur-titre { color: var(--mc-jaune); pointer-events: auto; cursor: move; user-select: none; touch-action: none; }
-.compteur-aide { color: var(--mc-gris); }
-#compteur-degats-liste { display: flex; flex-direction: column; gap: 2px; }
-.compteur-ligne {
-  position: relative; display: grid; grid-template-columns: 24px 1fr 76px 48px 60px;
-  align-items: center; column-gap: 6px; height: 24px; padding-right: 4px;
+.compteur-titre {
+  display: flex; justify-content: space-between; align-items: baseline;
+  color: var(--mc-jaune); pointer-events: auto; cursor: move; user-select: none; touch-action: none;
 }
-.compteur-ligne > span { position: relative; }
-.compteur-ligne .nombre { text-align: right; }
-.compteur-entete { height: 18px; color: var(--mc-gris); }
-.compteur-barre { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(85, 255, 85, 0.22); }
-.compteur-ligne .case-mc { width: 24px; height: 24px; border-width: 1px; position: relative; }
-.compteur-ligne .case-mc img { width: 20px; height: 20px; }
-.compteur-nom { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.compteur-total { color: var(--mc-gris); border-top: 2px solid rgba(255, 255, 255, 0.2); padding-top: 2px; }
+.compteur-aide { color: var(--mc-gris-fonce); }
+#compteur-degats-liste { display: flex; flex-direction: column; gap: 2px; }
+/* Une ligne : icône, puis une barre avec le nom à gauche et les chiffres à droite */
+.compteur-ligne { display: flex; align-items: center; gap: 4px; height: 22px; }
+.compteur-ligne .case-mc { flex: none; width: 22px; height: 22px; border-width: 1px; }
+.compteur-ligne .case-mc img { width: 18px; height: 18px; }
+.compteur-piste {
+  position: relative; flex: 1; min-width: 0; height: 100%;
+  display: flex; align-items: center; gap: 8px; padding: 0 4px;
+  background: rgba(255, 255, 255, 0.06); white-space: nowrap;
+}
+.compteur-barre {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  background: linear-gradient(rgba(85, 255, 85, 0.38), rgba(40, 150, 40, 0.38));
+}
+.compteur-piste > span { position: relative; }
+.compteur-nom { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--mc-blanc); }
+.compteur-valeur { color: var(--mc-blanc); }
+.compteur-detail { color: var(--mc-gris); min-width: 3.2em; text-align: right; }
+.compteur-total { display: flex; justify-content: space-between; color: var(--mc-gris); padding-top: 1px; }
 
 /* Tableau des dégâts du bilan */
 .bilan-degats { display: grid; grid-template-columns: 28px 1fr repeat(7, auto); gap: 2px 10px; align-items: center; }

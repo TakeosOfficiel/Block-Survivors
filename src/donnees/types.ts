@@ -123,6 +123,8 @@ export interface MainModele {
 export interface DefinitionModele {
   readonly tailleTexture: readonly [number, number];
   readonly parties: Readonly<Record<string, CubeModele>>;
+  /** Parties vues de face (à leur place, de l'arrière vers l'avant) qui forment le portrait (« tete » par défaut). */
+  readonly portrait?: readonly string[];
   /** Point d'attache d'un objet tenu (voir ApparenceEntite.objetEnMain). */
   readonly main?: MainModele;
   /** Balancement des membres proportionnel à la vitesse au sol. */

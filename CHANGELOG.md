@@ -5,6 +5,15 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.8.2] — 2026-10-20
+
+### Changements
+- Compteur de dégâts (Tab) refait : cadre violet du jeu, une barre par arme avec nom, dégâts, dégâts/s et part sur une seule ligne, plus de chiffres coupés.
+
+### Corrections
+- Portraits du poisson d'argent et du cube de magma dans le bilan (vus de face).
+- Texture du cube de magma : il utilisait l'ancienne disposition de la planche, il a maintenant son vrai visage.
+
 ## [0.8.1] — 2026-10-20
 
 ### Changements

@@ -159,11 +159,11 @@ function tournoiementBlaze(): { partie: string; vitesse: number }[] {
 // --------------------------------------------------------------------------
 function partiesCubeMagma(): Record<string, CubeModele> {
   const parties: Record<string, CubeModele> = {
-    noyau: { taille: [4, 4, 4], pivot: [0, 0, 0], centre: [0, 4, 0], uv: [0, 16] },
+    noyau: { taille: [4, 4, 4], pivot: [0, 0, 0], centre: [0, 4, 0], uv: [24, 40] },
   };
   for (let i = 0; i < 8; i++) {
-    // Les tranches 2 et 3 prennent leur texture ailleurs dans la planche, comme en jeu
-    const uv: readonly [number, number] = i === 2 ? [24, 10] : i === 3 ? [24, 19] : [0, i];
+    // Planche 64×64 : tranches 0 à 3 dans la moitié gauche, 4 à 7 dans la droite (9 pixels de haut chacune)
+    const uv: readonly [number, number] = i < 4 ? [0, 9 * i] : [32, 9 * (i - 4)];
     parties[`tranche${i}`] = { taille: [8, 1, 8], pivot: [0, 0, 0], centre: [0, 7.5 - i, 0], uv };
   }
   return parties;
@@ -373,8 +373,10 @@ const definitions = {
 
   // Cube de magma : skin 64x32, avance par bonds
   cube_magma: {
-    tailleTexture: [64, 32],
+    tailleTexture: [64, 64],
     parties: partiesCubeMagma(),
+    // Le visage est dessiné sur l'avant des 8 tranches, le noyau se voit entre elles
+    portrait: ['noyau', ...Array.from({ length: 8 }, (_, i) => `tranche${i}`)],
     flottement: { hauteur: 0, amplitude: 0.45, frequence: 4.5, bonds: true },
   },
 
@@ -382,6 +384,8 @@ const definitions = {
   poisson_argent: {
     tailleTexture: [64, 32],
     parties: partiesPoisson(),
+    // Vu de face : la tête devant les écailles
+    portrait: ['ecaille0', 'ecaille2', 'segment1', 'segment0'],
     marche: { frequence: 2.665, vitesseReference: 4, lissage: 8, membres: ondulationPoisson() },
   },
 

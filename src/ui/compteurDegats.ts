@@ -151,26 +151,26 @@ export class CompteurDegats {
     this.minuterie = PERIODE;
     const { lignes, total, dps } = lignesDegats(this.etat, this.armes);
     const maximum = Math.max(1, lignes[0]?.degats ?? 0);
-    const entete = document.createElement('div');
-    entete.className = 'compteur-ligne compteur-entete';
-    entete.append(colonne(''), colonne('Arme'), colonne('Dégâts', 'nombre'), colonne('%', 'nombre'), colonne('/s', 'nombre'));
-    this.liste.replaceChildren(entete, ...lignes.map((l) => {
+    this.liste.replaceChildren(...lignes.map((l) => {
       const def = l.arme.definition;
       const ligne = document.createElement('div');
       ligne.className = 'compteur-ligne';
+      // Piste : barre proportionnelle à la meilleure arme, nom à gauche, chiffres à droite
+      const piste = document.createElement('div');
+      piste.className = 'compteur-piste';
       const barre = document.createElement('div');
       barre.className = 'compteur-barre';
       barre.style.width = `${(l.degats / maximum) * 100}%`;
-      ligne.append(
+      piste.append(
         barre,
-        caseImage(this.textures.url(def.icone), def.nom),
         colonne(def.nom, 'compteur-nom'),
-        colonne(abreger(l.degats), 'nombre'),
-        colonne(`${Math.round(l.part * 100)} %`, 'nombre'),
-        colonne(abreger(l.dps), 'nombre'),
+        colonne(abreger(l.degats), 'compteur-valeur'),
+        colonne(`${abreger(l.dps)}/s`, 'compteur-detail'),
+        colonne(`${Math.round(l.part * 100)}%`, 'compteur-detail'),
       );
+      ligne.append(caseImage(this.textures.url(def.icone), def.nom), piste);
       return ligne;
     }));
-    this.pied.textContent = `Total ${abreger(total)} · ${abreger(dps)} dégâts/s`;
+    this.pied.replaceChildren(colonne('Total'), colonne(`${abreger(total)} · ${abreger(dps)}/s`));
   }
 }

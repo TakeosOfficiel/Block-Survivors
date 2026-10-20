@@ -8,12 +8,15 @@
  * Les dégâts causés par un talent sont des « réactions » : ils ne relancent
  * pas les talents qui comptent les coups (pas de boucle).
  */
+import type * as THREE from 'three';
+import type { BibliothequeTextures } from '../../assets/textures';
 import { CONFIG } from '../../config';
 import { ARMES, IDS_ARMES, type IdArme } from '../../donnees/armes';
 import { ETATS } from '../../donnees/etats';
 import { GERBES, type IdGerbe } from '../../donnees/particules';
 import { PLAFONDS } from '../../donnees/plafonds';
-import type { FamilleArme } from '../../donnees/types';
+import type { DefinitionAllie, FamilleArme } from '../../donnees/types';
+import type { Ombres } from '../../effets/ombres';
 import type { Ennemi } from '../../entites/ennemi';
 import type { CrochetsTalents, NatureCoup } from '../../entites/ennemis';
 import type { CrochetsJoueur } from '../../entites/types';
@@ -21,6 +24,7 @@ import type { EtatPartie } from '../../etat';
 import type { ArmeEquipee } from '../armeEquipee';
 import type { Arsenal, SystemesCombat } from '../arsenal';
 import type { ContexteCombat } from '../contexte';
+import type { Allie } from '../invocations';
 import { ajouterBouclier } from '../defense';
 
 /** Famille de chaque arme, par index dans IDS_ARMES. */
@@ -83,6 +87,42 @@ export class MecaniquesClasse {
   eviterMort(): boolean {
     return false;
   }
+
+  // Alliés invoqués (Invocateur)
+  /** Places en plus dans le quota de ce type d'allié. */
+  quotaAllie(_def: DefinitionAllie): number {
+    return 0;
+  }
+  surCreationAllie(_a: Allie): void {}
+  /** Cible à viser d'abord (ennemi marqué), ou null pour la plus proche. */
+  ciblePrioritaire(_a: Allie): Ennemi | null {
+    return null;
+  }
+  multiplicateurAllie(_a: Allie, _e: Ennemi): number {
+    return 1;
+  }
+  /** Multiplicateur du délai entre deux coups de l'allié. */
+  cadenceAllie(_a: Allie): number {
+    return 1;
+  }
+  vitesseAllie(_a: Allie): number {
+    return 1;
+  }
+  /** Coup au corps à corps d'un allié (morsure, charge). */
+  surMorsure(_a: Allie, _e: Ennemi): void {}
+  /** L'allié tombe à 0 PV : vrai s'il revient (il remet lui-même ses PV). */
+  surMortAllie(_a: Allie): boolean {
+    return false;
+  }
+  /** Dessin des créatures des talents (ravageur, crocs). */
+  majVisuel(_ombres: Ombres): void {}
+}
+
+/** Ce que les talents qui ont leur propre rendu (ravageur, crocs) ou qui ramassent l'XP utilisent. */
+export interface RessourcesTalents {
+  readonly scene: THREE.Scene;
+  readonly textures: BibliothequeTextures;
+  readonly orbes: { aimanter(x: number, z: number, rayon: number): void };
 }
 
 export class Talents implements CrochetsTalents, CrochetsJoueur {
@@ -90,6 +130,7 @@ export class Talents implements CrochetsTalents, CrochetsJoueur {
   private readonly rangs: Readonly<Record<string, number>>;
   private classe: MecaniquesClasse;
   private contexteCombat: ContexteCombat | null = null;
+  private ressourcesPartie: RessourcesTalents | null = null;
   private arsenalPartie: Arsenal | null = null;
   /** Dégâts causés par un talent en cours : ils ne relancent pas les talents. */
   private enReaction = false;
@@ -130,9 +171,15 @@ export class Talents implements CrochetsTalents, CrochetsJoueur {
     return this.arsenal.systemes;
   }
 
-  brancher(contexte: ContexteCombat, arsenal: Arsenal, classe: (t: Talents) => MecaniquesClasse): void {
+  get ressources(): RessourcesTalents {
+    if (!this.ressourcesPartie) throw new Error('Talents non branchés');
+    return this.ressourcesPartie;
+  }
+
+  brancher(contexte: ContexteCombat, arsenal: Arsenal, ressources: RessourcesTalents, classe: (t: Talents) => MecaniquesClasse): void {
     this.contexteCombat = contexte;
     this.arsenalPartie = arsenal;
+    this.ressourcesPartie = ressources;
     this.classe = classe(this);
   }
 
@@ -304,6 +351,42 @@ export class Talents implements CrochetsTalents, CrochetsJoueur {
 
   eviterMort(): boolean {
     return this.classe.eviterMort();
+  }
+
+  quotaAllie(def: DefinitionAllie): number {
+    return this.classe.quotaAllie(def);
+  }
+
+  surCreationAllie(a: Allie): void {
+    this.classe.surCreationAllie(a);
+  }
+
+  ciblePrioritaire(a: Allie): Ennemi | null {
+    return this.classe.ciblePrioritaire(a);
+  }
+
+  multiplicateurAllie(a: Allie, e: Ennemi): number {
+    return this.classe.multiplicateurAllie(a, e);
+  }
+
+  cadenceAllie(a: Allie): number {
+    return this.classe.cadenceAllie(a);
+  }
+
+  vitesseAllie(a: Allie): number {
+    return this.classe.vitesseAllie(a);
+  }
+
+  surMorsure(a: Allie, e: Ennemi): void {
+    this.classe.surMorsure(a, e);
+  }
+
+  surMortAllie(a: Allie): boolean {
+    return this.classe.surMortAllie(a);
+  }
+
+  majVisuel(ombres: Ombres): void {
+    this.classe.majVisuel(ombres);
   }
 }
 

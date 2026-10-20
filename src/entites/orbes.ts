@@ -88,6 +88,14 @@ export class Orbes implements SourceEntites, DepotXp {
     o.phase = Math.random() * 100;
   }
 
+  /** Attire vers le joueur les orbes à moins de `rayon` de (x, z) (Allay chanteur). */
+  aimanter(x: number, z: number, rayon: number): void {
+    for (let i = 0; i < this.pool.nombre; i++) {
+      const o = this.pool.elements[i];
+      if ((o.x - x) ** 2 + (o.z - z) ** 2 <= rayon * rayon) o.aimantee = true;
+    }
+  }
+
   maj(dt: number): void {
     const j = this.etat.joueur;
     if (j.mort) return;

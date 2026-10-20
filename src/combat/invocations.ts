@@ -10,6 +10,10 @@
  * Chaque type a son quota : une invocation qui ne trouve pas de place renouvelle
  * la durée de l'allié de ce type qui a le moins de temps restant (ou, pour un
  * type à remplacement comme le totem, le replante sur le nouveau groupe).
+ *
+ * Talents de l'Invocateur (combat/talents/invocateur) : crochets à la
+ * création, à la visée, aux coups et à la mort des alliés ; alliés temporaires
+ * (Lune de sang, loups fantômes) ; haie de racines entre deux totems (Bosquet).
  */
 import type * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
@@ -54,6 +58,15 @@ export interface Allie {
   /** Temps de jeu du dernier soin reçu (soins limités par allié). */
   dernierSoin: number;
   animation: EtatAnimation;
+  // Talents
+  /** Sa première morsure est renforcée (Chef de meute). */
+  premiereMorsure: boolean;
+  /** Loup alpha (Alpha), déjà revenu après sa mort (Gardien alpha), taille d'affichage. */
+  alpha: boolean;
+  revenu: boolean;
+  echelle: number;
+  /** Invoqué pour un temps par un talent : hors quota, jamais renouvelé. */
+  temporaire: boolean;
 }
 
 const corrige: Point = { x: 0, z: 0 };
@@ -78,12 +91,15 @@ export class Invocations implements SourceEntites {
   private readonly pool = new Pool<Allie>(CONFIG.armes.golems.capacite, () => ({
     id: 0, indexType: 0, definition: ALLIES[IDS_ALLIES[0]], arme: null,
     x: 0, z: 0, angle: 0, vie: 0, pv: 1, pvMax: 1, vitesse: 0, blessure: 0, minuterie: 0, vitesseSol: 0, dernierSoin: -Infinity, animation: creerEtatAnimation(),
+    premiereMorsure: false, alpha: false, revenu: false, echelle: 1, temporaire: false,
   }));
   /** Rendu par type ; null pour un allié en blocs. */
   private readonly rendus: (RenduType | null)[];
   private readonly blocs: RenduBlocs = { cubes: new Map(), racines: new Map() };
   private readonly barres: BarresVie;
   private prochainId = 1;
+  /** s avant le prochain ralentissement de la haie du Bosquet. */
+  private minuterieHaie = 0;
 
   constructor(
     contexte: ContexteCombat, scene: THREE.Scene, textures: BibliothequeTextures, barres: BarresVie, projectiles: ProjectilesJoueur,
@@ -133,7 +149,8 @@ export class Invocations implements SourceEntites {
     }
     let nouveaux = 0;
     for (let k = 0; k < arme.stats.nombre; k++) {
-      if (this.presents(indexType) < def.quota && this.creer(arme, indexType)) nouveaux++;
+      const quota = def.quota + this.contexte.talents.quotaAllie(def);
+      if (this.presents(indexType) < quota && this.creer(arme, indexType)) nouveaux++;
       else if (def.remplacement) this.replanter(indexType, arme.stats.duree);
       else this.renouveler(indexType, arme.stats.duree);
     }
@@ -141,7 +158,7 @@ export class Invocations implements SourceEntites {
   }
 
   /** Alliés vivants de ce type. */
-  private presents(indexType: number): number {
+  presents(indexType: number): number {
     let n = 0;
     for (let i = 0; i < this.pool.nombre; i++) {
       const a = this.pool.elements[i];
@@ -155,7 +172,7 @@ export class Invocations implements SourceEntites {
     let choisi: Allie | null = null;
     for (let i = 0; i < this.pool.nombre; i++) {
       const a = this.pool.elements[i];
-      if (a.indexType === indexType && a.arme && a.pv > 0 && (!choisi || a.vie < choisi.vie)) choisi = a;
+      if (a.indexType === indexType && a.arme && a.pv > 0 && !a.temporaire && (!choisi || a.vie < choisi.vie)) choisi = a;
     }
     return choisi;
   }
@@ -177,7 +194,7 @@ export class Invocations implements SourceEntites {
     this.contexte.particules.emettre(a.x, 1, a.z, GERBES.invocation);
   }
 
-  private creer(arme: ArmeEquipee, indexType: number): boolean {
+  private creer(arme: ArmeEquipee, indexType: number, temporaire = false): boolean {
     const m = arme.definition.mecanique;
     if (m.type !== 'invocation') return false;
     const a = this.pool.acquerir();
@@ -202,9 +219,51 @@ export class Invocations implements SourceEntites {
     a.minuterie = def.soutien ? 1 : 0;
     a.vitesseSol = 0;
     a.dernierSoin = -Infinity;
+    a.premiereMorsure = false;
+    a.alpha = false;
+    a.revenu = false;
+    a.echelle = 1;
+    a.temporaire = temporaire;
     reinitialiserAnimation(a.animation);
+    this.contexte.talents.surCreationAllie(a);
     this.contexte.particules.emettre(a.x, 1, a.z, GERBES.invocation);
     return true;
+  }
+
+  /**
+   * Invoque pour `duree` s des alliés de l'arme hors quota (Lune de sang,
+   * loups fantômes), avec une part de leurs PV ; ils ne sont jamais renouvelés
+   * et leur fin n'est pas une mort.
+   */
+  invoquerTemporaire(arme: ArmeEquipee, nombre: number, duree: number, partPv: number): void {
+    const m = arme.definition.mecanique;
+    if (m.type !== 'invocation') return;
+    const indexType = IDS_ALLIES.indexOf(m.allie);
+    for (let k = 0; k < nombre; k++) {
+      const a = this.pool.elements[this.pool.nombre];
+      if (!a || !this.creer(arme, indexType, true)) return;
+      a.vie = duree;
+      a.pvMax *= partPv;
+      a.pv = a.pvMax;
+    }
+  }
+
+  /** Un allié vivant à moins de `rayon` de (x, z) ? */
+  allieProche(x: number, z: number, rayon: number): boolean {
+    for (let i = 0; i < this.pool.nombre; i++) {
+      const a = this.pool.elements[i];
+      if (a.arme && a.pv > 0 && (a.x - x) ** 2 + (a.z - z) ** 2 <= rayon * rayon) return true;
+    }
+    return false;
+  }
+
+  /** Alliés en place (les `nombre` premiers éléments). */
+  get liste(): readonly Allie[] {
+    return this.pool.elements;
+  }
+
+  get nombre(): number {
+    return this.pool.nombre;
   }
 
   maj(dt: number): void {
@@ -229,21 +288,75 @@ export class Invocations implements SourceEntites {
       const rendu = this.rendus[a.indexType];
       if (rendu) avancerAnimation(a.animation, rendu.modele, dt, a.vitesseSol);
     }
+    if (this.contexte.talents.rang('bosquet') > 0 && (this.minuterieHaie -= dt) <= 0) {
+      this.minuterieHaie = CONFIG.armes.invocations.haie.periode;
+      this.ralentirHaies();
+    }
+  }
+
+  /** Bosquet : deux totems assez proches font pousser entre eux une haie de racines qui ralentit. */
+  private ralentirHaies(): void {
+    const h = CONFIG.armes.invocations.haie;
+    const ennemis = this.contexte.ennemis;
+    for (let i = 0; i < this.pool.nombre; i++) {
+      const a = this.pool.elements[i];
+      if (!a.definition.aura || !a.arme) continue;
+      for (let k = i + 1; k < this.pool.nombre; k++) {
+        const b = this.pool.elements[k];
+        if (!b.definition.aura || !b.arme) continue;
+        const d = longueur(b.x - a.x, b.z - a.z);
+        if (d > h.distance) continue;
+        const pas = Math.max(1, Math.ceil(d / h.espacement));
+        for (let s = 0; s <= pas; s++) {
+          const x = a.x + ((b.x - a.x) * s) / pas;
+          const z = a.z + ((b.z - a.z) * s) / pas;
+          const n = ennemis.chercher(x, z, h.largeur, this.tampon);
+          for (let q = 0; q < n; q++) ennemis.ralentir(ennemis.obtenir(this.tampon[q]), h.ralenti, h.periode * 2);
+        }
+      }
+    }
+  }
+
+  /** Racines de la haie entre deux totems proches (Bosquet). */
+  private dessinerHaies(): void {
+    const h = CONFIG.armes.invocations.haie;
+    for (let i = 0; i < this.pool.nombre; i++) {
+      const a = this.pool.elements[i];
+      const blocs = a.definition.blocs;
+      if (!a.definition.aura || !a.arme || !blocs) continue;
+      const racines = this.blocs.racines.get(blocs.racines);
+      for (let k = i + 1; k < this.pool.nombre; k++) {
+        const b = this.pool.elements[k];
+        if (!b.definition.aura || !b.arme) continue;
+        const d = longueur(b.x - a.x, b.z - a.z);
+        if (d > h.distance) continue;
+        const pas = Math.max(1, Math.ceil(d / h.espacement));
+        for (let s = 1; s < pas; s++) {
+          const x = a.x + ((b.x - a.x) * s) / pas;
+          const z = a.z + ((b.z - a.z) * s) / pas;
+          racines?.ajouter(x, 0.35, z, 0.75, s * 1.7 + a.id);
+        }
+      }
+    }
   }
 
   /** Corps à corps : va frapper l'ennemi le plus proche, sinon reste près du joueur. */
   private combattre(a: Allie, arme: ArmeEquipee, dt: number): void {
     const def = a.definition;
-    const cible = this.contexte.ennemis.plusProche(a.x, a.z, def.detection);
+    const talents = this.contexte.talents;
+    const cible = talents.ciblePrioritaire(a) ?? this.contexte.ennemis.plusProche(a.x, a.z, def.detection);
     const j = this.contexte.etat.joueur;
     const arret = cible ? def.rayon + cible.definition.rayon + arme.stats.zone : CONFIG.armes.golems.distanceSuivi;
     const distance = this.allerVers(a, cible ? cible.x : j.x, cible ? cible.z : j.z, arret, dt);
     if (cible && distance <= arret && a.minuterie <= 0) {
-      this.contexte.ennemis.blesser(cible, arme.stats.degats, a.x, a.z, arme.stats.recul, arme.index, 'allie');
+      const degats = arme.stats.degats * talents.multiplicateurAllie(a, cible);
+      a.premiereMorsure = false;
+      this.contexte.ennemis.blesser(cible, degats, a.x, a.z, arme.stats.recul, arme.index, 'allie');
+      talents.surMorsure(a, cible);
       this.contexte.retours.son(def.sonCoup);
       const rendu = this.rendus[a.indexType];
       if (rendu) declencherAttaque(a.animation, rendu.modele);
-      a.minuterie = def.cadenceCoups;
+      a.minuterie = def.cadenceCoups * talents.cadenceAllie(a);
     }
   }
 
@@ -253,7 +366,8 @@ export class Invocations implements SourceEntites {
     const tir = def.tir;
     if (!tir) return;
     const j = this.contexte.etat.joueur;
-    const cible = this.contexte.ennemis.plusProche(a.x, a.z, Math.min(def.detection, arme.stats.portee));
+    const talents = this.contexte.talents;
+    const cible = talents.ciblePrioritaire(a) ?? this.contexte.ennemis.plusProche(a.x, a.z, Math.min(def.detection, arme.stats.portee));
     if (!cible) {
       this.allerVers(a, j.x, j.z, CONFIG.armes.golems.distanceSuivi, dt);
       return;
@@ -261,15 +375,17 @@ export class Invocations implements SourceEntites {
     const distance = this.allerVers(a, cible.x, cible.z, tir.distance, dt);
     if (distance > arme.stats.portee || a.minuterie > 0) return;
     const m = arme.definition.mecanique;
-    const brulure = m.type === 'invocation' && m.brulureAuRang !== undefined && arme.rang >= m.brulureAuRang
-      ? CONFIG.armes.invocations.degatsBrulure : 0;
+    // Brûlure au dernier rang, ou dès le rang 1 avec Braises de blaze (1 / 2 cumuls : dégâts doublés au rang 2)
+    const braises = talents.rang('braises_blaze');
+    const brulure = braises > 0 ? CONFIG.armes.invocations.degatsBrulure * braises
+      : m.type === 'invocation' && m.brulureAuRang !== undefined && arme.rang >= m.brulureAuRang ? CONFIG.armes.invocations.degatsBrulure : 0;
     const base = Math.atan2(cible.x - a.x, cible.z - a.z);
     for (let k = 0; k < tir.salve; k++) {
       const angle = base + (k - (tir.salve - 1) / 2) * tir.ecart;
       this.projectiles.lancer(arme, tir.projectile, 'ligne', Math.sin(angle), Math.cos(angle), false, a.x, a.z, brulure, 'allie');
     }
     this.contexte.retours.son(def.sonCoup, 1.3);
-    a.minuterie = def.cadenceCoups;
+    a.minuterie = def.cadenceCoups * talents.cadenceAllie(a);
   }
 
   /** Soutien : suit le joueur ; à chaque délai de l'arme, bouclier au joueur, sinon soin de l'allié le plus blessé. */
@@ -326,9 +442,10 @@ export class Invocations implements SourceEntites {
     versX /= distance;
     versZ /= distance;
     a.vitesseSol = 0;
-    if (distance > arret && a.vitesse > 0) {
-      const nx = a.x + versX * a.vitesse * dt;
-      const nz = a.z + versZ * a.vitesse * dt;
+    const vitesse = a.vitesse * this.contexte.talents.vitesseAllie(a);
+    if (distance > arret && vitesse > 0) {
+      const nx = a.x + versX * vitesse * dt;
+      const nz = a.z + versZ * vitesse * dt;
       if (def.vol !== undefined) {
         // Volant : traverse le décor
         a.x = nx;
@@ -338,7 +455,7 @@ export class Invocations implements SourceEntites {
         a.x = corrige.x;
         a.z = corrige.z;
       }
-      a.vitesseSol = a.vitesse;
+      a.vitesseSol = vitesse;
     }
     a.angle += ecartAngle(a.angle, Math.atan2(versX, versZ)) * facteurLissage(10, dt);
     return distance;
@@ -355,7 +472,8 @@ export class Invocations implements SourceEntites {
       const a = this.pool.elements[i];
       if (a.pv <= 0 || !a.arme) continue;
       const d = longueur(a.x - x, a.z - z);
-      if (d < a.definition.provocation && d < meilleure) {
+      const provocation = a.definition.provocation * (a.alpha && a.echelle > 1 ? CONFIG.armes.invocations.provocationAlpha : 1);
+      if (d < provocation && d < meilleure) {
         meilleure = d;
         meilleur = a;
       }
@@ -377,7 +495,8 @@ export class Invocations implements SourceEntites {
       retours.son(a.definition.sonBlessure);
       return;
     }
-    // Mort : disparaît au prochain pas (poof d'invocation)
+    // Mort (0 PV) : un talent peut le ramener, sinon il disparaît au prochain pas (poof d'invocation)
+    if (this.contexte.talents.surMortAllie(a)) return;
     retours.son(a.definition.sonMort);
     a.vie = 0;
   }
@@ -410,6 +529,8 @@ export class Invocations implements SourceEntites {
       pose.x = a.x;
       pose.z = a.z;
       pose.angle = a.angle;
+      pose.echelleXZ = a.echelle;
+      pose.echelleY = a.echelle;
       // Les volants flottent en ondulant doucement
       pose.y = a.definition.vol !== undefined ? a.definition.vol + Math.sin(a.vie * 4) * 0.12 : 0;
       calculerRotations(rendu.modele, a.animation, pose.rotations);
@@ -422,6 +543,7 @@ export class Invocations implements SourceEntites {
       // Barre de vie dès la première blessure
       if (a.pv < a.pvMax) this.barres.ajouter(a.x, pose.y + rendu.modele.hauteur + 0.35, a.z, a.pv / a.pvMax);
     }
+    if (this.contexte.talents.rang('bosquet') > 0) this.dessinerHaies();
     for (let t = 0; t < this.rendus.length; t++) this.rendus[t]?.instances.terminer();
     for (const cubes of this.blocs.cubes.values()) cubes.terminer();
     for (const racines of this.blocs.racines.values()) racines.terminer();

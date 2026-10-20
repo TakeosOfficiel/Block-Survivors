@@ -264,7 +264,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     });
     for (const id of this.etat.personnage.armesDepart) this.arsenal.ameliorer(id);
     for (const id of talents.armes) this.arsenal.ameliorer(id);
-    this.mecaniques.brancher(combat, this.arsenal, mecaniquesClasse(choix.personnage));
+    this.mecaniques.brancher(combat, this.arsenal, { scene, textures, orbes: this.orbes }, mecaniquesClasse(choix.personnage));
     this.ennemis.definirTalents(this.mecaniques);
     this.joueur.talents = this.mecaniques;
 
@@ -428,6 +428,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.etiquette.placer(j.x, this.joueur.hauteur, j.z, !j.mort);
     this.ennemis.majVisuel(this.ombres);
     this.invocations.majVisuel(this.ombres);
+    this.mecaniques.majVisuel(this.ombres);
     this.chutes.majVisuel(this.ombres);
     this.meteores.majVisuel(this.ombres);
     this.ombres.terminer();

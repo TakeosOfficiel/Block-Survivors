@@ -2,6 +2,7 @@
 import type { IdPersonnage } from '../../donnees/personnages';
 import { MecaniquesArcher } from './archer';
 import { MecaniquesGuerrier } from './guerrier';
+import { MecaniquesInvocateur } from './invocateur';
 import { MecaniquesMage } from './mage';
 import { MecaniquesClasse, type Talents } from './talents';
 
@@ -13,6 +14,8 @@ export function mecaniquesClasse(personnage: IdPersonnage): (t: Talents) => Meca
       return (t) => new MecaniquesArcher(t);
     case 'mage':
       return (t) => new MecaniquesMage(t);
+    case 'invocateur':
+      return (t) => new MecaniquesInvocateur(t);
     default:
       return (t) => new MecaniquesClasse(t);
   }

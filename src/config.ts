@@ -141,7 +141,13 @@ export const CONFIG = {
     golems: { capacite: 32, distanceSuivi: 3 },   // alliés invoqués (golems, loups, vex)
     brulureTirs: 3,            // s de brûlure des tirs qui enflamment (blazes alliés)
     // Alliés : distance de pose du totem, soin au plus une fois par allié toutes les `delaiSoin` s
-    invocations: { porteeTotem: 9, delaiSoin: 8, degatsBrulure: 3, racines: 6 },
+    invocations: {
+      porteeTotem: 9, delaiSoin: 8, degatsBrulure: 3, racines: 6,
+      // Talents : provocation de l'alpha gardien (multiplicateur), haie du Bosquet (distance max entre totems,
+      // ralenti, espacement des racines, demi-largeur, période des ralentissements)
+      provocationAlpha: 2.5,
+      haie: { distance: 8, ralenti: 0.4, espacement: 0.7, largeur: 0.9, periode: 0.5 },
+    },
     // Onde de choc : blocs soulevés tous les `espacement` blocs, qui jaillissent puis s'enfoncent (s)
     fissure: {
       capacite: 12, blocs: 320, rayonGroupe: 2, depart: 1, espacement: 0.8, tailleBloc: 0.9,

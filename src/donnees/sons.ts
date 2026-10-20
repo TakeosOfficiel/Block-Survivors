@@ -42,6 +42,11 @@ const definitions = {
   allay_mort: { categorie: 'armes', chemin: 'mob/allay/death1', hachage: '5661b57b68464a0cd49e34349b2fffc4ae158182', volume: 0.4, hauteur: [1, 1], intervalleMin: 0.3, simultanes: 1 },
   explosion: { categorie: 'armes', chemin: 'random/explode1', hachage: 'fa85b9e7e54c36c9f9d0249ca739444b5e3bb66c', volume: 0.45, hauteur: [0.8, 1.1], intervalleMin: 0.08, simultanes: 3 },
 
+  loup_hurlement: { categorie: 'armes', chemin: 'mob/wolf/howl1', hachage: '074ee57fa9c2d306b39988f89d6cd69ede949388', volume: 0.35, hauteur: [0.95, 1.1], intervalleMin: 1, simultanes: 1 },
+  ravageur: { categorie: 'armes', chemin: 'mob/ravager/roar1', hachage: '8855447a5c5fe347907ae574495fec645a11a9d1', volume: 0.5, hauteur: [0.95, 1.05], intervalleMin: 1, simultanes: 1 },
+  ravageur_pas: { categorie: 'armes', chemin: 'mob/ravager/step1', hachage: '9b54f0eb559f983da0d39680bf107572e5525aea', volume: 0.3, hauteur: [0.9, 1.1], intervalleMin: 0.3, simultanes: 1 },
+  crocs: { categorie: 'armes', chemin: 'mob/evocation_illager/fangs', hachage: '3be8d0b483bcd9d7234a55fa8b0ab81f0713438e', volume: 0.3, hauteur: [0.9, 1.1], intervalleMin: 0.08, simultanes: 3 },
+  incantation: { categorie: 'armes', chemin: 'mob/evocation_illager/cast1', hachage: 'ea93dbbc9a8d5fc306b042fc70c4f3b35a94113b', volume: 0.4, hauteur: [1, 1], intervalleMin: 0.5, simultanes: 1 },
   loup_aboiement: { categorie: 'armes', chemin: 'mob/wolf/bark1', hachage: '527618d2fbb9712950357c4d5e95cfb86ffee417', volume: 0.35, hauteur: [0.9, 1.2], intervalleMin: 0.3, simultanes: 2 },
   loup_morsure: { categorie: 'armes', chemin: 'mob/wolf/growl1', hachage: '0eaaba6d7fee5159a61b36aea268381bface391b', volume: 0.2, hauteur: [0.9, 1.2], intervalleMin: 0.15, simultanes: 2 },
   vex_invocation: { categorie: 'armes', chemin: 'mob/evocation_illager/prepare_summon', hachage: 'e792be7a228007d8a782b0d6caf9da9ebf77a86b', volume: 0.35, hauteur: [1, 1.1], intervalleMin: 0.5, simultanes: 1 },

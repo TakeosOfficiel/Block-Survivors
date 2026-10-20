@@ -1,6 +1,6 @@
 /** Listes des textures à précharger (menu, puis partie), déduites des données. */
 import { CONFIG } from '../config';
-import { ALLIES, IDS_ALLIES } from '../donnees/allies';
+import { ALLIES, IDS_ALLIES, CREATURES_TALENTS } from '../donnees/allies';
 import { ARMES, IDS_ARMES } from '../donnees/armes';
 import { BLOCS, type IdBloc } from '../donnees/blocs';
 import { ENNEMIS, IDS_ENNEMIS } from '../donnees/ennemis';
@@ -78,6 +78,7 @@ export function texturesRequises(
       chemins.add(allie.blocs.racines);
     }
   }
+  for (const creature of Object.values(CREATURES_TALENTS)) chemins.add(creature.skin);
   for (const id of IDS_ARMES) {
     const arme = ARMES[id];
     chemins.add(arme.icone);

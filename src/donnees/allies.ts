@@ -1,5 +1,5 @@
 /** Alliés invoqués par les armes. Ajouter un allié = ajouter une entrée. */
-import type { DefinitionAllie } from './types';
+import type { ApparenceEntite, DefinitionAllie } from './types';
 
 const definitions = {
   golem_fer: {
@@ -134,3 +134,16 @@ export type IdAllie = keyof typeof definitions;
 export const ALLIES: Readonly<Record<IdAllie, DefinitionAllie>> = definitions;
 
 export const IDS_ALLIES = Object.keys(definitions) as IdAllie[];
+
+/**
+ * Créatures des talents de l'Invocateur, hors armes : le ravageur
+ * (Évocation supérieure) et les crocs d'évocateur (Crocs de l'évocateur).
+ */
+export const CREATURES_TALENTS = {
+  ravageur: {
+    modele: 'ravageur', skin: 'entity/illager/ravager', couleursSecours: {}, couleurSecoursParDefaut: 0x5b5652, rayonOmbre: 1.3,
+  },
+  crocs: {
+    modele: 'crocs', skin: 'entity/illager/evoker_fangs', couleursSecours: {}, couleurSecoursParDefaut: 0x8a8070, rayonOmbre: 0.4,
+  },
+} as const satisfies Record<string, ApparenceEntite>;

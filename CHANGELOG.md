@@ -5,6 +5,15 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.19.0] — 2026-10-20
+
+Refonte des classes, étape 11 : les talents à mécanique propre de l'Invocateur. Les huit arbres de talents sont désormais complets : plus aucun talent n'est « en préparation ». Valeurs provisoires, à ajuster après les essais.
+
+### Nouveautés
+- Maître-chien : Chef de meute (première morsure renforcée), Morsure marquante, Traque ou Curée, Réactivité, Meute soudée, Hurlement, Encerclement, Braises de blaze, Coordination, Alpha (un loup plus grand et plus fort), Ruée de la meute (loups fantômes), Lune de sang (12 loups pendant 8 s), Gardien alpha.
+- Évocateur : Lien spirituel, Garde rapprochée, Allay chanteur (l'allay ramasse l'XP), Essaim, Évocation supérieure (un ravageur du jeu charge à travers la horde), Crocs de l'évocateur (rangées de crocs qui jaillissent du sol et claquent), Bosquet (haie de racines entre deux totems).
+- Nouveaux modèles : le ravageur (géométrie et texture du jeu) et les crocs d'évocateur, avec leurs sons.
+
 ## [0.18.0] — 2026-10-20
 
 Refonte des classes, étape 10 : les talents à mécanique propre du Mage. Valeurs provisoires, à ajuster après les essais.

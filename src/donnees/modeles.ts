@@ -450,6 +450,45 @@ const definitions = {
     },
     attaque: { duree: 0.25, membres: [{ partie: 'brasDroit', amplitude: 1.6 }] },
   },
+
+  // Ravageur (Évocation supérieure) : skin 128x128, géométrie vanilla (bedrock-samples) convertie
+  ravageur: {
+    tailleTexture: [128, 128],
+    parties: {
+      corps:      { taille: [14, 16, 20], pivot: [0, 19, -2],  centre: [0, -1, -6],     uv: [0, 55],  rotation: [DEMI_PI, 0, 0] },
+      ventre:     { taille: [12, 13, 18], pivot: [0, 19, -2],  centre: [0, -15.5, -5], uv: [0, 91],  rotation: [DEMI_PI, 0, 0] },
+      cou:        { taille: [10, 10, 18], pivot: [0, 20, 20],  centre: [0, 6, -19],    uv: [68, 73] },
+      tete:       { taille: [16, 20, 16], pivot: [0, 28, 10],  centre: [0, -4, 6],     uv: [0, 0] },
+      nez:        { taille: [4, 8, 4],    pivot: [0, 28, 10],  centre: [0, -12, 16],   uv: [0, 0] },
+      machoire:   { taille: [16, 3, 16],  pivot: [0, 15, 10],  centre: [0, -0.5, 6],   uv: [0, 36] },
+      corneDroite: { taille: [2, 14, 4],  pivot: [-5, 27, 19], centre: [-4, 7, -1],    uv: [74, 55], rotation: [-Math.PI / 3, 0, 0] },
+      corneGauche: { taille: [2, 14, 4],  pivot: [-5, 27, 19], centre: [14, 7, -1],    uv: [74, 55], rotation: [-Math.PI / 3, 0, 0] },
+      jambeArriereDroite: { taille: [8, 37, 8], pivot: [-12, 30, -22], centre: [4, -11.5, 1], uv: [96, 0] },
+      jambeArriereGauche: { taille: [8, 37, 8], pivot: [4, 30, -22],   centre: [4, -11.5, 1], uv: [96, 0] },
+      jambeAvantDroite:   { taille: [8, 37, 8], pivot: [-4, 26, 4],    centre: [-4, -7.5, 0], uv: [64, 0] },
+      jambeAvantGauche:   { taille: [8, 37, 8], pivot: [-4, 26, 4],    centre: [12, -7.5, 0], uv: [64, 0] },
+    },
+    portrait: ['tete', 'nez'],
+    marche: {
+      frequence: 1.6, vitesseReference: 7, lissage: 8,
+      membres: [
+        { partie: 'jambeArriereDroite', axe: 'x', amplitude: 0.5, dephasage: 0 },
+        { partie: 'jambeArriereGauche', axe: 'x', amplitude: 0.5, dephasage: Math.PI },
+        { partie: 'jambeAvantDroite', axe: 'x', amplitude: 0.5, dephasage: Math.PI },
+        { partie: 'jambeAvantGauche', axe: 'x', amplitude: 0.5, dephasage: 0 },
+      ],
+    },
+  },
+
+  // Crocs d'évocateur (Crocs de l'évocateur) : skin 64x32, socle enterré et deux mâchoires qui claquent
+  crocs: {
+    tailleTexture: [64, 32],
+    parties: {
+      socle:     { taille: [10, 12, 10], pivot: [0, 0, 0], centre: [0, -4, 0], uv: [0, 0] },
+      machoireA: { taille: [4, 14, 8],   pivot: [0, 2, 0], centre: [2, 7, 0],  uv: [40, 0] },
+      machoireB: { taille: [4, 14, 8],   pivot: [0, 2, 0], centre: [-2, 7, 0], uv: [40, 0], miroir: true },
+    },
+  },
 } satisfies Record<string, DefinitionModele>;
 
 export type IdModele = keyof typeof definitions;

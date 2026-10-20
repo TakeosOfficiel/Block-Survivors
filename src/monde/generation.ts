@@ -212,6 +212,7 @@ class Generateur {
       const sol = BLOCS[this.sol[c]];
       if (sol.forme === 'liquide') carte.drapeaux[c] |= BLOQUE_MARCHE;
       carte.ralentissement[c] = sol.ralentit ?? 1;
+      carte.ralentissementHorsToiles[c] = carte.ralentissement[c];
       carte.degats[c] = sol.degats ?? 0;
 
       for (let couche = 0; couche <= 1; couche++) {
@@ -223,6 +224,7 @@ class Generateur {
           if (couche === 1 && bloc.forme !== 'liquide') carte.drapeaux[c] |= BLOQUE_TIR;
         } else if (bloc.ralentit !== undefined) {
           carte.ralentissement[c] = Math.min(carte.ralentissement[c], bloc.ralentit);
+          if (!bloc.toile) carte.ralentissementHorsToiles[c] = Math.min(carte.ralentissementHorsToiles[c], bloc.ralentit);
         }
       }
     }

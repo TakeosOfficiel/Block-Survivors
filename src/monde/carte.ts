@@ -19,6 +19,8 @@ export class CarteMonde {
   readonly demi: number;
   readonly drapeaux: Uint8Array;
   readonly ralentissement: Float32Array;
+  /** Même chose sans les toiles (pour les araignées). */
+  readonly ralentissementHorsToiles: Float32Array;
   readonly degats: Float32Array;
 
   constructor(taille: number) {
@@ -26,6 +28,7 @@ export class CarteMonde {
     this.demi = taille / 2;
     this.drapeaux = new Uint8Array(taille * taille);
     this.ralentissement = new Float32Array(taille * taille).fill(1);
+    this.ralentissementHorsToiles = new Float32Array(taille * taille).fill(1);
     this.degats = new Float32Array(taille * taille);
   }
 
@@ -55,9 +58,11 @@ export class CarteMonde {
   }
 
   /** Multiplicateur de vitesse du sol (1 = normal). */
-  vitesseSol(x: number, z: number): number {
+  /** Multiplicateur de vitesse sur cette case ; `traverseToiles` : sans tenir compte des toiles. */
+  vitesseSol(x: number, z: number, traverseToiles = false): number {
     const c = this.cellule(x, z);
-    return c < 0 ? 1 : this.ralentissement[c];
+    if (c < 0) return 1;
+    return traverseToiles ? this.ralentissementHorsToiles[c] : this.ralentissement[c];
   }
 
   degatsSol(x: number, z: number): number {

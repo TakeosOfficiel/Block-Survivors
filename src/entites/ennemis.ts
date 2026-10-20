@@ -415,7 +415,7 @@ export class Ennemis implements SourceEntites {
     const kSeparation = Math.min(1, g.separation * dt);
 
     // Intégration : marche voulue (ralentie par le sol) + recul amorti + séparation
-    const vitesse = def.vitesse * (def.ignoreObstacles ? 1 : carte.vitesseSol(e.x, e.z));
+    const vitesse = def.vitesse * (def.ignoreObstacles ? 1 : carte.vitesseSol(e.x, e.z, def.traverseToiles));
     e.x += (e.dirX * vitesse + e.vx) * dt + sepX * kSeparation;
     e.z += (e.dirZ * vitesse + e.vz) * dt + sepZ * kSeparation;
     const amorti = 1 - facteurLissage(g.amortissementRecul, dt);

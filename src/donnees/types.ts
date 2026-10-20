@@ -54,6 +54,8 @@ export interface DefinitionBloc {
   readonly rotationAleatoire?: boolean;
   /** Multiplicateur de vitesse sur ce bloc (sable des âmes) ou dedans (toile). */
   readonly ralentit?: number;
+  /** Toile d'araignée : son ralentissement ne gêne pas les araignées. */
+  readonly toile?: boolean;
   /** Dégâts infligés au joueur qui marche dessus (magma). */
   readonly degats?: number;
   /** Texture animée vanilla (bande de frames) : vitesse et lecture en aller-retour. */
@@ -244,6 +246,8 @@ export interface DefinitionEnnemi extends ApparenceEntite {
   readonly butin?: IdObjet;
   /** Trop grand pour être gêné par le décor : traverse les obstacles. */
   readonly ignoreObstacles?: boolean;
+  /** Araignées : pas ralenties par les toiles, comme en jeu. */
+  readonly traverseToiles?: boolean;
   /** Présent pour les boss : affichage de leur barre de vie. */
   readonly boss?: { readonly couleurBarre: CouleurBarreBoss };
   /** Sons joués quand il est blessé et quand il meurt. */

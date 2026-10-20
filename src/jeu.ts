@@ -263,6 +263,12 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.boucle = new Boucle(this);
   }
 
+  /** Prépare tous les modèles sur la carte graphique (pendant l'écran de chargement). */
+  prechauffer(): Promise<void> {
+    this.camera.majVisuel(0, 0);
+    return this.rendu.prechauffer();
+  }
+
   demarrer(): void {
     const manquantes = this.textures.bilan.manquantes.length;
     if (manquantes > 0) {

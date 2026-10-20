@@ -93,6 +93,8 @@ async function demarrer(): Promise<void> {
 
   jeu = new Jeu(rendu, textures, monde, choix, { sons, options, panneauOptions, sauvegarde, profil });
   jeu.appliquerOptions(options);
+  ecran.etape('Préparation des modèles…');
+  await jeu.prechauffer();
   ecran.masquer();
   jeu.demarrer();
 

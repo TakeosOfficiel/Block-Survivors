@@ -134,6 +134,30 @@ export class Rendu {
     this.renderer.render(this.scene, this.camera);
   }
 
+  /**
+   * Prépare la carte graphique pendant le chargement : chaque maillage encore
+   * vide (boss, mobs pas encore apparus, golem, particules…) est dessiné une
+   * fois, ce qui compile ses shaders et envoie ses données. Sans cela, la
+   * première apparition d'un boss ou d'un nouveau mob fige le jeu un instant.
+   */
+  async prechauffer(): Promise<void> {
+    const vides: THREE.InstancedMesh[] = [];
+    this.scene.traverse((objet) => {
+      const maillage = objet as THREE.InstancedMesh;
+      if (maillage.isInstancedMesh && maillage.count === 0) {
+        maillage.count = 1;
+        vides.push(maillage);
+      }
+    });
+    try {
+      await this.renderer.compileAsync(this.scene, this.camera);
+    } catch {
+      // Compilation anticipée indisponible : le rendu ci-dessous suffit
+    }
+    this.renderer.render(this.scene, this.camera);
+    for (const maillage of vides) maillage.count = 0;
+  }
+
   private readonly redimensionner = (): void => {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();

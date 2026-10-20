@@ -85,6 +85,7 @@ const definitions = {
     forme: 'croix',
     decoupe: true,
     ralentit: 0.35,
+    toile: true,
     couleurSecours: 0xdddddd,
   },
 

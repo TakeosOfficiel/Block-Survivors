@@ -5,6 +5,18 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.17.0] — 2026-10-20
+
+Refonte des classes, étape 9 : les talents à mécanique propre de l'Archère. Valeurs provisoires, à ajuster après les essais.
+
+### Nouveautés
+- Élite : Visée stable, Premier sang, Perforation nette, Tir groupé ou Tir rebondissant, Marque du chasseur (lueur dorée sur l'ennemi marqué), Concentration, Point faible, Puissance (une flèche spectrale géante qui traverse tout toutes les 12 volées), Œil de l'aigle (un critique ricoche vers l'ennemi le plus éloigné), Exécutrice.
+- Rôdeuse : Pas du chasseur, Venin (concentré ou virulent), Ronces collantes, Contagion, Course chargée et Second vent, Piège à loups, Ronces venimeuses, Nuage toxique (nuage vert de poison), Vent arrière.
+- Ces talents ne sont plus marqués « Effet en préparation ».
+
+### Changements
+- Une flèche qui traverse un ennemi perd 25 % de ses dégâts (Perforation nette réduit cette perte).
+
 ## [0.16.0] — 2026-10-20
 
 Refonte des classes, étape 8 : les talents à mécanique propre du Guerrier. Valeurs provisoires, à ajuster après les essais.

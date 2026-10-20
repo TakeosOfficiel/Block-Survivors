@@ -37,6 +37,8 @@ interface ProjectileJoueur {
   degats: number;
   recul: number;
   restants: number;         // ennemis encore traversables
+  perte: number;            // part des dégâts perdue à chaque ennemi traversé
+  visee: boolean;           // Visée stable : plus de dégâts au-delà d'une distance
   zone: number;             // rayon d'explosion (0 = n'explose pas)
   gerbe: DefinitionGerbe;   // particules et son de l'explosion
   sonExplosion: IdSon;
@@ -54,7 +56,7 @@ export class ProjectilesJoueur implements SourceEntites {
   private readonly pool = new Pool<ProjectileJoueur>(CONFIG.projectiles.capacite, () => ({
     indexRendu: 0, indexArme: 0, definition: PROJECTILES[IDS_PROJECTILES[0]], retour: false, revient: false,
     x: 0, z: 0, dirX: 0, dirZ: 1, vitesse: 0, parcouru: 0, portee: 0, degats: 0, recul: 0,
-    restants: 1, zone: 0, gerbe: GERBES.explosionArme, sonExplosion: 'explosion', eclats: 0, brulure: 0, nature: 'arme',
+    restants: 1, perte: 0, visee: false, zone: 0, gerbe: GERBES.explosionArme, sonExplosion: 'explosion', eclats: 0, brulure: 0, nature: 'arme',
     touches: new Int32Array(MAX_TOUCHES), nbTouches: 0, trainee: 0,
   }));
 
@@ -92,7 +94,14 @@ export class ProjectilesJoueur implements SourceEntites {
     p.degats = s.degats;
     p.indexArme = arme.index;
     p.recul = s.recul;
-    p.restants = mode === 'ligne' ? Math.max(1, s.perforation) : Infinity;
+    // Une flèche perd une part de ses dégâts à chaque ennemi traversé (moins avec Perforation nette)
+    const talents = this.contexte.talents;
+    const c = CONFIG.talents.perforationNette;
+    const fleche = mode === 'ligne' && arme.definition.famille === 'projectile' && nature === 'arme';
+    const nette = talents.rang('perforation_nette');
+    p.perte = !fleche ? 0 : nette > 0 ? talents.valeur('perforation_nette', c.pertes) : CONFIG.projectiles.perteTraversee;
+    p.restants = mode === 'ligne' ? Math.max(1, s.perforation) + (fleche && nette >= c.rangPerforation ? 1 : 0) : Infinity;
+    p.visee = arme.id === 'arc' && talents.rang('visee_stable') > 0;
     p.zone = explose ? s.zone : 0;
     const m = arme.definition.mecanique;
     p.gerbe = m.type === 'explosif' && m.gerbe ? GERBES[m.gerbe] : GERBES.explosionArme;
@@ -102,6 +111,18 @@ export class ProjectilesJoueur implements SourceEntites {
     p.trainee = 0;
     p.brulure = brulure;
     p.nature = nature;
+  }
+
+  /** Flèche spéciale d'un talent (Puissance) : traverse tout sur `portee` blocs. */
+  lancerSpecial(arme: ArmeEquipee, type: IdProjectile, dirX: number, dirZ: number, degats: number, portee: number): void {
+    this.lancer(arme, type, 'traversant', dirX, dirZ);
+    const p = this.pool.elements[this.pool.nombre - 1];
+    if (!p || p.definition !== PROJECTILES[type]) return;
+    p.degats = degats;
+    p.portee = portee;
+    p.vitesse = PROJECTILES[type].vitesse;
+    p.perte = 0;
+    p.visee = false;
   }
 
   maj(dt: number): void {
@@ -148,7 +169,10 @@ export class ProjectilesJoueur implements SourceEntites {
           detruit = true;
           break;
         }
-        ennemis.blesser(e, p.degats, p.x - p.dirX, p.z - p.dirZ, p.recul, p.indexArme, p.nature);
+        const v = CONFIG.talents.viseeStable;
+        const degats = p.visee && p.parcouru > v.distance ? p.degats * (1 + v.bonus) : p.degats;
+        ennemis.blesser(e, degats, p.x - p.dirX, p.z - p.dirZ, p.recul, p.indexArme, p.nature);
+        p.degats *= 1 - p.perte;
         if (p.brulure > 0) ennemis.bruler(e, 1, p.brulure, CONFIG.armes.brulureTirs, p.indexArme);
         if (p.nbTouches < MAX_TOUCHES) p.touches[p.nbTouches++] = e.id;
         if (--p.restants <= 0) detruit = true;

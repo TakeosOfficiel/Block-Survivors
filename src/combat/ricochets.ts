@@ -3,6 +3,8 @@
  * tête chercheuse vers l'ennemi le plus proche, puis rebondit sur le plus
  * proche qu'elle n'a pas encore touché (dans `distanceRebond`), en perdant
  * une part de ses dégâts à chaque rebond. Rebonds = perforation de l'arme.
+ * Talents : Tir rebondissant (rebonds plus loin), Œil de l'aigle (un
+ * critique ricoche vers l'ennemi le plus éloigné : `ricocher`).
  */
 import { CONFIG } from '../config';
 import { GERBES } from '../donnees/particules';
@@ -31,6 +33,8 @@ interface Ricochet {
   nbTouches: number;
   vie: number;
   trainee: number;
+  /** Lancée par un talent : ses coups ne relancent pas les talents. */
+  reaction: boolean;
 }
 
 export class Ricochets implements SourceEntites {
@@ -43,7 +47,7 @@ export class Ricochets implements SourceEntites {
     this.contexte = contexte;
     this.fleches = new Pool<Ricochet>(c.capacite, () => ({
       arme: null, indexRendu: 0, x: 0, z: 0, dirX: 0, dirZ: 1, cible: null, cibleId: 0, degats: 0, rebonds: 0,
-      touches: new Int32Array(c.rebondsMax + 2), nbTouches: 0, vie: 0, trainee: 0,
+      touches: new Int32Array(c.rebondsMax + 2), nbTouches: 0, vie: 0, trainee: 0, reaction: false,
     }));
   }
 
@@ -75,8 +79,27 @@ export class Ricochets implements SourceEntites {
       f.nbTouches = 0;
       f.vie = CONFIG.armes.ricochet.vieMax;
       f.trainee = 0;
+      f.reaction = false;
     }
     return true;
+  }
+
+  /** Une flèche spectrale part de (x, z) vers `cible`, sans rebondir (réaction d'un talent). */
+  ricocher(arme: ArmeEquipee, x: number, z: number, cible: Ennemi, degats: number): void {
+    const f = this.fleches.acquerir();
+    if (!f) return;
+    f.arme = arme;
+    f.indexRendu = RenduProjectiles.indexDe('fleche_spectrale');
+    f.x = x;
+    f.z = z;
+    f.cible = cible;
+    f.cibleId = cible.id;
+    f.degats = degats;
+    f.rebonds = 0;
+    f.nbTouches = 0;
+    f.vie = CONFIG.armes.ricochet.vieMax;
+    f.trainee = 0;
+    f.reaction = true;
   }
 
   maj(dt: number): void {
@@ -86,13 +109,14 @@ export class Ricochets implements SourceEntites {
       const arme = f.arme;
       const m = arme?.definition.mecanique;
       f.vie -= dt;
-      if (!arme || m?.type !== 'ricochet' || f.vie <= 0) {
+      if (!arme || (m?.type !== 'ricochet' && !f.reaction) || f.vie <= 0) {
         this.terminer(i);
         continue;
       }
       // Cible morte en route : la plus proche que la flèche n'a pas encore touchée
+      const distanceRebond = (m?.type === 'ricochet' ? m.distanceRebond : 4) + (this.contexte.talents.rang('tir_rebondissant') > 0 ? CONFIG.talents.tirRebondissant : 0);
       if (!f.cible || f.cible.mort >= 0 || f.cible.id !== f.cibleId) {
-        f.cible = this.prochaine(f, m.distanceRebond * 2);
+        f.cible = this.prochaine(f, distanceRebond * 2);
         f.cibleId = f.cible?.id ?? 0;
         if (!f.cible) {
           this.terminer(i);
@@ -104,13 +128,14 @@ export class Ricochets implements SourceEntites {
       const d = longueur(dx, dz) || 1e-6;
       f.dirX = dx / d;
       f.dirZ = dz / d;
-      const pas = arme.stats.vitesse * dt;
+      const pas = (m?.type === 'ricochet' ? arme.stats.vitesse : PROJECTILES.fleche_spectrale.vitesse) * dt;
       if (d <= pas + f.cible.definition.rayon) {
         // Touche, puis rebondit
         const e = f.cible;
         f.x = e.x;
         f.z = e.z;
-        ennemis.blesser(e, f.degats, f.x - f.dirX, f.z - f.dirZ, arme.stats.recul, arme.index);
+        if (f.reaction) this.contexte.talents.blesser(e, f.degats, f.x - f.dirX, f.z - f.dirZ, arme.stats.recul, arme.index);
+        else ennemis.blesser(e, f.degats, f.x - f.dirX, f.z - f.dirZ, arme.stats.recul, arme.index);
         if (f.nbTouches < f.touches.length) f.touches[f.nbTouches++] = e.id;
         particules.emettre(f.x, 1.2, f.z, GERBES.impactFleche);
         retours.son('impact_fleche');
@@ -119,8 +144,8 @@ export class Ricochets implements SourceEntites {
           continue;
         }
         f.rebonds--;
-        f.degats *= 1 - m.perte;
-        f.cible = this.prochaine(f, m.distanceRebond);
+        if (m?.type === 'ricochet') f.degats *= 1 - m.perte;
+        f.cible = this.prochaine(f, distanceRebond);
         f.cibleId = f.cible?.id ?? 0;
         if (!f.cible) this.terminer(i);
         continue;

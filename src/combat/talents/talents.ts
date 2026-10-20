@@ -10,6 +10,7 @@
  */
 import { CONFIG } from '../../config';
 import { ARMES, IDS_ARMES, type IdArme } from '../../donnees/armes';
+import { ETATS } from '../../donnees/etats';
 import { GERBES, type IdGerbe } from '../../donnees/particules';
 import { PLAFONDS } from '../../donnees/plafonds';
 import type { FamilleArme } from '../../donnees/types';
@@ -18,7 +19,7 @@ import type { CrochetsTalents, NatureCoup } from '../../entites/ennemis';
 import type { CrochetsJoueur } from '../../entites/types';
 import type { EtatPartie } from '../../etat';
 import type { ArmeEquipee } from '../armeEquipee';
-import type { Arsenal } from '../arsenal';
+import type { Arsenal, SystemesCombat } from '../arsenal';
 import type { ContexteCombat } from '../contexte';
 import { ajouterBouclier } from '../defense';
 
@@ -62,6 +63,11 @@ export class MecaniquesClasse {
   apresCoup(_e: Ennemi, _degats: number, _arme: number, _critique: boolean, _nature: NatureCoup): void {}
   surMort(_e: Ennemi, _arme: number, _nature: NatureCoup): void {}
   surImpactMur(_e: Ennemi): void {}
+  surSortiePiege(_e: Ennemi): void {}
+  /** Cumuls de poison au maximum (Venin concentré ou virulent). */
+  cumulsPoison(): number {
+    return ETATS.poison.cumulsMax;
+  }
   vitesse(): number {
     return 1;
   }
@@ -101,6 +107,11 @@ export class Talents implements CrochetsTalents, CrochetsJoueur {
   // Ordres des talents aux systèmes d'armes, lus au déclenchement
   /** La prochaine Onde de choc part dans 6 directions (Séisme). */
   ondeCirculaire = false;
+  /** Dégâts de la flèche spectrale géante que tire ce coup de l'Arc (Puissance ; 0 : aucune), et sa portée. */
+  flecheGeante = 0;
+  porteeFlecheGeante = 0;
+  /** Cette volée part aussi vers l'arrière (Vent arrière). */
+  voleeArriere = false;
 
   constructor(etat: EtatPartie) {
     this.etat = etat;
@@ -111,6 +122,10 @@ export class Talents implements CrochetsTalents, CrochetsJoueur {
   }
 
   /** Branche le combat et les mécaniques de la classe (une fois les systèmes créés). */
+  get systemes(): SystemesCombat {
+    return this.arsenal.systemes;
+  }
+
   brancher(contexte: ContexteCombat, arsenal: Arsenal, classe: (t: Talents) => MecaniquesClasse): void {
     this.contexteCombat = contexte;
     this.arsenalPartie = arsenal;
@@ -257,6 +272,14 @@ export class Talents implements CrochetsTalents, CrochetsJoueur {
 
   surImpactMur(e: Ennemi): void {
     this.classe.surImpactMur(e);
+  }
+
+  surSortiePiege(e: Ennemi): void {
+    this.classe.surSortiePiege(e);
+  }
+
+  cumulsPoison(): number {
+    return this.classe.cumulsPoison();
   }
 
   vitesse(): number {

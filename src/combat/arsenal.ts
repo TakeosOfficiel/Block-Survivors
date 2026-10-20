@@ -3,6 +3,7 @@
  * chaque arme selon sa mécanique. Les effets sont délégués aux systèmes de
  * combat (balayages, projectiles, orbites, foudre, invocations).
  */
+import { CONFIG } from '../config';
 import { ARMES, type IdArme } from '../donnees/armes';
 import type { MecaniqueArme } from '../donnees/types';
 import type { ArmeEquipee } from './armeEquipee';
@@ -53,7 +54,7 @@ export class Arsenal {
   version = 0;
 
   private readonly contexte: ContexteCombat;
-  private readonly systemes: SystemesCombat;
+  readonly systemes: SystemesCombat;
 
   constructor(contexte: ContexteCombat, systemes: SystemesCombat) {
     this.contexte = contexte;
@@ -125,9 +126,20 @@ export class Arsenal {
         const cible = ennemis.plusProche(j.x, j.z, s.portee);
         if (!cible) return false;
         const base = Math.atan2(cible.x - j.x, cible.z - j.z);
-        for (let k = 0; k < s.nombre; k++) {
-          const a = base + (k - (s.nombre - 1) / 2) * m.dispersion;
-          this.systemes.projectiles.lancer(arme, m.projectile, modeTir(m, arme.rang), Math.sin(a), Math.cos(a));
+        const talents = this.contexte.talents;
+        // Puissance (talent) : cette flèche de l'Arc devient une flèche spectrale géante
+        if (talents.flecheGeante > 0 && arme.id === 'arc') {
+          this.systemes.projectiles.lancerSpecial(arme, 'fleche_geante', Math.sin(base), Math.cos(base), talents.flecheGeante, talents.porteeFlecheGeante);
+          return true;
+        }
+        // Tir groupé : cône de la Salve resserré ; Vent arrière : la volée part aussi vers l'arrière
+        const dispersion = m.dispersion * (arme.id === 'salve' && talents.rang('tir_groupe') > 0 ? CONFIG.talents.tirGroupe : 1);
+        const sens = talents.voleeArriere ? 2 : 1;
+        for (let v = 0; v < sens; v++) {
+          for (let k = 0; k < s.nombre; k++) {
+            const a = base + v * Math.PI + (k - (s.nombre - 1) / 2) * dispersion;
+            this.systemes.projectiles.lancer(arme, m.projectile, modeTir(m, arme.rang), Math.sin(a), Math.cos(a));
+          }
         }
         return true;
       }

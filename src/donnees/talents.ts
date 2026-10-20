@@ -42,6 +42,11 @@ export const MECANIQUES_PRETES: ReadonlySet<string> = new Set<string>([
   'fureur_gladiateur', 'champion_arene', 'execution', 'posture_defensive', 'epines', 'rempart', 'inebranlable',
   'ronces_acier', 'contre_coup', 'peau_de_fer', 'tenir_la_ligne', 'repliques', 'contre_attaque_bastion',
   'dernier_rempart', 'seisme',
+  // Archère
+  'visee_stable', 'premier_sang', 'perforation_nette', 'tir_groupe', 'tir_rebondissant', 'marque_chasseur',
+  'concentration', 'point_faible', 'puissance', 'oeil_aigle', 'executrice', 'pas_chasseur', 'venin',
+  'venin_concentre', 'venin_virulent', 'ronces_collantes', 'contagion', 'course_chargee', 'piege_a_loups',
+  'second_vent', 'ronces_venimeuses', 'nuage_toxique', 'vent_arriere',
 ]);
 
 export const ARBRES: Readonly<Record<IdPersonnage, readonly [DefinitionArbre, DefinitionArbre]>> = {

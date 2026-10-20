@@ -50,6 +50,7 @@ export interface CrochetsTalents {
   apresCoup(e: Ennemi, degats: number, arme: number, critique: boolean, nature: NatureCoup): void;
   surMort(e: Ennemi, arme: number, nature: NatureCoup): void;
   surImpactMur(e: Ennemi): void;
+  surSortiePiege(e: Ennemi): void;
 }
 
 /** Tout ce qu'il faut pour afficher un type d'ennemi. */
@@ -425,6 +426,10 @@ export class Ennemis implements SourceEntites {
     this.tiquer(e, e.saignement, ETATS.saignement.tic, 'saignement', dt);
     if (e.mort >= 0) return;
     if (e.marqueChasseur > 0) e.marqueChasseur -= dt;
+    if (e.dansPiege && this.etat.tempsJeu > e.piege) {
+      e.dansPiege = false;
+      this.talents?.surSortiePiege(e);
+    }
     if (e.tempsCumuls > 0 && (e.tempsCumuls -= dt) <= 0) e.cumulsTalent = 0;
     if (e.encercle > 0) e.encercle -= dt;
     if (e.ralentiTemps > 0 && (e.ralentiTemps -= dt) <= 0) e.ralenti = 0;
@@ -446,7 +451,7 @@ export class Ennemis implements SourceEntites {
       this.particules.emettre(e.x, h * 0.5, e.z, GERBES[ETATS.saignement.gerbe]);
     }
     if (e.etourdi > 0) this.particules.emettre(e.x, h - 0.1, e.z, GERBES[ETATS.etourdi.gerbe]);
-    if (e.marqueTemps > 0 && Math.random() < ETATS.brulure.periode / ETATS.marque.periode) {
+    if ((e.marqueTemps > 0 || e.marqueChasseur > 0) && Math.random() < ETATS.brulure.periode / ETATS.marque.periode) {
       this.particules.emettre(e.x, h - 0.1, e.z, GERBES[ETATS.marque.gerbe]);
     }
   }

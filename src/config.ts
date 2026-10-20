@@ -126,6 +126,8 @@ export const CONFIG = {
     intervalleTrainee: 0.05,   // s entre deux particules de traînée
     // Éclats de la Fusée explosive : nombre, distance (blocs), rayon et dégâts (parts de l'explosion)
     eclats: { nombre: 4, distance: 1.6, rayon: 0.5, degats: 0.35 },
+    // Part des dégâts qu'une flèche perd à chaque ennemi traversé (Perforation nette la réduit)
+    perteTraversee: 0.25,
   },
 
   armes: {
@@ -162,11 +164,24 @@ export const CONFIG = {
     // Pluie de flèches : chute (s) depuis `hauteur`, flèche plantée `plantee` s, rayon de chaque impact
     pluie: { zones: 4, fleches: 96, chute: 0.25, hauteur: 7, plantee: 0.6, rayonImpact: 0.9, taille: 0.9 },
     // Piège de ronces : buissons par piège, enracinement à l'entrée (s) et délai avant le suivant (s)
-    piege: { capacite: 12, buissons: 5, taille: 0.9, recherche: 12, enracinement: 0.5, delaiEnracinement: 3 },
+    piege: {
+      capacite: 12, buissons: 5, taille: 0.9, recherche: 12, enracinement: 0.5, delaiEnracinement: 3,
+      // Talents : enracinement à l'entrée (s, par rang), propagation du poison (s)
+      roncesCollantes: [0.5, 1], periodePropagation: 1,
+    },
   },
 
   // Talents : vitesse (blocs/s) sous laquelle le joueur compte comme immobile
-  talents: { seuilMouvement: 0.5 },
+  talents: {
+    seuilMouvement: 0.5,
+    // Visée stable : distance parcourue (blocs) au-delà de laquelle les flèches de l'Arc font plus mal
+    viseeStable: { distance: 8, bonus: 0.15 },
+    // Perforation nette : perte par ennemi traversé, par rang ; rang à partir duquel +1 perforation
+    perforationNette: { pertes: [0.12, 0], rangPerforation: 2 },
+    // Tir groupé : cône de la Salve resserré ; Tir rebondissant : rebonds plus loin (blocs)
+    tirGroupe: 0.7,
+    tirRebondissant: 2,
+  },
 
   // Chiffres des dégâts au-dessus des ennemis (option)
   chiffresDegats: {

@@ -81,6 +81,22 @@ const definitions = {
     couleurSecours: 0xf0d060,
   },
   // Fusée de feu d'artifice (Fusée explosive)
+  // Puissance (talent de l'Élite) : flèche spectrale géante qui traverse tout
+  fleche_geante: {
+    nom: 'Flèche spectrale géante',
+    forme: 'croisee',
+    texture: 'entity/projectiles/spectral_arrow',
+    tailleTexture: [32, 32],
+    uv: [0, 0, 16, 5],
+    longueur: 2.6,
+    largeur: 2.6 * 5 / 16,
+    vitesse: 30,
+    duree: 2,
+    rayon: 0.9,
+    hauteur: 1.3,
+    trainee: 'spectrale',
+    couleurSecours: 0xf0d060,
+  },
   fusee: {
     nom: "Fusée d'artifice",
     forme: 'plat',

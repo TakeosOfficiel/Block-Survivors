@@ -2,7 +2,7 @@
  * Écran des options (depuis le menu ou la pause) : volume, compteur de FPS,
  * secousses de l'écran. Chaque changement est appliqué et enregistré aussitôt.
  */
-import { enregistrerOptions, NIVEAUX_SHADERS, STYLES_HERBE, type NiveauShaders, type Options, type StyleHerbe } from '../options';
+import { enregistrerOptions, NIVEAUX_SHADERS, type NiveauShaders, type Options } from '../options';
 
 const LIBELLES_SHADERS: Readonly<Record<NiveauShaders, string>> = {
   aucun: 'Désactivés',
@@ -10,13 +10,6 @@ const LIBELLES_SHADERS: Readonly<Record<NiveauShaders, string>> = {
   complets: 'Complets',
 };
 
-const LIBELLES_HERBE: Readonly<Record<StyleHerbe, string>> = {
-  minecraft: 'Minecraft',
-  touffes: 'Touffes ondulantes',
-  pixels: 'Pixels 3D',
-  stylisee: 'Stylisée',
-  realiste: 'Réaliste',
-};
 import { element } from './dom';
 
 export class PanneauOptions {
@@ -25,7 +18,6 @@ export class PanneauOptions {
   private readonly texteVolume = element('option-volume-texte');
   private readonly boutonFps = element<HTMLButtonElement>('option-fps');
   private readonly boutonSecousses = element<HTMLButtonElement>('option-secousses');
-  private readonly boutonHerbe = element<HTMLButtonElement>('option-herbe');
   private readonly boutonShaders = element<HTMLButtonElement>('option-shaders');
   private readonly options: Options;
   private readonly appliquer: (options: Options) => void;
@@ -51,11 +43,6 @@ export class PanneauOptions {
     this.boutonShaders.addEventListener('click', () => {
       const i = NIVEAUX_SHADERS.indexOf(this.options.shaders);
       this.options.shaders = NIVEAUX_SHADERS[(i + 1) % NIVEAUX_SHADERS.length];
-      this.changer();
-    });
-    this.boutonHerbe.addEventListener('click', () => {
-      const i = STYLES_HERBE.indexOf(this.options.herbe);
-      this.options.herbe = STYLES_HERBE[(i + 1) % STYLES_HERBE.length];
       this.changer();
     });
     element<HTMLButtonElement>('options-fermer').addEventListener('click', () => this.fermer());
@@ -96,7 +83,6 @@ export class PanneauOptions {
     this.texteVolume.textContent = pourcent === 0 ? 'Sons : désactivés' : `Sons : ${pourcent} %`;
     this.boutonFps.textContent = `Compteur de FPS : ${o.afficherFps ? 'OUI' : 'NON'}`;
     this.boutonSecousses.textContent = `Secousses de l'écran : ${o.secousses ? 'OUI' : 'NON'}`;
-    this.boutonHerbe.textContent = `Herbe : ${LIBELLES_HERBE[o.herbe]}`;
     this.boutonShaders.textContent = `Shaders : ${LIBELLES_SHADERS[o.shaders]}`;
   }
 

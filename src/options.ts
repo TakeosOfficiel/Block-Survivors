@@ -9,20 +9,16 @@ export interface Options {
   volume: number;
   afficherFps: boolean;
   secousses: boolean;
-  /** Style de l'herbe posée sur les blocs d'herbe. */
-  herbe: StyleHerbe;
   /** Ombres, lueurs et occlusion ambiante. */
   shaders: NiveauShaders;
 }
 
 export type NiveauShaders = 'aucun' | 'legers' | 'complets';
-export type StyleHerbe = 'minecraft' | 'touffes' | 'pixels' | 'stylisee' | 'realiste';
-export const STYLES_HERBE: readonly StyleHerbe[] = ['minecraft', 'touffes', 'pixels', 'stylisee', 'realiste'];
 export const NIVEAUX_SHADERS: readonly NiveauShaders[] = ['aucun', 'legers', 'complets'];
 
 const CLE = 'block-survivors.options';
 
-const PAR_DEFAUT: Readonly<Options> = { volume: 0.7, afficherFps: false, secousses: true, herbe: 'minecraft', shaders: 'legers' };
+const PAR_DEFAUT: Readonly<Options> = { volume: 0.7, afficherFps: false, secousses: true, shaders: 'legers' };
 
 export function chargerOptions(): Options {
   const options = { ...PAR_DEFAUT };
@@ -31,7 +27,6 @@ export function chargerOptions(): Options {
     if (typeof lu.volume === 'number' && Number.isFinite(lu.volume)) options.volume = Math.min(1, Math.max(0, lu.volume));
     if (typeof lu.afficherFps === 'boolean') options.afficherFps = lu.afficherFps;
     if (typeof lu.secousses === 'boolean') options.secousses = lu.secousses;
-    if (STYLES_HERBE.includes(lu.herbe as StyleHerbe)) options.herbe = lu.herbe as StyleHerbe;
     if (NIVEAUX_SHADERS.includes(lu.shaders as NiveauShaders)) options.shaders = lu.shaders as NiveauShaders;
   }
   return options;

@@ -34,8 +34,8 @@ import type { SourceEntites } from './entites/types';
 import { creerEtatPartie, type EtatPartie } from './etat';
 import { lancerPartie, retournerAuMenu, type ChoixPartie } from './lancement';
 import { construireArene } from './monde/arene';
-import { Herbe } from './monde/herbe/herbe';
 import { Liquides } from './monde/liquides';
+import { Vegetation } from './monde/vegetation';
 import type { MondeGenere } from './monde/generation';
 import { ChampDeFlux, type Terrain } from './monde/navigation';
 import { Boucle, type CallbacksBoucle } from './moteur/boucle';
@@ -68,8 +68,8 @@ export class Jeu implements CallbacksBoucle, Retours {
   private readonly sons: LecteurSons;
   private readonly etat: EtatPartie;
   private readonly terrain: Terrain;
-  private readonly herbe: Herbe | null;
   private readonly liquides: Liquides;
+  private readonly vegetation: Vegetation;
   private readonly entrees = new Entrees();
   private readonly hud: Hud;
   private readonly camera: CameraJeu;
@@ -133,8 +133,8 @@ export class Jeu implements CallbacksBoucle, Retours {
     // Monde : blocs affichés, carte de collision, navigation des ennemis
     construireArene(arene, monde, textures, scene);
     rendu.appliquerAmbiance(arene);
-    this.herbe = Herbe.creer(arene.id, monde, scene, textures);
     this.liquides = new Liquides(scene, arene.ciel);
+    this.vegetation = new Vegetation(scene);
     this.terrain = { carte: monde.carte, flux: new ChampDeFlux(monde.carte) };
     const carte = monde.carte;
     this.ombres = new Ombres(textures.obtenir(CONFIG.ombre.texture), scene);
@@ -248,9 +248,11 @@ export class Jeu implements CallbacksBoucle, Retours {
   appliquerOptions(options: Options): void {
     this.hud.afficherFps = options.afficherFps;
     this.camera.secoussesActives = options.secousses;
+    // Matériaux remplacés d'abord : le rendu leur applique ensuite relief et ombres
+    const shaders = options.shaders !== 'aucun';
+    this.liquides.definirShaders(shaders);
+    this.vegetation.definirShaders(shaders);
     this.rendu.definirShaders(options.shaders);
-    this.liquides.definirShaders(options.shaders !== 'aucun');
-    this.herbe?.definirStyle(options.herbe);
   }
 
   // --- Retours -----------------------------------------------------------
@@ -315,7 +317,6 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.balayages.majVisuel(dtJeu);
     this.foudre.majVisuel();
     this.particules.majVisuel();
-    this.herbe?.majVisuel(this.etat.joueur.x, this.etat.joueur.z);
     this.camera.majVisuel(dtJeu, dtReel);
     this.rendu.dessiner();
 

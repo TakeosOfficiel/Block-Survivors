@@ -43,6 +43,8 @@ export interface DefinitionBloc {
   readonly decoupe?: boolean;
   /** Brille dans le noir (glowstone, lave, magma) : non éclairé. */
   readonly lumineux?: boolean;
+  /** Avec les shaders, ondule au vent : feuillage (tout le bloc frémit) ou plante (le haut se balance). */
+  readonly ondule?: 'feuillage' | 'plante';
   /** Teinte de biome multipliée sur le dessus (textures vanilla en niveaux de gris). */
   readonly teinteHaut?: number;
   /** Teinte multipliée sur toutes les faces (feuillage, eau). */

@@ -142,35 +142,6 @@ export const CONFIG = {
     niveau: { nombre: 36, vitesse: 4.5, taille: 0.22, duree: 1, couleurs: [0x80ff20, 0xffff55, 0xffffff] },
   },
 
-  // Styles d'herbe (option) posés sur les blocs d'herbe libres de l'arène
-  herbe: {
-    vent: {
-      amplitude: 0.22,             // pliage par le vent au sommet (blocs)
-      vitesseRafales: 1.4,         // vitesse des rafales qui traversent le champ
-      direction: [0.93, 0.37],     // unitaire, en (x, z)
-      rayonCouche: 1.2,            // les plantes se couchent autour du joueur dans ce rayon (blocs)
-      couche: 0.55,                // amplitude du pliage près du joueur (blocs)
-    },
-    assombrissementSol: 0.4,       // dessus des blocs d'herbe sous un tapis de brins
-    // Brins effilés : « réaliste » (tapis dense, pied sombre) et « stylisée » (cartoon)
-    brins: {
-      realiste: {
-        densite: 90, hauteur: [0.28, 0.7], largeur: 0.045,
-        couleurPied: 0x0f1f08, couleurMilieu: 0x4a7d22, couleurSeche: 0x9a9a3c, couleurPointe: 0xb8d86a,
-        ombrePied: 0.15, refletRafales: 0.35,
-      },
-      stylisee: {
-        densite: 24, hauteur: [0.22, 0.42], largeur: 0.12,
-        couleurPied: 0x2f7a2a, couleurMilieu: 0x62c23a, couleurSeche: 0xb7d84e, couleurPointe: 0xe2f59a,
-        ombrePied: 0.6, refletRafales: 0.25,
-      },
-    },
-    // Touffes Minecraft (sprite short_grass en croix) qui ondulent, comme les packs de shaders
-    touffes: { texture: 'block/short_grass', teinte: 0x91bd59, parBloc: 1.1, taille: [0.55, 0.95] },
-    // Herbe en pixels 3D : colonnes d'un pixel qui sortent de la texture du dessus
-    pixels: { texture: 'block/grass_block_top', teinte: 0x91bd59, parBloc: 34, hauteur: [2, 7] },
-  },
-
   // Shaders (option) : ombres du soleil, lueurs, occlusion ambiante
   shaders: {
     tailleOmbres: { legers: 2048, complets: 4096 },  // résolution de la carte d'ombres
@@ -181,6 +152,12 @@ export const CONFIG = {
     intensiteLumineux: 1.25,     // lave, glowstone, magma : assez vifs pour rayonner
     lueur: { force: 0.8, rayon: 0.5, seuil: 0.85 },
     occlusion: { resolution: 0.5, rayon: 0.6 },
+    // Vent du feuillage et des plantes (blocs marqués « ondule »)
+    vent: { direction: [0.93, 0.37], vitesse: 1.8, plantes: 0.1, feuillage: 0.035 },
+    relief: 1.4,                 // force du relief des textures (normal maps générées)
+    // Lumière : ciel bleuté par-dessus, sol chaud par-dessous, soleil plus franc
+    lumiere: { ambiante: 0.5, ciel: 0.75, soleil: 1.15, couleurSol: 0x5a4632 },
+    etalonnage: { saturation: 1.18, vignette: 0.35 },
   },
 
   // Lave et eau calculées par la carte graphique quand les shaders sont actifs
@@ -263,5 +240,4 @@ export const CONFIG = {
 } as const;
 
 export type ActionDeplacement = keyof typeof CONFIG.controles;
-export type PresetBrins = (typeof CONFIG.herbe.brins)[keyof typeof CONFIG.herbe.brins];
 export type IdSourceTexture = (typeof SOURCES_TEXTURES)[number]['id'];

@@ -141,17 +141,17 @@ ZQSD / WASD / flèches : se déplacer · molette : zoom · `1` `2` `3` ou clic :
 choisir une carte · `R` : relancer les cartes (3 fois par partie) · `Échap` : pause · `Entrée` : jouer (menu) ou rejouer (fin).
 
 La pause propose Reprendre, Options (volume des sons, compteur de FPS,
-secousses de l'écran, shaders, style de l'herbe), Recommencer, Menu
+secousses de l'écran, shaders), Recommencer, Menu
 principal, et le bilan en cours.
 
-**Shaders** : *Désactivés* (rendu Minecraft d'origine), *Légers* (ombres du
-soleil, lave et glowstone qui rayonnent, hautes lumières adoucies) ou
-*Complets* (ombres plus fines et occlusion ambiante en plus).
+**Shaders** (comme un pack de shaders du jeu) : *Désactivés* = rendu
+Minecraft d'origine. *Légers* = ombres du soleil, relief des textures (normal
+maps calculées depuis chaque pixel), lumière du ciel, feuillage et plantes qui
+ondulent au vent, lave en fusion et eau à vagues et reflets calculées par la
+carte graphique, lueur des blocs lumineux, couleurs étalonnées et vignette.
+*Complets* = idem avec des ombres plus fines et l'occlusion ambiante.
 
-**Herbe** (essais, au choix) : *Minecraft* (d'origine), *Touffes ondulantes*
-(sprites d'herbe vanilla qui ondulent au vent), *Pixels 3D* (colonnes d'un
-pixel tirées de la texture), *Stylisée* (brins cartoon) ou *Réaliste* (tapis
-dense). Le vent et le passage du joueur sont calculés par la carte graphique.
+
 
 ## Debug
 

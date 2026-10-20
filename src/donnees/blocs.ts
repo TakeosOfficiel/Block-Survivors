@@ -37,6 +37,7 @@ const definitions = {
     couleurSecours: 0x6b5232,
   },
   oak_leaves: {
+    ondule: 'feuillage',
     nom: 'Feuilles de chêne',
     faces: partout('block/oak_leaves'),
     decoupe: true,
@@ -57,6 +58,7 @@ const definitions = {
     couleurSecours: 0x3f76e4,
   },
   short_grass: {
+    ondule: 'plante',
     nom: 'Herbes',
     faces: partout('block/short_grass'),
     forme: 'croix',
@@ -64,8 +66,8 @@ const definitions = {
     teinte: TEINTE_HERBE,
     couleurSecours: 0x6f9a3a,
   },
-  dandelion: { nom: 'Pissenlit', faces: partout('block/dandelion'), forme: 'croix', decoupe: true, couleurSecours: 0xffd23a },
-  poppy: { nom: 'Coquelicot', faces: partout('block/poppy'), forme: 'croix', decoupe: true, couleurSecours: 0xd0302a },
+  dandelion: { nom: 'Pissenlit', faces: partout('block/dandelion'), forme: 'croix', decoupe: true, ondule: 'plante', couleurSecours: 0xffd23a },
+  poppy: { nom: 'Coquelicot', faces: partout('block/poppy'), forme: 'croix', decoupe: true, ondule: 'plante', couleurSecours: 0xd0302a },
 
   // --- Mine -------------------------------------------------------------------
   stone: { nom: 'Roche', faces: partout('block/stone'), couleurSecours: 0x7d7d7d },
@@ -113,6 +115,8 @@ const definitions = {
 export type IdBloc = keyof typeof definitions;
 
 export const BLOCS: Readonly<Record<IdBloc, DefinitionBloc>> = definitions;
+
+export const IDS_BLOCS = Object.keys(definitions) as IdBloc[];
 
 /** Un bloc bloque-t-il le passage ? (cubes pleins et liquides) */
 export function bloqueLePassage(bloc: DefinitionBloc): boolean {

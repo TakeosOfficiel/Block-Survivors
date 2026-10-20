@@ -34,7 +34,7 @@ const definitions = {
     pv: 16,
     vitesse: 2.4,
     rayon: 0.35,
-    comportement: { type: 'archer', projectile: 'fleche', degats: 3, distanceIdeale: 9, portee: 13, cadence: 2.2 },
+    comportement: { type: 'archer', projectile: 'fleche', degats: 2, distanceIdeale: 9, portee: 13, cadence: 2.5 },
     xp: 2,
   },
   araignee: {
@@ -61,7 +61,7 @@ const definitions = {
     pv: 16,
     vitesse: 2.6,
     rayon: 0.35,
-    comportement: { type: 'explosif', distanceAmorcage: 2.5, distanceAnnulation: 5, duree: 1.5, rayon: 3.5, degats: 10 },
+    comportement: { type: 'explosif', distanceAmorcage: 2.5, distanceAnnulation: 5, duree: 1.5, rayon: 3.5, degats: 8 },
     xp: 3,
   },
 
@@ -142,7 +142,7 @@ const definitions = {
     vitesse: 2.4,
     rayon: 0.4,
     ignoreObstacles: true,  // vole par-dessus la lave et les murets
-    comportement: { type: 'archer', projectile: 'boule_feu_blaze', degats: 3, distanceIdeale: 8, portee: 12, cadence: 2.6, nombre: 3, dispersion: 0.12 },
+    comportement: { type: 'archer', projectile: 'boule_feu_blaze', degats: 2, distanceIdeale: 8, portee: 12, cadence: 2.6, nombre: 3, dispersion: 0.12 },
     xp: 3,
   },
   cube_magma: {

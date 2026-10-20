@@ -170,8 +170,9 @@ const nether: DefinitionArene = {
       nom: 'Forteresse',
       rect: [-30, -30, -12, 30],
       ennemis: [
-        { ennemi: 'squelette_wither', depuis: 0, poids: 10 },
-        { ennemi: 'blaze', depuis: 20, poids: 5 },
+        { ennemi: 'piglin_zombifie', depuis: 0, poids: 6 },
+        { ennemi: 'squelette_wither', depuis: 60, poids: 10 },
+        { ennemi: 'blaze', depuis: 30, poids: 5 },
       ],
     },
     {

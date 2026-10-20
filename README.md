@@ -52,7 +52,7 @@ src/
   config.ts             réglages techniques + version et sources des textures, fichiers et sons
   etat.ts               état de la partie (source de vérité de la simulation) et statistiques
   donnees/              CONTENU data-driven : blocs, structures, arènes, modèles, personnages,
-                        ennemis et boss, armes, passifs, objets, progression, sons
+                        ennemis et boss, armes, passifs, objets, progression, talents, particules, sons
   assets/               chargement des textures, listes des textures requises, police pixel
   audio/                lecture des sons vanilla
   moteur/               rendu, boucle de jeu, caméra, géométries UV
@@ -60,9 +60,9 @@ src/
   entites/              joueur, ennemis et comportements, projectiles ennemis, orbes d'XP,
                         objets de soin, butin, directeurs d'apparition (hordes et boss)
   combat/               armes du joueur : arsenal et une classe par mécanique
-  progression/          niveaux, bonus passifs, modificateurs, cartes d'amélioration
+  progression/          niveaux, bonus passifs, modificateurs, cartes d'amélioration, sauvegarde (émeraudes, talents)
   modeles/              modèles cubiques : compilation, animation, rendu instancié
-  effets/               ombres, particules, rendu des projectiles (instanciés), retours (sons, secousses)
+  effets/               ombres, particules vanilla (sprites face caméra), rendu des projectiles (instanciés), retours (sons, secousses)
   controles/            clavier et molette
   ui/                   menu, HUD, cartes, pause, options, écran de fin et bilan, panneau debug,
                         écran de chargement, habillage (sprites d'interface), portraits, styles
@@ -117,6 +117,30 @@ revient au menu.
 L'adresse peut aussi fixer le choix et sauter le menu :
 `index.html?personnage=archer&arene=mine&jouer=1`.
 
+Les armes peuvent porter des **coups critiques** (5 % de chance au départ,
+dégâts ×1,5, étincelles du jeu) ; le bonus *Silex taillé* et certains talents
+les rendent plus fréquents ou plus forts.
+
+## Progression entre les parties
+
+Chaque partie rapporte des **émeraudes** (1 toutes les 20 s survécues, 1 tous
+les 40 ennemis, 10 par boss, 25 pour une victoire), affichées à la fin.
+
+**Talents** (bouton du menu) : chaque personnage a **deux arbres** au choix,
+un seul actif à la fois. Un talent s'achète rang par rang ; le palier 2 s'ouvre
+après 3 rangs achetés dans l'arbre, le palier 3 après 6. « Réinitialiser »
+rend toutes les émeraudes de l'arbre.
+
+| Personnage | Arbres |
+| --- | --- |
+| Guerrier | Gladiateur (dégâts, critiques, épée renforcée) · Gardien (cœurs, armure, totem au départ) |
+| Archère | Tireuse d'élite (portée, critiques, arc renforcé, +1 projectile) · Rôdeuse (vitesse, collecte, relances, régénération) |
+| Mage | Pyromancien (zone, boules de feu renforcées, critiques) · Arcaniste (cadence, soins, relances, Éclairs dès le départ) |
+
+**Déblocages** : Archère en survivant 3:00, Mage en battant un boss, Mine en
+survivant 5:00 dans la Prairie, Nether en survivant 5:00 dans la Mine. Tout est
+sauvegardé dans le navigateur (`src/donnees/talents.ts` pour les réglages).
+
 ## Personnages
 
 Guerrier (épée), Archère (arc) ou Mage (boules de feu).
@@ -154,10 +178,10 @@ avec des ombres plus fines. Les textures restent celles du jeu.
 
 `F3` ou `²` : panneau compact avec FPS, appels de dessin, moteur, entités,
 textures ; vitesse du temps (`-` / `+`), invincibilité (`I`), frappe de zone
-(`K`), +1 niveau (`L`), prochain boss (`B`), saut à 14:50 ; puis des rangées
+(`K`), +1 niveau (`L`), prochain boss (`B`), saut à 14:50, +100 émeraudes ; puis des rangées
 d'icônes (nom au survol) pour faire apparaître chaque ennemi, donner chaque
 arme ou bonus (exclusifs compris, ex. le totem), poser chaque objet, et
-changer de personnage ou d'arène.
+changer de personnage ou d'arène (même verrouillés).
 
 En `npm run dev`, la partie est accessible dans la console du navigateur via
 `window.blockSurvivors`.

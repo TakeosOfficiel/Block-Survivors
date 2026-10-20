@@ -305,7 +305,8 @@ export type MecaniqueArme =
   /** Projectiles en ligne droite vers l'ennemi le plus proche. */
   | { readonly type: 'tir'; readonly projectile: IdProjectile; readonly dispersion: number }
   /** Projectile qui traverse tout, puis revient au joueur. */
-  | { readonly type: 'retour'; readonly projectile: IdProjectile; readonly dispersion: number }
+  /** Avant le rang `loyaute`, l'arme part en ligne et traverse tout ; ensuite elle revient (enchantement Loyauté). */
+  | { readonly type: 'retour'; readonly projectile: IdProjectile; readonly dispersion: number; readonly loyaute: number }
   /** Objets qui tournent en permanence autour du joueur. */
   | { readonly type: 'orbite'; readonly projectile: IdProjectile }
   /** Projectile qui explose au premier ennemi touché. */

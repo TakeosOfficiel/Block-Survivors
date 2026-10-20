@@ -238,9 +238,69 @@ img { image-rendering: pixelated; }
 }
 @keyframes pulsation { to { transform: translate(calc(50% + 24px), -50%) rotate(-20deg) scale(1.1); } }
 
-.menu-colonnes { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
-.menu-section { width: min(440px, 92vw); }
-.menu-choix { display: flex; flex-direction: column; gap: 6px; }
+/* --- Accueil en trois colonnes : classe, héros, arène --------------------- */
+#menu { gap: 10px; }
+#menu .logo { font-size: 40px; line-height: 46px; }
+.menu-trois { display: grid; grid-template-columns: 360px 440px 380px; gap: 12px; height: 580px; }
+.menu-colonne { display: flex; flex-direction: column; gap: 6px; min-height: 0; overflow: hidden; }
+.titre-centre { text-align: center; }
+.menu-separateur { height: 2px; background: #8b8b8b; box-shadow: 0 2px 0 #fff; margin: 4px 0; }
+.menu-sous-titre { color: #5a5a5a; margin-top: 4px; }
+.menu-grand-nom { font-size: 24px; line-height: 28px; color: #202020; }
+.menu-classes { display: flex; justify-content: center; gap: 10px; }
+.menu-classe {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; width: 96px; padding: 6px 2px;
+  font: inherit; color: var(--mc-texte-panneau); background: rgba(0, 0, 0, 0.06);
+  border: 2px solid transparent; cursor: pointer;
+}
+.menu-classe:hover { background: rgba(255, 255, 255, 0.35); }
+.menu-classe.choisie { background: rgba(255, 255, 255, 0.5); border-color: #fff; box-shadow: 0 0 0 2px #000; color: #202020; }
+.menu-tuiles { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 4px; margin-top: 4px; }
+.menu-tuile { display: flex; flex-direction: column; padding: 4px 6px; background: rgba(0, 0, 0, 0.08); border: 2px solid #8b8b8b; }
+.menu-tuile-intitule { color: #6a6a6a; }
+.menu-tuile-valeur { color: #202020; display: flex; align-items: center; }
+.menu-icones { display: flex; flex-wrap: wrap; gap: 4px; }
+.menu-icones .case-mc { position: relative; }
+
+.menu-heros-haut { display: flex; gap: 10px; }
+.menu-apercu-cadre { display: flex; flex-direction: column; align-items: center; }
+.menu-apercu, .profil-apercu {
+  width: 180px; height: 280px; position: relative;
+  background: radial-gradient(ellipse 28% 4% at 50% 90%, rgba(0, 0, 0, 0.35), transparent),
+              linear-gradient(#b8b8b8, #9c9c9c);
+  box-shadow: inset 2px 2px 0 #373737, inset -2px -2px 0 #fff;
+}
+.apercu-heros { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+.apercu-heros:active { cursor: grabbing; }
+.menu-apercu-aide { color: #6a6a6a; }
+.menu-heros-infos { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.menu-pseudo { display: flex; flex-direction: column; gap: 4px; }
+.menu-pseudo .bouton-mc { width: 100%; }
+.menu-heros-ligne { font-size: 16px; color: #2a4a9a; margin-top: 6px; }
+.menu-heros-boutons { margin-top: 6px; }
+.menu-heros-boutons .bouton-mc { width: 206px; }
+
+.menu-arenes { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; min-height: 0; }
+.menu-arene {
+  display: flex; flex-direction: column; gap: 3px; padding: 6px; text-align: left;
+  font: inherit; color: var(--mc-texte-panneau); background: rgba(0, 0, 0, 0.06);
+  border: 2px solid transparent; cursor: pointer;
+}
+.menu-arene:hover:not(:disabled) { background: rgba(255, 255, 255, 0.35); }
+.menu-arene.choisie { background: rgba(255, 255, 255, 0.5); border-color: #fff; box-shadow: 0 0 0 2px #000; }
+.menu-arene.verrouillee { cursor: not-allowed; filter: grayscale(1); opacity: 0.7; }
+.menu-arene-entete { display: flex; align-items: center; gap: 8px; }
+.menu-arene-mobs { color: #1f6f1f; }
+.menu-arene-record { color: #2a4a9a; }
+.menu-puces { display: flex; flex-wrap: wrap; gap: 4px; }
+.menu-puce { padding: 1px 6px; color: #fff; background: #5a3a7a; border: 2px solid #2a1a3a; }
+
+.menu-bas { display: flex; align-items: center; gap: 12px; }
+.menu-bas > .bouton-mc { width: 180px; }
+.bouton-mc.bouton-jouer { width: 640px; height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 24px; line-height: 28px; }
+#menu-jouer-sous-titre { font-size: 16px; line-height: 18px; color: var(--mc-gris); }
+.bouton-jouer:hover #menu-jouer-sous-titre { color: var(--mc-jaune); }
+.menu-aide { color: var(--mc-gris); text-align: center; }
 
 /* Une option du menu : case + textes ; la sélection est encadrée de blanc */
 .option-menu {
@@ -561,19 +621,10 @@ img { image-rendering: pixelated; }
 .grille-curseurs .curseur-mc { width: 196px; }
 
 /* --- Profil ------------------------------------------------------------- */
-.profil-puce {
-  position: fixed !important; top: 8px; left: 10px;
-  display: flex; align-items: center; gap: 8px; padding: 4px 8px 4px 4px;
-  font: inherit; color: var(--mc-blanc); text-shadow: var(--px) var(--px) 0 #3f3f3f;
-  background: rgba(0, 0, 0, 0.35); border: 2px solid transparent; cursor: pointer;
-}
-.profil-puce:hover { border-color: var(--mc-blanc); color: var(--mc-jaune); }
-.profil-puce img { width: 32px; height: 32px; }
-.profil-puce img:not([src]) { display: none; }
 #profil { z-index: 14; }
 .profil-corps { display: flex; gap: 16px; align-items: stretch; }
-.profil-apercu { display: flex; align-items: center; justify-content: center; padding: 16px 24px; }
-.profil-apercu canvas { width: 128px; height: 256px; image-rendering: pixelated; }
+.profil-scene { width: 360px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.profil-scene .profil-apercu { width: 260px; height: 380px; }
 .profil-reglages { width: 520px; display: flex; flex-direction: column; }
 .profil-reglages .titre-panneau { margin-bottom: 4px; }
 .champ-mc {
@@ -584,3 +635,6 @@ img { image-rendering: pixelated; }
 .profil-skins { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
 .profil-skin { align-items: center; padding: 3px; }
 .profil-erreur { color: #a03030; min-height: 1em; }
+.menu-arbres { display: flex; flex-direction: column; gap: 4px; }
+.menu-arbre { display: flex; align-items: center; gap: 8px; padding: 2px 4px; opacity: 0.7; }
+.menu-arbre.actif { opacity: 1; background: rgba(255, 255, 255, 0.35); }

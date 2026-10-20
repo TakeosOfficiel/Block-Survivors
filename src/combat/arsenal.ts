@@ -4,6 +4,7 @@
  * combat (balayages, projectiles, orbites, foudre, invocations).
  */
 import { ARMES, type IdArme } from '../donnees/armes';
+import type { MecaniqueArme } from '../donnees/types';
 import type { ArmeEquipee } from './armeEquipee';
 import { calculerStats, creerArmeEquipee, rangMax } from './armeEquipee';
 import type { Balayages } from './balayages';
@@ -11,7 +12,7 @@ import type { ContexteCombat } from './contexte';
 import type { Foudre } from './foudre';
 import type { Invocations } from './invocations';
 import type { Orbites } from './orbites';
-import type { ProjectilesJoueur } from './projectilesJoueur';
+import type { ModeProjectile, ProjectilesJoueur } from './projectilesJoueur';
 
 /** Délai avant de réessayer une arme qui n'a trouvé aucune cible (s). */
 const NOUVEL_ESSAI = 0.2;
@@ -99,7 +100,7 @@ export class Arsenal {
         const base = Math.atan2(cible.x - j.x, cible.z - j.z);
         for (let k = 0; k < s.nombre; k++) {
           const a = base + (k - (s.nombre - 1) / 2) * m.dispersion;
-          this.systemes.projectiles.lancer(arme, m.projectile, m.type === 'retour' ? 'retour' : 'ligne', Math.sin(a), Math.cos(a));
+          this.systemes.projectiles.lancer(arme, m.projectile, modeTir(m, arme.rang), Math.sin(a), Math.cos(a));
         }
         return true;
       }
@@ -128,4 +129,10 @@ export class Arsenal {
         return true;
     }
   }
+}
+
+/** Le trident ne revient qu'avec Loyauté ; avant, il part en ligne et traverse tout. */
+function modeTir(m: MecaniqueArme, rang: number): ModeProjectile {
+  if (m.type !== 'retour') return 'ligne';
+  return rang >= m.loyaute ? 'retour' : 'traversant';
 }

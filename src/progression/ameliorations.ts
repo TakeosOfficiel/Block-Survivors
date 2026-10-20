@@ -185,6 +185,10 @@ export class Ameliorations {
       };
     }
     const avant = calculerStats(def, rang, mods, { ...def.stats });
+    const lignes = (Object.keys(LIBELLES_STATS) as (keyof StatsArme)[])
+      .filter((cle) => Math.abs(apres[cle] - avant[cle]) > 1e-6)
+      .map((cle) => `${LIBELLES_STATS[cle].nom} : ${formaterStat(cle, avant[cle])} → ${formaterStat(cle, apres[cle])}`);
+    if (def.mecanique.type === 'retour' && rang + 1 === def.mecanique.loyaute) lignes.push('Revient : non → oui');
     return {
       amelioration,
       rarete: 'arme',
@@ -192,9 +196,7 @@ export class Ameliorations {
       icone: def.icone,
       etiquette: `Rang ${rang} → ${rang + 1}`,
       description: def.niveaux[rang - 1].description,
-      lignes: (Object.keys(LIBELLES_STATS) as (keyof StatsArme)[])
-        .filter((cle) => Math.abs(apres[cle] - avant[cle]) > 1e-6)
-        .map((cle) => `${LIBELLES_STATS[cle].nom} : ${formaterStat(cle, avant[cle])} → ${formaterStat(cle, apres[cle])}`),
+      lignes,
     };
   }
 

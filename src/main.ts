@@ -20,6 +20,7 @@ import { Rendu } from './moteur/rendu';
 import { chargerOptions } from './options';
 import { Sauvegarde } from './progression/sauvegarde';
 import { apparenceJoueur, chargerProfil, CHEMIN_SKIN_IMPORTE } from './profil';
+import { ApercuHeros } from './ui/apercuHeros';
 import { chargerImageSkin, EcranProfil } from './ui/ecranProfil';
 import { EcranChargement } from './ui/ecranChargement';
 import { EcranMenu } from './ui/ecranMenu';
@@ -73,8 +74,10 @@ async function demarrer(): Promise<void> {
   // Menu, sauf si l'adresse demande de jouer tout de suite (Rejouer)
   let choix = choixDemande();
   if (!partieDemandee()) {
+    // Héros en 3D du menu : même moteur que le jeu (repli WebGL2 compris)
+    const apercu = await ApercuHeros.creer(textures, rendu.api !== 'WebGPU');
     ecran.masquer();
-    choix = await new EcranMenu(textures, choix, panneauOptions, sauvegarde, new EcranProfil(textures, profil)).attendreChoix();
+    choix = await new EcranMenu(textures, choix, panneauOptions, sauvegarde, new EcranProfil(textures, profil, apercu), apercu).attendreChoix();
     memoriserChoix(choix);
     ecran.afficher();
   }

@@ -14,47 +14,77 @@
     <div class="chargement-cadre"><div id="chargement-barre"></div></div>
   </div>
 
-  <!-- Menu principal : choix du personnage et de l'arène -->
+  <!-- Menu principal : classe, héros, arène -->
   <div id="menu" class="fond-terre cache">
-    <button id="menu-profil" class="profil-puce" title="Pseudo et skin"><img id="menu-profil-visage" alt="" /><span id="menu-profil-pseudo"></span></button>
     <div id="menu-emeraudes" class="compteur-emeraudes" title="Émeraudes : gagnées en jouant, elles achètent des talents"></div>
     <div class="menu-entete">
       <h1 id="menu-titre" class="logo">Block Survivors</h1>
       <div id="menu-accroche" class="accroche"></div>
     </div>
-    <div class="menu-colonnes">
-      <section class="panneau-mc menu-section">
-        <h2 class="titre-panneau">Personnage</h2>
-        <div id="menu-personnages" class="menu-choix"></div>
+    <div class="menu-trois">
+      <!-- Classe : choix et détails -->
+      <section class="panneau-mc menu-colonne">
+        <h2 class="titre-panneau titre-centre">Classe</h2>
+        <div id="menu-personnages" class="menu-classes"></div>
+        <div class="menu-separateur"></div>
+        <div id="menu-classe-nom" class="menu-grand-nom"></div>
+        <div id="menu-classe-description" class="option-description"></div>
+        <div id="menu-classe-tuiles" class="menu-tuiles"></div>
+        <div id="menu-classe-bonus" class="option-stats"></div>
+        <div class="menu-sous-titre">Bonus exclusifs</div>
+        <div id="menu-classe-exclusifs" class="menu-icones"></div>
+        <div class="menu-sous-titre">Arbres de talents</div>
+        <div id="menu-classe-arbres" class="menu-arbres"></div>
       </section>
-      <section class="panneau-mc menu-section">
-        <h2 class="titre-panneau">Arène</h2>
-        <div id="menu-arenes" class="menu-choix"></div>
+
+      <!-- Héros : aperçu 3D, pseudo, apparence et talents -->
+      <section class="panneau-mc menu-colonne menu-heros">
+        <div class="menu-heros-haut">
+          <div class="menu-apercu-cadre">
+            <div id="menu-apercu" class="menu-apercu"></div>
+            <div class="menu-apercu-aide">Glisser pour tourner</div>
+          </div>
+          <div class="menu-heros-infos">
+            <label class="menu-sous-titre" for="menu-pseudo">Pseudo</label>
+            <div class="menu-pseudo">
+              <input id="menu-pseudo" class="champ-mc" type="text" autocomplete="off" spellcheck="false" />
+              <button id="menu-pseudo-aleatoire" class="bouton-mc" title="Pseudo au hasard">Aléatoire</button>
+            </div>
+            <div id="menu-heros-ligne" class="menu-heros-ligne"></div>
+            <div id="menu-heros-skin" class="option-description"></div>
+          </div>
+        </div>
+        <div class="rangee-boutons menu-heros-boutons">
+          <button id="menu-profil-bouton" class="bouton-mc">Apparence…</button>
+          <button id="menu-talents" class="bouton-mc">Talents…</button>
+        </div>
+        <div class="menu-sous-titre" id="menu-arbre-titre">Talents</div>
+        <div id="menu-talents-actifs" class="menu-icones"></div>
+      </section>
+
+      <!-- Arène : liste, boss, déblocages -->
+      <section class="panneau-mc menu-colonne">
+        <h2 class="titre-panneau titre-centre">Arène</h2>
+        <div id="menu-arenes" class="menu-arenes"></div>
       </section>
     </div>
-    <div class="pile-boutons">
-      <button id="menu-jouer" class="bouton-mc large">Jouer</button>
-      <div class="rangee-boutons">
-        <button id="menu-talents" class="bouton-mc">Talents…</button>
-        <button id="menu-profil-bouton" class="bouton-mc">Profil et skin…</button>
-      </div>
-      <button id="menu-options" class="bouton-mc large">Options…</button>
-      <button id="menu-quitter" class="bouton-mc large cache">Quitter le jeu</button>
+    <div class="menu-bas">
+      <button id="menu-options" class="bouton-mc">Options…</button>
+      <button id="menu-jouer" class="bouton-mc bouton-jouer"><span id="menu-jouer-titre">Jouer</span><span id="menu-jouer-sous-titre"></span></button>
+      <button id="menu-quitter" class="bouton-mc cache">Quitter le jeu</button>
     </div>
+    <div class="menu-aide">ZQSD / WASD / Flèches : se déplacer · 1 2 3 : choisir une carte · R : relancer · Échap : pause · Entrée : jouer</div>
     <div class="pied pied-gauche">Block Survivors <span id="menu-version"></span> · <span id="menu-rendu"></span> · textures Minecraft 1.21.4</div>
     <a id="menu-mise-a-jour" class="mise-a-jour cache" target="_blank" rel="noopener">Nouvelle version disponible ! Cliquez pour la télécharger</a>
     <div class="pied pied-droite">Projet de fan, non affilié à Mojang</div>
   </div>
 
-  <!-- Profil (menu) : pseudo et skin -->
+  <!-- Apparence (menu) : skin et gabarit, aperçu 3D -->
   <div id="profil" class="ecran fond-terre cache">
-    <h2 class="ecran-titre">Profil</h2>
+    <h2 class="ecran-titre">Apparence</h2>
     <div class="profil-corps">
-      <div class="panneau-mc profil-apercu"><canvas id="profil-apercu" width="128" height="256"></canvas></div>
       <div class="panneau-mc profil-reglages">
-        <label class="titre-panneau" for="profil-pseudo">Pseudo</label>
-        <input id="profil-pseudo" class="champ-mc" type="text" autocomplete="off" spellcheck="false" />
-        <div class="titre-panneau espace-avant">Skin</div>
+        <div class="titre-panneau">Skin</div>
         <div id="profil-skins" class="profil-skins"></div>
         <div class="rangee-boutons espace-avant">
           <button id="profil-importer" class="bouton-mc">Importer un skin…</button>
@@ -62,6 +92,12 @@
         </div>
         <div id="profil-erreur" class="profil-erreur"></div>
         <input id="profil-fichier" type="file" accept="image/png" class="cache" />
+      </div>
+      <div class="panneau-mc profil-scene">
+        <div id="profil-nom" class="menu-grand-nom titre-centre"></div>
+        <div id="profil-sous-titre" class="option-description titre-centre"></div>
+        <div id="profil-apercu" class="profil-apercu"></div>
+        <div class="menu-apercu-aide titre-centre">Glisser le héros pour le tourner</div>
       </div>
     </div>
     <div class="ecran-aide">La skin ne change que l'apparence : la classe garde ses armes et ses statistiques</div>

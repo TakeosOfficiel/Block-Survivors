@@ -1,25 +1,32 @@
 /**
- * Menu principal : choix du personnage (visage, statistiques, arme de
- * départ) et de l'arène, talents, options, puis « Jouer » (ou Entrée).
- * Les personnages et arènes pas encore débloqués affichent leur condition.
+ * Menu principal en trois colonnes : la classe (choix et détails), le héros
+ * (aperçu 3D, pseudo, apparence, talents) et l'arène (boss, déblocages),
+ * puis le grand bouton « Jouer » (ou Entrée).
  */
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG } from '../config';
 import { ACCROCHES } from '../donnees/accroches';
 import { ARENES } from '../donnees/arenes';
 import { ARMES } from '../donnees/armes';
+import { CALENDRIER_BOSS } from '../donnees/boss';
+import { ENNEMIS, type IdEnnemi } from '../donnees/ennemis';
+import { PASSIFS } from '../donnees/passifs';
 import { IDS_PERSONNAGES, PERSONNAGES, type IdPersonnage } from '../donnees/personnages';
+import { PROGRESSION } from '../donnees/progression';
+import { ARBRES } from '../donnees/talents';
 import type { DefinitionArene } from '../donnees/types';
 import type { ChoixPartie } from '../lancement';
 import { decrireBonus } from '../progression/ameliorations';
 import type { Sauvegarde } from '../progression/sauvegarde';
+import { apparenceJoueur, enregistrerProfil, LONGUEUR_PSEUDO, nettoyerPseudo, pseudoAleatoire } from '../profil';
+import { formaterTemps } from '../utils/format';
 import { libelleVersion, miseAJourDisponible, URL_TELECHARGEMENT } from '../version';
+import type { ApercuHeros } from './apercuHeros';
 import { caseImage } from './bilan';
 import { element } from './dom';
 import type { EcranProfil } from './ecranProfil';
 import { compteurEmeraudes, EcranTalents } from './ecranTalents';
 import type { PanneauOptions } from './panneauOptions';
-import { portrait } from './portraits';
 
 const NOMBRE = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 });
 
@@ -30,25 +37,33 @@ export class EcranMenu {
   private readonly racine = element('menu');
   private readonly listePersonnages = element('menu-personnages');
   private readonly listeArenes = element('menu-arenes');
+  private readonly pseudo = element<HTMLInputElement>('menu-pseudo');
   private readonly textures: BibliothequeTextures;
   private readonly options: PanneauOptions;
   private readonly sauvegarde: Sauvegarde;
   private readonly talents: EcranTalents;
   private readonly profil: EcranProfil;
+  private readonly apercu: ApercuHeros | null;
   private personnage: IdPersonnage;
   private arene: DefinitionArene;
   private surJouer: ((choix: ChoixPartie) => void) | null = null;
 
-  constructor(textures: BibliothequeTextures, choix: ChoixPartie, options: PanneauOptions, sauvegarde: Sauvegarde, profil: EcranProfil) {
+  constructor(
+    textures: BibliothequeTextures,
+    choix: ChoixPartie,
+    options: PanneauOptions,
+    sauvegarde: Sauvegarde,
+    profil: EcranProfil,
+    apercu: ApercuHeros | null,
+  ) {
     this.textures = textures;
     this.options = options;
     this.sauvegarde = sauvegarde;
     this.talents = new EcranTalents(textures, sauvegarde);
     this.profil = profil;
-    // Un choix mémorisé encore verrouillé revient au premier disponible
-    this.personnage = sauvegarde.verrou('personnage', choix.personnage)
-      ? IDS_PERSONNAGES.find((id) => !sauvegarde.verrou('personnage', id)) ?? choix.personnage
-      : choix.personnage;
+    this.apercu = apercu;
+    this.personnage = choix.personnage;
+    // Une arène mémorisée encore verrouillée revient à la première disponible
     this.arene = sauvegarde.verrou('arene', choix.arene.id)
       ? ARENES.find((a) => !sauvegarde.verrou('arene', a.id)) ?? choix.arene
       : choix.arene;
@@ -61,29 +76,30 @@ export class EcranMenu {
       lien.href = URL_TELECHARGEMENT;
       lien.classList.remove('cache');
     });
-    this.listePersonnages.append(...IDS_PERSONNAGES.map((id) => this.creerOptionPersonnage(id)));
-    this.listeArenes.append(...ARENES.map((arene) => this.creerOptionArene(arene)));
+
+    this.listePersonnages.append(...IDS_PERSONNAGES.map((id) => this.creerBoutonClasse(id)));
+    this.creerPseudo();
     element<HTMLButtonElement>('menu-jouer').addEventListener('click', () => this.jouer());
     element<HTMLButtonElement>('menu-options').addEventListener('click', () => this.options.ouvrir());
     element<HTMLButtonElement>('menu-talents').addEventListener('click', () => {
-      this.talents.ouvrir(this.personnage, () => this.afficherEmeraudes());
+      this.talents.ouvrir(this.personnage, () => this.rafraichir());
     });
-    this.afficherEmeraudes();
-    const ouvrirProfil = () => this.profil.ouvrir(PERSONNAGES[this.personnage], () => this.afficherProfil());
-    element<HTMLButtonElement>('menu-profil').addEventListener('click', ouvrirProfil);
-    element<HTMLButtonElement>('menu-profil-bouton').addEventListener('click', ouvrirProfil);
+    element<HTMLButtonElement>('menu-profil-bouton').addEventListener('click', () => {
+      this.profil.ouvrir(PERSONNAGES[this.personnage], () => this.rafraichir());
+    });
     if (bureau) {
       const quitter = element<HTMLButtonElement>('menu-quitter');
       quitter.classList.remove('cache');
       quitter.addEventListener('click', () => bureau.quitter());
     }
     window.addEventListener('keydown', this.surTouche);
-    this.marquerChoix();
+    this.rafraichir();
   }
 
   /** Affiche le menu et attend que le joueur lance une partie. */
   attendreChoix(): Promise<ChoixPartie> {
     this.racine.classList.remove('cache');
+    this.rafraichir();
     return new Promise((resoudre) => {
       this.surJouer = resoudre;
     });
@@ -94,6 +110,7 @@ export class EcranMenu {
     if (!rappel) return;
     this.surJouer = null;
     window.removeEventListener('keydown', this.surTouche);
+    this.apercu?.detacher();
     this.racine.classList.add('cache');
     rappel({ personnage: this.personnage, arene: this.arene });
   }
@@ -104,108 +121,197 @@ export class EcranMenu {
     this.jouer();
   };
 
-  private afficherEmeraudes(): void {
+  /** Tout ce qui dépend du choix courant, de la sauvegarde ou du profil. */
+  private rafraichir(): void {
     element('menu-emeraudes').replaceChildren(...compteurEmeraudes(this.textures, this.sauvegarde.emeraudes));
-  }
-
-  /** Pastille du profil (visage de la skin jouée et pseudo). */
-  private afficherProfil(): void {
-    const visage = this.profil.visage(PERSONNAGES[this.personnage]);
-    const image = element<HTMLImageElement>('menu-profil-visage');
-    if (visage) image.src = visage;
-    else image.removeAttribute('src');
-    element('menu-profil-pseudo').textContent = this.profil.profil.pseudo || 'Sans pseudo';
-  }
-
-  private marquerChoix(): void {
-    this.afficherProfil();
-    for (const option of this.listePersonnages.children) {
-      option.classList.toggle('choisie', (option as HTMLElement).dataset['id'] === this.personnage);
+    for (const bouton of this.listePersonnages.children) {
+      bouton.classList.toggle('choisie', (bouton as HTMLElement).dataset['id'] === this.personnage);
     }
-    for (const option of this.listeArenes.children) {
-      option.classList.toggle('choisie', (option as HTMLElement).dataset['id'] === this.arene.id);
-    }
+    this.afficherClasse();
+    this.afficherHeros();
+    this.afficherArenes();
+    const def = PERSONNAGES[this.personnage];
+    element('menu-jouer-titre').textContent = `Jouer — ${this.arene.nom}`;
+    element('menu-jouer-sous-titre').textContent = `${def.nom} · ${this.prochainsBoss(this.arene)[0]?.texte ?? ''}`;
   }
 
-  private creerOptionPersonnage(id: IdPersonnage): HTMLElement {
+  // --- Classe ---------------------------------------------------------------
+
+  private creerBoutonClasse(id: IdPersonnage): HTMLElement {
     const def = PERSONNAGES[id];
-    const stats = document.createElement('div');
-    stats.className = 'option-stats';
-    const coeur = this.textures.url(CONFIG.hud.coeurs.plein);
-    const sante = document.createElement('span');
-    if (coeur) {
-      const image = document.createElement('img');
-      image.src = coeur;
-      image.alt = '';
-      image.className = 'icone-texte';
-      sante.append(image);
-    }
-    sante.append(`${NOMBRE.format(def.pv / 2)} cœurs`);
-    stats.append(sante, texte(`Vitesse : ${NOMBRE.format(def.vitesse)}`));
-    for (const ligne of decrireBonus(def.bonus)) stats.append(texte(ligne));
-
-    const armes = def.armesDepart.map((idArme) => {
-      const arme = ARMES[idArme];
-      const ligne = document.createElement('div');
-      ligne.className = 'option-arme';
-      const url = this.textures.url(arme.icone);
-      if (url) {
-        const image = document.createElement('img');
-        image.src = url;
-        image.alt = '';
-        ligne.append(image);
-      }
-      ligne.append(`Arme : ${arme.nom}`);
-      return ligne;
-    });
-
-    const verrou = this.sauvegarde.verrou('personnage', id);
-    return this.creerOption(id, caseImage(portrait(this.textures, def), def.nom, 'grande portrait'), def.nom, def.description, [stats, ...armes], () => {
-      this.personnage = id;
-    }, verrou?.texte);
-  }
-
-  private creerOptionArene(arene: DefinitionArene): HTMLElement {
-    const verrou = this.sauvegarde.verrou('arene', arene.id);
-    return this.creerOption(arene.id, caseImage(this.textures.url(arene.icone), arene.nom, 'grande'), arene.nom, arene.description, [], () => {
-      this.arene = arene;
-    }, verrou?.texte);
-  }
-
-  private creerOption(
-    id: string, icone: HTMLElement, nom: string, description: string, details: HTMLElement[], choisir: () => void, verrou?: string,
-  ): HTMLElement {
     const bouton = document.createElement('button');
-    bouton.className = 'option-menu';
+    bouton.className = 'menu-classe';
     bouton.dataset['id'] = id;
-    const textes = document.createElement('div');
-    textes.className = 'option-textes';
-    const elementNom = texte(nom);
-    elementNom.className = 'option-nom';
-    const elementDescription = texte(description);
-    elementDescription.className = 'option-description';
-    textes.append(elementNom, elementDescription, ...details);
-    bouton.append(icone, textes);
-    if (verrou) {
-      // Verrouillé : la condition remplace les détails, et rien ne se choisit
-      const condition = texte(`Verrouillé : ${verrou}`);
-      condition.className = 'option-verrou';
-      textes.replaceChildren(elementNom, condition);
-      bouton.classList.add('verrouillee');
-      return bouton;
-    }
+    const icone = def.objetEnMain ?? ARMES[def.armesDepart[0]].icone;
+    bouton.append(caseImage(this.textures.url(icone), def.nom, 'grande'), texte(def.nom));
     bouton.addEventListener('click', () => {
-      choisir();
-      this.marquerChoix();
+      this.personnage = id;
+      this.rafraichir();
     });
-    // Double-clic : choisir et jouer
     bouton.addEventListener('dblclick', () => this.jouer());
     return bouton;
   }
+
+  private afficherClasse(): void {
+    const def = PERSONNAGES[this.personnage];
+    element('menu-classe-nom').textContent = def.nom;
+    element('menu-classe-description').textContent = def.description;
+
+    const arme = ARMES[def.armesDepart[0]];
+    element('menu-classe-tuiles').replaceChildren(
+      tuile('Cœurs', NOMBRE.format(def.pv / 2), this.textures.url(CONFIG.hud.coeurs.plein)),
+      tuile('Vitesse', NOMBRE.format(def.vitesse)),
+      tuile('Commence avec', arme.nom, this.textures.url(arme.icone)),
+    );
+    element('menu-classe-bonus').replaceChildren(...decrireBonus(def.bonus).map((ligne) => texte(ligne)));
+    element('menu-classe-exclusifs').replaceChildren(...def.cartesExclusives.map((id) => {
+      const passif = PASSIFS[id];
+      const caseIcone = caseImage(this.textures.url(passif.icone), passif.nom);
+      caseIcone.title = `${passif.nom} : ${passif.description}`;
+      return caseIcone;
+    }));
+    // Les deux arbres de la classe ; l'actif est en évidence
+    const actif = this.sauvegarde.arbreActif(this.personnage);
+    element('menu-classe-arbres').replaceChildren(...ARBRES[this.personnage].map((arbre, index) => {
+      const ligne = document.createElement('div');
+      ligne.className = 'menu-arbre';
+      ligne.classList.toggle('actif', index === actif);
+      const textes = document.createElement('div');
+      textes.className = 'option-textes';
+      textes.append(texte(index === actif ? `${arbre.nom} (actif)` : arbre.nom, 'option-nom'), texte(arbre.description, 'option-description'));
+      ligne.append(caseImage(this.textures.url(arbre.icone), arbre.nom), textes);
+      return ligne;
+    }));
+  }
+
+  // --- Héros ----------------------------------------------------------------
+
+  private creerPseudo(): void {
+    this.pseudo.maxLength = LONGUEUR_PSEUDO;
+    this.pseudo.value = this.profil.profil.pseudo;
+    this.pseudo.addEventListener('input', () => {
+      this.profil.profil.pseudo = nettoyerPseudo(this.pseudo.value);
+      enregistrerProfil(this.profil.profil);
+    });
+    // Les touches tapées dans le pseudo ne lancent pas la partie
+    this.pseudo.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.code === 'Enter') this.pseudo.blur();
+    });
+    element<HTMLButtonElement>('menu-pseudo-aleatoire').addEventListener('click', () => {
+      this.profil.profil.pseudo = pseudoAleatoire();
+      this.pseudo.value = this.profil.profil.pseudo;
+      enregistrerProfil(this.profil.profil);
+    });
+  }
+
+  private afficherHeros(): void {
+    const def = PERSONNAGES[this.personnage];
+    this.pseudo.value = this.profil.profil.pseudo;
+    element('menu-heros-ligne').textContent = def.nom;
+    element('menu-heros-skin').textContent = this.profil.nomSkin();
+    // L'aperçu revient au menu après l'écran d'apparence
+    if (this.apercu && !this.profil.ouvert && !this.racine.classList.contains('cache')) {
+      this.apercu.attacher(element('menu-apercu'));
+      this.apercu.afficher(apparenceJoueur(def, this.profil.profil));
+    }
+
+    // Arbre de talents actif et rangs achetés
+    const index = this.sauvegarde.arbreActif(this.personnage);
+    const arbre = ARBRES[this.personnage][index];
+    const points = this.sauvegarde.points(this.personnage, index);
+    element('menu-arbre-titre').textContent = `Talents : ${arbre.nom} (${points} rang${points > 1 ? 's' : ''})`;
+    const achetes = arbre.talents.filter((t) => this.sauvegarde.rang(this.personnage, index, t) > 0);
+    element('menu-talents-actifs').replaceChildren(...(achetes.length > 0
+      ? achetes.map((t) => {
+        const rang = this.sauvegarde.rang(this.personnage, index, t);
+        const caseIcone = caseImage(this.textures.url(t.icone), t.nom);
+        caseIcone.title = `${t.nom} (${rang}/${t.couts.length}) : ${t.effet}`;
+        caseIcone.append(texte(String(rang), 'talent-rang'));
+        return caseIcone;
+      })
+      : [texte('Aucun talent acheté : gagnez des émeraudes en jouant.', 'option-description')]));
+  }
+
+  // --- Arènes ---------------------------------------------------------------
+
+  private afficherArenes(): void {
+    this.listeArenes.replaceChildren(...ARENES.map((arene) => {
+      const verrou = this.sauvegarde.verrou('arene', arene.id);
+      const choisie = arene.id === this.arene.id;
+      const bouton = document.createElement('button');
+      bouton.className = 'menu-arene';
+      bouton.classList.toggle('choisie', choisie);
+      bouton.classList.toggle('verrouillee', verrou !== null);
+
+      const entete = document.createElement('div');
+      entete.className = 'menu-arene-entete';
+      entete.append(caseImage(this.textures.url(arene.icone), arene.nom), texte(arene.nom, 'option-nom'));
+      bouton.append(entete);
+      if (verrou) {
+        bouton.append(texte(`Verrouillée : ${verrou.texte}`, 'option-verrou'));
+        bouton.disabled = true;
+        return bouton;
+      }
+      if (choisie) {
+        bouton.append(texte(arene.description, 'option-description'));
+        bouton.append(texte(`Mobs : ${this.nomsMobs(arene)}`, 'menu-arene-mobs'));
+        const boss = document.createElement('div');
+        boss.className = 'menu-puces';
+        boss.append(...this.prochainsBoss(arene).map((b) => texte(b.texte, 'menu-puce')));
+        bouton.append(boss);
+        const record = this.sauvegarde.record(arene.id);
+        if (record > 0) bouton.append(texte(`Record : ${formaterTemps(record)}`, 'menu-arene-record'));
+      }
+      bouton.addEventListener('click', () => {
+        this.arene = arene;
+        this.rafraichir();
+      });
+      bouton.addEventListener('dblclick', () => this.jouer());
+      return bouton;
+    }));
+  }
+
+  /** Noms des mobs de l'arène (toutes zones), dans l'ordre d'arrivée. */
+  private nomsMobs(arene: DefinitionArene): string {
+    const ids = new Set<IdEnnemi>();
+    const tous = [...arene.ennemis, ...arene.zones.flatMap((z) => z.ennemis)].sort((a, b) => a.depuis - b.depuis);
+    for (const e of tous) ids.add(e.ennemi);
+    return [...ids].map((id) => ENNEMIS[id].nom.toLowerCase()).join(', ');
+  }
+
+  /** « 5:00 · Géant », « 10:00 · Seigneur wither »… jusqu'à la fin de la partie. */
+  private prochainsBoss(arene: DefinitionArene): { texte: string }[] {
+    const liste: { texte: string }[] = [];
+    const c = CALENDRIER_BOSS;
+    for (let t = c.premierPassage, i = 0; t < PROGRESSION.dureePartie; t += c.intervalle, i++) {
+      liste.push({ texte: `${formaterTemps(t)} · ${ENNEMIS[arene.boss[i % arene.boss.length]].nom}` });
+    }
+    return liste;
+  }
 }
 
-function texte(contenu: string): HTMLElement {
-  const element = document.createElement('span');
-  element.textContent = contenu;
-  return element;
+function texte(contenu: string, classe?: string): HTMLElement {
+  const span = document.createElement('span');
+  if (classe) span.className = classe;
+  span.textContent = contenu;
+  return span;
+}
+
+/** Petite case « intitulé / valeur » (points de vie, arme de départ…). */
+function tuile(intitule: string, valeur: string, icone?: string | null): HTMLElement {
+  const boite = document.createElement('div');
+  boite.className = 'menu-tuile';
+  boite.append(texte(intitule, 'menu-tuile-intitule'));
+  const ligne = texte('', 'menu-tuile-valeur');
+  if (icone) {
+    const image = document.createElement('img');
+    image.src = icone;
+    image.alt = '';
+    image.className = 'icone-texte';
+    ligne.append(image);
+  }
+  ligne.append(valeur);
+  boite.append(ligne);
+  return boite;
 }

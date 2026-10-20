@@ -142,12 +142,18 @@ rend toutes les émeraudes de l'arbre.
 survivant 5:00 dans la Prairie, le Nether en survivant 5:00 dans la Mine. Tout
 est sauvegardé dans le navigateur (`src/donnees/talents.ts` pour les réglages).
 
-## Profil
+## Accueil et apparence
 
-« Profil et skin… » (ou la pastille en haut à gauche du menu) : **pseudo**,
-affiché au-dessus du personnage comme dans le jeu, et **skin** : celle de la
-classe, une des 9 skins par défaut du jeu, ou un PNG importé (64×64, format du
-jeu, HD acceptée), bras larges ou fins. La skin ne change que l'apparence.
+L'accueil a trois colonnes : la **classe** (cœurs, vitesse, arme de départ,
+bonus exclusifs, arbres de talents), le **héros** en 3D (glisser pour le
+tourner), son **pseudo** (bouton « Aléatoire »), « Apparence… » et
+« Talents… », et l'**arène** (mobs, boss et leur heure d'arrivée, record,
+conditions de déblocage). Le grand bouton « Jouer » (ou Entrée) lance la partie.
+
+« Apparence… » : **skin** de la classe, une des 9 skins par défaut du jeu, ou
+un PNG importé (64×64, format du jeu, HD acceptée), bras larges ou fins, avec
+le héros en 3D. Le pseudo s'affiche au-dessus du personnage comme dans le jeu ;
+la skin ne change que l'apparence.
 
 ## Personnages
 

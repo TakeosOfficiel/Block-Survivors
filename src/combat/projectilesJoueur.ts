@@ -16,7 +16,8 @@ import { longueur } from '../utils/maths';
 
 const MAX_TOUCHES = 32;
 
-export type ModeProjectile = 'ligne' | 'retour';
+/** `ligne` : s'arrête après `perforation` ennemis ; `traversant` : traverse tout ; `retour` : traverse tout et revient. */
+export type ModeProjectile = 'ligne' | 'traversant' | 'retour';
 
 interface ProjectileJoueur {
   indexRendu: number;
@@ -77,7 +78,7 @@ export class ProjectilesJoueur implements SourceEntites {
     p.degats = s.degats;
     p.indexArme = arme.index;
     p.recul = s.recul;
-    p.restants = p.retour ? Infinity : Math.max(1, s.perforation);
+    p.restants = mode === 'ligne' ? Math.max(1, s.perforation) : Infinity;
     p.zone = explose ? s.zone : 0;
     p.nbTouches = 0;
     p.trainee = 0;

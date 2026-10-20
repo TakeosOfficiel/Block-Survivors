@@ -1,15 +1,13 @@
 /**
- * Profil (depuis le menu) : pseudo, skin (celle de la classe, une des skins
- * par défaut du jeu, ou un PNG importé) et gabarit des bras, avec un aperçu
- * de face. Chaque changement est enregistré aussitôt.
+ * Apparence (depuis le menu) : skin (celle de la classe, une des skins par
+ * défaut du jeu, ou un PNG importé) et gabarit des bras, avec le héros en 3D
+ * qu'on fait tourner. Chaque changement est enregistré aussitôt.
  */
 import type { BibliothequeTextures } from '../assets/textures';
 import { NOMS_SKINS, SKINS_VANILLA } from '../donnees/skins';
 import type { ApparenceEntite } from '../donnees/types';
-import {
-  apparenceJoueur, CHEMIN_SKIN_IMPORTE, cheminSkinVanilla, enregistrerProfil, LONGUEUR_PSEUDO, nettoyerPseudo,
-  type ChoixSkin, type Profil,
-} from '../profil';
+import { apparenceJoueur, CHEMIN_SKIN_IMPORTE, cheminSkinVanilla, enregistrerProfil, type ChoixSkin, type Profil } from '../profil';
+import type { ApercuHeros } from './apercuHeros';
 import { caseImage } from './bilan';
 import { element } from './dom';
 import { oublierPortraits, portrait } from './portraits';
@@ -17,33 +15,25 @@ import { oublierPortraits, portrait } from './portraits';
 /** Taille du patron de skin attendu (et de ses multiples HD). */
 const TAILLE_SKIN = 64;
 
+/** Classe affichée : son apparence et son nom. */
+export type ClasseAffichee = ApparenceEntite & { readonly nom: string };
+
 export class EcranProfil {
   private readonly racine = element('profil');
-  private readonly pseudo = element<HTMLInputElement>('profil-pseudo');
   private readonly skins = element('profil-skins');
-  private readonly apercu = element<HTMLCanvasElement>('profil-apercu');
   private readonly boutonBras = element<HTMLButtonElement>('profil-bras');
   private readonly fichier = element<HTMLInputElement>('profil-fichier');
   private readonly erreur = element('profil-erreur');
   private readonly textures: BibliothequeTextures;
+  private readonly apercu: ApercuHeros | null;
   readonly profil: Profil;
-  /** Skin de la classe sélectionnée au menu (premier choix de la liste). */
-  private apparenceClasse: ApparenceEntite | null = null;
+  private classe: ClasseAffichee | null = null;
   private surFermeture: (() => void) | null = null;
 
-  constructor(textures: BibliothequeTextures, profil: Profil) {
+  constructor(textures: BibliothequeTextures, profil: Profil, apercu: ApercuHeros | null) {
     this.textures = textures;
     this.profil = profil;
-    this.pseudo.maxLength = LONGUEUR_PSEUDO;
-    this.pseudo.addEventListener('input', () => {
-      this.profil.pseudo = nettoyerPseudo(this.pseudo.value);
-      enregistrerProfil(this.profil);
-    });
-    // Les touches tapées dans le pseudo ne doivent pas lancer la partie (Entrée) ni fermer (Échap)
-    this.pseudo.addEventListener('keydown', (e) => {
-      e.stopPropagation();
-      if (e.code === 'Enter') this.pseudo.blur();
-    });
+    this.apercu = apercu;
     this.boutonBras.addEventListener('click', () => {
       this.profil.brasFins = !this.profil.brasFins;
       this.changer();
@@ -60,23 +50,24 @@ export class EcranProfil {
     return !this.racine.classList.contains('cache');
   }
 
-  ouvrir(classe: ApparenceEntite, surFermeture: () => void): void {
-    this.apparenceClasse = classe;
+  ouvrir(classe: ClasseAffichee, surFermeture: () => void): void {
+    this.classe = classe;
     this.surFermeture = surFermeture;
-    this.pseudo.value = this.profil.pseudo;
     this.erreur.textContent = '';
     this.racine.classList.remove('cache');
+    this.apercu?.attacher(element('profil-apercu'));
     this.dessiner();
   }
 
-  /** Visage du profil (menu) : celui de la skin choisie, ou celui de la classe. */
-  visage(classe: ApparenceEntite): string | null {
-    return portrait(this.textures, this.apparence(classe));
+  /** Nom de la skin choisie, pour le menu. */
+  nomSkin(): string {
+    const skin = this.profil.skin;
+    if (skin === 'classe') return 'skin de la classe';
+    if (skin === 'importe') return 'skin importée';
+    return `skin ${NOMS_SKINS[skin]}`;
   }
 
   private fermer(): void {
-    this.profil.pseudo = nettoyerPseudo(this.pseudo.value);
-    enregistrerProfil(this.profil);
     this.racine.classList.add('cache');
     this.surFermeture?.();
   }
@@ -86,12 +77,8 @@ export class EcranProfil {
     this.dessiner();
   }
 
-  private apparence(classe: ApparenceEntite): ApparenceEntite {
-    return apparenceJoueur(classe, this.profil);
-  }
-
   private dessiner(): void {
-    const classe = this.apparenceClasse;
+    const classe = this.classe;
     if (!classe) return;
     const choix: { id: ChoixSkin; nom: string; apparence: ApparenceEntite }[] = [
       { id: 'classe', nom: 'Classe', apparence: classe },
@@ -119,9 +106,9 @@ export class EcranProfil {
     this.boutonBras.textContent = `Bras : ${this.profil.brasFins ? 'fins' : 'larges'}`;
     this.boutonBras.disabled = this.profil.skin === 'classe';
 
-    const apparence = this.apparence(classe);
-    const image = this.textures.obtenir(apparence.skin)?.image as HTMLImageElement | undefined;
-    dessinerApercu(this.apercu, image ?? null, apparence.modele === 'humanoide_fin');
+    element('profil-nom').textContent = this.profil.pseudo || 'Sans pseudo';
+    element('profil-sous-titre').textContent = `${classe.nom} · ${this.nomSkin()}`;
+    this.apercu?.afficher(apparenceJoueur(classe, this.profil));
   }
 
   /** Lit un PNG de skin choisi par le joueur. */
@@ -160,33 +147,4 @@ export function chargerImageSkin(adresse: string): Promise<HTMLImageElement | nu
     image.onerror = () => resoudre(null);
     image.src = adresse;
   });
-}
-
-/**
- * Aperçu de face (16 × 32 pixels de skin) : faces avant de la tête, du corps,
- * des bras et des jambes, puis leur seconde couche (chapeau, veste, manches…).
- */
-function dessinerApercu(toile: HTMLCanvasElement, image: HTMLImageElement | null, brasFins: boolean): void {
-  const ctx = toile.getContext('2d');
-  if (!ctx) return;
-  ctx.imageSmoothingEnabled = false;
-  ctx.clearRect(0, 0, toile.width, toile.height);
-  if (!image) return;
-  const e = image.width / TAILLE_SKIN;           // skins HD : pixels par pixel de patron
-  const k = toile.width / 16;                     // pixels d'aperçu par pixel de patron
-  const bras = brasFins ? 3 : 4;
-  const morceau = (u: number, v: number, l: number, h: number, x: number, y: number) => {
-    ctx.drawImage(image, u * e, v * e, l * e, h * e, x * k, y * k, l * k, h * k);
-  };
-  // [u, v, largeur, hauteur, x, y] de la couche de base, puis décalage de la seconde couche
-  const parties: readonly [number, number, number, number, number, number, number, number][] = [
-    [8, 8, 8, 8, 4, 0, 32, 0],                    // tête / chapeau
-    [20, 20, 8, 12, 4, 8, 0, 16],                 // corps / veste
-    [44, 20, bras, 12, 4 - bras, 8, 0, 16],       // bras droit (à gauche à l'écran) / manche
-    [36, 52, bras, 12, 12, 8, 16, 0],             // bras gauche / manche
-    [4, 20, 4, 12, 4, 20, 0, 16],                 // jambe droite / jambière
-    [20, 52, 4, 12, 8, 20, -16, 0],               // jambe gauche / jambière
-  ];
-  for (const [u, v, l, h, x, y] of parties) morceau(u, v, l, h, x, y);
-  for (const [u, v, l, h, x, y, du, dv] of parties) morceau(u + du, v + dv, l, h, x, y);
 }

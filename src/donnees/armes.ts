@@ -5,7 +5,8 @@
  * Usage des statistiques par mécanique :
  *   balayage   degats, cadence, zone (rayon de l'arc), recul
  *   tir        degats, cadence, nombre, vitesse, portee, perforation, recul
- *   retour     degats, cadence, nombre, vitesse, portee (distance avant le retour), recul
+ *   retour     degats, cadence, nombre, vitesse, portee (distance avant le retour), recul ;
+ *              ne revient qu'à partir du rang `loyaute` (sinon disparaît au bout de sa portée)
  *   orbite     degats, cadence (délai avant de retoucher un ennemi), nombre, vitesse (rad/s), zone (rayon), recul
  *   explosif   degats, cadence, nombre, vitesse, portee, zone (rayon d'explosion), recul
  *   foudre     degats, cadence, nombre, portee (rayon de recherche), zone (rayon d'impact), recul
@@ -56,15 +57,15 @@ const definitions = {
   trident: {
     son: 'trident',
     nom: 'Trident',
-    description: 'Lancé à travers les ennemis, il revient dans votre main.',
+    description: 'Lancé à travers les ennemis. Avec Loyauté, il revient dans votre main.',
     icone: 'item/trident',
-    mecanique: { type: 'retour', projectile: 'trident', dispersion: 0.5 },
-    stats: { ...BASE, degats: 12, cadence: 2.4, vitesse: 13, portee: 9, recul: 4 },
+    mecanique: { type: 'retour', projectile: 'trident', dispersion: 0.5, loyaute: 3 },
+    stats: { ...BASE, degats: 14, cadence: 2.4, vitesse: 13, portee: 9, recul: 4 },
     niveaux: [
       { description: 'Dégâts +6', modif: { degats: 6 } },
+      { description: 'Loyauté : le trident revient dans votre main', modif: {} },
       { description: '+1 trident', modif: { nombre: 1 } },
-      { description: 'Portée +3 blocs', modif: { portee: 3 } },
-      { description: 'Lancé 25 % plus souvent', modif: { cadence: -0.6 } },
+      { description: 'Portée +3 blocs, lancé 20 % plus souvent', modif: { portee: 3, cadence: -0.5 } },
       { description: '+1 trident', modif: { nombre: 1 } },
     ],
   },

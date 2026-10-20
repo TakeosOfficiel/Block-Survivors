@@ -23,7 +23,12 @@ import { SPRITES_INTERFACE } from '../ui/habillage';
 export function texturesInterface(): Set<CheminTexture> {
   const chemins = new Set<CheminTexture>(Object.values(SPRITES_INTERFACE));
   chemins.add(CONFIG.chargement.textureFond);
-  for (const id of IDS_PERSONNAGES) chemins.add(PERSONNAGES[id].skin);
+  for (const id of IDS_PERSONNAGES) {
+    const p = PERSONNAGES[id];
+    chemins.add(p.skin);
+    if (p.objetEnMain) chemins.add(p.objetEnMain);
+    for (const exclusif of p.cartesExclusives) chemins.add(PASSIFS[exclusif].icone);
+  }
   for (const id of IDS_ARMES) chemins.add(ARMES[id].icone);
   for (const arene of ARENES) chemins.add(arene.icone);
   chemins.add(CONFIG.hud.coeurs.plein);

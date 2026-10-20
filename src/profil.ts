@@ -60,3 +60,13 @@ export function apparenceJoueur<T extends ApparenceEntite>(classe: T, profil: Pr
   const skin = profil.skin === 'importe' ? CHEMIN_SKIN_IMPORTE : cheminSkinVanilla(profil.skin, profil.brasFins);
   return { ...classe, modele, skin };
 }
+
+const DEBUTS = ['Creeper', 'Diamant', 'Redstone', 'Ender', 'Pixel', 'Blaze', 'Golem', 'Nether', 'Obsi', 'Lapis', 'Silex', 'Cubo'];
+const FINS = ['Chasseur', 'Furtif', 'Doré', 'Sombre', 'Rapide', 'Mineur', 'Lunaire', 'Royal', 'Sauvage', 'Brave'];
+
+/** Pseudo au hasard, dans l'esprit du jeu (ex. « RedstoneFurtif42 »). */
+export function pseudoAleatoire(): string {
+  const tirer = (liste: readonly string[]) => liste[Math.floor(Math.random() * liste.length)];
+  const nombre = Math.random() < 0.6 ? String(Math.floor(Math.random() * 100)) : '';
+  return nettoyerPseudo(`${tirer(DEBUTS)}${tirer(FINS)}${nombre}`);
+}

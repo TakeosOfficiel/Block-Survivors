@@ -155,6 +155,11 @@ export class Sauvegarde {
     return { modif, armes, relances };
   }
 
+  /** Meilleur temps survécu dans l'arène (s), 0 si jamais jouée. */
+  record(arene: string): number {
+    return this.donnees.records[arene] ?? 0;
+  }
+
   // --- Déblocages ----------------------------------------------------------
 
   /** Condition à remplir, ou null si c'est déjà disponible. */

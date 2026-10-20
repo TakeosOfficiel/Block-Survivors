@@ -3,22 +3,19 @@
  * comme les « waving plants » des packs de shaders du jeu : les feuilles
  * frémissent, le haut des herbes et des fleurs se balance. Les vagues de vent
  * suivent la position de chaque bloc : elles traversent la prairie.
- * Sans shaders, les blocs gardent leurs matériaux d'origine, immobiles.
+ *
+ * Les matériaux animés remplacent ceux d'origine dès la construction ; sans
+ * shaders, la force du vent est simplement nulle (rien à recompiler).
  */
 import * as THREE from 'three';
-import { MeshLambertNodeMaterial } from 'three/webgpu';
-import { attribute, cos, dot, positionLocal, sin, time, vec2, vec3 } from 'three/tsl';
+import { MeshLambertNodeMaterial, type UniformNode } from 'three/webgpu';
+import { attribute, cos, dot, positionLocal, sin, time, uniform, vec2, vec3 } from 'three/tsl';
 import { CONFIG } from '../config';
 import { BLOCS, IDS_BLOCS } from '../donnees/blocs';
 
-interface Ondulant {
-  readonly maillage: THREE.InstancedMesh;
-  readonly origine: { geometrie: THREE.BufferGeometry; materiau: THREE.Material | THREE.Material[] };
-  readonly shader: { geometrie: THREE.BufferGeometry; materiau: THREE.Material | THREE.Material[] };
-}
-
 export class Vegetation {
-  private readonly ondulants: Ondulant[] = [];
+  /** 0 = immobile (shaders désactivés), 1 = vent normal. */
+  private readonly force = uniform(0);
 
   constructor(scene: THREE.Scene) {
     for (const id of IDS_BLOCS) {
@@ -33,26 +30,22 @@ export class Vegetation {
       const geometrie = maillage.geometry.clone();
       geometrie.setAttribute('aCentre', new THREE.InstancedBufferAttribute(centres, 3));
 
-      const convertir = (m: THREE.Material) => creerMateriauOndulant(m as THREE.MeshLambertMaterial, mode);
-      const materiau = Array.isArray(maillage.material) ? maillage.material.map(convertir) : convertir(maillage.material);
-      this.ondulants.push({
-        maillage,
-        origine: { geometrie: maillage.geometry, materiau: maillage.material },
-        shader: { geometrie, materiau },
-      });
+      const convertir = (m: THREE.Material) => creerMateriauOndulant(m as THREE.MeshLambertMaterial, mode, this.force);
+      maillage.geometry = geometrie;
+      maillage.material = Array.isArray(maillage.material) ? maillage.material.map(convertir) : convertir(maillage.material);
     }
   }
 
   definirShaders(actifs: boolean): void {
-    for (const o of this.ondulants) {
-      const etat = actifs ? o.shader : o.origine;
-      o.maillage.geometry = etat.geometrie;
-      o.maillage.material = etat.materiau;
-    }
+    this.force.value = actifs ? 1 : 0;
   }
 }
 
-function creerMateriauOndulant(origine: THREE.MeshLambertMaterial, mode: 'feuillage' | 'plante'): MeshLambertNodeMaterial {
+function creerMateriauOndulant(
+  origine: THREE.MeshLambertMaterial,
+  mode: 'feuillage' | 'plante',
+  force: UniformNode<'float', number>,
+): MeshLambertNodeMaterial {
   const v = CONFIG.shaders.vent;
   const materiau = new MeshLambertNodeMaterial({
     map: origine.map, color: origine.color, alphaTest: origine.alphaTest, side: origine.side,
@@ -76,6 +69,6 @@ function creerMateriauOndulant(origine: THREE.MeshLambertMaterial, mode: 'feuill
       cos(phase.add(p.z.mul(4))),
     ).mul(v.feuillage);
   }
-  materiau.positionNode = p.add(decalage);
+  materiau.positionNode = p.add(decalage.mul(force));
   return materiau;
 }

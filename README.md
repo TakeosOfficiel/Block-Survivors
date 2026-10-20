@@ -144,12 +144,9 @@ La pause propose Reprendre, Options (volume des sons, compteur de FPS,
 secousses de l'écran, shaders), Recommencer, Menu
 principal, et le bilan en cours.
 
-**Shaders** (comme un pack de shaders du jeu) : *Désactivés* = rendu
-Minecraft d'origine. *Légers* = ombres du soleil, relief des textures (normal
-maps calculées depuis chaque pixel), lumière du ciel, feuillage et plantes qui
-ondulent au vent, lave en fusion et eau à vagues et reflets calculées par la
-carte graphique, lueur des blocs lumineux, couleurs étalonnées et vignette.
-*Complets* = idem avec des ombres plus fines et l'occlusion ambiante.
+**Shaders** : *Désactivés* = rendu d'origine. *Légers* = ombres du soleil,
+feuillage et plantes (herbes, fleurs) qui ondulent au vent. *Complets* = idem
+avec des ombres plus fines. Les textures restent celles du jeu.
 
 
 

@@ -142,40 +142,15 @@ export const CONFIG = {
     niveau: { nombre: 36, vitesse: 4.5, taille: 0.22, duree: 1, couleurs: [0x80ff20, 0xffff55, 0xffffff] },
   },
 
-  // Shaders (option) : ombres du soleil, lueurs, occlusion ambiante
+  // Shaders (option) : ombres du soleil, feuillage et plantes qui ondulent au vent
   shaders: {
     tailleOmbres: { legers: 2048, complets: 4096 },  // résolution de la carte d'ombres
     biaisOmbres: -0.0005,
     biaisNormalOmbres: 0.03,
     flouOmbres: { legers: 2, complets: 4 },          // douceur du bord des ombres
     margeOmbres: 6,              // blocs couverts autour de l'arène par la carte d'ombres
-    intensiteLumineux: 1.25,     // lave, glowstone, magma : assez vifs pour rayonner
-    lueur: { force: 0.8, rayon: 0.5, seuil: 0.85 },
-    occlusion: { resolution: 0.5, rayon: 0.6 },
     // Vent du feuillage et des plantes (blocs marqués « ondule »)
     vent: { direction: [0.93, 0.37], vitesse: 1.8, plantes: 0.1, feuillage: 0.035 },
-    relief: 1.4,                 // force du relief des textures (normal maps générées)
-    // Lumière : ciel bleuté par-dessus, sol chaud par-dessous, soleil plus franc
-    lumiere: { ambiante: 0.5, ciel: 0.75, soleil: 1.15, couleurSol: 0x5a4632 },
-    etalonnage: { saturation: 1.18, vignette: 0.35 },
-  },
-
-  // Lave et eau calculées par la carte graphique quand les shaders sont actifs
-  liquides: {
-    lave: {
-      couleurCoeur: 0xffc040, couleurFusion: 0xd8400c, couleurCroute: 0x1e0604,
-      intensite: 1.7,            // le cœur des veines dépasse le blanc pour rayonner
-      taillePlaques: 1.2,        // plaques de croûte par bloc (plus grand = plus petites)
-      largeurFissures: 0.08,
-      couvertureCroute: 0.12,    // −0,3 = presque pas de croûte, 0,3 = presque tout couvert
-    },
-    eau: {
-      couleurProfonde: 0x062a3e, couleurClaire: 0x23798f,
-      relief: 0.55,              // force des vagues sur les reflets
-      refletCiel: 0.12,          // part du ciel reflétée même vue de haut
-      brillance: 90, eclatSoleil: 2.2,
-      opacite: 0.86,
-    },
   },
 
   textures: {

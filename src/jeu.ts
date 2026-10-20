@@ -34,7 +34,6 @@ import type { SourceEntites } from './entites/types';
 import { creerEtatPartie, type EtatPartie } from './etat';
 import { lancerPartie, retournerAuMenu, type ChoixPartie } from './lancement';
 import { construireArene } from './monde/arene';
-import { Liquides } from './monde/liquides';
 import { Vegetation } from './monde/vegetation';
 import type { MondeGenere } from './monde/generation';
 import { ChampDeFlux, type Terrain } from './monde/navigation';
@@ -68,7 +67,6 @@ export class Jeu implements CallbacksBoucle, Retours {
   private readonly sons: LecteurSons;
   private readonly etat: EtatPartie;
   private readonly terrain: Terrain;
-  private readonly liquides: Liquides;
   private readonly vegetation: Vegetation;
   private readonly entrees = new Entrees();
   private readonly hud: Hud;
@@ -133,7 +131,6 @@ export class Jeu implements CallbacksBoucle, Retours {
     // Monde : blocs affichés, carte de collision, navigation des ennemis
     construireArene(arene, monde, textures, scene);
     rendu.appliquerAmbiance(arene);
-    this.liquides = new Liquides(scene, arene.ciel);
     this.vegetation = new Vegetation(scene);
     this.terrain = { carte: monde.carte, flux: new ChampDeFlux(monde.carte) };
     const carte = monde.carte;
@@ -248,10 +245,7 @@ export class Jeu implements CallbacksBoucle, Retours {
   appliquerOptions(options: Options): void {
     this.hud.afficherFps = options.afficherFps;
     this.camera.secoussesActives = options.secousses;
-    // Matériaux remplacés d'abord : le rendu leur applique ensuite relief et ombres
-    const shaders = options.shaders !== 'aucun';
-    this.liquides.definirShaders(shaders);
-    this.vegetation.definirShaders(shaders);
+    this.vegetation.definirShaders(options.shaders !== 'aucun');
     this.rendu.definirShaders(options.shaders);
   }
 

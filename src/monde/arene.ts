@@ -52,11 +52,8 @@ function creerMateriauxBloc(bloc: DefinitionBloc, textures: BibliothequeTextures
       alphaTest: map && bloc.decoupe ? 0.5 : 0,
       side: croix || bloc.decoupe ? THREE.DoubleSide : THREE.FrontSide,
     };
-    // Blocs lumineux : pleine lumière, même dans le noir (et rayonnent avec les shaders)
-    if (!bloc.lumineux) return new THREE.MeshLambertMaterial(parametres);
-    const materiau = new THREE.MeshBasicMaterial(parametres);
-    materiau.userData['lumineux'] = true;
-    return materiau;
+    // Blocs lumineux : pleine lumière, même dans le noir
+    return bloc.lumineux ? new THREE.MeshBasicMaterial(parametres) : new THREE.MeshLambertMaterial(parametres);
   };
   if (croix) return [materiau(bloc.faces.cotes)];
   return [

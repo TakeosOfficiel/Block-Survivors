@@ -497,3 +497,62 @@ img { image-rendering: pixelated; }
 #debug button.icone { width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
 #debug button.icone img { width: 20px; height: 20px; }
 #debug button.exclusif { border-color: var(--mc-rose); }
+
+/* --- Récompenses de fin de partie ------------------------------------- */
+#fin-recompense { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.fin-emeraudes { display: flex; align-items: center; gap: 6px; color: var(--mc-vert); font-size: 16px; }
+.fin-emeraudes img { width: 32px; height: 32px; }
+.fin-deblocage { color: var(--mc-jaune); }
+
+/* --- Émeraudes et talents --------------------------------------------- */
+.icone-texte { width: 16px; height: 16px; vertical-align: -3px; margin-right: 3px; }
+.compteur-emeraudes { display: flex; align-items: center; gap: 2px; color: var(--mc-vert); font-size: 16px; }
+.compteur-emeraudes .icone-texte { width: 24px; height: 24px; }
+#menu-emeraudes { position: fixed !important; top: 10px; right: 14px; }
+
+.option-menu.verrouillee { cursor: not-allowed; filter: grayscale(1); opacity: 0.7; }
+.option-menu.verrouillee:hover { background: rgba(0, 0, 0, 0.06); }
+.option-verrou { color: #8a2a2a; }
+
+#talents { z-index: 14; gap: 10px; }
+.talents-barre { display: flex; align-items: center; gap: 24px; }
+.talents-onglets { display: flex; gap: 6px; }
+.talents-onglet {
+  width: auto; align-items: center; color: var(--mc-blanc);
+  background: rgba(255, 255, 255, 0.08);
+}
+.talents-onglet.choisie { color: var(--mc-texte-panneau); }
+.talents-onglet:disabled { opacity: 0.4; cursor: not-allowed; }
+.talents-arbres { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+.talents-arbre { width: 520px; display: flex; flex-direction: column; gap: 8px; opacity: 0.85; }
+.talents-arbre.actif { opacity: 1; box-shadow: 0 0 0 2px var(--mc-jaune); }
+.talents-entete { display: flex; align-items: center; gap: 10px; }
+.talents-entete .option-textes { flex: 1; }
+.talents-choisir { width: 130px; }
+.talents-paliers { display: flex; flex-direction: column; gap: 6px; }
+.talents-rangee { display: flex; flex-direction: column; gap: 2px; }
+.talents-palier { color: #5a5a5a; }
+.talents-rangee.ferme .talents-palier { color: #8a2a2a; }
+.talents-cases { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.talent {
+  display: flex; align-items: center; gap: 8px; padding: 4px;
+  font: inherit; color: var(--mc-texte-panneau); text-align: left;
+  background: rgba(0, 0, 0, 0.08); border: 2px solid transparent; cursor: pointer;
+}
+.talent:hover:not(:disabled) { background: rgba(255, 255, 255, 0.4); border-color: #fff; }
+.talent:disabled { cursor: default; }
+.talents-rangee.ferme .talent { filter: grayscale(1); opacity: 0.55; }
+.talent.possede { background: rgba(60, 160, 60, 0.18); }
+.talent.max { background: rgba(255, 200, 40, 0.25); }
+.talent .case-mc { position: relative; }
+.talent-rang {
+  position: absolute; right: -2px; bottom: -4px;
+  color: var(--mc-blanc); text-shadow: 2px 2px 0 #3f3f3f;
+}
+.talent.max .talent-rang { color: var(--mc-jaune); }
+.talent-textes { display: flex; flex-direction: column; min-width: 0; }
+.talent-nom { color: #202020; }
+.talent-effet { color: #1f6f1f; }
+.talent-prix { color: #2a4a9a; display: flex; align-items: center; }
+.talent-prix.trop-cher { color: #a03030; }
+.talents-reinitialiser { align-self: flex-end; width: 220px; }

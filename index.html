@@ -16,6 +16,7 @@
 
   <!-- Menu principal : choix du personnage et de l'arène -->
   <div id="menu" class="fond-terre cache">
+    <div id="menu-emeraudes" class="compteur-emeraudes" title="Émeraudes : gagnées en jouant, elles achètent des talents"></div>
     <div class="menu-entete">
       <h1 id="menu-titre" class="logo">Block Survivors</h1>
       <div id="menu-accroche" class="accroche"></div>
@@ -32,6 +33,7 @@
     </div>
     <div class="pile-boutons">
       <button id="menu-jouer" class="bouton-mc large">Jouer</button>
+      <button id="menu-talents" class="bouton-mc large">Talents…</button>
       <button id="menu-options" class="bouton-mc large">Options…</button>
       <button id="menu-quitter" class="bouton-mc large cache">Quitter le jeu</button>
     </div>
@@ -39,6 +41,18 @@
     <div class="pied pied-gauche">Block Survivors <span id="menu-version"></span> · <span id="menu-rendu"></span> · textures Minecraft 1.21.4</div>
     <a id="menu-mise-a-jour" class="mise-a-jour cache" target="_blank" rel="noopener">Nouvelle version disponible ! Cliquez pour la télécharger</a>
     <div class="pied pied-droite">Projet de fan, non affilié à Mojang</div>
+  </div>
+
+  <!-- Talents (menu) : deux arbres par personnage -->
+  <div id="talents" class="ecran fond-terre cache">
+    <h2 class="ecran-titre">Talents</h2>
+    <div class="talents-barre">
+      <div id="talents-personnages" class="talents-onglets"></div>
+      <div id="talents-emeraudes" class="compteur-emeraudes"></div>
+    </div>
+    <div id="talents-arbres" class="talents-arbres"></div>
+    <div class="ecran-aide">Un seul arbre est actif par personnage · les émeraudes se gagnent en jouant · réinitialiser rend tout</div>
+    <button id="talents-fermer" class="bouton-mc large">Terminé</button>
   </div>
 
   <!-- Options (menu et pause) -->
@@ -112,6 +126,7 @@
   <div id="fin" class="ecran cache">
     <h2 id="fin-titre" class="ecran-titre grand">Vous êtes mort !</h2>
     <div id="fin-sous-titre" class="ecran-sous-titre"></div>
+    <div id="fin-recompense"></div>
     <div id="fin-bilan" class="panneau-mc bilan"></div>
     <div class="rangee-boutons">
       <button id="fin-rejouer" class="bouton-mc">Rejouer</button>
@@ -132,6 +147,7 @@
       <button id="dbg-niveau" title="+1 niveau (L)">+1 niv.</button>
       <button id="dbg-boss" title="Prochain boss (B)">Boss</button>
       <button id="dbg-fin" title="Aller à 14:50">14:50</button>
+      <button id="dbg-emeraudes" title="+100 émeraudes pour les talents">+100 ém.</button>
     </div>
     <div class="ligne icones">Ennemis <span id="dbg-apparitions"></span></div>
     <div class="ligne icones">Armes <span id="dbg-armes"></span></div>

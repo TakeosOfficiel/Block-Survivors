@@ -32,7 +32,13 @@ const definitions = {
     nom: 'Carquois',
     description: 'Toutes les armes lancent un projectile de plus.',
     icone: 'item/arrow',
-    niveaux: rangs(2, { description: '+1 projectile', modif: { projectiles: 1 } }),
+    niveaux: rangs(1, { description: '+1 projectile', modif: { projectiles: 1 } }),
+  },
+  silex: {
+    nom: 'Silex taillé',
+    description: 'Des coups critiques plus fréquents.',
+    icone: 'item/flint',
+    niveaux: rangs(5, { description: 'Coups critiques +5 %', modif: { critique: 0.05 } }),
   },
   longue_vue: {
     nom: 'Longue-vue',

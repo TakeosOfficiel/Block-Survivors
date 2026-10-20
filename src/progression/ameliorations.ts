@@ -73,6 +73,8 @@ const LIBELLES_MODIFICATEURS: Record<keyof Modificateurs, { nom: string; pourcen
   regeneration: { nom: 'Régénération', pourcentage: false, unite: ' PV/s' },
   vies: { nom: 'Vies en plus', pourcentage: false, unite: '' },
   collecte: { nom: 'Rayon de collecte', pourcentage: true, unite: '' },
+  critique: { nom: 'Coups critiques', pourcentage: false, unite: '' },
+  degatsCritiques: { nom: 'Dégâts critiques', pourcentage: false, unite: '' },
 };
 
 const FORMAT = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 });
@@ -227,6 +229,8 @@ function formaterStat(cle: keyof StatsArme, valeur: number): string {
 function formaterModificateur(cle: keyof Modificateurs, valeur: number): string {
   const libelle = LIBELLES_MODIFICATEURS[cle];
   if (cle === 'armure') return valeur === 0 ? 'normaux' : `−${FORMAT.format(valeur)} par coup`;
+  if (cle === 'critique') return `${Math.round(valeur * 100)} % de chance`;
+  if (cle === 'degatsCritiques') return `×${FORMAT.format(valeur)}`;
   if (libelle.pourcentage) {
     const pourcent = Math.round((valeur - 1) * 100);
     return `${pourcent >= 0 ? '+' : '−'}${Math.abs(pourcent)} %`;

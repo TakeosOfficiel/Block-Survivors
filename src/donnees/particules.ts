@@ -91,6 +91,8 @@ const gerbes = {
   ],
   // Arrivée et départ d'un golem
   invocation: [{ particule: 'poof', nombre: 20, vitesse: 1.6, dispersion: 0.9, montee: 0.8 }],
+  // Coup critique sur un ennemi
+  critique: [{ particule: 'critique', nombre: 5, vitesse: 2.5, dispersion: 0.3, montee: 2 }],
   // Coup d'épée sans texture de balayage
   coup: [{ particule: 'critique', nombre: 8, vitesse: 3, dispersion: 0.6, montee: 1.5 }],
   niveau: [{ particule: 'joie', nombre: 16, vitesse: 1, dispersion: 0.8, montee: 1.5 }],

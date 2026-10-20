@@ -10,6 +10,7 @@ import { IDS_PASSIFS, PASSIFS } from '../donnees/passifs';
 import { PROGRESSION } from '../donnees/progression';
 import { ARENES } from '../donnees/arenes';
 import { IDS_PERSONNAGES, PERSONNAGES } from '../donnees/personnages';
+import { ARBRES, RECOMPENSES } from '../donnees/talents';
 import { IDS_PROJECTILES, PROJECTILES } from '../donnees/projectiles';
 import type { CheminTexture, DefinitionArene, DefinitionPersonnage } from '../donnees/types';
 import type { MondeGenere } from '../monde/generation';
@@ -24,6 +25,13 @@ export function texturesInterface(): Set<CheminTexture> {
   for (const id of IDS_ARMES) chemins.add(ARMES[id].icone);
   for (const arene of ARENES) chemins.add(arene.icone);
   chemins.add(CONFIG.hud.coeurs.plein);
+  chemins.add(RECOMPENSES.icone);
+  for (const id of IDS_PERSONNAGES) {
+    for (const arbre of ARBRES[id]) {
+      chemins.add(arbre.icone);
+      for (const talent of arbre.talents) chemins.add(talent.icone);
+    }
+  }
   return chemins;
 }
 

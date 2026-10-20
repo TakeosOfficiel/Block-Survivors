@@ -18,6 +18,7 @@ import { Entrees } from './controles/entrees';
 import type { IdEnnemi } from './donnees/ennemis';
 import { IDS_OBJETS, OBJETS } from './donnees/objets';
 import { GERBES } from './donnees/particules';
+import { RECOMPENSES } from './donnees/talents';
 import { PROGRESSION } from './donnees/progression';
 import type { IdSon } from './donnees/sons';
 import { Ombres } from './effets/ombres';
@@ -45,7 +46,9 @@ import type { Rendu } from './moteur/rendu';
 import { Ameliorations, type Carte } from './progression/ameliorations';
 import { gagnerXp } from './progression/niveaux';
 import type { Options } from './options';
+import { cumulerModificateurs } from './progression/modificateurs';
 import { Passifs } from './progression/passifs';
+import type { Recompense, Sauvegarde } from './progression/sauvegarde';
 import { formaterTemps } from './utils/format';
 import { remplirBilan } from './ui/bilan';
 import { PanneauDebug } from './ui/debug';
@@ -60,6 +63,7 @@ export interface ServicesJeu {
   readonly sons: LecteurSons;
   readonly options: Options;
   readonly panneauOptions: PanneauOptions;
+  readonly sauvegarde: Sauvegarde;
 }
 
 export class Jeu implements CallbacksBoucle, Retours {
@@ -67,6 +71,9 @@ export class Jeu implements CallbacksBoucle, Retours {
   private readonly textures: BibliothequeTextures;
   private readonly choix: ChoixPartie;
   private readonly sons: LecteurSons;
+  private readonly sauvegarde: Sauvegarde;
+  /** Émeraudes et déblocages gagnés (fin de partie). */
+  private recompense: Recompense | null = null;
   private readonly etat: EtatPartie;
   private readonly terrain: Terrain;
   private readonly vegetation: Vegetation;
@@ -122,13 +129,20 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.textures = textures;
     this.choix = choix;
     this.sons = services.sons;
+    this.sauvegarde = services.sauvegarde;
     const arene = choix.arene;
     this.etat = creerEtatPartie(arene, choix.personnage);
     const scene = rendu.scene;
 
-    // Bonus permanents du personnage
-    this.passifs = new Passifs(this.etat.personnage.bonus);
+    // Bonus permanents du personnage et de son arbre de talents
+    const talents = this.sauvegarde.bonus(choix.personnage);
+    const bonus = { ...this.etat.personnage.bonus };
+    cumulerModificateurs(bonus, talents.modif);
+    this.passifs = new Passifs(bonus);
     this.passifs.calculer(this.etat.modificateurs);
+    this.etat.joueur.pvMax += this.etat.modificateurs.pvMax;
+    this.etat.joueur.pv = this.etat.joueur.pvMax;
+    this.etat.relancesRestantes += talents.relances;
 
     // Monde : blocs affichés, carte de collision, navigation des ennemis
     construireArene(arene, monde, textures, scene);
@@ -179,6 +193,7 @@ export class Jeu implements CallbacksBoucle, Retours {
       invocations: this.invocations,
     });
     for (const id of this.etat.personnage.armesDepart) this.arsenal.ameliorer(id);
+    for (const id of talents.armes) this.arsenal.ameliorer(id);
 
     // Interface et directeurs d'apparition
     this.hud = new Hud(textures, {
@@ -205,7 +220,7 @@ export class Jeu implements CallbacksBoucle, Retours {
       rejouer: () => lancerPartie(this.choix),
       menuPrincipal: () => retournerAuMenu(this.choix),
       remplirBilan: bilan,
-    });
+    }, textures.url(RECOMPENSES.icone));
 
     this.sourcesEntites = [
       this.joueur, this.ennemis, this.projectilesEnnemis, this.projectilesJoueur, this.invocations, this.orbes, this.objets,
@@ -230,6 +245,10 @@ export class Jeu implements CallbacksBoucle, Retours {
       changerPersonnage: (id) => lancerPartie({ ...this.choix, personnage: id }),
       changerArene: (arene) => lancerPartie({ ...this.choix, arene }),
       frapper: () => this.frapperAutourDuJoueur(),
+      offrirEmeraudes: () => {
+        this.sauvegarde.offrir(100);
+        this.hud.afficherMessage(`${this.sauvegarde.emeraudes} émeraudes`);
+      },
     });
     this.rendu.preparerOmbres();
     this.boucle = new Boucle(this);
@@ -342,7 +361,16 @@ export class Jeu implements CallbacksBoucle, Retours {
       this.son('victoire');
       this.secousse(0.5);
     }
-    if (etat.issue !== null) this.minuterieFin = 0;
+    if (etat.issue !== null) {
+      this.minuterieFin = 0;
+      this.recompense = this.sauvegarde.terminerPartie({
+        arene: etat.arene.id,
+        temps: etat.tempsJeu,
+        tues: etat.ennemisTues,
+        boss: etat.stats.bossVaincus,
+        victoire: etat.issue === 'victoire',
+      });
+    }
   }
 
   /** Laisse la chute ou la victoire se jouer, puis affiche le bilan. */
@@ -353,7 +381,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     if (this.minuterieFin < CONFIG.hud.delaiFin) return;
     this.minuterieFin = -1;
     this.ecranPause.definir(false);
-    this.ecranFin.afficher(issue, this.etat.stats.xpTotale, formaterTemps(this.etat.tempsJeu));
+    this.ecranFin.afficher(issue, this.etat.stats.xpTotale, formaterTemps(this.etat.tempsJeu), this.recompense);
   }
 
   // --- Progression -------------------------------------------------------

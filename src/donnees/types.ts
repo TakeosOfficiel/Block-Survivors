@@ -506,6 +506,8 @@ export interface Modificateurs {
   regeneration: number;  // PV / s
   vies: number;          // totems d'immortalité : résurrections à la mort
   collecte: number;
+  critique: number;      // chance de coup critique (0 à 1)
+  degatsCritiques: number;  // multiplicateur des dégâts d'un coup critique
 }
 
 export interface NiveauPassif {
@@ -600,3 +602,53 @@ export interface SalveParticules {
 }
 
 export type DefinitionGerbe = readonly SalveParticules[];
+
+// --------------------------------------------------------------------------
+// Progression entre les parties (talents, émeraudes, déblocages)
+// --------------------------------------------------------------------------
+export interface DefinitionTalent {
+  /** Identifiant stable (sauvegarde). */
+  readonly id: string;
+  readonly nom: string;
+  readonly icone: CheminTexture;
+  /** Rangée de l'arbre (0 = la plus basse), ouverte selon SEUILS_PALIERS. */
+  readonly palier: number;
+  /** Prix en émeraudes de chaque rang ; leur nombre donne le rang maximum. */
+  readonly couts: readonly number[];
+  /** Effet d'un rang, ex. « Dégâts +5 % ». */
+  readonly effet: string;
+  /** Effets cumulés à chaque rang. */
+  readonly modif?: Partial<Modificateurs>;
+  /** Chaque rang donne un rang de cette arme dès le départ. */
+  readonly arme?: IdArme;
+  readonly relances?: number;
+}
+
+export interface DefinitionArbre {
+  readonly id: string;
+  readonly nom: string;
+  readonly description: string;
+  readonly icone: CheminTexture;
+  readonly talents: readonly DefinitionTalent[];
+}
+
+export interface DefinitionRecompenses {
+  readonly icone: CheminTexture;
+  readonly parSecondes: number;
+  readonly parTues: number;
+  readonly parBoss: number;
+  readonly victoire: number;
+}
+
+export type ConditionDeblocage =
+  | { readonly type: 'survie'; readonly duree: number; readonly arene?: string }
+  | { readonly type: 'boss'; readonly nombre: number };
+
+export interface DefinitionDeblocage {
+  readonly type: 'personnage' | 'arene';
+  readonly id: string;
+  /** Nom annoncé une fois débloqué. */
+  readonly nom: string;
+  readonly condition: ConditionDeblocage;
+  readonly texte: string;
+}

@@ -11,7 +11,7 @@ const definitions = {
     rayonOmbre: 1,
     vitesse: 3.5,
     rayon: 0.7,
-    cadenceCoups: 1,
+    cadenceCoups: 0.8,
     detection: 20,
   },
 } satisfies Record<string, DefinitionAllie>;

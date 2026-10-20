@@ -18,6 +18,7 @@ import { choixDemande, memoriserChoix, partieDemandee } from './lancement';
 import { genererMonde } from './monde/generation';
 import { Rendu } from './moteur/rendu';
 import { chargerOptions } from './options';
+import { Sauvegarde } from './progression/sauvegarde';
 import { EcranChargement } from './ui/ecranChargement';
 import { EcranMenu } from './ui/ecranMenu';
 import { suivreEchelleInterface } from './ui/echelle';
@@ -38,6 +39,7 @@ async function demarrer(): Promise<void> {
 
   // Interface : police, sprites et sons, communs au menu et à la partie
   const options = chargerOptions();
+  const sauvegarde = Sauvegarde.charger();
   const sons = new Sons(options.volume);
   sons.precharger();
   const textures = new BibliothequeTextures();
@@ -63,7 +65,7 @@ async function demarrer(): Promise<void> {
   let choix = choixDemande();
   if (!partieDemandee()) {
     ecran.masquer();
-    choix = await new EcranMenu(textures, choix, panneauOptions).attendreChoix();
+    choix = await new EcranMenu(textures, choix, panneauOptions, sauvegarde).attendreChoix();
     memoriserChoix(choix);
     ecran.afficher();
   }
@@ -77,7 +79,7 @@ async function demarrer(): Promise<void> {
     (faites, total) => ecran.progression(faites, total),
   );
 
-  jeu = new Jeu(rendu, textures, monde, choix, { sons, options, panneauOptions });
+  jeu = new Jeu(rendu, textures, monde, choix, { sons, options, panneauOptions, sauvegarde });
   jeu.appliquerOptions(options);
   ecran.masquer();
   jeu.demarrer();

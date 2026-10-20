@@ -194,6 +194,12 @@ export class Ennemis implements SourceEntites {
   blesser(e: Ennemi, degats: number, sourceX: number, sourceZ: number, recul: number, arme = -1): void {
     if (e.mort >= 0) return;
     const stats = this.etat.stats;
+    // Coup critique (armes du joueur) : dégâts multipliés et étincelles du jeu
+    const mods = this.etat.modificateurs;
+    if (arme >= 0 && Math.random() < mods.critique) {
+      degats *= mods.degatsCritiques;
+      this.particules.emettre(e.x, 1, e.z, GERBES.critique);
+    }
     if (arme >= 0) stats.degatsParArme[arme] += Math.min(degats, e.pv);
     e.pv -= degats;
     e.blessure = CONFIG.surcouche.blessure.duree;

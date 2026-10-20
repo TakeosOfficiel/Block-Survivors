@@ -1,6 +1,7 @@
 /**
  * Menu principal : choix du personnage (visage, statistiques, arme de
- * départ) et de l'arène, options, puis « Jouer » (ou Entrée).
+ * départ) et de l'arène, talents, options, puis « Jouer » (ou Entrée).
+ * Les personnages et arènes pas encore débloqués affichent leur condition.
  */
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG } from '../config';
@@ -11,9 +12,11 @@ import { IDS_PERSONNAGES, PERSONNAGES, type IdPersonnage } from '../donnees/pers
 import type { DefinitionArene } from '../donnees/types';
 import type { ChoixPartie } from '../lancement';
 import { decrireBonus } from '../progression/ameliorations';
+import type { Sauvegarde } from '../progression/sauvegarde';
 import { libelleVersion, miseAJourDisponible, URL_TELECHARGEMENT } from '../version';
 import { caseImage } from './bilan';
 import { element } from './dom';
+import { compteurEmeraudes, EcranTalents } from './ecranTalents';
 import type { PanneauOptions } from './panneauOptions';
 import { portrait } from './portraits';
 
@@ -28,15 +31,24 @@ export class EcranMenu {
   private readonly listeArenes = element('menu-arenes');
   private readonly textures: BibliothequeTextures;
   private readonly options: PanneauOptions;
+  private readonly sauvegarde: Sauvegarde;
+  private readonly talents: EcranTalents;
   private personnage: IdPersonnage;
   private arene: DefinitionArene;
   private surJouer: ((choix: ChoixPartie) => void) | null = null;
 
-  constructor(textures: BibliothequeTextures, choix: ChoixPartie, options: PanneauOptions) {
+  constructor(textures: BibliothequeTextures, choix: ChoixPartie, options: PanneauOptions, sauvegarde: Sauvegarde) {
     this.textures = textures;
     this.options = options;
-    this.personnage = choix.personnage;
-    this.arene = choix.arene;
+    this.sauvegarde = sauvegarde;
+    this.talents = new EcranTalents(textures, sauvegarde);
+    // Un choix mémorisé encore verrouillé revient au premier disponible
+    this.personnage = sauvegarde.verrou('personnage', choix.personnage)
+      ? IDS_PERSONNAGES.find((id) => !sauvegarde.verrou('personnage', id)) ?? choix.personnage
+      : choix.personnage;
+    this.arene = sauvegarde.verrou('arene', choix.arene.id)
+      ? ARENES.find((a) => !sauvegarde.verrou('arene', a.id)) ?? choix.arene
+      : choix.arene;
 
     element('menu-accroche').textContent = ACCROCHES[Math.floor(Math.random() * ACCROCHES.length)];
     element('menu-version').textContent = libelleVersion();
@@ -50,6 +62,10 @@ export class EcranMenu {
     this.listeArenes.append(...ARENES.map((arene) => this.creerOptionArene(arene)));
     element<HTMLButtonElement>('menu-jouer').addEventListener('click', () => this.jouer());
     element<HTMLButtonElement>('menu-options').addEventListener('click', () => this.options.ouvrir());
+    element<HTMLButtonElement>('menu-talents').addEventListener('click', () => {
+      this.talents.ouvrir(this.personnage, () => this.afficherEmeraudes());
+    });
+    this.afficherEmeraudes();
     if (bureau) {
       const quitter = element<HTMLButtonElement>('menu-quitter');
       quitter.classList.remove('cache');
@@ -77,10 +93,14 @@ export class EcranMenu {
   }
 
   private readonly surTouche = (e: KeyboardEvent): void => {
-    if (e.code !== 'Enter' || e.repeat || this.options.ouvert) return;
+    if (e.code !== 'Enter' || e.repeat || this.options.ouvert || this.talents.ouvert) return;
     e.preventDefault();
     this.jouer();
   };
+
+  private afficherEmeraudes(): void {
+    element('menu-emeraudes').replaceChildren(...compteurEmeraudes(this.textures, this.sauvegarde.emeraudes));
+  }
 
   private marquerChoix(): void {
     for (const option of this.listePersonnages.children) {
@@ -123,18 +143,22 @@ export class EcranMenu {
       return ligne;
     });
 
+    const verrou = this.sauvegarde.verrou('personnage', id);
     return this.creerOption(id, caseImage(portrait(this.textures, def), def.nom, 'grande portrait'), def.nom, def.description, [stats, ...armes], () => {
       this.personnage = id;
-    });
+    }, verrou?.texte);
   }
 
   private creerOptionArene(arene: DefinitionArene): HTMLElement {
+    const verrou = this.sauvegarde.verrou('arene', arene.id);
     return this.creerOption(arene.id, caseImage(this.textures.url(arene.icone), arene.nom, 'grande'), arene.nom, arene.description, [], () => {
       this.arene = arene;
-    });
+    }, verrou?.texte);
   }
 
-  private creerOption(id: string, icone: HTMLElement, nom: string, description: string, details: HTMLElement[], choisir: () => void): HTMLElement {
+  private creerOption(
+    id: string, icone: HTMLElement, nom: string, description: string, details: HTMLElement[], choisir: () => void, verrou?: string,
+  ): HTMLElement {
     const bouton = document.createElement('button');
     bouton.className = 'option-menu';
     bouton.dataset['id'] = id;
@@ -146,6 +170,14 @@ export class EcranMenu {
     elementDescription.className = 'option-description';
     textes.append(elementNom, elementDescription, ...details);
     bouton.append(icone, textes);
+    if (verrou) {
+      // Verrouillé : la condition remplace les détails, et rien ne se choisit
+      const condition = texte(`Verrouillé : ${verrou}`);
+      condition.className = 'option-verrou';
+      textes.replaceChildren(elementNom, condition);
+      bouton.classList.add('verrouillee');
+      return bouton;
+    }
     bouton.addEventListener('click', () => {
       choisir();
       this.marquerChoix();

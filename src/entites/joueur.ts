@@ -6,12 +6,15 @@ import type { Entrees } from '../controles/entrees';
 import { JOUEUR_BASE } from '../donnees/joueur';
 import { MODELES } from '../donnees/modeles';
 import type { Ombres } from '../effets/ombres';
-import type { EtatJoueur, EtatPartie } from '../etat';
+import type { EtatPartie } from '../etat';
+import type { CarteMonde, Point } from '../monde/carte';
 import { angleChute, avancerAnimation, calculerRotations, creerEtatAnimation, declencherAttaque } from '../modeles/animation';
 import { compilerModele, type ModeleCompile } from '../modeles/compilation';
 import { creerPoseModele, ModeleInstancie, type PoseModele } from '../modeles/rendu';
 import { ecartAngle, facteurLissage } from '../utils/maths';
 import type { CibleJoueur, SourceEntites } from './types';
+
+const corrige: Point = { x: 0, z: 0 };
 
 export class Joueur implements SourceEntites, CibleJoueur {
   readonly actifs = 1;
@@ -19,14 +22,16 @@ export class Joueur implements SourceEntites, CibleJoueur {
   invincible = false;
 
   private readonly etat: EtatPartie;
+  private readonly carte: CarteMonde;
   private readonly entrees: Entrees;
   private readonly modele: ModeleCompile;
   private readonly rendu: ModeleInstancie;
   private readonly pose: PoseModele;
   private readonly animation = creerEtatAnimation();
 
-  constructor(etat: EtatPartie, entrees: Entrees, scene: THREE.Scene, textures: BibliothequeTextures) {
+  constructor(etat: EtatPartie, carte: CarteMonde, entrees: Entrees, scene: THREE.Scene, textures: BibliothequeTextures) {
     this.etat = etat;
+    this.carte = carte;
     this.entrees = entrees;
     const personnage = etat.personnage;
     this.modele = compilerModele(MODELES[personnage.modele]);
@@ -56,13 +61,22 @@ export class Joueur implements SourceEntites, CibleJoueur {
 
     // Vitesse : approche exponentielle de la vitesse cible (réactif, sans à-coups)
     const k = facteurLissage(JOUEUR_BASE.reactivite, dt);
-    const vitesse = this.etat.personnage.vitesse * mods.vitesse;
+    const vitesse = this.etat.personnage.vitesse * mods.vitesse * this.carte.vitesseSol(j.x, j.z);
     j.vx += (dx * vitesse - j.vx) * k;
     j.vz += (dz * vitesse - j.vz) * k;
     j.x += j.vx * dt;
     j.z += j.vz * dt;
 
-    this.resoudreCollisionsBords(j);
+    // Décor et bords : on glisse le long des obstacles, la vitesse bloquée est annulée
+    this.carte.resoudreCollision(j.x, j.z, JOUEUR_BASE.rayon, corrige);
+    if (corrige.x !== j.x) j.vx = 0;
+    if (corrige.z !== j.z) j.vz = 0;
+    j.x = corrige.x;
+    j.z = corrige.z;
+
+    // Sol brûlant (magma)
+    const degatsSol = this.carte.degatsSol(j.x, j.z);
+    if (degatsSol > 0) this.subirDegats(degatsSol);
 
     // Orientation vers la direction de marche
     if (norme > 0) {
@@ -115,12 +129,4 @@ export class Joueur implements SourceEntites, CibleJoueur {
     ombres.ajouter(j.x, j.z, this.etat.personnage.rayonOmbre);
   }
 
-  /** Maintient le joueur dans la zone jouable ; la vitesse contre un mur est annulée. */
-  private resoudreCollisionsBords(j: EtatJoueur): void {
-    const limite = this.etat.arene.taille / 2 - JOUEUR_BASE.rayon;
-    if (j.x < -limite) { j.x = -limite; j.vx = 0; }
-    else if (j.x > limite) { j.x = limite; j.vx = 0; }
-    if (j.z < -limite) { j.z = -limite; j.vz = 0; }
-    else if (j.z > limite) { j.z = limite; j.vz = 0; }
-  }
 }

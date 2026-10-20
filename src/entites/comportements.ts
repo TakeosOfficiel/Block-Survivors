@@ -13,35 +13,37 @@ export interface ContexteComportement {
   readonly tireur: Tireur;
 }
 
-/**
- * Vers le joueur : (dx, dz) unitaire, `distance` en blocs.
- * Écrit e.dirX / e.dirZ (direction voulue, 0 = immobile). Renvoie vrai si l'ennemi explose.
- */
-export function appliquerComportement(
-  e: Ennemi,
-  contexte: ContexteComportement,
-  dt: number,
-  dx: number,
-  dz: number,
-  distance: number,
-): boolean {
+/** Direction et distance vers le joueur, et chemin à suivre pour l'atteindre. */
+export interface Vers {
+  /** Direction unitaire en ligne droite vers le joueur (pour viser). */
+  dx: number;
+  dz: number;
+  distance: number;
+  /** Direction unitaire à suivre pour aller vers lui en contournant le décor. */
+  cheminX: number;
+  cheminZ: number;
+}
+
+/** Écrit e.dirX / e.dirZ (direction voulue, 0 = immobile). Renvoie vrai si l'ennemi explose. */
+export function appliquerComportement(e: Ennemi, contexte: ContexteComportement, dt: number, vers: Vers): boolean {
   const c = e.definition.comportement;
   switch (c.type) {
     case 'melee':
-      melee(e, c, contexte, dx, dz, distance);
+      melee(e, c, contexte, vers);
       return false;
     case 'archer':
-      archer(e, c, contexte, dx, dz, distance);
+      archer(e, c, contexte, vers);
       return false;
     case 'explosif':
-      return explosif(e, c, dt, dx, dz, distance);
+      return explosif(e, c, dt, vers);
   }
 }
 
 /** Va au contact et frappe à intervalle régulier. */
-function melee(e: Ennemi, c: ComportementMelee, contexte: ContexteComportement, dx: number, dz: number, distance: number): void {
-  e.dirX = dx;
-  e.dirZ = dz;
+function melee(e: Ennemi, c: ComportementMelee, contexte: ContexteComportement, vers: Vers): void {
+  e.dirX = vers.cheminX;
+  e.dirZ = vers.cheminZ;
+  const distance = vers.distance;
   const contact = e.definition.rayon + JOUEUR_BASE.rayon + c.portee;
   if (distance <= contact && e.minuterie <= 0) {
     contexte.cible.subirDegats(c.degats);
@@ -50,10 +52,18 @@ function melee(e: Ennemi, c: ComportementMelee, contexte: ContexteComportement, 
 }
 
 /** Se place à sa distance idéale (avance ou recule) et tire quand le joueur est à portée. */
-function archer(e: Ennemi, c: ComportementArcher, contexte: ContexteComportement, dx: number, dz: number, distance: number): void {
-  const sens = distance > c.distanceIdeale + 1 ? 1 : distance < c.distanceIdeale - 1.5 ? -1 : 0;
-  e.dirX = dx * sens;
-  e.dirZ = dz * sens;
+function archer(e: Ennemi, c: ComportementArcher, contexte: ContexteComportement, vers: Vers): void {
+  const { dx, dz, distance } = vers;
+  if (distance > c.distanceIdeale + 1) {
+    e.dirX = vers.cheminX;
+    e.dirZ = vers.cheminZ;
+  } else if (distance < c.distanceIdeale - 1.5) {
+    e.dirX = -dx;
+    e.dirZ = -dz;
+  } else {
+    e.dirX = 0;
+    e.dirZ = 0;
+  }
   if (distance <= c.portee && e.minuterie <= 0) {
     // Salve en éventail autour de la direction du joueur
     const nombre = c.nombre ?? 1;
@@ -70,7 +80,8 @@ function archer(e: Ennemi, c: ComportementArcher, contexte: ContexteComportement
  * S'approche, puis s'arrête et gonfle. La mèche continue tant que le joueur
  * reste dans la distance d'annulation, et redescend s'il s'éloigne.
  */
-function explosif(e: Ennemi, c: ComportementExplosif, dt: number, dx: number, dz: number, distance: number): boolean {
+function explosif(e: Ennemi, c: ComportementExplosif, dt: number, vers: Vers): boolean {
+  const distance = vers.distance;
   const amorce = (e.meche > 0 || distance < c.distanceAmorcage) && distance < c.distanceAnnulation;
   if (amorce) {
     e.meche += dt;
@@ -78,8 +89,8 @@ function explosif(e: Ennemi, c: ComportementExplosif, dt: number, dx: number, dz
     e.dirZ = 0;
   } else {
     e.meche = Math.max(0, e.meche - dt);
-    e.dirX = dx;
-    e.dirZ = dz;
+    e.dirX = vers.cheminX;
+    e.dirZ = vers.cheminZ;
   }
   return e.meche >= c.duree;
 }

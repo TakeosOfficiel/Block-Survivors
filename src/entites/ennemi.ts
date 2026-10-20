@@ -25,6 +25,9 @@ export interface Ennemi {
   meche: number;                // s de mèche écoulées (creeper)
   mort: number;                 // −1 = vivant, sinon s depuis la mort
   aExploser: boolean;
+  /** Ligne de vue directe vers le joueur (sinon : suit le champ de flux). */
+  voitJoueur: boolean;
+  minuterieVue: number;         // s avant de revérifier la ligne de vue
   /** Par arme (index dans IDS_ARMES) : temps de jeu avant lequel elle ne peut plus le toucher. */
   immunites: Float32Array;
   animation: EtatAnimation;
@@ -40,6 +43,8 @@ export function creerEnnemi(): Ennemi {
     pv: 1, pvMax: 1,
     minuterie: 0, blessure: 0, meche: 0, mort: -1,
     aExploser: false,
+    voitJoueur: true,
+    minuterieVue: 0,
     immunites: new Float32Array(IDS_ARMES.length),
     animation: creerEtatAnimation(),
   };

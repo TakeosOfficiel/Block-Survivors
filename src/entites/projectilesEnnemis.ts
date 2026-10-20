@@ -5,6 +5,7 @@ import { IDS_PROJECTILES, PROJECTILES, type IdProjectile } from '../donnees/proj
 import type { DefinitionProjectile } from '../donnees/types';
 import { RenduProjectiles } from '../effets/renduProjectiles';
 import type { EtatPartie } from '../etat';
+import type { CarteMonde } from '../monde/carte';
 import { Pool } from '../utils/pool';
 import type { CibleJoueur, SourceEntites, Tireur } from './types';
 
@@ -21,13 +22,15 @@ interface ProjectileEnnemi {
 
 export class ProjectilesEnnemis implements SourceEntites, Tireur {
   private readonly etat: EtatPartie;
+  private readonly carte: CarteMonde;
   private readonly cible: CibleJoueur;
   private readonly pool = new Pool<ProjectileEnnemi>(CONFIG.projectiles.capacite, () => ({
     indexRendu: 0, definition: PROJECTILES[IDS_PROJECTILES[0]], x: 0, z: 0, vx: 0, vz: 0, vie: 0, degats: 0,
   }));
 
-  constructor(etat: EtatPartie, cible: CibleJoueur) {
+  constructor(etat: EtatPartie, carte: CarteMonde, cible: CibleJoueur) {
     this.etat = etat;
+    this.carte = carte;
     this.cible = cible;
   }
 
@@ -65,7 +68,7 @@ export class ProjectilesEnnemis implements SourceEntites, Tireur {
       if (touche) this.cible.subirDegats(p.degats);
 
       const sortie = p.x < -limite || p.x > limite || p.z < -limite || p.z > limite;
-      if (touche || sortie || p.vie <= 0) this.pool.liberer(i);
+      if (touche || sortie || p.vie <= 0 || this.carte.bloqueTir(p.x, p.z)) this.pool.liberer(i);
     }
   }
 

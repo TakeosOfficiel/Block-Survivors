@@ -25,11 +25,11 @@ src/
   jeu.ts                assemble les systèmes et fixe l'ordre de mise à jour
   config.ts             réglages techniques + version et sources des textures
   etat.ts               état de la partie (source de vérité de la simulation)
-  donnees/              CONTENU data-driven : blocs, modèles, personnages, ennemis et boss,
-                        armes, passifs, objets, progression, arènes
+  donnees/              CONTENU data-driven : blocs, structures, arènes, modèles, personnages,
+                        ennemis et boss, armes, passifs, objets, progression
   assets/               chargement des textures et liste des textures requises
   moteur/               rendu, boucle de jeu, caméra, géométries UV
-  monde/                construction de l'arène en blocs
+  monde/                génération des arènes, affichage, carte de collision, navigation
   entites/              joueur, ennemis et comportements, projectiles ennemis, orbes d'XP,
                         objets de soin, butin, directeurs d'apparition (hordes et boss)
   combat/               armes du joueur : arsenal et une classe par mécanique
@@ -64,6 +64,16 @@ client. Les navigateurs refusent les PNG locaux en `file://` : utilise
 Guerrier (épée), Archère (arc) ou Mage (boules de feu). En attendant le menu de
 sélection, le personnage se choisit dans l'adresse : `index.html?personnage=archer`
 (ou depuis le panneau debug).
+
+## Arènes
+
+Prairie du village abandonné, Mine souterraine, Zone volcanique. En attendant le
+menu, l'arène se choisit dans l'adresse : `index.html?arene=mine` (ou `nether`,
+`prairie`), combinable avec `&personnage=…`, ou depuis le panneau debug.
+
+Une arène se décrit entièrement dans `src/donnees/arenes.ts` : sol, taches de
+sol, murs, structures (dessinées couche par couche dans `structures.ts`)
+placées ou dispersées, ambiance, et population d'ennemis par zone.
 
 ## Contrôles
 

@@ -15,6 +15,7 @@ import { compilerModele, type ModeleCompile } from '../modeles/compilation';
 import { creerPoseModele, ModeleInstancie, type PoseModele } from '../modeles/rendu';
 import { ecartAngle, facteurLissage } from '../utils/maths';
 import { Pool } from '../utils/pool';
+import type { Point } from '../monde/carte';
 import type { ArmeEquipee } from './armeEquipee';
 import type { ContexteCombat } from './contexte';
 
@@ -30,6 +31,8 @@ interface Allie {
   vitesseSol: number;
   animation: EtatAnimation;
 }
+
+const corrige: Point = { x: 0, z: 0 };
 
 interface RenduType {
   readonly modele: ModeleCompile;
@@ -91,9 +94,8 @@ export class Invocations implements SourceEntites {
   }
 
   maj(dt: number): void {
-    const { etat, ennemis, particules } = this.contexte;
+    const { etat, carte, ennemis, particules } = this.contexte;
     const j = etat.joueur;
-    const limite = etat.arene.taille / 2;
 
     for (let i = this.pool.nombre - 1; i >= 0; i--) {
       const a = this.pool.elements[i];
@@ -119,8 +121,9 @@ export class Invocations implements SourceEntites {
 
       a.vitesseSol = 0;
       if (distance > arret) {
-        a.x = Math.max(-limite, Math.min(limite, a.x + versX * def.vitesse * dt));
-        a.z = Math.max(-limite, Math.min(limite, a.z + versZ * def.vitesse * dt));
+        carte.resoudreCollision(a.x + versX * def.vitesse * dt, a.z + versZ * def.vitesse * dt, def.rayon, corrige);
+        a.x = corrige.x;
+        a.z = corrige.z;
         a.vitesseSol = def.vitesse;
       } else if (cible && a.minuterie <= 0) {
         ennemis.blesser(cible, s.degats, a.x, a.z, s.recul);

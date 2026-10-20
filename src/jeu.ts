@@ -31,6 +31,8 @@ import { ProjectilesEnnemis } from './entites/projectilesEnnemis';
 import type { SourceEntites } from './entites/types';
 import { creerEtatPartie, type EtatPartie } from './etat';
 import { construireArene } from './monde/arene';
+import type { MondeGenere } from './monde/generation';
+import { ChampDeFlux, type Terrain } from './monde/navigation';
 import { Boucle, type CallbacksBoucle } from './moteur/boucle';
 import { CameraJeu } from './moteur/camera';
 import type { Rendu } from './moteur/rendu';
@@ -46,6 +48,7 @@ export class Jeu implements CallbacksBoucle {
   private readonly rendu: Rendu;
   private readonly textures: BibliothequeTextures;
   private readonly etat: EtatPartie;
+  private readonly terrain: Terrain;
   private readonly entrees = new Entrees();
   private readonly hud: Hud;
   private readonly camera: CameraJeu;
@@ -83,7 +86,13 @@ export class Jeu implements CallbacksBoucle {
   private readonly sourcesEntites: readonly SourceEntites[];
   private mortAnnoncee = false;
 
-  constructor(rendu: Rendu, textures: BibliothequeTextures, arene: DefinitionArene, personnage: IdPersonnage) {
+  constructor(
+    rendu: Rendu,
+    textures: BibliothequeTextures,
+    arene: DefinitionArene,
+    monde: MondeGenere,
+    personnage: IdPersonnage,
+  ) {
     this.rendu = rendu;
     this.textures = textures;
     this.etat = creerEtatPartie(arene, personnage);
@@ -93,18 +102,23 @@ export class Jeu implements CallbacksBoucle {
     this.passifs = new Passifs(this.etat.personnage.bonus);
     this.passifs.calculer(this.etat.modificateurs);
 
-    construireArene(arene, textures, scene);
+    // Monde : blocs affichés, carte de collision, navigation des ennemis
+    construireArene(arene, monde, textures, scene);
+    rendu.appliquerAmbiance(arene);
+    this.terrain = { carte: monde.carte, flux: new ChampDeFlux(monde.carte) };
+    const carte = monde.carte;
     this.ombres = new Ombres(textures.obtenir(CONFIG.ombre.texture), scene);
     this.particules = new Particules(scene);
     this.renduProjectiles = new RenduProjectiles(textures, scene);
 
     // Entités
-    this.joueur = new Joueur(this.etat, this.entrees, scene, textures);
-    this.projectilesEnnemis = new ProjectilesEnnemis(this.etat, this.joueur);
+    this.joueur = new Joueur(this.etat, carte, this.entrees, scene, textures);
+    this.projectilesEnnemis = new ProjectilesEnnemis(this.etat, carte, this.joueur);
     this.orbes = new Orbes(this.etat, scene, textures);
     this.objets = new Objets(this.etat, this.particules, scene, textures);
     this.ennemis = new Ennemis(
       this.etat,
+      this.terrain,
       { cible: this.joueur, tireur: this.projectilesEnnemis },
       this.particules,
       new Butin(this.orbes, this.objets),
@@ -116,6 +130,7 @@ export class Jeu implements CallbacksBoucle {
     // Combat du joueur
     const combat: ContexteCombat = {
       etat: this.etat,
+      carte,
       ennemis: this.ennemis,
       particules: this.particules,
       declencherGesteJoueur: () => this.joueur.declencherGeste(),
@@ -136,8 +151,8 @@ export class Jeu implements CallbacksBoucle {
 
     // Interface et directeurs d'apparition
     this.hud = new Hud(textures, { etat: this.etat, arsenal: this.arsenal, passifs: this.passifs, ennemis: this.ennemis });
-    this.directeur = new DirecteurApparitions(this.etat, this.ennemis, this.camera);
-    this.directeurBoss = new DirecteurBoss(this.etat, this.ennemis, this.camera, this.hud);
+    this.directeur = new DirecteurApparitions(this.etat, this.terrain, this.ennemis, this.camera);
+    this.directeurBoss = new DirecteurBoss(this.etat, this.terrain, this.ennemis, this.camera, this.hud);
 
     // Progression
     this.ameliorations = new Ameliorations(this.etat, this.arsenal, this.passifs);
@@ -161,11 +176,8 @@ export class Jeu implements CallbacksBoucle {
       ameliorerArme: (id) => { this.arsenal.ameliorer(id); },
       gagnerNiveau: () => gagnerXp(this.etat, this.etat.joueur.xpNiveau - this.etat.joueur.xp),
       apparaitreBoss: () => this.directeurBoss.forcer(),
-      changerPersonnage: (id) => {
-        const adresse = new URL(window.location.href);
-        adresse.searchParams.set('personnage', id);
-        window.location.href = adresse.href;
-      },
+      changerPersonnage: (id) => relancerAvec('personnage', id),
+      changerArene: (id) => relancerAvec('arene', id),
       frapper: () => this.frapperAutourDuJoueur(),
     });
     this.boucle = new Boucle(this);
@@ -184,6 +196,7 @@ export class Jeu implements CallbacksBoucle {
   simuler(dt: number): void {
     if (!this.etat.joueur.mort) this.etat.tempsJeu += dt;
     this.joueur.maj(dt);
+    this.terrain.flux.maj(this.etat.joueur.x, this.etat.joueur.z);
     this.directeur.maj(dt);
     this.directeurBoss.maj();
     this.ennemis.maj(dt);           // reconstruit la grille utilisée par les armes
@@ -198,6 +211,7 @@ export class Jeu implements CallbacksBoucle {
   }
 
   afficher(dtJeu: number, dtReel: number, dtBrut: number): void {
+    this.textures.majAnimations(performance.now() / 1000);
     this.ombres.commencer();
     this.joueur.majVisuel(this.ombres);
     this.ennemis.majVisuel(this.ombres);
@@ -253,11 +267,18 @@ export class Jeu implements CallbacksBoucle {
     return total;
   }
 
+  /** Apparition sur une case libre autour du joueur. */
   private apparaitreAutourDuJoueur(id: IdEnnemi): void {
-    const angle = Math.random() * Math.PI * 2;
     const d = CONFIG.debug.distanceApparition;
     const j = this.etat.joueur;
-    this.ennemis.apparaitre(id, j.x + Math.cos(angle) * d, j.z + Math.sin(angle) * d);
+    for (let essai = 0; essai < 16; essai++) {
+      const angle = Math.random() * Math.PI * 2;
+      const x = j.x + Math.cos(angle) * d;
+      const z = j.z + Math.sin(angle) * d;
+      if (this.terrain.carte.bloqueMarche(x, z)) continue;
+      this.ennemis.apparaitre(id, x, z);
+      return;
+    }
   }
 
   private frapperAutourDuJoueur(): void {
@@ -265,4 +286,11 @@ export class Jeu implements CallbacksBoucle {
     const j = this.etat.joueur;
     this.ennemis.frapperZone(j.x, j.z, f.rayon, f.degats, f.recul);
   }
+}
+
+/** Recharge la page avec un paramètre d'adresse modifié (choix de personnage ou d'arène). */
+function relancerAvec(parametre: string, valeur: string): void {
+  const adresse = new URL(window.location.href);
+  adresse.searchParams.set(parametre, valeur);
+  window.location.href = adresse.href;
 }

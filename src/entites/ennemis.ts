@@ -17,7 +17,9 @@ import { creerPoseModele, ModeleInstancie, type PoseModele } from '../modeles/re
 import { GrilleSpatiale } from '../utils/grilleSpatiale';
 import { borner, ecartAngle, facteurLissage } from '../utils/maths';
 import { Pool } from '../utils/pool';
-import { appliquerComportement, type ContexteComportement } from './comportements';
+import type { Point } from '../monde/carte';
+import type { Terrain } from '../monde/navigation';
+import { appliquerComportement, type ContexteComportement, type Vers } from './comportements';
 import { creerEnnemi, type Ennemi } from './ennemi';
 import type { Butin } from './butin';
 import type { SourceEntites } from './types';
@@ -31,9 +33,17 @@ interface RenduType {
 }
 
 const RAYON_MAX = Math.max(...IDS_ENNEMIS.map((id) => ENNEMIS[id].rayon));
+/** s entre deux vérifications de la ligne de vue d'un ennemi. */
+const PERIODE_VUE = 0.25;
+
+// Temporaires réutilisés
+const vers: Vers = { dx: 0, dz: 0, distance: 0, cheminX: 0, cheminZ: 0 };
+const chemin: Point = { x: 0, z: 0 };
+const corrige: Point = { x: 0, z: 0 };
 
 export class Ennemis implements SourceEntites {
   private readonly etat: EtatPartie;
+  private readonly terrain: Terrain;
   private readonly contexte: ContexteComportement;
   private readonly particules: Particules;
   private readonly butin: Butin;
@@ -45,6 +55,7 @@ export class Ennemis implements SourceEntites {
 
   constructor(
     etat: EtatPartie,
+    terrain: Terrain,
     contexte: ContexteComportement,
     particules: Particules,
     butin: Butin,
@@ -52,6 +63,7 @@ export class Ennemis implements SourceEntites {
     textures: BibliothequeTextures,
   ) {
     this.etat = etat;
+    this.terrain = terrain;
     this.contexte = contexte;
     this.particules = particules;
     this.butin = butin;
@@ -96,6 +108,8 @@ export class Ennemis implements SourceEntites {
     e.meche = 0;
     e.mort = -1;
     e.aExploser = false;
+    e.voitJoueur = true;
+    e.minuterieVue = Math.random() * PERIODE_VUE;  // étale les vérifications
     e.immunites.fill(0);
     reinitialiserAnimation(e.animation);
     return true;
@@ -294,17 +308,34 @@ export class Ennemis implements SourceEntites {
     if (e.minuterie > 0) e.minuterie -= dt;
     if (e.blessure > 0) e.blessure -= dt;
 
-    // Comportement (immobile si le joueur est mort)
+    // Vers le joueur : en ligne droite s'il est en vue, sinon par le champ de flux
+    const { carte, flux } = this.terrain;
     const versX = j.x - e.x;
     const versZ = j.z - e.z;
     const distance = Math.hypot(versX, versZ) || 1e-6;
     const dx = versX / distance;
     const dz = versZ / distance;
+    if ((e.minuterieVue -= dt) <= 0) {
+      e.minuterieVue = PERIODE_VUE;
+      e.voitJoueur = def.ignoreObstacles === true || carte.ligneDeVue(e.x, e.z, j.x, j.z);
+    }
+    vers.dx = dx;
+    vers.dz = dz;
+    vers.distance = distance;
+    if (!e.voitJoueur && flux.direction(e.x, e.z, chemin)) {
+      vers.cheminX = chemin.x;
+      vers.cheminZ = chemin.z;
+    } else {
+      vers.cheminX = dx;
+      vers.cheminZ = dz;
+    }
+
+    // Comportement (immobile si le joueur est mort)
     if (j.mort) {
       e.dirX = 0;
       e.dirZ = 0;
     } else {
-      e.aExploser = appliquerComportement(e, this.contexte, dt, dx, dz, distance);
+      e.aExploser = appliquerComportement(e, this.contexte, dt, vers);
     }
 
     // Séparation : repousse doucement les ennemis qui se chevauchent
@@ -327,9 +358,10 @@ export class Ennemis implements SourceEntites {
     }
     const kSeparation = Math.min(1, g.separation * dt);
 
-    // Intégration : marche voulue + recul amorti + séparation
-    e.x += (e.dirX * def.vitesse + e.vx) * dt + sepX * kSeparation;
-    e.z += (e.dirZ * def.vitesse + e.vz) * dt + sepZ * kSeparation;
+    // Intégration : marche voulue (ralentie par le sol) + recul amorti + séparation
+    const vitesse = def.vitesse * (def.ignoreObstacles ? 1 : carte.vitesseSol(e.x, e.z));
+    e.x += (e.dirX * vitesse + e.vx) * dt + sepX * kSeparation;
+    e.z += (e.dirZ * vitesse + e.vz) * dt + sepZ * kSeparation;
     const amorti = 1 - facteurLissage(g.amortissementRecul, dt);
     e.vx *= amorti;
     e.vz *= amorti;
@@ -345,14 +377,20 @@ export class Ennemis implements SourceEntites {
       e.z = j.z + (pz / dj) * contact;
     }
 
-    // Bords de l'arène
-    const limite = this.etat.arene.taille / 2 - def.rayon;
-    e.x = borner(e.x, -limite, limite);
-    e.z = borner(e.z, -limite, limite);
+    // Décor et bords de l'arène
+    if (def.ignoreObstacles) {
+      const limite = this.etat.arene.taille / 2 - def.rayon;
+      e.x = borner(e.x, -limite, limite);
+      e.z = borner(e.z, -limite, limite);
+    } else {
+      carte.resoudreCollision(e.x, e.z, def.rayon, corrige);
+      e.x = corrige.x;
+      e.z = corrige.z;
+    }
 
     // Toujours tourné vers le joueur ; animation selon la marche effective
     e.angle += ecartAngle(e.angle, Math.atan2(dx, dz)) * facteurLissage(g.vitesseRotation, dt);
-    e.vitesseSol = Math.hypot(e.dirX, e.dirZ) * def.vitesse;
+    e.vitesseSol = Math.hypot(e.dirX, e.dirZ) * vitesse;
     // Un grand modèle fait de grands pas : cycle de marche ralenti d'autant
     avancerAnimation(e.animation, this.rendus[e.indexType].modele, dt, e.vitesseSol / (def.echelle ?? 1));
   }

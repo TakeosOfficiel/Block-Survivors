@@ -1,11 +1,14 @@
 /** Moteur de rendu : renderer WebGL, scène, caméra three.js et lumières. */
 import * as THREE from 'three';
 import { CONFIG } from '../config';
+import type { DefinitionArene } from '../donnees/types';
 
 export class Rendu {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene = new THREE.Scene();
   readonly camera: THREE.PerspectiveCamera;
+  private readonly ambiante: THREE.AmbientLight;
+  private readonly soleil: THREE.DirectionalLight;
 
   /** Lève une erreur si WebGL est indisponible. */
   constructor(conteneur: HTMLElement) {
@@ -20,12 +23,23 @@ export class Rendu {
     );
 
     // three.js calcule en unités physiques : une intensité de π = éclairage plein
-    const ambiante = new THREE.AmbientLight(0xffffff, CONFIG.rendu.ambiante * Math.PI);
-    const soleil = new THREE.DirectionalLight(0xffffff, CONFIG.rendu.soleil * Math.PI);
-    soleil.position.fromArray(CONFIG.rendu.directionSoleil);
-    this.scene.add(ambiante, soleil);
+    this.ambiante = new THREE.AmbientLight(0xffffff, CONFIG.rendu.ambiante * Math.PI);
+    this.soleil = new THREE.DirectionalLight(0xffffff, CONFIG.rendu.soleil * Math.PI);
+    this.soleil.position.fromArray(CONFIG.rendu.directionSoleil);
+    this.scene.add(this.ambiante, this.soleil);
 
     window.addEventListener('resize', this.redimensionner);
+  }
+
+  /** Ciel, brouillard et lumières propres à l'arène. */
+  appliquerAmbiance(arene: DefinitionArene): void {
+    this.scene.background = new THREE.Color(arene.ciel);
+    this.scene.fog = new THREE.Fog(arene.ciel, arene.brouillard.debut, arene.brouillard.fin);
+    const l = arene.lumiere;
+    this.ambiante.color.set(l.couleurAmbiante);
+    this.ambiante.intensity = l.ambiante * Math.PI;
+    this.soleil.color.set(l.couleurSoleil);
+    this.soleil.intensity = l.soleil * Math.PI;
   }
 
   dessiner(): void {

@@ -6,6 +6,7 @@
 import { CALENDRIER_BOSS } from '../donnees/boss';
 import { ENNEMIS, type IdEnnemi } from '../donnees/ennemis';
 import type { EtatPartie } from '../etat';
+import type { Terrain } from '../monde/navigation';
 import type { DetecteurVisibilite } from './directeur';
 import type { Ennemis } from './ennemis';
 
@@ -16,6 +17,7 @@ export interface AfficheurAlerte {
 
 export class DirecteurBoss {
   private readonly etat: EtatPartie;
+  private readonly terrain: Terrain;
   private readonly ennemis: Ennemis;
   private readonly vue: DetecteurVisibilite;
   private readonly afficheur: AfficheurAlerte;
@@ -23,8 +25,9 @@ export class DirecteurBoss {
   private moment = CALENDRIER_BOSS.premierPassage;
   private annonce = false;
 
-  constructor(etat: EtatPartie, ennemis: Ennemis, vue: DetecteurVisibilite, afficheur: AfficheurAlerte) {
+  constructor(etat: EtatPartie, terrain: Terrain, ennemis: Ennemis, vue: DetecteurVisibilite, afficheur: AfficheurAlerte) {
     this.etat = etat;
+    this.terrain = terrain;
     this.ennemis = ennemis;
     this.vue = vue;
     this.afficheur = afficheur;
@@ -60,7 +63,7 @@ export class DirecteurBoss {
     return ordre[this.prochain % ordre.length];
   }
 
-  /** Apparition hors champ, à l'opposé du joueur si possible. */
+  /** Apparition hors champ sur une case libre, sinon au coin opposé au joueur. */
   private faireApparaitre(): void {
     const id = this.idProchain();
     this.prochain++;
@@ -71,6 +74,7 @@ export class DirecteurBoss {
     for (let essai = 0; essai < 16; essai++) {
       const cx = (Math.random() * 2 - 1) * limite;
       const cz = (Math.random() * 2 - 1) * limite;
+      if (this.terrain.carte.bloqueMarche(cx, cz)) continue;
       if (Math.hypot(cx - j.x, cz - j.z) > 12 && !this.vue.estVisible(cx, cz, 3)) {
         x = cx;
         z = cz;

@@ -17,8 +17,17 @@ export interface BilanTextures {
   readonly manquantes: readonly CheminTexture[];
 }
 
+/** Texture animée enregistrée : nombre d'images de la bande et vitesse de lecture. */
+interface Animation {
+  readonly texture: THREE.Texture;
+  readonly images: number;
+  readonly imagesParSeconde: number;
+  readonly allerRetour: boolean;
+}
+
 export class BibliothequeTextures {
   private readonly textures = new Map<CheminTexture, THREE.Texture>();
+  private readonly animations = new Map<CheminTexture, Animation>();
   private readonly origines = new Map<CheminTexture, IdSourceTexture>();
   private readonly urls = new Map<CheminTexture, string>();
   private readonly manquantes: CheminTexture[] = [];
@@ -50,6 +59,28 @@ export class BibliothequeTextures {
   /** Texture prête à l'emploi, ou null si elle n'a pu être chargée. */
   obtenir(chemin: CheminTexture): THREE.Texture | null {
     return this.textures.get(chemin) ?? null;
+  }
+
+  /**
+   * Anime une texture vanilla en bande de frames (eau, lave, magma) en
+   * décalant `offset.y` ; sans effet si elle est fixe ou absente.
+   */
+  animer(chemin: CheminTexture, imagesParSeconde: number, allerRetour = false): void {
+    const texture = this.textures.get(chemin);
+    if (!texture || this.animations.has(chemin)) return;
+    const images = Math.round(1 / texture.repeat.y);
+    if (images > 1) this.animations.set(chemin, { texture, images, imagesParSeconde, allerRetour });
+  }
+
+  /** Avance les textures animées ; `temps` en secondes. */
+  majAnimations(temps: number): void {
+    for (const a of this.animations.values()) {
+      // Aller-retour : 0, 1, …, n−1, n−2, …, 1 (comme les .mcmeta de la lave)
+      const cycle = a.allerRetour ? 2 * a.images - 2 : a.images;
+      const pas = Math.floor(temps * a.imagesParSeconde) % cycle;
+      const image = pas < a.images ? pas : cycle - pas;
+      a.texture.offset.y = 1 - (image + 1) / a.images;
+    }
   }
 
   /** Adresse d'où la texture a été chargée (pour l'interface HTML), ou null. */

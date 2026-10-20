@@ -1,79 +1,61 @@
 /**
- * Construction d'une arène en blocs : sol, murs, terrain extérieur, ciel et brouillard.
- * Un InstancedMesh par type de bloc, une géométrie partagée.
+ * Affichage d'une arène générée : un InstancedMesh par type de bloc (cubes,
+ * croix, liquides), le terrain décoratif hors arène, et les textures animées.
  */
 import * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG } from '../config';
 import { BLOCS, type IdBloc } from '../donnees/blocs';
-import type { ChoixBloc, DefinitionArene, DefinitionBloc } from '../donnees/types';
+import type { DefinitionArene, DefinitionBloc } from '../donnees/types';
 import { creerGeometrieBloc } from '../moteur/geometrie';
-import { choisirPondere, hachage3 } from '../utils/maths';
+import { hachage3 } from '../utils/maths';
+import type { MondeGenere } from './generation';
+
+/** Un liquide est un cube abaissé de 2 pixels, comme en jeu. */
+const HAUTEUR_LIQUIDE = 14 / 16;
 
 /** Construit l'arène dans la scène et renvoie sa racine. */
 export function construireArene(
   definition: DefinitionArene,
+  monde: MondeGenere,
   textures: BibliothequeTextures,
   scene: THREE.Scene,
 ): THREE.Group {
   const groupe = new THREE.Group();
   groupe.name = `arene:${definition.id}`;
 
-  const geometrie = creerGeometrieBloc();
-  for (const [idBloc, positions] of listerBlocs(definition)) {
-    groupe.add(creerInstancesBloc(idBloc, positions, geometrie, textures));
+  const geometries = { cube: creerGeometrieBloc(), croix: creerGeometrieCroix() };
+  for (const [idBloc, positions] of monde.blocs) {
+    const bloc = BLOCS[idBloc];
+    groupe.add(creerInstancesBloc(idBloc, bloc, positions, geometries, textures));
+    if (bloc.animation) {
+      for (const chemin of new Set(Object.values(bloc.faces))) {
+        textures.animer(chemin, bloc.animation.imagesParSeconde, bloc.animation.allerRetour);
+      }
+    }
   }
   groupe.add(creerTerrainExterieur(definition, textures));
-  appliquerAmbiance(definition, scene);
 
   scene.add(groupe);
   return groupe;
 }
 
-/** Centres des blocs de l'arène, regroupés par type : idBloc → [x,y,z, x,y,z, …]. */
-function listerBlocs(definition: DefinitionArene): Map<IdBloc, number[]> {
-  const parBloc = new Map<IdBloc, number[]>();
-  const poser = (choix: readonly ChoixBloc[], x: number, y: number, z: number) => {
-    const { bloc } = choisirPondere(choix, hachage3(Math.floor(x), Math.floor(y), Math.floor(z)));
-    let positions = parBloc.get(bloc);
-    if (!positions) parBloc.set(bloc, (positions = []));
-    positions.push(x, y, z);
-  };
-
-  const demi = definition.taille / 2;
-
-  // Sol : une couche de blocs dont la face supérieure est à y = 0
-  for (let i = 0; i < definition.taille; i++) {
-    for (let k = 0; k < definition.taille; k++) {
-      poser(definition.sol, -demi + i + 0.5, -0.5, -demi + k + 0.5);
-    }
-  }
-
-  // Murs : anneau de blocs juste autour de la zone jouable (coins compris)
-  for (let h = 0; h < definition.hauteurMur; h++) {
-    const y = h + 0.5;
-    for (let i = -1; i <= definition.taille; i++) {
-      const c = -demi + i + 0.5;
-      poser(definition.murs, c, y, -demi - 0.5);    // nord
-      poser(definition.murs, c, y, demi + 0.5);     // sud
-      if (i >= 0 && i < definition.taille) {
-        poser(definition.murs, -demi - 0.5, y, c);  // ouest
-        poser(definition.murs, demi + 0.5, y, c);   // est
-      }
-    }
-  }
-
-  return parBloc;
-}
-
 /** Matériaux [côtés, dessus, dessous] d'un bloc ; couleur de secours pour chaque face sans texture. */
-function creerMateriauxBloc(bloc: DefinitionBloc, textures: BibliothequeTextures): THREE.MeshLambertMaterial[] {
-  const materiau = (chemin: string, teinte?: number) => {
+function creerMateriauxBloc(bloc: DefinitionBloc, textures: BibliothequeTextures): THREE.Material[] {
+  const croix = bloc.forme === 'croix';
+  const materiau = (chemin: string, teinte?: number): THREE.Material => {
     const map = textures.obtenir(chemin);
-    return map
-      ? new THREE.MeshLambertMaterial({ map, color: teinte ?? 0xffffff })
-      : new THREE.MeshLambertMaterial({ color: bloc.couleurSecours });
+    const parametres = {
+      map,
+      color: map ? (teinte ?? bloc.teinte ?? 0xffffff) : bloc.couleurSecours,
+      // Feuilles, toiles, fleurs : découpe nette (alphaTest), jamais de transparence
+      alphaTest: map && bloc.decoupe ? 0.5 : 0,
+      side: croix || bloc.decoupe ? THREE.DoubleSide : THREE.FrontSide,
+    };
+    // Blocs lumineux : pleine lumière, même dans le noir
+    return bloc.lumineux ? new THREE.MeshBasicMaterial(parametres) : new THREE.MeshLambertMaterial(parametres);
   };
+  if (croix) return [materiau(bloc.faces.cotes)];
   return [
     materiau(bloc.faces.cotes),
     materiau(bloc.faces.haut, bloc.teinteHaut),
@@ -83,21 +65,24 @@ function creerMateriauxBloc(bloc: DefinitionBloc, textures: BibliothequeTextures
 
 function creerInstancesBloc(
   idBloc: IdBloc,
+  bloc: DefinitionBloc,
   positions: readonly number[],
-  geometrie: THREE.BufferGeometry,
+  geometries: { readonly cube: THREE.BufferGeometry; readonly croix: THREE.BufferGeometry },
   textures: BibliothequeTextures,
 ): THREE.InstancedMesh {
-  const bloc = BLOCS[idBloc];
   const nombre = positions.length / 3;
   const materiaux = creerMateriauxBloc(bloc, textures);
-  const mesh = new THREE.InstancedMesh(geometrie, materiaux, nombre);
+  const forme = bloc.forme ?? 'cube';
+  const geometrie = forme === 'croix' ? geometries.croix : geometries.cube;
+  const mesh = new THREE.InstancedMesh(geometrie, materiaux.length === 1 ? materiaux[0] : materiaux, nombre);
   mesh.name = idBloc;
 
   // Sans aucune texture, un damier discret garde les blocs lisibles
-  const sansTexture = materiaux.every((m) => m.map === null);
+  const sansTexture = materiaux.every((m) => (m as THREE.MeshBasicMaterial).map === null);
   const couleurBase = new THREE.Color(bloc.couleurSecours);
   const couleur = new THREE.Color();
   const matrice = new THREE.Matrix4();
+  const echelle = new THREE.Matrix4();
 
   for (let i = 0; i < nombre; i++) {
     const x = positions[i * 3];
@@ -109,7 +94,13 @@ function creerInstancesBloc(
 
     // Rotation aléatoire par quart de tour, comme le blockstate vanilla (casse la répétition)
     const quartsDeTour = bloc.rotationAleatoire ? Math.floor(hachage3(bz, bx, by) * 4) : 0;
-    matrice.makeRotationY((quartsDeTour * Math.PI) / 2).setPosition(x, y, z);
+    matrice.makeRotationY((quartsDeTour * Math.PI) / 2);
+    if (forme === 'liquide') {
+      matrice.multiply(echelle.makeScale(1, HAUTEUR_LIQUIDE, 1));
+      matrice.setPosition(x, y - (1 - HAUTEUR_LIQUIDE) / 2, z);
+    } else {
+      matrice.setPosition(x, y, z);
+    }
     mesh.setMatrixAt(i, matrice);
 
     if (sansTexture) {
@@ -122,25 +113,48 @@ function creerInstancesBloc(
   return mesh;
 }
 
-/** Terrain décoratif hors arène : dessus du bloc répété sur un grand plan, assombri. */
+/** Deux plans verticaux croisés en diagonale du bloc (fleurs, herbes, toiles). */
+function creerGeometrieCroix(): THREE.BufferGeometry {
+  const d = 0.45;  // demi-diagonale, légèrement rentrée comme en jeu
+  const positions = [
+    -d, -0.5, -d,   d, -0.5, d,   d, 0.5, d,   -d, 0.5, -d,
+    -d, -0.5, d,    d, -0.5, -d,  d, 0.5, -d,  -d, 0.5, d,
+  ];
+  const uvs = [0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1];
+  const geometrie = new THREE.BufferGeometry();
+  geometrie.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometrie.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geometrie.setIndex([0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7]);
+  geometrie.computeVertexNormals();
+  return geometrie;
+}
+
+/**
+ * Terrain décoratif hors arène : dessus du bloc répété, assombri, sur un grand
+ * plan troué à la taille de l'arène (il ne recouvre ni le sol ni les liquides).
+ * Les UV d'une ShapeGeometry valent ses coordonnées : une texture par bloc.
+ */
 function creerTerrainExterieur(definition: DefinitionArene, textures: BibliothequeTextures): THREE.Mesh {
   const { bloc: idBloc, assombrissement, taille } = definition.exterieur;
   const bloc = BLOCS[idBloc];
-  const map = textures.obtenirRepetee(bloc.faces.haut, taille);
+  const map = textures.obtenirRepetee(bloc.faces.haut, 1);
   const couleur = new THREE.Color(map ? (bloc.teinteHaut ?? 0xffffff) : bloc.couleurSecours)
     .multiplyScalar(assombrissement);
 
+  const exterieur = carre(taille / 2);
+  exterieur.holes.push(carre(definition.taille / 2));
   const plan = new THREE.Mesh(
-    new THREE.PlaneGeometry(taille, taille),
+    new THREE.ShapeGeometry(exterieur),
     new THREE.MeshLambertMaterial({ map, color: couleur }),
   );
   plan.name = 'exterieur';
   plan.rotation.x = -Math.PI / 2;
-  plan.position.y = -0.02;  // juste sous le dessus du sol de l'arène
   return plan;
 }
 
-function appliquerAmbiance(definition: DefinitionArene, scene: THREE.Scene): void {
-  scene.background = new THREE.Color(definition.ciel);
-  scene.fog = new THREE.Fog(definition.ciel, definition.brouillard.debut, definition.brouillard.fin);
+/** Carré centré de demi-côté `d`. */
+function carre(d: number): THREE.Shape {
+  return new THREE.Shape([
+    new THREE.Vector2(-d, -d), new THREE.Vector2(d, -d), new THREE.Vector2(d, d), new THREE.Vector2(-d, d),
+  ]);
 }

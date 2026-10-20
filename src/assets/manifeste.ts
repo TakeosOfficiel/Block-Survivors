@@ -9,17 +9,21 @@ import { IDS_PASSIFS, PASSIFS } from '../donnees/passifs';
 import { PROGRESSION } from '../donnees/progression';
 import { IDS_PROJECTILES, PROJECTILES } from '../donnees/projectiles';
 import type { CheminTexture, DefinitionArene, DefinitionPersonnage } from '../donnees/types';
+import type { MondeGenere } from '../monde/generation';
 import { BarreBoss } from '../ui/barreBoss';
 
-export function texturesRequises(arene: DefinitionArene, personnage: DefinitionPersonnage): Set<CheminTexture> {
+export function texturesRequises(
+  arene: DefinitionArene,
+  monde: MondeGenere,
+  personnage: DefinitionPersonnage,
+): Set<CheminTexture> {
   const chemins = new Set<CheminTexture>();
   const ajouterBloc = (id: IdBloc) => {
     const faces = BLOCS[id].faces;
     chemins.add(faces.haut).add(faces.cotes).add(faces.bas);
   };
 
-  for (const choix of arene.sol) ajouterBloc(choix.bloc);
-  for (const choix of arene.murs) ajouterBloc(choix.bloc);
+  for (const id of monde.blocs.keys()) ajouterBloc(id);
   ajouterBloc(arene.exterieur.bloc);
 
   chemins.add(personnage.skin);

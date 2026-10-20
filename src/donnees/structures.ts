@@ -1,0 +1,113 @@
+/**
+ * Structures de décor, dessinées couche par couche (couche 0 posée sur le sol).
+ * Chaque couche : lignes du nord au sud, caractères d'ouest en est ; « . » = vide.
+ * Seules les couches 0 et 1 gênent le passage (au-dessus, on passe dessous).
+ * Ajouter une structure = ajouter une entrée.
+ */
+import type { DefinitionStructure } from './types';
+
+const definitions = {
+  // --- Prairie : village abandonné ---------------------------------------------
+  maison_ruine: {
+    couches: [
+      ['CCCCCCC', 'C.....C', 'C......', 'C.....C', 'C.....C', 'C.....C', 'CC.CCCC'],
+      ['LPP.PPL', 'P.....P', '.......', 'P.....P', 'P......', 'P.....P', 'L...PPL'],
+      ['L....PL', '.......', '.......', '.......', '.......', '.......', 'L.....L'],
+    ],
+    legende: { C: 'cobblestone', P: 'oak_planks', L: 'oak_log' },
+  },
+  grange_ruine: {
+    couches: [
+      ['MCCCC.CCCM', 'C........C', 'C..HH....C', 'C..HH.....', 'C........C', 'CCCC.CCCCC'],
+      ['LPPP...PPL', 'P........P', '...H.....P', 'P.........', 'P........P', 'L.......PL'],
+      ['L.......PL', '..........', '..........', '..........', '..........', 'L........L'],
+    ],
+    legende: { C: 'cobblestone', M: 'mossy_cobblestone', P: 'oak_planks', L: 'oak_log', H: 'hay_block' },
+  },
+  puits: {
+    couches: [
+      ['CCCC', 'CWWC', 'CWWC', 'CCCC'],
+      ['L..L', '....', '....', 'L..L'],
+      ['L..L', '....', '....', 'L..L'],
+      ['PPPP', 'PPPP', 'PPPP', 'PPPP'],
+    ],
+    legende: { C: 'cobblestone', W: 'water', L: 'oak_log', P: 'oak_planks' },
+  },
+  meule: {
+    couches: [['HH', 'HH'], ['H.']],
+    legende: { H: 'hay_block' },
+  },
+  arbre_chene: {
+    couches: [
+      ['.....', '.....', '..T..', '.....', '.....'],
+      ['.....', '.....', '..T..', '.....', '.....'],
+      ['.....', '.....', '..T..', '.....', '.....'],
+      ['.FFF.', 'FFFFF', 'FFTFF', 'FFFFF', '.FFF.'],
+      ['.....', '.FFF.', '.FFF.', '.FFF.', '.....'],
+      ['.....', '..F..', '.FFF.', '..F..', '.....'],
+    ],
+    legende: { T: 'oak_log', F: 'oak_leaves' },
+  },
+  herbes: { couches: [['G']], legende: { G: 'short_grass' } },
+  pissenlit: { couches: [['D']], legende: { D: 'dandelion' } },
+  coquelicot: { couches: [['R']], legende: { R: 'poppy' } },
+
+  // --- Mine souterraine ----------------------------------------------------------
+  pilier_charbon: {
+    couches: [['SO', 'SS'], ['OS', 'SO'], ['SS', 'OS']],
+    legende: { S: 'stone', O: 'coal_ore' },
+  },
+  pilier_fer: {
+    couches: [['SF', 'SS'], ['SS', 'FS'], ['FS', 'SS']],
+    legende: { S: 'stone', F: 'iron_ore' },
+  },
+  pilier_diamant: {
+    couches: [['SS', 'DS'], ['SD', 'SS'], ['SS', 'SS']],
+    legende: { S: 'stone', D: 'diamond_ore' },
+  },
+  etai: {
+    couches: [['L..L'], ['L..L'], ['PPPP']],
+    legende: { L: 'oak_log', P: 'oak_planks' },
+  },
+  lampe: {
+    couches: [['C'], ['G']],
+    legende: { C: 'cobblestone', G: 'glowstone' },
+  },
+  toiles: {
+    couches: [['.W.', 'WW.', '..W'], ['.W.', '...', '...']],
+    legende: { W: 'cobweb' },
+  },
+  eboulis: {
+    couches: [['GCG', 'CGC', '.G.'], ['...', '.G.', '...']],
+    legende: { G: 'gravel', C: 'cobblestone' },
+  },
+  ruine_mine: {
+    couches: [
+      ['BBMB.BBB', 'B......B', 'B.......', 'B......M', '........', 'BMB.BBBB'],
+      ['B.MB..B.', 'M......B', '........', 'B.......', '........', 'B...B..B'],
+    ],
+    legende: { B: 'stone_bricks', M: 'mossy_stone_bricks' },
+  },
+
+  // --- Zone volcanique (Nether) ------------------------------------------------------
+  pilier_obsidienne: {
+    couches: [['OO', 'OO'], ['OO', 'OO'], ['OC', 'OO'], ['OO', 'OO'], ['G.', '.G']],
+    legende: { O: 'obsidian', C: 'crying_obsidian', G: 'glowstone' },
+  },
+  rempart: {
+    couches: [['NNNNNNNN'], ['NNN..NNN'], ['N.N..N.N']],
+    legende: { N: 'nether_bricks' },
+  },
+  tour_nether: {
+    couches: [['NNN', 'N.N', 'NNN'], ['NNN', 'N.N', 'N.N'], ['N.N', '...', 'N.N'], ['G.G', '...', 'G.G']],
+    legende: { N: 'nether_bricks', G: 'glowstone' },
+  },
+  amas_glowstone: {
+    couches: [['G.', '.G'], ['G.', '..']],
+    legende: { G: 'glowstone' },
+  },
+} satisfies Record<string, DefinitionStructure>;
+
+export type IdStructure = keyof typeof definitions;
+
+export const STRUCTURES: Readonly<Record<IdStructure, DefinitionStructure>> = definitions;

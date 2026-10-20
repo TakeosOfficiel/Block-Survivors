@@ -131,8 +131,9 @@ export class ProjectilesJoueur implements SourceEntites {
         if (--p.restants <= 0) detruit = true;
       }
 
-      // Fin de course
-      const sortie = p.x < -limite || p.x > limite || p.z < -limite || p.z > limite;
+      // Fin de course (le trident, magique, traverse le décor)
+      const sortie = p.x < -limite || p.x > limite || p.z < -limite || p.z > limite
+        || (!p.retour && this.contexte.carte.bloqueTir(p.x, p.z));
       if (!detruit && (p.parcouru >= p.portee || sortie)) {
         if (p.retour) {
           if (!p.revient) {

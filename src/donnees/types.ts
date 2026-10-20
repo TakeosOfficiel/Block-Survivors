@@ -10,6 +10,7 @@ import type { IdModele } from './modeles';
 import type { IdObjet } from './objets';
 import type { IdPassif } from './passifs';
 import type { IdProjectile } from './projectiles';
+import type { IdStructure } from './structures';
 
 /** Chemin d'une texture vanilla, relatif à assets/minecraft/textures/, sans « .png » (ex. « block/dirt »). */
 export type CheminTexture = string;
@@ -19,6 +20,14 @@ export type Vec3 = readonly [number, number, number];
 // --------------------------------------------------------------------------
 // Blocs
 // --------------------------------------------------------------------------
+/**
+ * Forme d'un bloc :
+ * - cube : bloc plein (par défaut) ;
+ * - croix : deux plans croisés en diagonale (fleurs, herbes, toiles), jamais solide ;
+ * - liquide : cube légèrement abaissé (eau, lave), infranchissable à pied.
+ */
+export type FormeBloc = 'cube' | 'croix' | 'liquide';
+
 export interface DefinitionBloc {
   readonly nom: string;
   readonly faces: {
@@ -26,10 +35,25 @@ export interface DefinitionBloc {
     readonly cotes: CheminTexture;
     readonly bas: CheminTexture;
   };
+  readonly forme?: FormeBloc;
+  /** Bloque le passage (vrai par défaut pour les cubes). */
+  readonly solide?: boolean;
+  /** Texture à trous (feuilles, toiles, fleurs) : alphaTest. */
+  readonly decoupe?: boolean;
+  /** Brille dans le noir (glowstone, lave, magma) : non éclairé. */
+  readonly lumineux?: boolean;
   /** Teinte de biome multipliée sur le dessus (textures vanilla en niveaux de gris). */
   readonly teinteHaut?: number;
+  /** Teinte multipliée sur toutes les faces (feuillage, eau). */
+  readonly teinte?: number;
   /** Rotation aléatoire par quart de tour autour de Y, comme le blockstate vanilla. */
   readonly rotationAleatoire?: boolean;
+  /** Multiplicateur de vitesse sur ce bloc (sable des âmes) ou dedans (toile). */
+  readonly ralentit?: number;
+  /** Dégâts infligés au joueur qui marche dessus (magma). */
+  readonly degats?: number;
+  /** Texture animée vanilla (bande de frames) : vitesse et lecture en aller-retour. */
+  readonly animation?: { readonly imagesParSeconde: number; readonly allerRetour?: boolean };
   /** Couleur unie si les textures n'ont pu être chargées. */
   readonly couleurSecours: number;
 }
@@ -192,6 +216,8 @@ export interface DefinitionEnnemi extends ApparenceEntite {
   readonly resistanceRecul?: number;
   /** Objet toujours lâché à la mort (en plus des tirages au sort). */
   readonly butin?: IdObjet;
+  /** Trop grand pour être gêné par le décor : traverse les obstacles. */
+  readonly ignoreObstacles?: boolean;
   /** Présent pour les boss : affichage de leur barre de vie. */
   readonly boss?: { readonly couleurBarre: 'purple' | 'red' };
 }
@@ -307,24 +333,64 @@ export interface DefinitionApparitions {
   readonly multiplicateurPv: Progression;
   readonly distanceMin: number;            // distance minimale au joueur (blocs)
   readonly dispersionGroupe: number;       // rayon d'un groupe (blocs)
-  readonly ennemis: readonly {
-    readonly ennemi: IdEnnemi;
-    readonly depuis: number;               // s de jeu avant la première apparition
-    readonly poids: number;
-  }[];
+}
+
+/** Ennemi pouvant apparaître, à partir d'un moment de la partie, avec un poids de tirage. */
+export interface ChoixEnnemi {
+  readonly ennemi: IdEnnemi;
+  readonly depuis: number;   // s de jeu avant la première apparition
+  readonly poids: number;
 }
 
 // --------------------------------------------------------------------------
 // Arènes
 // --------------------------------------------------------------------------
+/** Rectangle [x0, z0, x1, z1] en blocs, dans les coordonnées de l'arène (origine au centre). */
+export type Rectangle = readonly [number, number, number, number];
+
+/** Remplacement du sol : un rectangle, ou des taches rondes placées au hasard. */
+export type TacheSol =
+  | { readonly type: 'rectangle'; readonly bloc: IdBloc; readonly rect: Rectangle }
+  | {
+    readonly type: 'taches';
+    readonly bloc: IdBloc;
+    readonly nombre: number;
+    readonly rayon: readonly [number, number];   // min, max (blocs)
+    readonly zone?: Rectangle;
+  };
+
+/** Décor : une structure à un endroit précis, ou dispersée au hasard. */
+export type ElementDecor =
+  | { readonly type: 'structure'; readonly structure: IdStructure; readonly x: number; readonly z: number }
+  | {
+    readonly type: 'dispersion';
+    readonly structure: IdStructure;
+    readonly nombre: number;
+    readonly espacement: number;  // blocs libres exigés autour
+    readonly zone?: Rectangle;
+  };
+
+/** Zone de l'arène avec sa propre population d'ennemis. */
+export interface ZoneEnnemis {
+  readonly nom: string;
+  readonly rect: Rectangle;
+  readonly ennemis: readonly ChoixEnnemi[];
+}
+
 export interface DefinitionArene {
   readonly id: string;
   readonly nom: string;
+  readonly description: string;
   /** Côté de la zone jouable en blocs, centrée sur l'origine. */
   readonly taille: number;
   readonly hauteurMur: number;
   readonly sol: readonly ChoixBloc[];
+  /** Appliquées dans l'ordre, après le sol de base. */
+  readonly taches: readonly TacheSol[];
   readonly murs: readonly ChoixBloc[];
+  readonly decor: readonly ElementDecor[];
+  /** Rayon laissé libre autour du point de départ (blocs). */
+  readonly zoneDepart: number;
   /** Terrain décoratif hors arène : dessus du bloc répété, assombri. */
   readonly exterieur: {
     readonly bloc: IdBloc;
@@ -333,6 +399,29 @@ export interface DefinitionArene {
   };
   readonly ciel: number;
   readonly brouillard: { readonly debut: number; readonly fin: number };
+  readonly lumiere: {
+    readonly ambiante: number;
+    readonly soleil: number;
+    readonly couleurAmbiante: number;
+    readonly couleurSoleil: number;
+  };
+  /** Population hors zones. */
+  readonly ennemis: readonly ChoixEnnemi[];
+  /** Zones à population propre (la première qui contient le point d'apparition l'emporte). */
+  readonly zones: readonly ZoneEnnemis[];
+}
+
+// --------------------------------------------------------------------------
+// Structures (décor construit en blocs)
+// --------------------------------------------------------------------------
+export interface DefinitionStructure {
+  /**
+   * Couches de bas en haut (couche 0 posée sur le sol). Chaque couche est une
+   * liste de lignes du nord au sud, chaque caractère un bloc d'ouest en est.
+   * « . » = vide ; les autres caractères renvoient à `legende`.
+   */
+  readonly couches: readonly (readonly string[])[];
+  readonly legende: Readonly<Record<string, IdBloc>>;
 }
 
 // --------------------------------------------------------------------------

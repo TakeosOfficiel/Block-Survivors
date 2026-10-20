@@ -4,6 +4,7 @@
  */
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG, SOURCES_TEXTURES } from '../config';
+import { ARENES } from '../donnees/arenes';
 import { ARMES, IDS_ARMES, type IdArme } from '../donnees/armes';
 import { ENNEMIS, IDS_ENNEMIS, type IdEnnemi } from '../donnees/ennemis';
 import { IDS_PERSONNAGES, PERSONNAGES, type IdPersonnage } from '../donnees/personnages';
@@ -30,6 +31,7 @@ export interface SourcesDebug {
   gagnerNiveau(): void;
   apparaitreBoss(): void;
   changerPersonnage(id: IdPersonnage): void;
+  changerArene(id: string): void;
   frapper(): void;
 }
 
@@ -59,6 +61,7 @@ export class PanneauDebug {
     niveau: element<HTMLButtonElement>('dbg-niveau'),
     boss: element<HTMLButtonElement>('dbg-boss'),
     personnages: element('dbg-personnages'),
+    arenes: element('dbg-arenes'),
   };
 
   private visible: boolean = CONFIG.debug.actifAuDemarrage;
@@ -88,6 +91,9 @@ export class PanneauDebug {
     }
     for (const id of IDS_PERSONNAGES) {
       this.dom.personnages.append(this.creerBouton(PERSONNAGES[id].nom, () => this.sources.changerPersonnage(id)));
+    }
+    for (const arene of ARENES) {
+      this.dom.arenes.append(this.creerBouton(arene.nom, () => this.sources.changerArene(arene.id)));
     }
 
     window.addEventListener('keydown', this.surTouche);

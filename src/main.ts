@@ -9,9 +9,11 @@ import './ui/styles.css';
 import { texturesRequises } from './assets/manifeste';
 import { BibliothequeTextures } from './assets/textures';
 import { CONFIG, SOURCES_TEXTURES } from './config';
-import { ARENES } from './donnees/arenes';
+import { ARENE_PAR_DEFAUT, ARENES } from './donnees/arenes';
 import { IDS_PERSONNAGES, PERSONNAGE_PAR_DEFAUT, PERSONNAGES, type IdPersonnage } from './donnees/personnages';
+import type { DefinitionArene } from './donnees/types';
 import { Jeu } from './jeu';
+import { genererMonde } from './monde/generation';
 import { Rendu } from './moteur/rendu';
 import { EcranChargement } from './ui/ecranChargement';
 
@@ -26,12 +28,16 @@ async function demarrer(): Promise<void> {
     return;
   }
 
-  const arene = ARENES[0];
+  const arene = areneDemandee();
   const personnage = personnageDemande();
+  const monde = genererMonde(arene);
   const textures = new BibliothequeTextures();
-  await textures.charger(texturesRequises(arene, PERSONNAGES[personnage]), (faites, total) => ecran.progression(faites, total));
+  await textures.charger(
+    texturesRequises(arene, monde, PERSONNAGES[personnage]),
+    (faites, total) => ecran.progression(faites, total),
+  );
 
-  const jeu = new Jeu(rendu, textures, arene, personnage);
+  const jeu = new Jeu(rendu, textures, arene, monde, personnage);
   ecran.masquer();
   jeu.demarrer();
 
@@ -43,6 +49,12 @@ async function demarrer(): Promise<void> {
 function personnageDemande(): IdPersonnage {
   const demande = new URLSearchParams(window.location.search).get('personnage');
   return IDS_PERSONNAGES.find((id) => id === demande) ?? PERSONNAGE_PAR_DEFAUT;
+}
+
+/** Arène choisie dans l'adresse (?arene=mine), sinon celle par défaut. */
+function areneDemandee(): DefinitionArene {
+  const demande = new URLSearchParams(window.location.search).get('arene') ?? ARENE_PAR_DEFAUT;
+  return ARENES.find((a) => a.id === demande) ?? ARENES[0];
 }
 
 void demarrer();

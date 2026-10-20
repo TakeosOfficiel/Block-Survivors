@@ -2,9 +2,11 @@
 import type { Particules } from '../effets/particules';
 import type { Ennemis } from '../entites/ennemis';
 import type { EtatPartie } from '../etat';
+import type { CarteMonde } from '../monde/carte';
 
 export interface ContexteCombat {
   readonly etat: EtatPartie;
+  readonly carte: CarteMonde;
   readonly ennemis: Ennemis;
   readonly particules: Particules;
   /** Joue le geste d'attaque du joueur (coup d'épée). */

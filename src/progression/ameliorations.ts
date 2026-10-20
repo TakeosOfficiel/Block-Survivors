@@ -132,7 +132,8 @@ export class Ameliorations {
   private ameliorationsPossibles(): Amelioration[] {
     const liste: Amelioration[] = [];
     const placeArme = this.arsenal.armes.length < PROGRESSION.emplacementsArmes;
-    const placePassif = this.passifs.possedes.length < PROGRESSION.emplacementsPassifs;
+    const occupes = this.passifs.possedes.filter((p) => !PASSIFS[p.id].consommable).length;
+    const placePassif = occupes < PROGRESSION.emplacementsPassifs;
     for (const id of IDS_ARMES) {
       const rang = this.arsenal.rang(id);
       if (rang === 0 ? placeArme : rang < rangMax(ARMES[id])) liste.push({ type: 'arme', id });
@@ -141,7 +142,8 @@ export class Ameliorations {
     for (const id of IDS_PASSIFS) {
       if (PASSIFS[id].exclusif && !exclusifs.includes(id)) continue;
       const rang = this.passifs.rang(id);
-      if (rang === 0 ? placePassif : rang < PASSIFS[id].niveaux.length) liste.push({ type: 'passif', id });
+      const place = placePassif || PASSIFS[id].consommable === true;
+      if (rang === 0 ? place : rang < PASSIFS[id].niveaux.length) liste.push({ type: 'passif', id });
     }
     return liste;
   }

@@ -35,6 +35,7 @@ import { creerEtatPartie, type EtatPartie } from './etat';
 import { lancerPartie, retournerAuMenu, type ChoixPartie } from './lancement';
 import { construireArene } from './monde/arene';
 import { Herbe } from './monde/herbe/herbe';
+import { Liquides } from './monde/liquides';
 import type { MondeGenere } from './monde/generation';
 import { ChampDeFlux, type Terrain } from './monde/navigation';
 import { Boucle, type CallbacksBoucle } from './moteur/boucle';
@@ -68,6 +69,7 @@ export class Jeu implements CallbacksBoucle, Retours {
   private readonly etat: EtatPartie;
   private readonly terrain: Terrain;
   private readonly herbe: Herbe | null;
+  private readonly liquides: Liquides;
   private readonly entrees = new Entrees();
   private readonly hud: Hud;
   private readonly camera: CameraJeu;
@@ -132,6 +134,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     construireArene(arene, monde, textures, scene);
     rendu.appliquerAmbiance(arene);
     this.herbe = Herbe.creer(arene.id, monde, scene, textures);
+    this.liquides = new Liquides(scene, arene.ciel);
     this.terrain = { carte: monde.carte, flux: new ChampDeFlux(monde.carte) };
     const carte = monde.carte;
     this.ombres = new Ombres(textures.obtenir(CONFIG.ombre.texture), scene);
@@ -246,6 +249,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.hud.afficherFps = options.afficherFps;
     this.camera.secoussesActives = options.secousses;
     this.rendu.definirShaders(options.shaders);
+    this.liquides.definirShaders(options.shaders !== 'aucun');
     this.herbe?.definirStyle(options.herbe);
   }
 

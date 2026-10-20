@@ -18,6 +18,8 @@ const prairie: DefinitionArene = {
     { type: 'rectangle', bloc: 'dirt_path', rect: [-30, -1, 30, 1] },
     { type: 'rectangle', bloc: 'dirt_path', rect: [-1, -30, 1, 30] },
     { type: 'rectangle', bloc: 'gravel', rect: [-4, -4, 4, 4] },
+    // Étang au sud-est, hors des chemins et des maisons
+    { type: 'taches', bloc: 'water', nombre: 2, rayon: [2, 3], zone: [16, 16, 26, 26] },
   ],
   murs: [
     { bloc: 'cobblestone', poids: 3 },
@@ -73,7 +75,11 @@ const mine: DefinitionArene = {
     { bloc: 'gravel', poids: 1 },
     { bloc: 'cobblestone', poids: 1 },
   ],
-  taches: [{ type: 'taches', bloc: 'gravel', nombre: 8, rayon: [1, 3] }],
+  taches: [
+    { type: 'taches', bloc: 'gravel', nombre: 8, rayon: [1, 3] },
+    // Nappe d'eau souterraine au sud-ouest, entre les deux zones
+    { type: 'taches', bloc: 'water', nombre: 2, rayon: [2, 3], zone: [-26, 10, -12, 24] },
+  ],
   murs: [
     { bloc: 'stone', poids: 6 },
     { bloc: 'coal_ore', poids: 1 },

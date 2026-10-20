@@ -27,7 +27,8 @@ export class BarreCapacites {
     }
     if (passifs.version !== this.versionPassifs) {
       this.versionPassifs = passifs.version;
-      this.passifs.replaceChildren(...passifs.possedes.map((p) => {
+      // Les consommables (totem) ont leur propre compteur près des cœurs
+      this.passifs.replaceChildren(...passifs.possedes.filter((p) => !PASSIFS[p.id].consommable).map((p) => {
         const def = PASSIFS[p.id];
         return this.creerCase(def.nom, def.description, def.icone, p.rang, def.niveaux.length);
       }));

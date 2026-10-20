@@ -84,6 +84,7 @@ const definitions = {
     description: 'Guerrier : à sa mort, le totem le ramène à la vie (puis disparaît).',
     icone: 'item/totem_of_undying',
     exclusif: true,
+    consommable: true,
     niveaux: rangs(2, { description: '+1 vie : vous ressuscitez avec la moitié de vos PV', modif: { vies: 1 } }),
   },
   fleches_spectrales: {

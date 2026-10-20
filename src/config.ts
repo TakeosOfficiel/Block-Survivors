@@ -183,6 +183,24 @@ export const CONFIG = {
     occlusion: { resolution: 0.5, rayon: 0.6 },
   },
 
+  // Lave et eau calculées par la carte graphique quand les shaders sont actifs
+  liquides: {
+    lave: {
+      couleurCoeur: 0xffc040, couleurFusion: 0xd8400c, couleurCroute: 0x1e0604,
+      intensite: 1.7,            // le cœur des veines dépasse le blanc pour rayonner
+      taillePlaques: 1.2,        // plaques de croûte par bloc (plus grand = plus petites)
+      largeurFissures: 0.08,
+      couvertureCroute: 0.12,    // −0,3 = presque pas de croûte, 0,3 = presque tout couvert
+    },
+    eau: {
+      couleurProfonde: 0x062a3e, couleurClaire: 0x23798f,
+      relief: 0.55,              // force des vagues sur les reflets
+      refletCiel: 0.12,          // part du ciel reflétée même vue de haut
+      brillance: 90, eclatSoleil: 2.2,
+      opacite: 0.86,
+    },
+  },
+
   textures: {
     delaiMaxMs: 8000,        // abandon d'une source qui ne répond pas
   },

@@ -390,7 +390,9 @@ img { image-rendering: pixelated; }
 
 /* Totems restants (vies en plus), à gauche des cœurs */
 #hud-totems {
-  position: absolute; bottom: 74px; right: calc(50% + 156px);  /* juste à gauche des cœurs */
+  position: absolute; bottom: 72px; right: calc(50% + 172px);  /* à gauche des cœurs, bien séparé */
+  padding: 0 6px 0 2px;
+  background: rgba(0, 0, 0, 0.35);
   display: flex; align-items: center; gap: 2px;
 }
 #hud-totems img { width: 32px; height: 32px; }

@@ -519,6 +519,11 @@ export interface DefinitionPassif {
   readonly icone: CheminTexture;
   /** Réservé aux personnages qui le listent dans `cartesExclusives`. */
   readonly exclusif?: boolean;
+  /**
+   * Objet à usage unique (totem) : n'occupe pas d'emplacement de bonus et
+   * n'apparaît pas dans la barre ; son compteur s'affiche près des cœurs.
+   */
+  readonly consommable?: boolean;
   /** Effets des rangs 1, 2… ; rang maximal = longueur. */
   readonly niveaux: readonly NiveauPassif[];
 }

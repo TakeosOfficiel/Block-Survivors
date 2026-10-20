@@ -1,0 +1,43 @@
+# Construit l'application Windows (BlockSurvivors.exe, portable) à chaque push
+# et la publie dans la release « derniere-version » : il suffit ensuite de la
+# télécharger depuis l'onglet Releases du dépôt, sans rien installer.
+name: Application Windows
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: exe
+  cancel-in-progress: true
+
+jobs:
+  exe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BlockSurvivors
+          path: release/BlockSurvivors.exe
+      - name: Publier la release « derniere-version »
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete derniere-version --yes --cleanup-tag || true
+          gh release create derniere-version release/BlockSurvivors.exe \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Block Survivors — dernière version" \
+            --notes "Construit automatiquement depuis la branche ${GITHUB_REF_NAME} (${GITHUB_SHA::7}). Télécharge BlockSurvivors.exe et double-clique dessus."

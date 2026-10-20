@@ -158,7 +158,7 @@ export class Jeu implements CallbacksBoucle, Retours {
       ennemis: this.ennemis,
       particules: this.particules,
       retours: this,
-      declencherGesteJoueur: () => this.joueur.declencherGeste(),
+      declencherGesteJoueur: (angle) => this.joueur.declencherGeste(angle),
     };
     this.balayages = new Balayages(combat, textures, scene);
     this.projectilesJoueur = new ProjectilesJoueur(combat);

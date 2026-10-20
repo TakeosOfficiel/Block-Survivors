@@ -11,6 +11,6 @@ export interface ContexteCombat {
   readonly ennemis: Ennemis;
   readonly particules: Particules;
   readonly retours: Retours;
-  /** Joue le geste d'attaque du joueur (coup d'épée). */
-  declencherGesteJoueur(): void;
+  /** Tourne le joueur vers `angle` (rad) et joue son geste d'attaque (coup d'épée). */
+  declencherGesteJoueur(angle: number): void;
 }

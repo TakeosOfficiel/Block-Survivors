@@ -99,8 +99,9 @@ export class Joueur implements SourceEntites, CibleJoueur {
     avancerAnimation(this.animation, this.modele, dt, longueur(j.vx, j.vz));
   }
 
-  /** Joue le geste d'attaque (coup d'épée). */
-  declencherGeste(): void {
+  /** Se tourne vers sa cible et joue le geste d'attaque (coup d'épée) ; la marche le réoriente ensuite. */
+  declencherGeste(angle: number): void {
+    this.etat.joueur.angle = angle;
     declencherAttaque(this.animation, this.modele);
   }
 

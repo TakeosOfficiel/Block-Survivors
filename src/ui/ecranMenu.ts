@@ -18,6 +18,9 @@ import { portrait } from './portraits';
 
 const NOMBRE = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 });
 
+/** Pont exposé par l'application de bureau (electron/preload.cjs) ; absent dans un navigateur. */
+const bureau = (window as { bureau?: { quitter(): void } }).bureau;
+
 export class EcranMenu {
   private readonly racine = element('menu');
   private readonly listePersonnages = element('menu-personnages');
@@ -39,6 +42,11 @@ export class EcranMenu {
     this.listeArenes.append(...ARENES.map((arene) => this.creerOptionArene(arene)));
     element<HTMLButtonElement>('menu-jouer').addEventListener('click', () => this.jouer());
     element<HTMLButtonElement>('menu-options').addEventListener('click', () => this.options.ouvrir());
+    if (bureau) {
+      const quitter = element<HTMLButtonElement>('menu-quitter');
+      quitter.classList.remove('cache');
+      quitter.addEventListener('click', () => bureau.quitter());
+    }
     window.addEventListener('keydown', this.surTouche);
     this.marquerChoix();
   }

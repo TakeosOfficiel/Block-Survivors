@@ -1,6 +1,8 @@
 /**
- * Mécanique « balayage » (épée) : frappe en arc de cercle devant le joueur,
- * avec la particule de balayage vanilla (sweep, 8 images) posée au sol.
+ * Mécanique « balayage » (épée) : le joueur se tourne vers l'ennemi le plus
+ * proche à portée et frappe en arc de cercle dans sa direction, avec la
+ * particule de balayage vanilla (sweep, 8 images) posée au sol. Sans ennemi
+ * à portée, il ne frappe pas.
  */
 import * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
@@ -48,26 +50,41 @@ export class Balayages {
     const j = etat.joueur;
     const s = arme.stats;
 
+    // Visée automatique : l'ennemi le plus proche à portée (son rayon compris)
     const n = ennemis.chercher(j.x, j.z, s.zone, this.tampon);
+    let cible = -1;
+    let meilleureD2 = Infinity;
+    for (let k = 0; k < n; k++) {
+      const e = ennemis.obtenir(this.tampon[k]);
+      const d2 = (e.x - j.x) ** 2 + (e.z - j.z) ** 2;
+      if (d2 < meilleureD2) {
+        meilleureD2 = d2;
+        cible = this.tampon[k];
+      }
+    }
+    if (cible < 0) return false;
+    const visee = ennemis.obtenir(cible);
+    const angle = Math.atan2(visee.x - j.x, visee.z - j.z);
+
     for (let k = 0; k < n; k++) {
       const e = ennemis.obtenir(this.tampon[k]);
       const dx = e.x - j.x;
       const dz = e.z - j.z;
       const colle = dx * dx + dz * dz < 0.8 * 0.8;
-      if (colle || Math.abs(ecartAngle(j.angle, Math.atan2(dx, dz))) <= m.angle / 2) {
+      if (colle || Math.abs(ecartAngle(angle, Math.atan2(dx, dz))) <= m.angle / 2) {
         ennemis.blesser(e, s.degats, j.x, j.z, s.recul, arme.index);
       }
     }
-    this.contexte.declencherGesteJoueur();
+    this.contexte.declencherGesteJoueur(angle);
 
-    // Effet visuel devant le joueur
-    const avantX = Math.sin(j.angle) * s.zone * 0.45;
-    const avantZ = Math.cos(j.angle) * s.zone * 0.45;
+    // Effet visuel dans la direction du coup
+    const avantX = Math.sin(angle) * s.zone * 0.45;
+    const avantZ = Math.cos(angle) * s.zone * 0.45;
     this.imagesEnCours = this.images[arme.index];
     if (this.imagesEnCours.some((t) => t !== null)) {
       this.temps = 0;
       this.effet.position.set(j.x + avantX, 0.6, j.z + avantZ);
-      this.effet.rotation.y = j.angle + Math.PI;  // le haut de l'image vers l'avant
+      this.effet.rotation.y = angle + Math.PI;  // le haut de l'image vers l'avant
       this.effet.scale.setScalar(s.zone * 1.6);
     } else {
       particules.emettre(j.x + avantX, 1, j.z + avantZ, CONFIG.particules.mort, COULEURS_SECOURS);

@@ -4,7 +4,14 @@ Survivor-like en vue de dessus dans un monde voxel aux textures et aux sons
 Minecraft. Survivez 15 minutes à la horde. TypeScript + three.js, construit
 avec Vite.
 
-## Lancer
+## Jouer sans rien installer (Windows)
+
+Chaque push construit l'application de bureau : télécharge
+**`BlockSurvivors.exe`** dans la release « derniere-version » (onglet *Releases*
+du dépôt) et double-clique dessus. C'est un exécutable portable : rien à
+installer, rien à construire. `F11` bascule en plein écran.
+
+## Lancer depuis le code
 
 ```bash
 npm install
@@ -12,7 +19,14 @@ npm run dev        # serveur de développement : http://localhost:5173
 npm run build      # vérifie les types puis produit dist/index.html (autonome)
 npm run preview    # sert le build sur http://localhost:4173
 npm run typecheck  # vérification TypeScript seule
+npm run app        # construit puis ouvre le jeu dans une fenêtre Electron
+npm run app:dev    # fenêtre Electron sur le serveur de développement (rechargement à chaud)
+npm run exe        # produit release/BlockSurvivors.exe (Windows, portable)
 ```
+
+Si les scripts npm échouent sous Windows avec « "node" n'est pas reconnu »,
+c'est que `cmd.exe` ne trouve pas Node (PATH) ; en attendant, appelle les
+outils directement : `node node_modules/vite/bin/vite.js build`.
 
 `dist/index.html` est un fichier unique : il s'ouvre d'un double-clic et se
 charge tel quel dans Electron (`win.loadFile('dist/index.html')`).
@@ -20,6 +34,9 @@ charge tel quel dans Electron (`win.loadFile('dist/index.html')`).
 ## Structure
 
 ```
+electron/               application de bureau : fenêtre, pont vers la page (Quitter)
+scripts/app-dev.mjs     Vite + Electron avec rechargement à chaud
+.github/workflows/      construction automatique de l'exe Windows
 index.html              balisage de l'interface (chargement, menu, HUD, écrans, debug)
 src/
   main.ts               point d'entrée : interface, menu, puis génération et lancement

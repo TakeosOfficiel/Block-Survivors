@@ -22,7 +22,7 @@ const definitions = {
   epee: {
     son: 'balayage',
     nom: 'Épée en fer',
-    description: "Frappe en arc de cercle devant vous.",
+    description: "Frappe en arc de cercle l'ennemi le plus proche.",
     icone: 'item/iron_sword',
     mecanique: {
       type: 'balayage',

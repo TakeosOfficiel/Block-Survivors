@@ -54,6 +54,10 @@ canvas { display: block; }
 img { image-rendering: pixelated; }
 .cache { display: none !important; }
 
+/* Échelle de l'interface (ui/echelle.ts) : tout tient dans la fenêtre, sans défilement */
+#chargement, #menu, .ecran, #hud, #debug { zoom: var(--echelle, 1); }
+::-webkit-scrollbar { display: none; }
+
 /* Ombre de texte du jeu : décalée d'un pixel, couleur du texte au quart */
 #hud, .ecran, #menu, #chargement, .infobulle, #debug {
   text-shadow: var(--px) var(--px) 0 color-mix(in srgb, currentColor 25%, #000);
@@ -204,7 +208,7 @@ img { image-rendering: pixelated; }
   position: fixed; inset: 0; z-index: 10;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
   padding: 16px;
-  overflow-y: auto;
+  overflow: hidden;
 }
 #menu::before {
   content: ""; position: fixed; inset: 0; pointer-events: none;
@@ -226,13 +230,13 @@ img { image-rendering: pixelated; }
 }
 /* Phrase d'accroche jaune, penchée et pulsante, comme sur l'écran-titre */
 .accroche {
-  position: absolute; right: 0; bottom: 18px;
+  position: absolute; right: 0; top: 50%;
   font-size: 16px; color: var(--mc-jaune);
-  transform: translateX(50%) rotate(-20deg);
+  transform: translate(calc(50% + 24px), -50%) rotate(-20deg);
   animation: pulsation 0.5s ease-in-out infinite alternate;
   white-space: nowrap;
 }
-@keyframes pulsation { to { transform: translateX(50%) rotate(-20deg) scale(1.1); } }
+@keyframes pulsation { to { transform: translate(calc(50% + 24px), -50%) rotate(-20deg) scale(1.1); } }
 
 .menu-colonnes { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
 .menu-section { width: min(440px, 92vw); }
@@ -270,7 +274,7 @@ img { image-rendering: pixelated; }
   position: fixed; inset: 0; z-index: 12;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
   padding: 16px;
-  overflow-y: auto;
+  overflow: hidden;
 }
 /* Voile sombre des menus en jeu */
 .voile { background: linear-gradient(rgba(16, 16, 16, 0.75), rgba(16, 16, 16, 0.82)); }

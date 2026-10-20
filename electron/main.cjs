@@ -12,17 +12,25 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 function creerFenetre() {
   const fenetre = new BrowserWindow({
     width: 1280,
-    height: 800,
-    minWidth: 960,
-    minHeight: 600,
+    height: 820,
+    minWidth: 800,
+    minHeight: 520,
+    useContentSize: true,
+    show: false,  // affichée une fois prête : pas de flash blanc au lancement
     title: 'Block Survivors',
-    backgroundColor: '#404040',
+    icon: path.join(__dirname, 'icone.png'),
+    backgroundColor: '#2b2b2b',
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       sandbox: true,
     },
+  });
+
+  fenetre.once('ready-to-show', () => {
+    fenetre.maximize();
+    fenetre.show();
   });
 
   const urlDev = process.env.BLOCK_SURVIVORS_URL;

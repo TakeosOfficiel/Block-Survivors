@@ -9,7 +9,8 @@ avec Vite.
 Chaque push construit l'application de bureau : télécharge
 **`BlockSurvivors.exe`** dans la release « derniere-version » (onglet *Releases*
 du dépôt) et double-clique dessus. C'est un exécutable portable : rien à
-installer, rien à construire. `F11` bascule en plein écran.
+installer, rien à construire. La fenêtre s'ouvre agrandie, l'interface
+s'adapte à sa taille (sans défilement) et `F11` bascule en plein écran.
 
 ## Lancer depuis le code
 
@@ -36,6 +37,7 @@ charge tel quel dans Electron (`win.loadFile('dist/index.html')`).
 ```
 electron/               application de bureau : fenêtre, pont vers la page (Quitter)
 scripts/app-dev.mjs     Vite + Electron avec rechargement à chaud
+scripts/icone.py        génère l'icône de l'application (electron/icone.png)
 .github/workflows/      construction automatique de l'exe Windows
 index.html              balisage de l'interface (chargement, menu, HUD, écrans, debug)
 src/

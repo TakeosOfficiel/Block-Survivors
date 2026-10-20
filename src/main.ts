@@ -20,10 +20,12 @@ import { Rendu } from './moteur/rendu';
 import { chargerOptions } from './options';
 import { EcranChargement } from './ui/ecranChargement';
 import { EcranMenu } from './ui/ecranMenu';
+import { suivreEchelleInterface } from './ui/echelle';
 import { appliquerHabillage } from './ui/habillage';
 import { PanneauOptions } from './ui/panneauOptions';
 
 async function demarrer(): Promise<void> {
+  suivreEchelleInterface();
   const ecran = new EcranChargement(SOURCES_TEXTURES[0].url(CONFIG.chargement.textureFond));
 
   let rendu: Rendu;

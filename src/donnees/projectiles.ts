@@ -84,6 +84,7 @@ const definitions = {
   fusee: {
     nom: "Fusée d'artifice",
     forme: 'plat',
+    pointeEnHaut: true,
     texture: 'item/firework_rocket',
     tailleTexture: [16, 16],
     uv: ICONE,

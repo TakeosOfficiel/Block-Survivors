@@ -1,8 +1,8 @@
 /**
  * Mécanique « chute » (Lame colossale) : une arme géante tombe du ciel sur le
- * plus gros groupe d'ennemis, pointe en bas. Son ombre grandit au sol pendant
- * la chute ; à l'impact, dégâts de zone, éboulis et secousse ; elle reste
- * plantée un instant puis s'efface. Plusieurs lames tombent l'une après l'autre.
+ * plus gros groupe d'ennemis, debout, pointe en bas. Son ombre grandit au sol
+ * pendant la chute ; à l'impact, dégâts de zone, éboulis et secousse ; elle
+ * reste plantée un instant puis s'efface. Plusieurs lames tombent l'une après l'autre.
  */
 import * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
@@ -31,7 +31,6 @@ const groupe: Point = { x: 0, z: 0 };
 export class Chutes {
   private readonly contexte: ContexteCombat;
   private readonly textures: BibliothequeTextures;
-  private readonly camera: THREE.Camera;
   private readonly tampon = new Int32Array(128);
   private readonly chutes: Pool<Chute>;
   /** Une lame affichée par chute (un matériau chacune pour son fondu). */
@@ -39,11 +38,10 @@ export class Chutes {
   /** Éclats de l'impact : le côté du bloc du sol de l'arène. */
   private readonly eboulis: CheminTexture;
 
-  constructor(contexte: ContexteCombat, textures: BibliothequeTextures, scene: THREE.Scene, camera: THREE.Camera) {
+  constructor(contexte: ContexteCombat, textures: BibliothequeTextures, scene: THREE.Scene) {
     const c = CONFIG.armes.chute;
     this.contexte = contexte;
     this.textures = textures;
-    this.camera = camera;
     this.chutes = new Pool<Chute>(c.capacite, () => ({ arme: null, x: 0, z: 0, t: 0, tombee: false }));
     this.eboulis = BLOCS[contexte.etat.arene.exterieur.bloc].faces.cotes;
     const geometrie = new THREE.PlaneGeometry(1, 1);
@@ -127,10 +125,10 @@ export class Chutes {
       const hauteur = ch.tombee ? -c.enfoncement * m.taille : c.hauteur * (1 - p * p);
       lame.visible = true;
       lame.scale.setScalar(m.taille);
-      lame.position.set(ch.x, hauteur + m.taille * 0.35, ch.z);
-      // Face à la caméra, pointe vers le bas (l'icône a la pointe en haut à droite)
-      lame.quaternion.copy(this.camera.quaternion);
-      lame.rotateZ(-Math.PI * 0.75);
+      // Debout dans le monde (plan vertical tourné vers la caméra, qui ne pivote jamais),
+      // pointe en bas : l'icône a la pointe en haut à droite, à une demi-diagonale du centre
+      lame.position.set(ch.x, hauteur + m.taille * Math.SQRT1_2, ch.z);
+      lame.rotation.set(0, 0, -Math.PI * 0.75);
       const fondu = ch.t - c.duree - c.tenue;
       lame.material.opacity = fondu > 0 ? Math.max(0, 1 - fondu / c.fondu) : 1;
       // L'ombre au sol annonce l'impact

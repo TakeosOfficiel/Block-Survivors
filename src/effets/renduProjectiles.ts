@@ -12,8 +12,9 @@ import { creerGeometrieCroisee } from '../moteur/geometrie';
 
 const CAPACITE_PAR_TYPE = 256;
 
-/** Les icônes d'objets pointent vers le coin haut-droit : on les tourne pour pointer vers +Z. */
+/** Les icônes d'objets pointent vers le coin haut-droit (ou vers le haut) : on les tourne pour pointer vers +Z. */
 const ORIENTATION_ICONE = (-3 * Math.PI) / 4;
+const ORIENTATION_ICONE_HAUT = Math.PI;
 
 interface RenduType {
   readonly maillage: THREE.InstancedMesh;
@@ -73,7 +74,7 @@ function creerGeometrie(def: DefinitionProjectile): THREE.BufferGeometry {
   appliquerRectangleUv(geometrie, def.uv, def.tailleTexture);
   if (def.forme === 'plat') {
     geometrie.rotateX(-Math.PI / 2);
-    geometrie.rotateY(ORIENTATION_ICONE);
+    geometrie.rotateY(def.pointeEnHaut ? ORIENTATION_ICONE_HAUT : ORIENTATION_ICONE);
   } else {
     // Face à la caméra : celle-ci ne tourne jamais, une inclinaison fixe suffit
     geometrie.rotateX(-(CONFIG.camera.inclinaisonDeg * Math.PI) / 180);

@@ -5,6 +5,12 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.15.1] — 2026-10-20
+
+### Corrections
+- Fusée explosive : la fusée vole la pointe en avant (elle partait de travers).
+- Lame colossale : l'épée géante tombe debout et reste plantée dans le sol, au lieu de paraître couchée.
+
 ## [0.15.0] — 2026-10-20
 
 Refonte des classes, étape 7 : les nouveaux arbres de talents, première partie. Valeurs provisoires, à ajuster après les essais.

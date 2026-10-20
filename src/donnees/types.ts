@@ -279,6 +279,8 @@ export type FormeProjectile = 'croisee' | 'plat' | 'face_camera';
 export interface DefinitionProjectile {
   readonly nom: string;
   readonly forme: FormeProjectile;
+  /** Icône posée à plat : pointe en haut (fusée) au lieu d'en haut à droite (épée, trident). */
+  readonly pointeEnHaut?: boolean;
   readonly texture: CheminTexture;
   readonly tailleTexture: readonly [number, number];
   /** Rectangle [x, y, largeur, hauteur] affiché, dans la texture (pixels). */

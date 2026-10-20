@@ -11,6 +11,7 @@ export const PROGRESSION: DefinitionProgression = {
     { jusquAuNiveau: Infinity, increment: 16 },
   ],
   cartesParNiveau: 3,
+  relances: 3,
   emplacementsArmes: 6,
   emplacementsPassifs: 6,
   soin: {

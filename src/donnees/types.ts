@@ -531,6 +531,8 @@ export interface DefinitionProgression {
   /** XP supplémentaire demandée à chaque niveau, par tranche de niveaux. */
   readonly paliers: readonly { readonly jusquAuNiveau: number; readonly increment: number }[];
   readonly cartesParNiveau: number;
+  /** Relances des cartes (nouveau tirage) disponibles par partie. */
+  readonly relances: number;
   readonly emplacementsArmes: number;
   readonly emplacementsPassifs: number;
   /** Carte proposée quand il n'y a plus rien à améliorer. */

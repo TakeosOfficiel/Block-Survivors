@@ -390,7 +390,7 @@ img { image-rendering: pixelated; }
 
 /* Totems restants (vies en plus), à gauche des cœurs */
 #hud-totems {
-  position: absolute; bottom: 74px; left: calc(50% - 196px);
+  position: absolute; bottom: 74px; right: calc(50% + 156px);  /* juste à gauche des cœurs */
   display: flex; align-items: center; gap: 2px;
 }
 #hud-totems img { width: 32px; height: 32px; }
@@ -466,29 +466,32 @@ img { image-rendering: pixelated; }
 .carte-stats { list-style: none; color: var(--mc-bleu); margin-top: 4px; }
 .carte .case-mc { margin-top: 4px; }
 
-/* --- Panneau debug (inspiré de l'écran F3 du jeu) ------------------------- */
+/* --- Panneau debug (inspiré de l'écran F3 du jeu), compact ---------------- */
 #debug {
-  position: fixed; top: 10px; left: 10px; z-index: 30;
+  position: fixed; top: 8px; left: 8px; z-index: 30;
+  max-width: min(620px, 96vw);
   line-height: 20px;
 }
 #debug .ligne {
   display: table;
-  background: rgba(80, 80, 80, 0.6);
-  padding: 0 4px; margin-bottom: 2px;
+  background: rgba(60, 60, 60, 0.7);
+  padding: 1px 4px; margin-bottom: 2px;
 }
 #debug .titre { color: var(--mc-jaune); }
-#debug small { font-size: 16px; color: #c0c0c0; }
+#debug small { color: #c0c0c0; }
 #debug button {
   font: inherit; color: #fff;
   text-shadow: 2px 2px 0 #3f3f3f;
   background: #6f6f6f;
   border: 2px solid #000;
   box-shadow: inset 2px 2px 0 #a8a8a8, inset -2px -2px 0 #4a4a4a;
-  padding: 0 6px; margin: 1px 2px; cursor: pointer;
+  padding: 0 4px; margin: 1px; cursor: pointer;
+  vertical-align: middle;
 }
 #debug button:hover { background: #7f89c4; }
 #debug button.actif { color: var(--mc-vert); }
-
-/* Petite icône dans une ligne de texte (cœur, arme) */
-.icone-texte { width: 18px; height: 18px; vertical-align: -3px; margin-right: 4px; }
-.case-mc.grande.portrait img { width: 48px; height: 48px; }
+/* Rangées d'icônes cliquables (nom au survol) */
+#debug .icones span { display: inline-flex; flex-wrap: wrap; gap: 2px; vertical-align: middle; }
+#debug button.icone { width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+#debug button.icone img { width: 20px; height: 20px; }
+#debug button.exclusif { border-color: var(--mc-rose); }

@@ -51,6 +51,8 @@ export interface EtatPartie {
   ennemisTues: number;
   /** Montées de niveau dont les cartes n'ont pas encore été choisies. */
   niveauxEnAttente: number;
+  /** Relances des cartes encore disponibles. */
+  relancesRestantes: number;
   issue: IssuePartie;
   readonly stats: StatistiquesPartie;
   /** Bonus cumulés des passifs. */
@@ -67,6 +69,7 @@ export function creerEtatPartie(arene: DefinitionArene, idPersonnage: IdPersonna
     tempsJeu: 0,
     ennemisTues: 0,
     niveauxEnAttente: 0,
+    relancesRestantes: PROGRESSION.relances,
     issue: null,
     stats: {
       tuesParType: new Int32Array(IDS_ENNEMIS.length),

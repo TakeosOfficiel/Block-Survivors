@@ -1,12 +1,16 @@
 /**
- * Panneau debug (F3 ou ²) : mesures, vitesse du temps, invincibilité,
- * apparition d'ennemis et de boss, armes, niveaux, personnage, frappe de zone.
+ * Panneau debug (F3 ou ²), compact : mesures, vitesse du temps, invincibilité,
+ * frappe de zone, niveaux, boss ; rangées d'icônes pour faire apparaître
+ * chaque ennemi, donner chaque arme ou bonus (exclusifs compris) et poser
+ * chaque objet ; changement de personnage et d'arène.
  */
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG, SOURCES_TEXTURES } from '../config';
 import { ARENES } from '../donnees/arenes';
 import { ARMES, IDS_ARMES, type IdArme } from '../donnees/armes';
 import { ENNEMIS, IDS_ENNEMIS, type IdEnnemi } from '../donnees/ennemis';
+import { IDS_OBJETS, OBJETS, type IdObjet } from '../donnees/objets';
+import { IDS_PASSIFS, PASSIFS, type IdPassif } from '../donnees/passifs';
 import { IDS_PERSONNAGES, PERSONNAGES, type IdPersonnage } from '../donnees/personnages';
 import type { DefinitionArene } from '../donnees/types';
 import type { EtatPartie } from '../etat';
@@ -16,6 +20,7 @@ import { formaterTemps } from '../utils/format';
 import { borner } from '../utils/maths';
 import { element } from './dom';
 import type { Hud } from './hud';
+import { portrait } from './portraits';
 
 /** Ce que le panneau observe et les actions qu'il déclenche. */
 export interface SourcesDebug {
@@ -29,6 +34,8 @@ export interface SourcesDebug {
   definirInvincibilite(actif: boolean): void;
   apparaitreEnnemi(id: IdEnnemi): void;
   ameliorerArme(id: IdArme): void;
+  ajouterBonus(id: IdPassif): void;
+  poserObjet(id: IdObjet): void;
   gagnerNiveau(): void;
   apparaitreBoss(): void;
   allerVersFin(): void;
@@ -59,6 +66,8 @@ export class PanneauDebug {
     invincible: element<HTMLButtonElement>('dbg-invincible'),
     apparitions: element('dbg-apparitions'),
     armes: element('dbg-armes'),
+    bonus: element('dbg-bonus'),
+    objets: element('dbg-objets'),
     frappe: element<HTMLButtonElement>('dbg-frappe'),
     niveau: element<HTMLButtonElement>('dbg-niveau'),
     boss: element<HTMLButtonElement>('dbg-boss'),
@@ -86,18 +95,32 @@ export class PanneauDebug {
     this.lierBouton(this.dom.boss, () => this.sources.apparaitreBoss());
     this.lierBouton(this.dom.fin, () => this.sources.allerVersFin());
 
-    // Un bouton par ennemi et par arme, générés depuis les tables de données
+    // Une icône par ennemi, arme, bonus et objet, générées depuis les tables de données
+    const { textures } = sources;
     for (const id of IDS_ENNEMIS) {
-      this.dom.apparitions.append(this.creerBouton(ENNEMIS[id].nom, () => this.sources.apparaitreEnnemi(id)));
+      const def = ENNEMIS[id];
+      this.dom.apparitions.append(this.creerIcone(def.nom, portrait(textures, def), () => this.sources.apparaitreEnnemi(id)));
     }
     for (const id of IDS_ARMES) {
-      this.dom.armes.append(this.creerBouton(ARMES[id].nom, () => this.sources.ameliorerArme(id)));
+      const def = ARMES[id];
+      this.dom.armes.append(this.creerIcone(`${def.nom} : ajouter / +1 rang`, textures.url(def.icone), () => this.sources.ameliorerArme(id)));
+    }
+    for (const id of IDS_PASSIFS) {
+      const def = PASSIFS[id];
+      const bouton = this.creerIcone(`${def.nom}${def.exclusif ? ' (exclusif)' : ''} : ajouter / +1 rang`, textures.url(def.icone), () => this.sources.ajouterBonus(id));
+      bouton.classList.toggle('exclusif', def.exclusif === true);
+      this.dom.bonus.append(bouton);
+    }
+    for (const id of IDS_OBJETS) {
+      const def = OBJETS[id];
+      this.dom.objets.append(this.creerIcone(`${def.nom} : poser à côté`, textures.url(def.icone), () => this.sources.poserObjet(id)));
     }
     for (const id of IDS_PERSONNAGES) {
-      this.dom.personnages.append(this.creerBouton(PERSONNAGES[id].nom, () => this.sources.changerPersonnage(id)));
+      const def = PERSONNAGES[id];
+      this.dom.personnages.append(this.creerIcone(`${def.nom} (relance la partie)`, portrait(textures, def), () => this.sources.changerPersonnage(id)));
     }
     for (const arene of ARENES) {
-      this.dom.arenes.append(this.creerBouton(arene.nom, () => this.sources.changerArene(arene)));
+      this.dom.arenes.append(this.creerIcone(`${arene.nom} (relance la partie)`, textures.url(arene.icone), () => this.sources.changerArene(arene)));
     }
 
     window.addEventListener('keydown', this.surTouche);
@@ -111,6 +134,20 @@ export class PanneauDebug {
     if (this.minuterie < CONFIG.debug.periodeRafraichissement) return;
     this.minuterie = 0;
     this.rafraichir();
+  }
+
+  /** Bouton carré à icône (nom en infobulle), ou à initiale si l'image manque. */
+  private creerIcone(nom: string, url: string | null, action: () => void): HTMLButtonElement {
+    const bouton = this.creerBouton(url ? '' : nom.charAt(0), action);
+    bouton.className = 'icone';
+    bouton.title = nom;
+    if (url) {
+      const image = document.createElement('img');
+      image.src = url;
+      image.alt = nom;
+      bouton.append(image);
+    }
+    return bouton;
   }
 
   private creerBouton(texte: string, action: () => void): HTMLButtonElement {
@@ -164,7 +201,6 @@ export class PanneauDebug {
   private basculerInvincibilite(): void {
     this.invincible = !this.invincible;
     this.sources.definirInvincibilite(this.invincible);
-    this.dom.invincible.textContent = this.invincible ? 'ON' : 'OFF';
     this.dom.invincible.classList.toggle('actif', this.invincible);
   }
 

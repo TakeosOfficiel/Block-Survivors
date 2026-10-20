@@ -138,7 +138,7 @@ placées ou dispersées, ambiance, et population d'ennemis par zone.
 ## Contrôles
 
 ZQSD / WASD / flèches : se déplacer · molette : zoom · `1` `2` `3` ou clic :
-choisir une carte · `Échap` : pause · `Entrée` : jouer (menu) ou rejouer (fin).
+choisir une carte · `R` : relancer les cartes (3 fois par partie) · `Échap` : pause · `Entrée` : jouer (menu) ou rejouer (fin).
 
 La pause propose Reprendre, Options (volume des sons, compteur de FPS,
 secousses de l'écran, shaders, style de l'herbe), Recommencer, Menu
@@ -155,10 +155,12 @@ dense). Le vent et le passage du joueur sont calculés par la carte graphique.
 
 ## Debug
 
-`F3` ou `²` : FPS, entités, appels de dessin, textures, vitesse du temps
-(`-` / `+`), invincibilité (`I`), apparition de chaque ennemi, ajout ou rang
-supérieur de chaque arme, frappe de zone (`K`), +1 niveau (`L`), prochain boss
-(`B`), saut à 14:50 (tester la victoire), changement de personnage et d'arène.
+`F3` ou `²` : panneau compact avec FPS, appels de dessin, moteur, entités,
+textures ; vitesse du temps (`-` / `+`), invincibilité (`I`), frappe de zone
+(`K`), +1 niveau (`L`), prochain boss (`B`), saut à 14:50 ; puis des rangées
+d'icônes (nom au survol) pour faire apparaître chaque ennemi, donner chaque
+arme ou bonus (exclusifs compris, ex. le totem), poser chaque objet, et
+changer de personnage ou d'arène.
 
 En `npm run dev`, la partie est accessible dans la console du navigateur via
 `window.blockSurvivors`.

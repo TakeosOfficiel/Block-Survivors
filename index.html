@@ -89,6 +89,7 @@
     <h2 id="cartes-titre" class="ecran-titre">Niveau 2 !</h2>
     <div class="ecran-sous-titre">Choisissez une amélioration (clic ou touches 1, 2, 3)</div>
     <div id="cartes-liste"></div>
+    <button id="cartes-relancer" class="bouton-mc">Relancer les cartes (R)</button>
   </div>
 
   <!-- Pause -->
@@ -121,35 +122,23 @@
 
   <!-- Panneau debug (F3 ou ²) -->
   <div id="debug" class="cache">
-    <div class="ligne titre">Block Survivors — DEBUG</div>
-    <div class="ligne">FPS : <span id="dbg-fps">--</span> (<span id="dbg-ms">--</span> ms / image)</div>
-    <div class="ligne">Entités actives : <span id="dbg-entites">0</span> · Particules : <span id="dbg-particules">0</span></div>
-    <div class="ligne">Appels de dessin : <span id="dbg-appels">0</span> · Triangles : <span id="dbg-triangles">0</span></div>
-    <div class="ligne">Textures : <span id="dbg-textures">0 / 0</span></div>
-    <div class="ligne">Temps de jeu : <span id="dbg-temps">00:00</span></div>
-    <div class="ligne">PV : <span id="dbg-pv">0</span> · Ennemis tués : <span id="dbg-tues">0</span></div>
-    <div class="ligne">Joueur X / Z : <span id="dbg-position">0 / 0</span></div>
-    <div class="ligne">Distance caméra : <span id="dbg-zoom">0</span></div>
+    <div class="ligne titre">Block Survivors — DEBUG <small>(F3 ou ² pour fermer)</small></div>
+    <div class="ligne"><span id="dbg-fps">--</span> FPS (<span id="dbg-ms">--</span> ms) · <span id="dbg-appels">0</span> appels · <span id="dbg-triangles">0</span> tri.</div>
+    <div class="ligne"><span id="dbg-entites">0</span> entités · <span id="dbg-particules">0</span> particules · textures <span id="dbg-textures">0 / 0</span></div>
+    <div class="ligne"><span id="dbg-temps">00:00</span> · PV <span id="dbg-pv">0</span> · <span id="dbg-tues">0</span> tués · X/Z <span id="dbg-position">0 / 0</span> · caméra <span id="dbg-zoom">0</span></div>
     <div class="ligne">
-      Vitesse du temps :
-      <button id="dbg-ralentir">−</button><span id="dbg-vitesse">×1</span><button id="dbg-accelerer">+</button>
-      <small>(touches - / +)</small>
+      Temps <button id="dbg-ralentir" title="Ralentir (-)">−</button><span id="dbg-vitesse">×1</span><button id="dbg-accelerer" title="Accélérer (+)">+</button>
+      <button id="dbg-invincible" title="Invincibilité (I)">Invincible</button>
+      <button id="dbg-frappe" title="Frappe de zone (K)">Frappe</button>
+      <button id="dbg-niveau" title="+1 niveau (L)">+1 niv.</button>
+      <button id="dbg-boss" title="Prochain boss (B)">Boss</button>
+      <button id="dbg-fin" title="Aller à 14:50">14:50</button>
     </div>
-    <div class="ligne">
-      Invincibilité : <button id="dbg-invincible">OFF</button> <small>(touche I)</small>
-    </div>
-    <div class="ligne">Faire apparaître : <span id="dbg-apparitions"></span></div>
-    <div class="ligne">Armes (ajouter / +1 rang) : <span id="dbg-armes"></span></div>
-    <div class="ligne">
-      <button id="dbg-frappe">Frappe de zone</button> <small>(touche K)</small>
-      <button id="dbg-niveau">+1 niveau</button> <small>(touche L)</small>
-    </div>
-    <div class="ligne">
-      <button id="dbg-boss">Faire apparaître le prochain boss</button> <small>(touche B)</small>
-      <button id="dbg-fin">Aller à 14:50</button>
-    </div>
-    <div class="ligne">Personnage (relance la partie) : <span id="dbg-personnages"></span></div>
-    <div class="ligne">Arène (relance la partie) : <span id="dbg-arenes"></span></div>
+    <div class="ligne icones">Ennemis <span id="dbg-apparitions"></span></div>
+    <div class="ligne icones">Armes <span id="dbg-armes"></span></div>
+    <div class="ligne icones">Bonus <span id="dbg-bonus"></span></div>
+    <div class="ligne icones">Objets <span id="dbg-objets"></span></div>
+    <div class="ligne icones">Perso <span id="dbg-personnages"></span> Arène <span id="dbg-arenes"></span></div>
   </div>
 
   <script type="module" src="./src/main.ts"></script>

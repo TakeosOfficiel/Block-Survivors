@@ -220,6 +220,8 @@ export class Jeu implements CallbacksBoucle, Retours {
       definirInvincibilite: (actif) => { this.joueur.invincible = actif; },
       apparaitreEnnemi: (id) => this.apparaitreAutourDuJoueur(id),
       ameliorerArme: (id) => { this.arsenal.ameliorer(id); },
+      ajouterBonus: (id) => this.ameliorations.appliquer({ type: 'passif', id }),
+      poserObjet: (id) => this.objets.poser(id, this.etat.joueur.x + 1.5, this.etat.joueur.z),
       gagnerNiveau: () => gagnerXp(this.etat, this.etat.joueur.xpNiveau - this.etat.joueur.xp),
       apparaitreBoss: () => this.directeurBoss.forcer(),
       allerVersFin: () => { this.etat.tempsJeu = Math.max(this.etat.tempsJeu, PROGRESSION.dureePartie - 10); },
@@ -373,6 +375,13 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.ecranCartes.ouvrir(niveau, this.ameliorations.tirer(), (carte: Carte) => {
       this.ameliorations.appliquer(carte.amelioration);
       this.etat.niveauxEnAttente--;
+    }, {
+      restantes: () => this.etat.relancesRestantes,
+      relancer: () => {
+        if (this.etat.relancesRestantes <= 0) return null;
+        this.etat.relancesRestantes--;
+        return this.ameliorations.tirer();
+      },
     });
   }
 

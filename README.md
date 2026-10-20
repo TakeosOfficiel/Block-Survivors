@@ -141,12 +141,17 @@ ZQSD / WASD / flèches : se déplacer · molette : zoom · `1` `2` `3` ou clic :
 choisir une carte · `Échap` : pause · `Entrée` : jouer (menu) ou rejouer (fin).
 
 La pause propose Reprendre, Options (volume des sons, compteur de FPS,
-secousses de l'écran, herbe réaliste), Recommencer, Menu principal, et le
-bilan en cours.
+secousses de l'écran, shaders, style de l'herbe), Recommencer, Menu
+principal, et le bilan en cours.
 
-**Herbe réaliste (test)** : des brins 3D animés par la carte graphique (vent
-en vagues, brins couchés autour du joueur) poussent sur les blocs d'herbe.
-Option activée par défaut, désactivable à tout moment.
+**Shaders** : *Désactivés* (rendu Minecraft d'origine), *Légers* (ombres du
+soleil, lave et glowstone qui rayonnent, hautes lumières adoucies) ou
+*Complets* (ombres plus fines et occlusion ambiante en plus).
+
+**Herbe** (essais, au choix) : *Minecraft* (d'origine), *Touffes ondulantes*
+(sprites d'herbe vanilla qui ondulent au vent), *Pixels 3D* (colonnes d'un
+pixel tirées de la texture), *Stylisée* (brins cartoon) ou *Réaliste* (tapis
+dense). Le vent et le passage du joueur sont calculés par la carte graphique.
 
 ## Debug
 

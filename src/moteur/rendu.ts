@@ -1,11 +1,19 @@
 /**
  * Moteur de rendu : renderer WebGPU de three.js (repli automatique sur WebGL2
- * si le navigateur ne gère pas WebGPU), scène, caméra et lumières.
+ * si le navigateur ne gère pas WebGPU), scène, caméra, lumières et shaders
+ * (ombres du soleil, lueurs, occlusion ambiante), réglables par niveau.
  */
 import * as THREE from 'three';
-import { WebGPURenderer } from 'three/webgpu';
+import { RenderPipeline, WebGPURenderer } from 'three/webgpu';
+import { unpackRGBToNormal, packNormalToRGB, mrt, normalView, output, pass, sample, vec4 } from 'three/tsl';
+import { bloom } from 'three/addons/tsl/display/BloomNode.js';
+import { ao } from 'three/addons/tsl/display/GTAONode.js';
 import { CONFIG } from '../config';
 import type { DefinitionArene } from '../donnees/types';
+import type { NiveauShaders } from '../options';
+
+/** Objets qui ne projettent pas d'ombre (effets translucides, sol lointain, herbe trop fine). */
+const SANS_OMBRE_PORTEE = new Set(['ombres', 'balayage', 'foudre', 'herbe', 'exterieur', 'particules']);
 
 /** Mémorise, pour la session, que WebGPU a lâché : les rechargements passent en WebGL2. */
 const CLE_REPLI_WEBGL = 'block-survivors.repli-webgl';
@@ -16,6 +24,9 @@ export class Rendu {
   readonly camera: THREE.PerspectiveCamera;
   private readonly ambiante: THREE.AmbientLight;
   private readonly soleil: THREE.DirectionalLight;
+  private pipeline: RenderPipeline | null = null;
+  private niveau: NiveauShaders = 'aucun';
+  private tailleArene = 60;
 
   /**
    * Crée le moteur : WebGPU si le navigateur le gère vraiment, sinon WebGL2.
@@ -53,8 +64,8 @@ export class Rendu {
     // three.js calcule en unités physiques : une intensité de π = éclairage plein
     this.ambiante = new THREE.AmbientLight(0xffffff, CONFIG.rendu.ambiante * Math.PI);
     this.soleil = new THREE.DirectionalLight(0xffffff, CONFIG.rendu.soleil * Math.PI);
-    this.soleil.position.fromArray(CONFIG.rendu.directionSoleil);
-    this.scene.add(this.ambiante, this.soleil);
+    this.soleil.position.fromArray(CONFIG.rendu.directionSoleil).normalize().multiplyScalar(80);
+    this.scene.add(this.ambiante, this.soleil, this.soleil.target);
 
     window.addEventListener('resize', this.redimensionner);
   }
@@ -73,10 +84,94 @@ export class Rendu {
     this.ambiante.intensity = l.ambiante * Math.PI;
     this.soleil.color.set(l.couleurSoleil);
     this.soleil.intensity = l.soleil * Math.PI;
+    this.tailleArene = arene.taille;
+  }
+
+  /** À appeler une fois la scène construite : qui projette et reçoit les ombres. */
+  preparerOmbres(): void {
+    this.scene.traverse((objet) => {
+      if (!(objet as THREE.Mesh).isMesh) return;
+      objet.receiveShadow = true;
+      objet.castShadow = !SANS_OMBRE_PORTEE.has(objet.name);
+    });
+  }
+
+  /**
+   * Shaders : « aucun » = rendu Minecraft d'origine ; « legers » = ombres du
+   * soleil, blocs lumineux qui rayonnent, hautes lumières adoucies ;
+   * « complets » = idem avec des ombres plus fines et l'occlusion ambiante
+   * (recoins et pieds de murs assombris).
+   */
+  definirShaders(niveau: NiveauShaders): void {
+    if (niveau === this.niveau && (this.pipeline !== null) === (niveau !== 'aucun')) return;
+    this.niveau = niveau;
+    const s = CONFIG.shaders;
+    const actifs = niveau !== 'aucun';
+
+    // Ombres du soleil : une seule carte couvre toute l'arène (petite, caméra fixe)
+    this.renderer.shadowMap.enabled = actifs;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    this.soleil.castShadow = actifs;
+    if (niveau !== 'aucun') {
+      const ombre = this.soleil.shadow;
+      ombre.mapSize.setScalar(s.tailleOmbres[niveau]);
+      ombre.radius = s.flouOmbres[niveau];
+      ombre.bias = s.biaisOmbres;
+      ombre.normalBias = s.biaisNormalOmbres;
+      const d = this.tailleArene / 2 + s.margeOmbres;
+      Object.assign(ombre.camera, { left: -d, right: d, top: d, bottom: -d, near: 1, far: 200 });
+      ombre.camera.updateProjectionMatrix();
+      ombre.map?.dispose();
+      ombre.map = null;
+    }
+
+    // Les blocs lumineux dépassent le blanc : la lueur les fait rayonner
+    this.renderer.toneMapping = actifs ? THREE.NeutralToneMapping : THREE.NoToneMapping;
+    this.scene.traverse((objet) => {
+      const materiaux = (objet as THREE.Mesh).material;
+      if (!materiaux) return;
+      for (const materiau of Array.isArray(materiaux) ? materiaux : [materiaux]) {
+        if (materiau.userData['lumineux']) {
+          const m = materiau as THREE.MeshBasicMaterial;
+          const base = (m.userData['couleurBase'] ??= m.color.clone()) as THREE.Color;
+          m.color.copy(base).multiplyScalar(actifs ? s.intensiteLumineux : 1);
+        }
+        materiau.needsUpdate = true;  // recompile avec ou sans ombres
+      }
+    });
+    // Les ombres rondes sous les entités font double emploi avec les vraies ombres
+    const ombresRondes = this.scene.getObjectByName('ombres');
+    if (ombresRondes) ombresRondes.visible = !actifs;
+
+    this.pipeline?.dispose();
+    this.pipeline = actifs ? this.creerPipeline(niveau) : null;
   }
 
   dessiner(): void {
-    this.renderer.render(this.scene, this.camera);
+    if (this.pipeline) this.pipeline.render();
+    else this.renderer.render(this.scene, this.camera);
+  }
+
+  /** Rendu de la scène, puis occlusion ambiante (complets) et lueur des zones les plus vives. */
+  private creerPipeline(niveau: NiveauShaders): RenderPipeline {
+    const s = CONFIG.shaders;
+    const scene = pass(this.scene, this.camera);
+    if (niveau === 'complets') scene.setMRT(mrt({ output, normal: packNormalToRGB(normalView) }));
+    const couleur = scene.getTextureNode('output');
+    const image = niveau === 'complets' ? this.occlusion(scene, couleur) : couleur;
+    const lueur = bloom(image, s.lueur.force, s.lueur.rayon, s.lueur.seuil);
+    return new RenderPipeline(this.renderer, image.add(lueur));
+  }
+
+  /** Occlusion ambiante (GTAO) calculée à partir de la profondeur et des normales de la scène. */
+  private occlusion(scene: ReturnType<typeof pass>, couleur: ReturnType<ReturnType<typeof pass>['getTextureNode']>) {
+    const s = CONFIG.shaders;
+    const normales = scene.getTextureNode('normal');
+    const normale = sample((uv) => unpackRGBToNormal(normales.sample(uv)));
+    const occlusion = ao(scene.getTextureNode('depth'), normale, this.camera);
+    occlusion.resolutionScale = s.occlusion.resolution;
+    occlusion.radius.value = s.occlusion.rayon;
+    return vec4(couleur.rgb.mul(occlusion.getTextureNode().r), couleur.a);
   }
 
   private readonly redimensionner = (): void => {

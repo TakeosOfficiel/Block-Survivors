@@ -63,5 +63,6 @@ export function texturesRequises(
   for (const sprite of Object.values(CONFIG.hud.coeurs)) chemins.add(sprite);
   for (const sprite of Object.values(CONFIG.hud.barreXp)) chemins.add(sprite);
   chemins.add(CONFIG.hud.iconeTues);
+  chemins.add(CONFIG.herbe.touffes.texture).add(CONFIG.herbe.pixels.texture);
   return chemins;
 }

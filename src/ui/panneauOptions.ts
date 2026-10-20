@@ -2,7 +2,21 @@
  * Écran des options (depuis le menu ou la pause) : volume, compteur de FPS,
  * secousses de l'écran. Chaque changement est appliqué et enregistré aussitôt.
  */
-import { enregistrerOptions, type Options } from '../options';
+import { enregistrerOptions, NIVEAUX_SHADERS, STYLES_HERBE, type NiveauShaders, type Options, type StyleHerbe } from '../options';
+
+const LIBELLES_SHADERS: Readonly<Record<NiveauShaders, string>> = {
+  aucun: 'Désactivés',
+  legers: 'Légers',
+  complets: 'Complets',
+};
+
+const LIBELLES_HERBE: Readonly<Record<StyleHerbe, string>> = {
+  minecraft: 'Minecraft',
+  touffes: 'Touffes ondulantes',
+  pixels: 'Pixels 3D',
+  stylisee: 'Stylisée',
+  realiste: 'Réaliste',
+};
 import { element } from './dom';
 
 export class PanneauOptions {
@@ -12,6 +26,7 @@ export class PanneauOptions {
   private readonly boutonFps = element<HTMLButtonElement>('option-fps');
   private readonly boutonSecousses = element<HTMLButtonElement>('option-secousses');
   private readonly boutonHerbe = element<HTMLButtonElement>('option-herbe');
+  private readonly boutonShaders = element<HTMLButtonElement>('option-shaders');
   private readonly options: Options;
   private readonly appliquer: (options: Options) => void;
   private surFermeture: (() => void) | null = null;
@@ -33,8 +48,14 @@ export class PanneauOptions {
       this.options.secousses = !this.options.secousses;
       this.changer();
     });
+    this.boutonShaders.addEventListener('click', () => {
+      const i = NIVEAUX_SHADERS.indexOf(this.options.shaders);
+      this.options.shaders = NIVEAUX_SHADERS[(i + 1) % NIVEAUX_SHADERS.length];
+      this.changer();
+    });
     this.boutonHerbe.addEventListener('click', () => {
-      this.options.herbeRealiste = !this.options.herbeRealiste;
+      const i = STYLES_HERBE.indexOf(this.options.herbe);
+      this.options.herbe = STYLES_HERBE[(i + 1) % STYLES_HERBE.length];
       this.changer();
     });
     element<HTMLButtonElement>('options-fermer').addEventListener('click', () => this.fermer());
@@ -75,7 +96,8 @@ export class PanneauOptions {
     this.texteVolume.textContent = pourcent === 0 ? 'Sons : désactivés' : `Sons : ${pourcent} %`;
     this.boutonFps.textContent = `Compteur de FPS : ${o.afficherFps ? 'OUI' : 'NON'}`;
     this.boutonSecousses.textContent = `Secousses de l'écran : ${o.secousses ? 'OUI' : 'NON'}`;
-    this.boutonHerbe.textContent = `Herbe réaliste (test) : ${o.herbeRealiste ? 'OUI' : 'NON'}`;
+    this.boutonHerbe.textContent = `Herbe : ${LIBELLES_HERBE[o.herbe]}`;
+    this.boutonShaders.textContent = `Shaders : ${LIBELLES_SHADERS[o.shaders]}`;
   }
 
   private readonly surTouche = (e: KeyboardEvent): void => {

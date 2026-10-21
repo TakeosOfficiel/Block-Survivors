@@ -1,9 +1,10 @@
 /**
  * Carte de l'écran de chargement, façon Minecraft : la vraie map de la
- * partie vue de dessus, qui apparaît chunk par chunk depuis le point de
- * départ à mesure que la barre avance. Tant qu'un chunk n'est pas chargé,
- * c'est une case sombre ; quand il arrive, il s'allume d'un bref éclair.
- * Rien ne bouge entre deux avancées de la barre : la carte ne coûte rien.
+ * partie vue de dessus, posée en perspective comme une maquette qui tourne
+ * lentement (rotation en CSS, fluide même quand le jeu travaille). Ses chunks
+ * apparaissent un à un depuis le point de départ à mesure que la barre
+ * avance, avec un petit « pop » ; la tête du héros se dresse au départ. En
+ * fond, la même map, floue et assombrie.
  */
 import { CONFIG } from '../config';
 import type { VueDessus } from '../monde/vueDessus';
@@ -16,9 +17,20 @@ interface Chunk {
   readonly p: number;
 }
 
+/** Courbe d'apparition avec un léger rebond (le chunk dépasse un peu puis se pose). */
+function rebond(t: number): number {
+  const k = 1.7;
+  const u = t - 1;
+  return 1 + (k + 1) * u * u * u + k * u * u;
+}
+
 export class CarteChargement {
+  private readonly plateau = element('chargement-plateau');
   private readonly toile = element<HTMLCanvasElement>('chargement-carte');
   private readonly ctx = this.toile.getContext('2d');
+  private readonly fond = element<HTMLCanvasElement>('chargement-fond');
+  private readonly marqueur = element('chargement-tete');
+  private readonly tete = element<HTMLCanvasElement>('chargement-tete-image');
   /** Pixels de canvas par colonne de la map. */
   private echelle = 1;
   private largeur = 0;
@@ -26,16 +38,17 @@ export class CarteChargement {
   /** Chunks, du plus proche au plus loin du départ. */
   private chunks: Chunk[] = [];
   private image: HTMLCanvasElement | null = null;
-  private tete: CanvasImageSource | null = null;
-  private depart: { readonly x: number; readonly z: number } | null = null;
   /** Avancement du chargement quand la vue est arrivée : les chunks se dévoilent sur le reste de la barre. */
   private partDepart = 0;
+  /** Chunks à dévoiler (selon la barre), et déjà dévoilés (ils arrivent un par un, même si la barre saute). */
+  private voulus = 0;
   private devoiles = 0;
-  /** Instant (ms) où chaque chunk dévoilé s'est allumé. */
-  private allumages: number[] = [];
+  /** Instant (ms) où chaque chunk dévoilé est apparu. */
+  private apparitions: number[] = [];
+  private dernierDevoilement = 0;
   private boucle = 0;
 
-  /** Taille de la map connue : une grille de chunks sombres, en attendant ses couleurs. */
+  /** Taille de la map connue : sa grille de chunks vides s'affiche, en attendant ses couleurs. */
   annoncer(largeur: number, profondeur: number): void {
     const C = CONFIG.chargement.carte;
     this.largeur = largeur;
@@ -52,48 +65,57 @@ export class CarteChargement {
       }
     }
     this.image = null;
-    this.depart = null;
+    this.voulus = 0;
     this.devoiles = 0;
-    this.allumages = [];
+    this.apparitions = [];
     this.trier(largeur / 2, profondeur / 2);
-    this.toile.classList.remove('cache');
+    this.marqueur.classList.add('cache');
+    this.fond.classList.remove('visible');
+    this.plateau.classList.remove('cache');
     this.dessiner();
   }
 
   /**
    * Couleurs de la map arrivées (`part` = avancement actuel) : les chunks
-   * s'allument à partir d'ici, en partant du départ du joueur, dont la tête
-   * (`tete`, skin 64 px de large) marque la place.
+   * apparaissent à partir d'ici, en partant du départ du joueur, où se dresse
+   * sa tête (`skin` : image de skin de joueur).
    */
-  montrer(vue: VueDessus, part: number, tete: CanvasImageSource | null): void {
+  montrer(vue: VueDessus, part: number, skin: CanvasImageSource | null): void {
     if (vue.largeur !== this.largeur || vue.profondeur !== this.profondeur) this.annoncer(vue.largeur, vue.profondeur);
     const image = document.createElement('canvas');
     image.width = vue.largeur;
     image.height = vue.profondeur;
     image.getContext('2d')?.putImageData(new ImageData(new Uint8ClampedArray(vue.couleurs), vue.largeur, vue.profondeur), 0, 0);
     this.image = image;
-    this.tete = tete;
-    this.depart = vue.depart;
-    if (vue.depart) this.trier(vue.depart.x, vue.depart.z);
+
+    // En fond, la même map, floue (le flou est fait une fois pour toutes par le navigateur)
+    this.fond.width = vue.largeur;
+    this.fond.height = vue.profondeur;
+    this.fond.getContext('2d')?.drawImage(image, 0, 0);
+    this.fond.classList.add('visible');
+
+    if (vue.depart) {
+      this.trier(vue.depart.x, vue.depart.z);
+      if (skin) this.placerTete(skin, vue.depart.x, vue.depart.z);
+    }
     this.partDepart = part;
+    this.voulus = 0;
     this.devoiles = 0;
-    this.allumages = [];
+    this.apparitions = [];
     this.progression(part);
   }
 
-  /** Avancement du chargement (0 à 1) : dévoile les chunks correspondants. */
+  /** Avancement du chargement (0 à 1) : les chunks correspondants vont apparaître. */
   progression(part: number): void {
     if (!this.image || this.chunks.length === 0) return;
     const reste = Math.max(1e-6, 1 - this.partDepart);
-    const voulus = Math.min(this.chunks.length, Math.ceil(((part - this.partDepart) / reste) * this.chunks.length));
-    if (voulus <= this.devoiles) return;
-    const maintenant = performance.now();
-    while (this.devoiles < voulus) this.allumages[this.devoiles++] = maintenant;
+    this.voulus = Math.max(this.voulus, Math.min(this.chunks.length, Math.ceil(((part - this.partDepart) / reste) * this.chunks.length)));
     this.animer();
   }
 
   cacher(): void {
-    this.toile.classList.add('cache');
+    this.plateau.classList.add('cache');
+    this.fond.classList.remove('visible');
     cancelAnimationFrame(this.boucle);
     this.boucle = 0;
   }
@@ -104,7 +126,20 @@ export class CarteChargement {
     this.chunks.sort((a, b) => distance(a) - distance(b));
   }
 
-  /** Redessine tant qu'un éclair d'allumage est en cours. */
+  /** Tête du héros (visage et chapeau de la skin), debout sur son point de départ. */
+  private placerTete(skin: CanvasImageSource, x: number, z: number): void {
+    const ctx = this.tete.getContext('2d');
+    if (!ctx) return;
+    this.tete.width = 8;
+    this.tete.height = 8;
+    ctx.clearRect(0, 0, 8, 8);
+    ctx.drawImage(skin, 8, 8, 8, 8, 0, 0, 8, 8);    // visage
+    ctx.drawImage(skin, 40, 8, 8, 8, 0, 0, 8, 8);   // chapeau (seconde couche)
+    this.marqueur.style.left = `${((x + 0.5) / this.largeur) * 100}%`;
+    this.marqueur.style.top = `${((z + 0.5) / this.profondeur) * 100}%`;
+  }
+
+  /** Redessine tant que des chunks arrivent ou finissent leur apparition. */
   private animer(): void {
     if (this.boucle) return;
     const image = () => {
@@ -114,43 +149,48 @@ export class CarteChargement {
     this.boucle = requestAnimationFrame(image);
   }
 
-  /** Dessine la carte ; vrai si un éclair est encore en cours. */
+  /** Dessine la carte ; vrai s'il reste quelque chose à animer. */
   private dessiner(): boolean {
     const ctx = this.ctx;
     if (!ctx) return false;
     const C = CONFIG.chargement.carte;
     const e = this.echelle;
     const maintenant = performance.now();
-    let enCours = false;
+
+    // Les chunks arrivent un par un, à cadence régulière, même quand la barre fait un bond
+    const intervalle = (C.dureeArrivee * 1000) / Math.max(1, this.chunks.length);
+    const ecoule = maintenant - this.dernierDevoilement;
+    if (this.devoiles < this.voulus && ecoule >= intervalle) {
+      const fin = Math.min(this.voulus, this.devoiles + Math.floor(ecoule / intervalle));
+      while (this.devoiles < fin) this.apparitions[this.devoiles++] = maintenant;
+      this.dernierDevoilement = maintenant;
+    }
+    if (this.devoiles > 0 && this.marqueur.classList.contains('cache')) this.marqueur.classList.remove('cache');
+
+    let enCours = this.devoiles < this.voulus;
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, this.toile.width, this.toile.height);
     this.chunks.forEach((c, i) => {
+      const x = c.x * e, z = c.z * e, l = c.l * e, p = c.p * e;
       if (i >= this.devoiles || !this.image) {
-        // Chunk pas encore chargé : case sombre, séparée de ses voisines
+        // Chunk pas encore chargé : une case à peine visible, séparée de ses voisines
         ctx.fillStyle = C.couleurAttente;
-        ctx.fillRect(c.x * e + 1, c.z * e + 1, c.l * e - 2, c.p * e - 2);
+        ctx.fillRect(x + 1, z + 1, l - 2, p - 2);
         return;
       }
-      ctx.drawImage(this.image, c.x, c.z, c.l, c.p, c.x * e, c.z * e, c.l * e, c.p * e);
-      const age = (maintenant - this.allumages[i]) / 1000;
-      if (age < C.eclair) {
-        enCours = true;
-        // Seulement sur les blocs du chunk (pas sur le vide autour de la map)
-        ctx.globalCompositeOperation = 'source-atop';
-        ctx.fillStyle = `rgba(255, 255, 255, ${0.6 * (1 - age / C.eclair)})`;
-        ctx.fillRect(c.x * e, c.z * e, c.l * e, c.p * e);
+      const t = Math.min(1, (maintenant - this.apparitions[i]) / (C.apparition * 1000));
+      if (t < 1) enCours = true;
+      // « Pop » : le chunk grandit depuis son centre avec un léger rebond, en s'éclaircissant
+      const s = rebond(t);
+      const ls = l * s, ps = p * s;
+      ctx.drawImage(this.image, c.x, c.z, c.l, c.p, x + (l - ls) / 2, z + (p - ps) / 2, ls, ps);
+      if (t < 1) {
+        ctx.globalCompositeOperation = 'source-atop';  // seulement sur les blocs, pas sur le vide
+        ctx.fillStyle = `rgba(255, 255, 255, ${0.55 * (1 - t)})`;
+        ctx.fillRect(x + (l - ls) / 2, z + (p - ps) / 2, ls, ps);
         ctx.globalCompositeOperation = 'source-over';
       }
     });
-    // La tête du joueur à son point de départ, dès que son chunk est chargé
-    if (this.depart && this.tete && this.devoiles > 0) {
-      const cote = Math.max(8, Math.round(C.tailleTete * e));
-      const x = Math.round((this.depart.x + 0.5) * e - cote / 2), z = Math.round((this.depart.z + 0.5) * e - cote / 2);
-      ctx.fillStyle = '#000';
-      ctx.fillRect(x - 1, z - 1, cote + 2, cote + 2);
-      ctx.drawImage(this.tete, 8, 8, 8, 8, x, z, cote, cote);   // visage
-      ctx.drawImage(this.tete, 40, 8, 8, 8, x, z, cote, cote);  // chapeau (seconde couche)
-    }
     return enCours;
   }
 }

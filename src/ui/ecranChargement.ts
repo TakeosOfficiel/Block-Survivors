@@ -1,7 +1,7 @@
 /**
- * Écran de chargement façon Minecraft : fond de terre assombri, la vraie map
- * de la partie qui apparaît chunk par chunk (voir carteChargement.ts), l'étape
- * en cours et une barre de progression. Une seule barre pour tout le
+ * Écran de chargement : la vraie map de la partie qui apparaît chunk par
+ * chunk (voir carteChargement.ts), le nom de l'arène, l'étape en cours et une
+ * barre de progression. Une seule barre pour tout le
  * chargement : planifier() annonce le nombre d'étapes, chacune en remplit une
  * part égale, et la barre ne recule jamais ; seul le libellé change.
  */
@@ -13,17 +13,13 @@ export class EcranChargement {
   private readonly racine = element('chargement');
   private readonly texte = element('chargement-texte');
   private readonly barre = element('chargement-barre');
+  private readonly arene = element('chargement-arene');
   private readonly carte = new CarteChargement();
   private libelle = 'Chargement…';
   private etapes = 1;
   private index = -1;
   /** Part déjà remplie (0 à 1). */
   private rempli = 0;
-
-  /** `urlFond` : texture tuilée en fond ; la couleur CSS sert de secours si elle est indisponible. */
-  constructor(urlFond: string) {
-    this.racine.style.backgroundImage = `url("${urlFond}")`;
-  }
 
   /** Nouveau chargement de `etapes` étapes : la barre repart de zéro. */
   planifier(etapes: number): void {
@@ -45,8 +41,9 @@ export class EcranChargement {
     this.remplir((Math.max(0, this.index) + ratio) / this.etapes);
   }
 
-  /** Taille de la map de la partie connue : sa grille de chunks s'affiche, encore sombre. */
-  annoncerCarte(largeur: number, profondeur: number): void {
+  /** Arène de la partie (son nom) et taille de sa map : la grille de ses chunks s'affiche, encore vide. */
+  annoncerCarte(nom: string, largeur: number, profondeur: number): void {
+    this.arene.textContent = nom;
     this.carte.annoncer(largeur, profondeur);
   }
 
@@ -66,6 +63,7 @@ export class EcranChargement {
 
   masquer(): void {
     this.racine.classList.add('cache');
+    this.arene.textContent = '';
     this.carte.cacher();
   }
 

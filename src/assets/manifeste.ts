@@ -22,7 +22,6 @@ import { SPRITES_INTERFACE } from '../ui/habillage';
 /** Textures du menu et des écrans : sprites d'interface, visages, icônes. */
 export function texturesInterface(): Set<CheminTexture> {
   const chemins = new Set<CheminTexture>(Object.values(SPRITES_INTERFACE));
-  chemins.add(CONFIG.chargement.textureFond);
   for (const id of IDS_PERSONNAGES) {
     const p = PERSONNAGES[id];
     chemins.add(p.skin);

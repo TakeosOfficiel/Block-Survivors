@@ -5,6 +5,16 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.32.0] — 2026-10-21
+
+### Changements
+- **Écran de chargement refait, plus joli** :
+  - plus de fond de terre : un fond sombre, puis la map elle-même, floue et assombrie, dès qu'elle est connue ;
+  - la map est posée en perspective comme une maquette qui tourne lentement sur elle-même (rotation fluide même quand le jeu travaille) ;
+  - ses chunks apparaissent un à un avec un petit « pop », depuis le point de départ, sur une grille discrète ;
+  - la tête de ton héros se dresse à son point de départ, toujours tournée vers toi ;
+  - le nom de l'arène en jaune, l'étape en cours et une barre fine et lumineuse.
+
 ## [0.31.1] — 2026-10-21
 
 ### Corrections

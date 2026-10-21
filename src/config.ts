@@ -289,15 +289,14 @@ export const CONFIG = {
   },
 
   chargement: {
-    textureFond: 'block/dirt',
     // La map de la partie, vue de dessus, qui apparaît chunk par chunk
     carte: {
       pixelsMax: 512,         // côté du dessin (pixels) : colonnes × échelle entière
       chunksParCote: 12,      // les petites maps ont des chunks plus petits que 16 pour garder une belle grille
       tailleChunkMin: 3,
-      eclair: 0.3,            // s : un chunk qui arrive s'allume brièvement
-      tailleTete: 5,          // colonnes : tête du joueur au point de départ
-      couleurAttente: 'rgba(0, 0, 0, 0.45)',
+      apparition: 0.35,       // s : « pop » d'un chunk qui arrive
+      dureeArrivee: 1.2,      // s : temps minimal pour faire arriver tous les chunks (ils arrivent un à un)
+      couleurAttente: 'rgba(255, 255, 255, 0.07)',
     },
   },
 

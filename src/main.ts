@@ -11,7 +11,6 @@ import { Sons } from './audio/sons';
 import { texturesInterface, texturesRequises } from './assets/manifeste';
 import { chargerPolice } from './assets/police';
 import { BibliothequeTextures } from './assets/textures';
-import { CONFIG, SOURCES_TEXTURES } from './config';
 import { PERSONNAGES } from './donnees/personnages';
 import { Jeu } from './jeu';
 import { choixDemande, memoriserChoix, partieDemandee } from './lancement';
@@ -33,7 +32,7 @@ import { PanneauOptions } from './ui/panneauOptions';
 
 async function demarrer(): Promise<void> {
   suivreEchelleInterface();
-  const ecran = new EcranChargement(SOURCES_TEXTURES[0].url(CONFIG.chargement.textureFond));
+  const ecran = new EcranChargement();
   const textures = new BibliothequeTextures();
   let choix = choixDemande();
 
@@ -99,7 +98,7 @@ async function demarrer(): Promise<void> {
       const importee = await importerArene(choix.arene, textures, {
         etape: (texte) => ecran.etape(texte),
         progression: (faites, total) => ecran.progression(faites, total),
-        dimensions: (largeur, profondeur) => ecran.annoncerCarte(largeur, profondeur),
+        dimensions: (largeur, profondeur) => ecran.annoncerCarte(choix.arene.nom, largeur, profondeur),
         vue: (vue) => ecran.montrerCarte(vue, tete),
       });
       choix = { ...choix, arene: importee.arene };
@@ -109,7 +108,7 @@ async function demarrer(): Promise<void> {
       return;
     }
   } else {
-    ecran.annoncerCarte(choix.arene.largeur, choix.arene.profondeur);
+    ecran.annoncerCarte(choix.arene.nom, choix.arene.largeur, choix.arene.profondeur);
     ecran.etape('Génération du monde…');
     await new Promise((resoudre) => requestAnimationFrame(resoudre));  // laisse s'afficher l'étape
     monde = genererMonde(choix.arene);

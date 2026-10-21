@@ -8,10 +8,18 @@
 <body>
 
   <!-- Écran de chargement -->
-  <div id="chargement" class="fond-terre">
+  <div id="chargement">
+    <canvas id="chargement-fond"></canvas>
     <div class="chargement-titre logo">Block Survivors</div>
-    <canvas id="chargement-carte" class="cache"></canvas>
+    <div class="chargement-scene">
+      <div class="chargement-ombre"></div>
+      <div id="chargement-plateau" class="cache">
+        <canvas id="chargement-carte"></canvas>
+        <div id="chargement-tete" class="cache"><canvas id="chargement-tete-image"></canvas></div>
+      </div>
+    </div>
     <div class="chargement-bas">
+      <div id="chargement-arene"></div>
       <div id="chargement-texte">Chargement…</div>
       <div class="chargement-cadre"><div id="chargement-barre"></div></div>
     </div>

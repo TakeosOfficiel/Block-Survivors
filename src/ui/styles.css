@@ -408,6 +408,15 @@ img { image-rendering: pixelated; }
 }
 #hud-message.visible { opacity: 1; }
 
+/* Vues à la souris (F5) : rappel quand la souris n'est pas capturée */
+#hud-aide-souris {
+  position: absolute; bottom: 22%; left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 14px;
+  color: #ffffff; background: rgba(0, 0, 0, 0.5);
+  white-space: nowrap; pointer-events: none;
+}
+
 /* Alerte d'arrivée d'un boss : bandeau rouge clignotant */
 #hud-alerte {
   position: absolute; top: 18%; left: 50%;

@@ -75,6 +75,11 @@ const particules = {
     taille: [0.15, 0.3], duree: [0.5, 1], gravite: 3, frottement: 0.5,
     teintes: [0xff4040, 0x40ff60, 0x4080ff, 0xffe040, 0xff60ff, 0x60ffff],
   },
+  // Étincelles blanc-doré crachées par la tuyère d'une fusée en vol
+  etincelleFusee: {
+    images: serie('particle/spark_', 7, 0), animation: 'age',
+    taille: [0.1, 0.2], duree: [0.25, 0.45], gravite: 1.5, frottement: 1.2, teintes: [0xffffff, 0xfff0a0, 0xffc860],
+  },
   // Lueur dorée de la flèche spectrale
   spectrale: {
     images: ['particle/glow'], animation: 'fixe',
@@ -168,7 +173,12 @@ const gerbes = {
   arcane: [{ particule: 'arcane', nombre: 1, vitesse: 0.2, dispersion: 0.05, montee: 0.2 }],
   impactArcane: [{ particule: 'arcane', nombre: 8, vitesse: 2.5, dispersion: 0.2, montee: 1.5 }],
   // Archère : traînées et explosion d'artifice, flèche spectrale, impacts de la pluie, buissons
-  traineeArtifice: [{ particule: 'artifice', nombre: 1, vitesse: 0.4, dispersion: 0.05, montee: 0.2 }],
+  // Jet de la fusée en vol : flamme, étincelles et un peu de fumée, comme dans Dungeons
+  traineeArtifice: [
+    { particule: 'flamme', nombre: 1, vitesse: 0.3, dispersion: 0.04, montee: 0 },
+    { particule: 'etincelleFusee', nombre: 2, vitesse: 1.2, dispersion: 0.06, montee: 0.3 },
+    { particule: 'fumee', nombre: 1, vitesse: 0.2, dispersion: 0.05, montee: 0.4 },
+  ],
   artifice: [
     { particule: 'artifice', nombre: 26, vitesse: 6, dispersion: 0.3, montee: 4 },
     { particule: 'explosion', nombre: 2, vitesse: 0, dispersion: 0.6, montee: 0 },

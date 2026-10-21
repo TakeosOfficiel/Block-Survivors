@@ -1,5 +1,5 @@
 /**
- * Entrées : état brut du clavier et de la molette.
+ * Entrées : état brut du clavier, de la molette et de la souris capturée.
  * Les autres systèmes lisent ces valeurs ; aucune logique de jeu ici.
  */
 import { CONFIG, type ActionDeplacement } from '../config';
@@ -8,6 +8,9 @@ export class Entrees {
   private readonly touches = new Map<string, boolean>();  // event.code → enfoncée
   private readonly codesControles = new Set<string>(Object.values(CONFIG.controles).flat());
   private molette = 0;  // défilement cumulé (pixels) pas encore consommé
+  /** Déplacement de la souris capturée (pixels) pas encore consommé. */
+  private sourisX = 0;
+  private sourisY = 0;
 
   constructor() {
     window.addEventListener('keydown', this.surToucheEnfoncee);
@@ -15,6 +18,36 @@ export class Entrees {
     // Fenêtre qui perd le focus : on relâche tout pour éviter un joueur qui court seul
     window.addEventListener('blur', this.toutRelacher);
     window.addEventListener('wheel', this.surMolette, { passive: false });
+    document.addEventListener('mousemove', this.surSouris);
+  }
+
+  /** Vrai si la souris est capturée (vues à la 1re et à la 3e personne). */
+  get sourisCapturee(): boolean {
+    return document.pointerLockElement !== null;
+  }
+
+  /** Capture la souris sur l'élément (le curseur disparaît, ses mouvements tournent la caméra). */
+  capturerSouris(element: HTMLElement): void {
+    if (this.sourisCapturee) return;
+    try {
+      // Navigateurs récents : une promesse, refusée si le geste de l'utilisateur manque
+      const resultat = element.requestPointerLock() as unknown;
+      if (resultat instanceof Promise) resultat.catch(() => {});
+    } catch {
+      // Capture refusée : la caméra garde son orientation
+    }
+  }
+
+  libererSouris(): void {
+    if (this.sourisCapturee) document.exitPointerLock();
+  }
+
+  /** Déplacement de la souris capturée depuis le dernier appel, puis remise à zéro. */
+  consommerSouris(sortie: { x: number; y: number }): void {
+    sortie.x = this.sourisX;
+    sortie.y = this.sourisY;
+    this.sourisX = 0;
+    this.sourisY = 0;
   }
 
   /** Vrai si au moins une des touches liées à l'action est enfoncée. */
@@ -45,6 +78,12 @@ export class Entrees {
 
   private readonly toutRelacher = (): void => {
     this.touches.clear();
+  };
+
+  private readonly surSouris = (e: MouseEvent): void => {
+    if (!this.sourisCapturee) return;
+    this.sourisX += e.movementX;
+    this.sourisY += e.movementY;
   };
 
   /** Ctrl + molette reste le zoom du navigateur. */

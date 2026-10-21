@@ -24,6 +24,10 @@ export class Joueur implements SourceEntites, CibleJoueur {
   readonly actifs = 1;
   /** Ignore tous les dégâts (debug). */
   invincible = false;
+  /** Lacet de la caméra (rad) qui oriente ZQSD ; 0 dans la vue de dessus. */
+  lacetCommandes = 0;
+  /** Vrai à la 1re personne : le modèle n'est pas dessiné (la caméra est dans sa tête). */
+  masque = false;
   /** Talents branchés sur le joueur (après la création des systèmes de combat). */
   talents: CrochetsJoueur | null = null;
 
@@ -84,6 +88,14 @@ export class Joueur implements SourceEntites, CibleJoueur {
     if (norme > 0) {
       dx /= norme;
       dz /= norme;
+    }
+    // Vues à la souris : « haut » avance dans le sens où regarde la caméra
+    if (this.lacetCommandes !== 0) {
+      const cos = Math.cos(this.lacetCommandes);
+      const sin = Math.sin(this.lacetCommandes);
+      const x = dx * cos + dz * sin;
+      dz = dz * cos - dx * sin;
+      dx = x;
     }
 
     // Vitesse : approche exponentielle de la vitesse cible (réactif, sans à-coups)
@@ -177,7 +189,7 @@ export class Joueur implements SourceEntites, CibleJoueur {
     pose.surcouche[3] = blesse ? blessure.force : 0;
 
     this.rendu.commencer();
-    this.rendu.ajouter(pose);
+    if (!this.masque) this.rendu.ajouter(pose);
     this.rendu.terminer();
     ombres.ajouter(j.x, j.z, this.etat.personnage.rayonOmbre);
   }

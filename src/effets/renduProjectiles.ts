@@ -5,42 +5,47 @@
  */
 import * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
-import { CONFIG } from '../config';
 import { IDS_PROJECTILES, PROJECTILES, type IdProjectile } from '../donnees/projectiles';
 import type { DefinitionProjectile } from '../donnees/types';
 import { MODELES } from '../donnees/modeles';
+import { peindreSkin } from './peintures';
 import { creerGeometrieCroisee, creerGeometrieModele, creerGeometrieRelief } from '../moteur/geometrie';
 
 const CAPACITE_PAR_TYPE = 256;
 
 /**
  * Objets en relief couchés à plat : le haut du sprite part vers −X ; les icônes pointent
- * vers le coin haut-droit (ou vers le haut, la fusée) : on les tourne pour pointer vers +Z.
+ * vers le coin haut-droit : on les tourne pour pointer vers +Z.
  */
 const ORIENTATION_ICONE = Math.PI / 4;
-const ORIENTATION_ICONE_HAUT = Math.PI / 2;
 
 interface RenduType {
   readonly maillage: THREE.InstancedMesh;
+  /** Toujours de face à la caméra (boules de feu) : l'angle est ignoré. */
+  readonly faceCamera: boolean;
   compte: number;
 }
 
 const matrice = new THREE.Matrix4();
+const position = new THREE.Vector3();
+const echelle = new THREE.Vector3(1, 1, 1);
 
 export class RenduProjectiles {
   private readonly types: RenduType[];
+  private readonly camera: THREE.Camera;
 
-  constructor(textures: BibliothequeTextures, scene: THREE.Scene) {
+  constructor(textures: BibliothequeTextures, scene: THREE.Scene, camera: THREE.Camera) {
+    this.camera = camera;
     this.types = IDS_PROJECTILES.map((id) => {
       const def = PROJECTILES[id];
-      const map = textures.obtenir(def.texture);
+      const map = def.peinture ? texturePeinte(textures, id, def) : textures.obtenir(def.texture);
       const maillage = new THREE.InstancedMesh(creerGeometrie(def, map), creerMateriau(def, map), CAPACITE_PAR_TYPE);
       maillage.name = `projectile:${id}`;
       maillage.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       maillage.frustumCulled = false;
       maillage.count = 0;
       scene.add(maillage);
-      return { maillage, compte: 0 };
+      return { maillage, faceCamera: def.forme === 'face_camera', compte: 0 };
     });
   }
 
@@ -57,7 +62,8 @@ export class RenduProjectiles {
   ajouter(indexType: number, x: number, y: number, z: number, angle: number): void {
     const type = this.types[indexType];
     if (type.compte >= CAPACITE_PAR_TYPE) return;
-    matrice.makeRotationY(angle).setPosition(x, y, z);
+    if (type.faceCamera) matrice.compose(position.set(x, y, z), this.camera.quaternion, echelle);
+    else matrice.makeRotationY(angle).setPosition(x, y, z);
     type.maillage.setMatrixAt(type.compte++, matrice);
   }
 
@@ -68,6 +74,15 @@ export class RenduProjectiles {
       type.maillage.instanceMatrix.needsUpdate = true;
     }
   }
+}
+
+/** Skin peinte d'après l'item (null si l'item n'a pu être chargé : couleur de secours). */
+function texturePeinte(textures: BibliothequeTextures, id: IdProjectile, def: DefinitionProjectile): THREE.Texture | null {
+  const item = textures.obtenir(def.texture);
+  if (!def.peinture || !item) return null;
+  const chemin = `peinture/${id}`;
+  textures.enregistrer(chemin, peindreSkin(def.peinture, item.image as CanvasImageSource, def.tailleTexture));
+  return textures.obtenir(chemin);
 }
 
 function creerGeometrie(def: DefinitionProjectile, map: THREE.Texture | null): THREE.BufferGeometry {
@@ -86,7 +101,7 @@ function creerGeometrie(def: DefinitionProjectile, map: THREE.Texture | null): T
   if (relief) {
     // Objet couché à plat, pointe vers l'avant (+Z)
     relief.rotateZ(Math.PI / 2);
-    relief.rotateY(def.pointeEnHaut ? ORIENTATION_ICONE_HAUT : ORIENTATION_ICONE);
+    relief.rotateY(ORIENTATION_ICONE);
     return relief;
   }
   const geometrie = new THREE.PlaneGeometry(def.longueur, def.longueur);
@@ -94,11 +109,9 @@ function creerGeometrie(def: DefinitionProjectile, map: THREE.Texture | null): T
   if (def.forme !== 'face_camera') {
     // Secours sans pixels lisibles : l'icône posée à plat
     geometrie.rotateX(-Math.PI / 2);
-    geometrie.rotateY(def.pointeEnHaut ? Math.PI : (-3 * Math.PI) / 4);
-  } else {
-    // Face à la caméra : celle-ci ne tourne jamais, une inclinaison fixe suffit
-    geometrie.rotateX(-(CONFIG.camera.inclinaisonDeg * Math.PI) / 180);
+    geometrie.rotateY((-3 * Math.PI) / 4);
   }
+  // Face à la caméra : le plan reste droit, chaque instance prend l'orientation de la caméra
   return geometrie;
 }
 

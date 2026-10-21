@@ -5,7 +5,6 @@
  */
 import * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
-import { CONFIG } from '../config';
 import { GERBES } from '../donnees/particules';
 import { JOUEUR_BASE } from '../donnees/joueur';
 import { IDS_OBJETS, OBJETS, type IdObjet } from '../donnees/objets';
@@ -38,14 +37,13 @@ export class Objets {
     this.etat = etat;
     this.particules = particules;
     this.retours = retours;
-    const inclinaison = (CONFIG.camera.inclinaisonDeg * Math.PI) / 180;
 
     // Comme les objets au sol du jeu : en relief (un pixel d'épaisseur), qui tournent sur eux-mêmes
     this.maillages = IDS_OBJETS.map((id) => {
       const def = OBJETS[id];
       const map = textures.obtenir(def.icone);
       const relief = map ? creerGeometrieRelief(map, def.taille) : null;
-      const geometrie = relief ?? new THREE.PlaneGeometry(def.taille, def.taille).rotateX(-inclinaison);
+      const geometrie = relief ?? new THREE.PlaneGeometry(def.taille, def.taille).rotateX(-Math.PI / 4);
       const materiau = map
         ? new THREE.MeshLambertMaterial({ map, alphaTest: 0.5, side: THREE.DoubleSide })
         : new THREE.MeshBasicMaterial({ color: def.couleurSecours });

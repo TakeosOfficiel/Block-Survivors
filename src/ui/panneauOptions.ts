@@ -4,7 +4,7 @@
  * secousses de l'écran, ombres et vent, chiffres des dégâts. Chaque changement est appliqué et enregistré aussitôt.
  */
 import type { CategorieSon } from '../donnees/types';
-import { CATEGORIES_SONS, enregistrerOptions, NIVEAUX_SHADERS, type NiveauShaders, type Options } from '../options';
+import { CATEGORIES_SONS, enregistrerOptions, MODES_VUE, NIVEAUX_SHADERS, type ModeVue, type NiveauShaders, type Options } from '../options';
 
 const LIBELLES_CATEGORIES: Readonly<Record<CategorieSon, string>> = {
   joueur: 'Joueur',
@@ -12,6 +12,17 @@ const LIBELLES_CATEGORIES: Readonly<Record<CategorieSon, string>> = {
   creatures: 'Créatures',
   interface: 'Interface',
 };
+
+const LIBELLES_VUES: Readonly<Record<ModeVue, string>> = {
+  dessus: 'DE DESSUS',
+  troisieme: '3E PERSONNE',
+  premiere: '1RE PERSONNE',
+};
+
+/** Passe à la vue suivante (bouton des options et touche F5). */
+export function vueSuivante(options: Options): void {
+  options.vue = MODES_VUE[(MODES_VUE.indexOf(options.vue) + 1) % MODES_VUE.length];
+}
 
 const LIBELLES_SHADERS: Readonly<Record<NiveauShaders, string>> = {
   aucun: 'NON',
@@ -32,6 +43,7 @@ export class PanneauOptions {
   private readonly boutonShaders = element<HTMLButtonElement>('option-shaders');
   private readonly boutonDegats = element<HTMLButtonElement>('option-degats');
   private readonly boutonCompteur = element<HTMLButtonElement>('option-compteur');
+  private readonly boutonVue = element<HTMLButtonElement>('option-vue');
   private readonly options: Options;
   private readonly appliquer: (options: Options) => void;
   private surFermeture: (() => void) | null = null;
@@ -78,6 +90,7 @@ export class PanneauOptions {
       this.changer();
     });
     this.boutonCompteur.addEventListener('click', () => this.modifier((o) => { o.compteurDegats = !o.compteurDegats; }));
+    this.boutonVue.addEventListener('click', () => this.modifier(vueSuivante));
     element<HTMLButtonElement>('options-fermer').addEventListener('click', () => this.fermer());
     // Enregistré avant les autres écrans : Échap ferme d'abord les options
     window.addEventListener('keydown', this.surTouche);
@@ -130,6 +143,7 @@ export class PanneauOptions {
     this.boutonShaders.textContent = `Ombres et vent : ${LIBELLES_SHADERS[o.shaders]}`;
     this.boutonDegats.textContent = `Chiffres des dégâts : ${o.chiffresDegats ? 'OUI' : 'NON'}`;
     this.boutonCompteur.textContent = `Compteur de dégâts (Tab) : ${o.compteurDegats ? 'OUI' : 'NON'}`;
+    this.boutonVue.textContent = `Vue (F5) : ${LIBELLES_VUES[o.vue]}`;
   }
 
   private readonly surTouche = (e: KeyboardEvent): void => {

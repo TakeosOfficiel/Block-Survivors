@@ -288,9 +288,76 @@ export class Invocations implements SourceEntites {
       const rendu = this.rendus[a.indexType];
       if (rendu) avancerAnimation(a.animation, rendu.modele, dt, a.vitesseSol);
     }
+    for (let passe = 0; passe < CONFIG.armes.invocations.separation.passes; passe++) this.separer();
     if (this.contexte.talents.rang('bosquet') > 0 && (this.minuterieHaie -= dt) <= 0) {
       this.minuterieHaie = CONFIG.armes.invocations.haie.periode;
       this.ralentirHaies();
+    }
+  }
+
+  /**
+   * Les alliés qui bougent ne se chevauchent plus : chaque paire trop proche
+   * s'écarte (les volants entre eux, les marcheurs entre eux), et personne ne
+   * reste dans le joueur. Les alliés immobiles (totems, crocs) ne sont pas poussés.
+   */
+  private separer(): void {
+    const s = CONFIG.armes.invocations.separation;
+    const j = this.contexte.etat.joueur;
+    const elements = this.pool.elements;
+    for (let i = 0; i < this.pool.nombre; i++) {
+      const a = elements[i];
+      if (!a.arme || a.pv <= 0) continue;
+      const volA = a.definition.vol !== undefined;
+      const rayonA = a.definition.rayon * a.echelle;
+      for (let q = i + 1; q < this.pool.nombre; q++) {
+        const b = elements[q];
+        if (!b.arme || b.pv <= 0 || (b.definition.vol !== undefined) !== volA) continue;
+        const mobileA = a.vitesse > 0;
+        const mobileB = b.vitesse > 0;
+        if (!mobileA && !mobileB) continue;
+        const ecart = rayonA + b.definition.rayon * b.echelle + s.marge;
+        let dx = b.x - a.x;
+        let dz = b.z - a.z;
+        const d = longueur(dx, dz);
+        if (d >= ecart) continue;
+        if (d < 1e-4) {
+          // Exactement superposés : on les sépare selon leur rang dans le groupe
+          dx = Math.cos(q * 2.4);
+          dz = Math.sin(q * 2.4);
+        } else {
+          dx /= d;
+          dz /= d;
+        }
+        const poussee = ecart - d;
+        // Celui qui ne bouge pas reste en place, l'autre fait tout le chemin
+        const partA = mobileA ? (mobileB ? 0.5 : 1) : 0;
+        const partB = 1 - partA;
+        a.x -= dx * poussee * partA;
+        a.z -= dz * poussee * partA;
+        b.x += dx * poussee * partB;
+        b.z += dz * poussee * partB;
+      }
+      // Hors du joueur (les volants passent au-dessus)
+      if (!volA && a.vitesse > 0) {
+        const ecart = rayonA + s.rayonJoueur;
+        const dx = a.x - j.x;
+        const dz = a.z - j.z;
+        const d = longueur(dx, dz);
+        if (d < ecart && d > 1e-4) {
+          const poussee = ecart - d;
+          a.x += (dx / d) * poussee;
+          a.z += (dz / d) * poussee;
+        }
+      }
+    }
+    // Les marcheurs poussés ne finissent pas dans un mur
+    const carte = this.contexte.carte;
+    for (let i = 0; i < this.pool.nombre; i++) {
+      const a = elements[i];
+      if (!a.arme || a.vitesse <= 0 || a.definition.vol !== undefined) continue;
+      carte.resoudreCollision(a.x, a.z, a.definition.rayon, corrige);
+      a.x = corrige.x;
+      a.z = corrige.z;
     }
   }
 

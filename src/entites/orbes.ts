@@ -33,6 +33,8 @@ const TAILLE_IMAGE = 16;
 const TAILLE_TEXTURE = 64;
 
 const matrice = new THREE.Matrix4();
+const position = new THREE.Vector3();
+const echelle = new THREE.Vector3(1, 1, 1);
 const couleur = new THREE.Color();
 
 export class Orbes implements SourceEntites, DepotXp {
@@ -42,18 +44,19 @@ export class Orbes implements SourceEntites, DepotXp {
   /** Un maillage par palier de taille (PROGRESSION.orbes). */
   private readonly maillages: THREE.InstancedMesh[];
   private readonly comptes: Int32Array;
+  /** Les orbes sont toujours de face : chaque instance prend l'orientation de la caméra. */
+  private readonly camera: THREE.Camera;
 
-  constructor(etat: EtatPartie, retours: Retours, scene: THREE.Scene, textures: BibliothequeTextures) {
+  constructor(etat: EtatPartie, retours: Retours, scene: THREE.Scene, textures: BibliothequeTextures, camera: THREE.Camera) {
     this.etat = etat;
     this.retours = retours;
+    this.camera = camera;
     const map = textures.obtenir(CONFIG.orbes.texture);
-    const inclinaison = (CONFIG.camera.inclinaisonDeg * Math.PI) / 180;
 
     this.maillages = PROGRESSION.orbes.map((palier, i) => {
       const taille = CONFIG.orbes.taille * (1 + i * 0.15);
       const geometrie = new THREE.PlaneGeometry(taille, taille);
       if (map) cadrerImage(geometrie, palier.image);
-      geometrie.rotateX(-inclinaison);  // toujours face à la caméra (qui ne tourne pas)
       // Texture en niveaux de gris teintée par instance ; découpée (alphaTest), non éclairée
       const materiau = map
         ? new THREE.MeshBasicMaterial({ map, alphaTest: 0.5 })
@@ -133,7 +136,8 @@ export class Orbes implements SourceEntites, DepotXp {
       const palier = this.palier(o.valeur);
       const maillage = this.maillages[palier];
       const t = temps * 10 + o.phase;
-      matrice.makeTranslation(o.x, CONFIG.orbes.hauteur + Math.sin(t * 0.3) * 0.06, o.z);
+      position.set(o.x, CONFIG.orbes.hauteur + Math.sin(t * 0.3) * 0.06, o.z);
+      matrice.compose(position, this.camera.quaternion, echelle);
       maillage.setMatrixAt(comptes[palier], matrice);
       // Pulsation du jeu : rouge et bleu oscillent, vert plein
       couleur.setRGB((Math.sin(t / 2) + 1) * 0.5, 1, (Math.sin(t / 2 + 4.18879) + 1) * 0.1, THREE.SRGBColorSpace);

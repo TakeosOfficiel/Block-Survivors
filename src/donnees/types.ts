@@ -17,6 +17,9 @@ import type { IdStructure } from './structures';
 /** Chemin d'une texture vanilla, relatif à assets/minecraft/textures/, sans « .png » (ex. « block/dirt »). */
 export type CheminTexture = string;
 
+/** Skins peintes à partir d'une icône d'item (voir effets/peintures.ts). */
+export type IdPeinture = 'fusee';
+
 export type Vec3 = readonly [number, number, number];
 
 // --------------------------------------------------------------------------
@@ -286,8 +289,8 @@ export interface DefinitionProjectile {
   readonly forme: FormeProjectile;
   /** Modèle de l'entité (forme `modele`). */
   readonly modele?: IdModele;
-  /** Icône posée à plat : pointe en haut (fusée) au lieu d'en haut à droite (épée, trident). */
-  readonly pointeEnHaut?: boolean;
+  /** Skin du modèle peinte d'après l'image de `texture` (objet sans entité en jeu, ex. la fusée). */
+  readonly peinture?: IdPeinture;
   readonly texture: CheminTexture;
   readonly tailleTexture: readonly [number, number];
   /** Rectangle [x, y, largeur, hauteur] affiché, dans la texture (pixels). */
@@ -302,6 +305,8 @@ export interface DefinitionProjectile {
   readonly rotationPropre?: number;
   /** Particules laissées derrière lui. */
   readonly trainee?: IdGerbe;
+  /** Distance (blocs) derrière le centre où naît la traînée (tuyère de la fusée). */
+  readonly decalageTrainee?: number;
   readonly couleurSecours: number;
 }
 

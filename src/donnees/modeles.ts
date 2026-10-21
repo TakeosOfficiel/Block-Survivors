@@ -462,6 +462,19 @@ const definitions = {
     },
   },
 
+  // Fusée d'artifice en vol (Fusée explosive) : tube rayé, coiffe en pointe et tuyère,
+  // pointe vers le haut ; skin peinte avec les couleurs de l'item vanilla (voir peintures.ts)
+  fusee: {
+    tailleTexture: [32, 32],
+    parties: {
+      tuyere: { taille: [2, 1, 2], pivot: [0, 0, 0], centre: [0, -0.5, 0], uv: [16, 6] },
+      corps:  { taille: [4, 9, 4], pivot: [0, 0, 0], centre: [0, 4.5, 0],  uv: [0, 0] },
+      coiffe: { taille: [3, 2, 3], pivot: [0, 0, 0], centre: [0, 10, 0],   uv: [0, 13] },
+      pointe: { taille: [2, 2, 2], pivot: [0, 0, 0], centre: [0, 12, 0],   uv: [16, 0] },
+      bout:   { taille: [1, 1, 1], pivot: [0, 0, 0], centre: [0, 13.5, 0], uv: [16, 4] },
+    },
+  },
+
   // Allay (Esprit protecteur) : skin 32x32, géométrie vanilla (bedrock-samples) convertie
   allay: {
     tailleTexture: [32, 32],

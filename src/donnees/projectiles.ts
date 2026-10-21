@@ -82,7 +82,6 @@ const definitions = {
     trainee: 'spectrale',
     couleurSecours: 0xf0d060,
   },
-  // Fusée de feu d'artifice (Fusée explosive)
   // Puissance (talent de l'Élite) : flèche spectrale géante qui traverse tout
   fleche_geante: {
     nom: 'Flèche spectrale géante',
@@ -99,13 +98,16 @@ const definitions = {
     trainee: 'spectrale',
     couleurSecours: 0xf0d060,
   },
+  // Vrai modèle en volume (comme dans Minecraft Dungeons), pas l'icône de l'item :
+  // skin peinte avec les couleurs de l'item vanilla, gerbe de flammes à l'arrière
   fusee: {
     nom: "Fusée d'artifice",
-    forme: 'relief',
-    pointeEnHaut: true,
+    forme: 'modele',
+    modele: 'fusee',
+    peinture: 'fusee',
     texture: 'item/firework_rocket',
-    tailleTexture: [16, 16],
-    uv: ICONE,
+    tailleTexture: [32, 32],
+    uv: [0, 0, 32, 32],
     longueur: 0.9,
     largeur: 0,
     vitesse: 14,
@@ -113,6 +115,7 @@ const definitions = {
     rayon: 0.4,
     hauteur: 1.1,
     trainee: 'traineeArtifice',
+    decalageTrainee: 0.5,
     couleurSecours: 0xd04040,
   },
   // Petite boule de feu tirée par les blazes

@@ -70,6 +70,27 @@ export const CONFIG = {
     lissageZoom: 12,         // raideur du zoom (1/s)
     // Secousse (explosions, coups, boss) : décalage ∝ intensité², intensité décroissante
     secousse: { amplitude: 0.55, decroissance: 2.2, frequence: 31 },
+    // Vues à la souris (touche F5) : la souris tourne la caméra, ZQSD suit son orientation
+    sensibiliteSouris: 0.0024,  // rad par pixel
+    // 3e personne façon WoW : assez loin et en hauteur au départ ; la molette
+    // rapproche jusque dans le dos du joueur ou éloigne pour voir la mêlée
+    troisieme: {
+      fov: 60,
+      hauteurVisee: 1.8,       // point visé au-dessus des pieds (blocs)
+      distance: 12,
+      distanceMin: 2.5,
+      distanceMax: 28,
+      tangage: 32,             // plongée de départ (degrés)
+      tangageMin: 0,
+      tangageMax: 80,
+      suivi: 30,
+    },
+    premiere: {
+      fov: 75,
+      yeux: 0.9,               // hauteur des yeux, en part de la taille du personnage
+      tangageMin: -85,
+      tangageMax: 85,
+    },
   },
 
   rendu: {
@@ -151,6 +172,8 @@ export const CONFIG = {
       // ralenti, espacement des racines, demi-largeur, période des ralentissements)
       provocationAlpha: 2.5,
       haie: { distance: 8, ralenti: 0.4, espacement: 0.7, largeur: 0.9, periode: 0.5, racinesMax: 48 },
+      // Les alliés qui bougent s'écartent les uns des autres (et du joueur) : passes de résolution, marge (blocs)
+      separation: { passes: 3, marge: 0.1, rayonJoueur: 0.45 },
     },
     // Onde de choc : blocs soulevés tous les `espacement` blocs, qui jaillissent puis s'enfoncent (s)
     fissure: {

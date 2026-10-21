@@ -186,7 +186,8 @@ export class ProjectilesJoueur implements SourceEntites {
       const trainee = p.definition.trainee;
       if (trainee && (p.trainee -= dt) <= 0) {
         p.trainee = CONFIG.projectiles.intervalleTrainee;
-        particules.emettre(p.x, p.definition.hauteur, p.z, GERBES[trainee]);
+        const recul = p.definition.decalageTrainee ?? 0;
+        particules.emettre(p.x - p.dirX * recul, p.definition.hauteur, p.z - p.dirZ * recul, GERBES[trainee]);
       }
 
       // Fin de course

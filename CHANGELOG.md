@@ -5,6 +5,20 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.23.0] — 2026-10-21
+
+### Nouveautés
+- **Touche F5 : trois vues**, comme dans Minecraft (aussi dans les options, bouton « Vue ») :
+  - **de dessus** : la vue habituelle ;
+  - **3e personne façon WoW** : la caméra est en hauteur, assez loin derrière le héros, et tourne à la souris ; la molette la rapproche jusque dans son dos ou l'éloigne pour voir toute la mêlée ;
+  - **1re personne** : la caméra est dans les yeux du héros.
+  
+  Dans les deux vues à la souris, cliquer dans le jeu capture la souris, qui fait tourner la caméra ; ZQSD avance dans le sens où l'on regarde. La vue choisie est retenue d'une partie à l'autre.
+- **Fusée explosive en vrai modèle 3D**, comme dans Minecraft Dungeons : un tube rouge à rayures blanches en spirale, avec sa coiffe pointue et sa tuyère. Plus d'image d'item avec une mèche qui ne sert à rien : la fusée crache derrière elle des flammes, des étincelles et un peu de fumée.
+
+### Corrections
+- Les invocations (loups, golems, vex…) ne se superposent plus : elles s'écartent les unes des autres et ne restent plus dans le joueur, même quand elles attaquent la même cible.
+
 ## [0.22.0] — 2026-10-20
 
 Fini de retélécharger le jeu à chaque version : il se met à jour tout seul.

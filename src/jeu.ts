@@ -75,7 +75,8 @@ import { EcranCartes } from './ui/ecranCartes';
 import { EcranFin } from './ui/ecranFin';
 import { EcranPause } from './ui/ecranPause';
 import { Hud } from './ui/hud';
-import type { PanneauOptions } from './ui/panneauOptions';
+import { vueSuivante, type PanneauOptions } from './ui/panneauOptions';
+import { element } from './ui/dom';
 
 /** Services créés avant la partie (dès le menu) et partagés avec elle. */
 export interface ServicesJeu {
@@ -98,6 +99,7 @@ export class Jeu implements CallbacksBoucle, Retours {
   private readonly terrain: Terrain;
   private readonly vegetation: Vegetation;
   private readonly entrees = new Entrees();
+  private readonly aideSouris = element('hud-aide-souris');
   private readonly hud: Hud;
   private readonly camera: CameraJeu;
   private readonly boucle: Boucle;
@@ -193,7 +195,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     const carte = monde.carte;
     this.ombres = new Ombres(textures.obtenir(CONFIG.ombre.texture), scene);
     this.particules = new Particules(scene, rendu.camera, textures, IDS_OBJETS.map((id) => OBJETS[id].icone));
-    this.renduProjectiles = new RenduProjectiles(textures, scene);
+    this.renduProjectiles = new RenduProjectiles(textures, scene, rendu.camera);
     this.chiffres = new ChiffresDegats(scene, rendu.camera);
 
     // Entités
@@ -201,7 +203,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.joueur = new Joueur(this.etat, carte, this.entrees, this, scene, textures, apparence);
     this.etiquette = new Etiquette(scene, services.profil.pseudo);
     this.projectilesEnnemis = new ProjectilesEnnemis(this.etat, carte, this.joueur);
-    this.orbes = new Orbes(this.etat, this, scene, textures);
+    this.orbes = new Orbes(this.etat, this, scene, textures, rendu.camera);
     this.objets = new Objets(this.etat, this.particules, this, scene, textures);
     this.ennemis = new Ennemis(
       this.etat,
@@ -213,7 +215,7 @@ export class Jeu implements CallbacksBoucle, Retours {
       scene,
       textures,
     );
-    this.camera = new CameraJeu(rendu.camera, this.entrees, this.etat);
+    this.camera = new CameraJeu(rendu.camera, this.entrees, this.etat, this.joueur.hauteur);
 
     // Combat du joueur
     this.mecaniques = new Talents(this.etat);
@@ -291,6 +293,20 @@ export class Jeu implements CallbacksBoucle, Retours {
       e.preventDefault();
       if (!e.repeat) this.panneauOptions.modifier((o) => { o.compteurDegats = !o.compteurDegats; });
     });
+    // F5 : vue de dessus → 3e personne → 1re personne (comme en jeu) ; la touche est
+    // un geste de l'utilisateur, la souris peut être capturée tout de suite
+    window.addEventListener('keydown', (e) => {
+      if (e.code !== 'F5') return;
+      e.preventDefault();
+      if (e.repeat) return;
+      this.panneauOptions.modifier(vueSuivante);
+      if (this.camera.alaSouris && this.vueInteractive()) this.entrees.capturerSouris(this.toile);
+      else this.entrees.libererSouris();
+    });
+    // Vues à la souris : un clic dans le jeu capture la souris
+    window.addEventListener('click', () => {
+      if (this.camera.alaSouris && this.vueInteractive()) this.entrees.capturerSouris(this.toile);
+    });
     const bilan = (conteneur: HTMLElement) => remplirBilan(conteneur, this.etat, this.arsenal.armes, textures);
     this.ecranPause = new EcranPause({
       peutPauser: () => !this.ecranCartes.ouvert && this.etat.issue === null,
@@ -355,6 +371,8 @@ export class Jeu implements CallbacksBoucle, Retours {
   appliquerOptions(options: Options): void {
     this.hud.afficherFps = options.afficherFps;
     this.camera.secoussesActives = options.secousses;
+    if (options.vue !== this.camera.vue) this.camera.definirMode(options.vue);
+    this.joueur.masque = options.vue === 'premiere';
     this.chiffres.actif = options.chiffresDegats;
     this.compteurDegats.definir(options.compteurDegats);
     this.vegetation.definirShaders(options.shaders !== 'aucun');
@@ -422,10 +440,14 @@ export class Jeu implements CallbacksBoucle, Retours {
 
   afficher(dtJeu: number, dtReel: number, dtBrut: number): void {
     this.textures.majAnimations(performance.now() / 1000);
+    // Caméra d'abord : les objets tournés vers elle utilisent son orientation de cette image
+    this.majVueSouris();
+    this.camera.majVisuel(dtJeu, dtReel);
+    this.joueur.lacetCommandes = this.camera.lacetCommandes;
     this.ombres.commencer();
     this.joueur.majVisuel(this.ombres);
     const j = this.etat.joueur;
-    this.etiquette.placer(j.x, this.joueur.hauteur, j.z, !j.mort);
+    this.etiquette.placer(j.x, this.joueur.hauteur, j.z, !j.mort && !this.camera.alaSouris);
     this.ennemis.majVisuel(this.ombres);
     this.invocations.majVisuel(this.ombres);
     this.mecaniques.majVisuel(this.ombres);
@@ -453,7 +475,6 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.pieges.majVisuel();
     this.particules.majVisuel();
     this.chiffres.majVisuel();
-    this.camera.majVisuel(dtJeu, dtReel);
     this.rendu.dessiner();
 
     this.hud.majVisuel(dtBrut, dtReel);
@@ -462,6 +483,22 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.celebrerNiveau();
     this.afficherFin(dtReel);
     this.proposerCartes();
+  }
+
+  private get toile(): HTMLElement {
+    return this.rendu.renderer.domElement;
+  }
+
+  /** Vrai quand aucun écran (cartes, pause, options, fin) ne demande le curseur. */
+  private vueInteractive(): boolean {
+    return !this.ecranCartes.ouvert && !this.ecranPause.active && !this.panneauOptions.ouvert && this.etat.issue === null;
+  }
+
+  /** Vues à la souris : rend le curseur aux écrans, rappelle de cliquer sinon. */
+  private majVueSouris(): void {
+    const interactive = this.vueInteractive();
+    if (!interactive) this.entrees.libererSouris();
+    this.aideSouris.classList.toggle('cache', !(this.camera.alaSouris && interactive && !this.entrees.sourisCapturee));
   }
 
   /** Partie figée pendant le choix des cartes et la pause. */

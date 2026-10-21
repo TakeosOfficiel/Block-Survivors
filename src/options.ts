@@ -18,7 +18,12 @@ export interface Options {
   chiffresDegats: boolean;
   /** Panneau des dégâts par arme en jeu (touche Tab). */
   compteurDegats: boolean;
+  /** Vue de la caméra (touche F5). */
+  vue: ModeVue;
 }
+
+export type ModeVue = 'dessus' | 'troisieme' | 'premiere';
+export const MODES_VUE: readonly ModeVue[] = ['dessus', 'troisieme', 'premiere'];
 
 export type NiveauShaders = 'aucun' | 'legers' | 'complets';
 export const NIVEAUX_SHADERS: readonly NiveauShaders[] = ['aucun', 'legers', 'complets'];
@@ -35,6 +40,7 @@ const PAR_DEFAUT: Readonly<Options> = {
   shaders: 'legers',
   chiffresDegats: true,
   compteurDegats: true,
+  vue: 'dessus',
 };
 
 /**
@@ -57,6 +63,7 @@ export function chargerOptions(): Options {
     if (lu.version === VERSION && NIVEAUX_SHADERS.includes(lu.shaders as NiveauShaders)) options.shaders = lu.shaders as NiveauShaders;
     if (typeof lu.chiffresDegats === 'boolean') options.chiffresDegats = lu.chiffresDegats;
     if (typeof lu.compteurDegats === 'boolean') options.compteurDegats = lu.compteurDegats;
+    if (MODES_VUE.includes(lu.vue as ModeVue)) options.vue = lu.vue as ModeVue;
   }
   return options;
 }

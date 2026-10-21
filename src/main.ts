@@ -35,8 +35,8 @@ async function demarrer(): Promise<void> {
   const ecran = new EcranChargement();
   const textures = new BibliothequeTextures();
   let choix = choixDemande();
-  // Au lancement : la photo de la dernière arène jouée (son nom seulement si la partie suit)
-  ecran.decor(choix.arene, partieDemandee());
+  // Partie lancée directement (Rejouer) : la photo de son arène tout de suite
+  if (partieDemandee()) ecran.decor(choix.arene);
 
   let rendu: Rendu;
   try {
@@ -60,6 +60,7 @@ async function demarrer(): Promise<void> {
     textures.charger(texturesInterface(), (faites, total) => ecran.progression(faites, total)),
   ]);
   appliquerHabillage(textures);
+  ecran.habiller(textures);
   // Skins du joueur (éditeur, importée) : enregistrées comme des textures du jeu
   textures.enregistrer(CHEMIN_SKIN_PERSO, dessinerSkinPerso(profil.traits, profil.brasFins));
   if (profil.skinImporte) {
@@ -88,7 +89,7 @@ async function demarrer(): Promise<void> {
     memoriserChoix(choix);
     ecran.planifier(etapesPartie(choix));
   }
-  ecran.decor(choix.arene, true);
+  ecran.decor(choix.arene);
   ecran.afficher();
 
   let monde: MondeGenere;

@@ -291,13 +291,13 @@ export const CONFIG = {
   chargement: {
     // Photo de l'arène prise à la fin du chargement, affichée au chargement suivant
     photo: {
-      largeur: 1600,     // pixels
+      largeur: 2560,     // pixels au plus (la taille de l'écran sinon) : nette une fois réduite dans son cadre
       champ: 40,         // degrés
       recul: 0.95,       // distance de la caméra, en côtés d'arène
       cadreDecor: 0.85,  // map Minecraft : part de toute la construction à garder dans le cadre
       plongeeDeg: 34,    // sous l'horizontale
       azimutDeg: 35,     // depuis le sud, vers l'est
-      qualite: 0.85,     // compression WebP
+      qualite: 0.92,     // compression WebP
     },
   },
 

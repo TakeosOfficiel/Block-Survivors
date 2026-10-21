@@ -191,43 +191,40 @@ img { image-rendering: pixelated; }
 .rarete-soin { color: var(--mc-or); }
 
 /* --- Écran de chargement ------------------------------------------------- */
-/* Façon WoW : la photo de l'arène en plein écran, qui avance très lentement (animation sur
-   le compositeur, fluide même quand le jeu travaille), le logo en haut, en bas le nom de
-   l'arène, une astuce et la barre */
+/* Le logo, puis (pendant le chargement d'une partie) la photo de l'arène encadrée dans un
+   panneau du jeu avec son nom et une astuce, et la barre d'expérience comme barre de chargement */
 #chargement {
   position: fixed; inset: 0; z-index: 20; overflow: hidden;
-  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
-  padding: 5vh 16px 5vh;
-  background: radial-gradient(ellipse at 50% 40%, #232833 0%, #0b0d12 75%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  padding: 16px;
+  background: radial-gradient(ellipse at 50% 40%, #262b36 0%, #0b0d12 75%);
 }
+.chargement-titre { font-size: 40px; line-height: 48px; }
+#chargement-fenetre {
+  width: min(1040px, 88vw, calc((100vh - 300px) * 16 / 9));
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 10px 12px 12px;
+}
+/* La photo, creusée dans le panneau comme une case d'inventaire */
 #chargement-image {
-  position: absolute; inset: 0; background-size: cover; background-position: center;
-  opacity: 0; transition: opacity 0.6s ease-out;
-  animation: chargement-avance 40s linear infinite alternate;
+  aspect-ratio: 16 / 9;
+  background: #1d1d1d center / cover no-repeat;
+  border: 2px solid; border-color: #373737 #ffffff #ffffff #373737;
+  opacity: 0; transition: opacity 0.4s ease-out;
 }
 #chargement-image.visible { opacity: 1; }
-@keyframes chargement-avance { from { transform: scale(1.02); } to { transform: scale(1.12); } }
-.chargement-voile {
-  position: absolute; inset: 0; pointer-events: none;
-  background:
-    linear-gradient(to top, rgba(6, 8, 12, 0.95) 0%, rgba(6, 8, 12, 0.8) 18%, rgba(6, 8, 12, 0.35) 34%, rgba(6, 8, 12, 0) 50%),
-    linear-gradient(to bottom, rgba(6, 8, 12, 0.6) 0%, rgba(6, 8, 12, 0) 22%);
-}
-.chargement-titre { position: relative; font-size: 40px; line-height: 48px; }
-.chargement-bas { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; width: min(820px, 90vw); }
-#chargement-arene { font-size: 32px; line-height: 38px; color: #ffd75e; text-shadow: 3px 3px 0 #3f2f05; text-align: center; }
-#chargement-astuce { color: #d0d0d0; text-align: center; min-height: 20px; margin-bottom: 6px; }
-/* Barre encadrée, remplissage doré lumineux */
-.chargement-cadre {
-  width: 100%; height: 14px; padding: 2px;
-  background: rgba(0, 0, 0, 0.7); border: 2px solid #6b5a2a; box-shadow: 0 0 0 2px #000, 0 4px 12px rgba(0, 0, 0, 0.6);
+#chargement-arene { color: var(--mc-texte-panneau); font-size: 24px; line-height: 30px; text-align: center; margin-top: 4px; }
+#chargement-astuce { color: #555555; text-align: center; min-height: 18px; }
+.chargement-bas { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+/* Barre d'expérience vanilla (182x5) en triple taille ; couleurs de secours sans les sprites */
+#chargement-cadre {
+  width: 546px; max-width: 86vw; height: 15px;
+  background: #2a2a2a center / 100% 100% no-repeat; image-rendering: pixelated;
 }
 #chargement-barre {
   height: 100%; width: 0; transition: width 0.15s linear;
-  background: linear-gradient(to bottom, #ffe58a, #e0a526 55%, #b87a12);
-  box-shadow: 0 0 10px rgba(255, 196, 64, 0.6);
+  background: #80ff20 left center / 546px 15px no-repeat; image-rendering: pixelated;
 }
-#chargement-texte { color: #a8a8a8; }
 #chargement.erreur #chargement-texte { color: var(--mc-rouge); }
 
 /* --- Menu principal ------------------------------------------------------- */

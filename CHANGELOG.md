@@ -5,6 +5,15 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.34.0] — 2026-10-21
+
+### Changements
+- **Écran de chargement dans le style du jeu** :
+  - la photo de l'arène est encadrée dans un panneau d'inventaire de Minecraft, avec le nom de l'arène et l'astuce dessous ;
+  - la barre de chargement est la barre d'expérience du jeu.
+- **Photo nette** : prise à la pleine résolution de l'écran, sans zoom, et affichée plus petite dans son cadre.
+- **Au lancement du jeu**, seulement le logo et la barre : la photo n'apparaît qu'au chargement d'une partie.
+
 ## [0.33.0] — 2026-10-21
 
 ### Changements

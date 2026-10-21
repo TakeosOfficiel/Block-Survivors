@@ -1,17 +1,20 @@
 /**
- * Écran de chargement façon WoW : une photo de l'arène en plein écran (voir
- * assets/photosArenes.ts), son nom, une astuce, et la barre de progression en
- * bas. Une seule barre pour tout le chargement : planifier() annonce le
+ * Écran de chargement : le logo et la barre d'expérience du jeu ; pendant le
+ * chargement d'une partie, la photo de l'arène (voir assets/photosArenes.ts)
+ * encadrée dans un panneau du jeu, avec son nom et une astuce. Une seule barre pour tout le chargement : planifier() annonce le
  * nombre d'étapes, chacune en remplit une part égale, et la barre ne recule
  * jamais ; seul le libellé change.
  */
 import { photoArene } from '../assets/photosArenes';
+import type { BibliothequeTextures } from '../assets/textures';
+import { CONFIG } from '../config';
 import { ASTUCES } from '../donnees/astuces';
 import type { DefinitionArene } from '../donnees/types';
 import { element } from './dom';
 
 export class EcranChargement {
   private readonly racine = element('chargement');
+  private readonly fenetre = element('chargement-fenetre');
   private readonly image = element('chargement-image');
   private readonly arene = element('chargement-arene');
   private readonly astuce = element('chargement-astuce');
@@ -25,13 +28,20 @@ export class EcranChargement {
   /** Arène dont la photo est demandée (une demande plus récente l'emporte). */
   private areneVoulue = '';
 
-  /**
-   * L'arène qui se charge : sa photo en fond, et son nom (`avecNom`, faux au
-   * lancement du jeu, où l'on montre seulement la dernière arène jouée).
-   */
-  decor(arene: DefinitionArene, avecNom: boolean): void {
-    this.arene.textContent = avecNom ? arene.nom : '';
-    this.astuce.textContent = avecNom ? `Astuce : ${ASTUCES[Math.floor(Math.random() * ASTUCES.length)]}` : '';
+  /** Sprites de la barre d'expérience, une fois les textures de l'interface chargées. */
+  habiller(textures: BibliothequeTextures): void {
+    const sprites = CONFIG.hud.barreXp;
+    const fond = textures.url(sprites.fond);
+    const progression = textures.url(sprites.progression);
+    if (fond) element('chargement-cadre').style.backgroundImage = `url("${fond}")`;
+    if (progression) this.barre.style.backgroundImage = `url("${progression}")`;
+  }
+
+  /** L'arène de la partie qui se charge : sa photo encadrée, son nom et une astuce. */
+  decor(arene: DefinitionArene): void {
+    this.arene.textContent = arene.nom;
+    this.astuce.textContent = `Astuce : ${ASTUCES[Math.floor(Math.random() * ASTUCES.length)]}`;
+    this.fenetre.classList.remove('cache');
     if (arene.id === this.areneVoulue) return;
     this.areneVoulue = arene.id;
     this.image.classList.remove('visible');

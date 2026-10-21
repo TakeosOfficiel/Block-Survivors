@@ -2,7 +2,7 @@
  * Cubes texturés d'un même bloc (magma, glace, améthyste…) dessinés en un
  * seul InstancedMesh, réécrit à chaque image : commencer(), ajouter() pour
  * chaque cube, terminer(). Lumineux : non éclairé (magma, feu). Découpé :
- * texture à trous comme les feuilles du jeu (racines de palétuvier, feu).
+ * texture à trous comme les feuilles du jeu (racines de palétuvier).
  */
 import * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';

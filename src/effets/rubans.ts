@@ -3,9 +3,14 @@
  * maillage : commencer(), puis pour chaque ruban `segments + 1` appels à
  * point() et un fermer(), enfin terminer(). Le long du ruban la texture se
  * répète (une tuile tous les `pasU` segments) ; en travers, elle va du bas
- * (v = 0) au haut (v = 1) de l'image. Non éclairé et découpé (feu, magma).
+ * (v = 0) au haut (v = 1) de l'image, à un demi-pixel des bords pour ne pas
+ * déborder sur l'image voisine d'une texture animée. Non éclairé et découpé
+ * (feu, magma), éventuellement teinté.
  */
 import * as THREE from 'three';
+
+/** Demi-pixel d'une image de 16 pixels de haut. */
+const MARGE_V = 1 / 32;
 
 export class Rubans {
   private readonly maillage: THREE.Mesh;
@@ -15,7 +20,10 @@ export class Rubans {
   private readonly capacite: number;
   private n = 0;
 
-  constructor(scene: THREE.Scene, map: THREE.Texture | null, couleurSecours: number, capacite: number, segments: number, pasU: number, nom: string) {
+  constructor(
+    scene: THREE.Scene, map: THREE.Texture | null, couleurSecours: number, capacite: number, segments: number, pasU: number, nom: string,
+    teinte = 0xffffff,
+  ) {
     this.segments = segments;
     this.capacite = capacite;
     const sommets = capacite * (segments + 1) * 2;
@@ -27,9 +35,9 @@ export class Rubans {
       for (let i = 0; i <= segments; i++) {
         const s = base + i * 2;
         uvs[s * 2] = i * pasU;          // bas
-        uvs[s * 2 + 1] = 0;
+        uvs[s * 2 + 1] = MARGE_V;
         uvs[s * 2 + 2] = i * pasU;      // haut
-        uvs[s * 2 + 3] = 1;
+        uvs[s * 2 + 3] = 1 - MARGE_V;
         if (i === segments) continue;
         const k = (r * segments + i) * 6;
         indices[k] = s;
@@ -48,7 +56,7 @@ export class Rubans {
     geometrie.setIndex(new THREE.BufferAttribute(indices, 1));
     geometrie.setDrawRange(0, 0);
     const materiau = map
-      ? new THREE.MeshBasicMaterial({ map, alphaTest: 0.5, side: THREE.DoubleSide })
+      ? new THREE.MeshBasicMaterial({ map, color: teinte, alphaTest: 0.5, side: THREE.DoubleSide })
       : new THREE.MeshBasicMaterial({ color: couleurSecours, side: THREE.DoubleSide });
     this.maillage = new THREE.Mesh(geometrie, materiau);
     this.maillage.name = nom;

@@ -5,6 +5,15 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.25.0] — 2026-10-21
+
+### Changements
+- **Tornade de feu plus vivante**, même silhouette en entonnoir :
+  - chaque ruban a son propre rayon, sa vitesse, son nombre de tours et sa longueur ; des ondes montent le long des rubans, qui palpitent ;
+  - le feu défile vers le haut le long de la spirale ; le bas des rubans est dentelé, le haut garde les pointes de flammes ;
+  - les fins arcs blancs au sommet ont disparu.
+- **Tornade de magma** (Tempête de feu) : au lieu d'un cône plein, un vortex de feu rougeoyant avec des espaces entre les rubans, de fines veines de magma au cœur et quelques fragments incandescents qui montent en spirale.
+
 ## [0.24.0] — 2026-10-21
 
 ### Nouveautés

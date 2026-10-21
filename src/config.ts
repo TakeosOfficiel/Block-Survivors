@@ -187,15 +187,26 @@ export const CONFIG = {
     // Tornade de feu : cubes par colonne, rotation (rad/s), hauteur (blocs), recherche de cible (blocs)
     // Tornade de feu en entonnoir : sa silhouette est faite de rubans en spirale (`exterieurs` autour,
     // `interieurs` au cœur, plus serrés et plus rapides) texturés de feu animé, de `segments` points sur
-    // `tours` tours ; la bande s'épaissit de `bande[0]` à `bande[1]` blocs vers le haut, le haut ondule
-    // (`oscillation`, part de la largeur). Débris arrachés et dalles de sol brûlé ; les particules
-    // ne font que l'habiller. Elle pousse du sol en `apparition` s et s'effondre en `effondrement` s.
+    // environ `tours` tours ; la bande s'épaissit de `bande[0]` à `bande[1]` blocs vers le haut, le haut
+    // ondule (`oscillation`, part de la largeur). Vivante : chaque ruban a son rayon, sa vitesse, son
+    // nombre de tours et sa longueur (± `irregularite`), des ondes montent le long des rubans
+    // (`ondes` : rad par part de hauteur, rad/s, amplitude en part de la largeur), le feu y défile vers
+    // le haut (`defilement`, tuiles/s), les bandes palpitent (± `palpitation`) et leur bas est dentelé
+    // (`dents`, part de la bande).
+    // Débris arrachés et dalles de sol brûlé ; les particules ne font que l'habiller.
+    // Elle pousse du sol en `apparition` s et s'effondre en `effondrement` s.
     tornade: {
       capacite: 6, portee: 10, recherche: 8, rotation: 7, hauteur: 3.6, periodeBraises: 0.12, imagesParSeconde: 2.5,
-      exterieurs: 4, interieurs: 2, segments: 40, tours: 1.25, pasU: 0.3, bande: [0.42, 0.9], debris: 8, dalles: 10,
+      exterieurs: 4, interieurs: 2, segments: 40, tours: 1.25, pasU: 0.3, bande: [0.55, 1.05], debris: 8, dalles: 10,
       oscillation: 0.3, imagesFeu: 16, apparition: 0.35, effondrement: 0.55,
-      // Tempête de feu : zone en plus (part), durée en plus (s), marge de détection du météore (blocs)
-      magma: { zone: 0.5, duree: 2, marge: 0.5 },
+      irregularite: 0.12, ondes: { frequence: 11, vitesse: 8, amplitude: 0.07 }, defilement: 1.4, dents: 0.15, palpitation: 0.18,
+      // Tempête de feu : zone en plus (part), durée en plus (s), marge de détection du météore (blocs).
+      // Vortex de feu rougeoyant chargé de magma : rubans de feu plus fins (`bande`, part) qui laissent
+      // des vides, `veines` fines de magma au cœur (`largeurVeine`, blocs), `fragments` incandescents
+      magma: {
+        zone: 0.5, duree: 2, marge: 0.5,
+        bande: 0.7, teinte: 0xff6a40, veines: 3, largeurVeine: 0.14, fragments: 7, tailleFragment: 0.22,
+      },
     },
     // Nova de glace : éclats de l'anneau, dalles de neige, et leurs durées (s)
     nova: {

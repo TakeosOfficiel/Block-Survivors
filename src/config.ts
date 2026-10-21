@@ -72,6 +72,8 @@ export const CONFIG = {
     secousse: { amplitude: 0.55, decroissance: 2.2, frequence: 31 },
     // Vue à la 3e personne (touche F5) : la souris tourne la caméra, ZQSD suit son orientation
     sensibiliteSouris: 0.0024,  // rad par pixel
+    /** Mouvement de souris capturée au-delà duquel un événement est ignoré (pixels) : faux saut du curseur. */
+    sautSourisMax: 250,
     // 3e personne façon WoW : assez loin et en hauteur au départ ; la molette
     // rapproche jusque dans le dos du joueur ou éloigne pour voir la mêlée
     troisieme: {
@@ -288,6 +290,15 @@ export const CONFIG = {
 
   chargement: {
     textureFond: 'block/dirt',
+    // La map de la partie, vue de dessus, qui apparaît chunk par chunk
+    carte: {
+      pixelsMax: 512,         // côté du dessin (pixels) : colonnes × échelle entière
+      chunksParCote: 12,      // les petites maps ont des chunks plus petits que 16 pour garder une belle grille
+      tailleChunkMin: 3,
+      eclair: 0.3,            // s : un chunk qui arrive s'allume brièvement
+      tailleTete: 5,          // colonnes : tête du joueur au point de départ
+      couleurAttente: 'rgba(0, 0, 0, 0.45)',
+    },
   },
 
   // Contrôles par touche PHYSIQUE (event.code) : la même touche fonctionne

@@ -13,11 +13,11 @@ import { chargerPolice } from './assets/police';
 import { BibliothequeTextures } from './assets/textures';
 import { CONFIG, SOURCES_TEXTURES } from './config';
 import { PERSONNAGES } from './donnees/personnages';
-import type { ApparenceEntite } from './donnees/types';
 import { Jeu } from './jeu';
 import { choixDemande, memoriserChoix, partieDemandee } from './lancement';
 import { importerArene } from './minecraft/importation';
 import { genererMonde, type MondeGenere } from './monde/generation';
+import { texturesDessus, vueDessusMonde } from './monde/vueDessus';
 import { Rendu } from './moteur/rendu';
 import { chargerOptions } from './options';
 import { Sauvegarde } from './progression/sauvegarde';
@@ -26,10 +26,8 @@ import { apparenceJoueur, chargerProfil, CHEMIN_SKIN_IMPORTE, CHEMIN_SKIN_PERSO 
 import { ApercuHeros } from './ui/apercuHeros';
 import { chargerImageSkin, EcranProfil } from './ui/ecranProfil';
 import { EcranChargement } from './ui/ecranChargement';
-import { SceneChargement } from './ui/sceneChargement';
 import { EcranMenu } from './ui/ecranMenu';
 import { suivreEchelleInterface } from './ui/echelle';
-import { element } from './ui/dom';
 import { appliquerHabillage } from './ui/habillage';
 import { PanneauOptions } from './ui/panneauOptions';
 
@@ -38,16 +36,6 @@ async function demarrer(): Promise<void> {
   const ecran = new EcranChargement(SOURCES_TEXTURES[0].url(CONFIG.chargement.textureFond));
   const textures = new BibliothequeTextures();
   let choix = choixDemande();
-  // Scène du chargement (le feu de camp), préparée en arrière-plan puis branchée sur l'écran
-  const preparerScene = (heros: ApparenceEntite) => SceneChargement.creer(element('chargement'), textures, heros)
-    .catch(() => null)
-    .then((s) => {
-      if (s) ecran.brancher(s);
-      return s;
-    });
-  // Partie lancée directement (Rejouer) : la scène tout de suite ; sinon une fois le menu affiché,
-  // pour ne pas ralentir le lancement du jeu
-  let scene = partieDemandee() ? preparerScene(PERSONNAGES[choix.personnage]) : Promise.resolve(null);
 
   let rendu: Rendu;
   try {
@@ -95,15 +83,14 @@ async function demarrer(): Promise<void> {
     // Héros en 3D du menu : même moteur que le jeu (repli WebGL2 compris)
     const apercu = await ApercuHeros.creer(textures, rendu.api !== 'WebGPU');
     ecran.masquer();
-    scene = preparerScene(apparenceJoueur(PERSONNAGES[choix.personnage], profil));
     choix = await new EcranMenu(textures, choix, panneauOptions, sauvegarde, new EcranProfil(textures, profil, apercu), apercu).attendreChoix();
     memoriserChoix(choix);
     ecran.planifier(etapesPartie(choix));
   }
-  // Au coin du feu : le héros de la partie, avec sa classe et sa skin
-  const heros = apparenceJoueur(PERSONNAGES[choix.personnage], profil);
-  void scene.then((s) => s?.changerHeros(heros));
   ecran.afficher();
+  // La map de la partie apparaît vue de dessus, chunk par chunk, avec la tête du joueur au départ
+  const skin = textures.obtenir(apparenceJoueur(PERSONNAGES[choix.personnage], profil).skin)?.image as CanvasImageSource | undefined;
+  const tete = skin ?? null;
 
   let monde: MondeGenere;
   if (choix.arene.source) {
@@ -112,6 +99,8 @@ async function demarrer(): Promise<void> {
       const importee = await importerArene(choix.arene, textures, {
         etape: (texte) => ecran.etape(texte),
         progression: (faites, total) => ecran.progression(faites, total),
+        dimensions: (largeur, profondeur) => ecran.annoncerCarte(largeur, profondeur),
+        vue: (vue) => ecran.montrerCarte(vue, tete),
       });
       choix = { ...choix, arene: importee.arene };
       monde = importee.monde;
@@ -120,9 +109,12 @@ async function demarrer(): Promise<void> {
       return;
     }
   } else {
+    ecran.annoncerCarte(choix.arene.largeur, choix.arene.profondeur);
     ecran.etape('Génération du monde…');
     await new Promise((resoudre) => requestAnimationFrame(resoudre));  // laisse s'afficher l'étape
     monde = genererMonde(choix.arene);
+    await textures.charger(texturesDessus(monde));
+    ecran.montrerCarte(vueDessusMonde(monde, choix.arene, textures), tete);
   }
   ecran.etape('Chargement des textures…');
   await textures.charger(

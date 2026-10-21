@@ -11,6 +11,8 @@ export class Entrees {
   /** Déplacement de la souris capturée (pixels) pas encore consommé. */
   private sourisX = 0;
   private sourisY = 0;
+  /** Le premier mouvement après une capture est souvent faux (saut du curseur) : on l'ignore. */
+  private ignorerProchainMouvement = false;
 
   constructor() {
     window.addEventListener('keydown', this.surToucheEnfoncee);
@@ -19,6 +21,7 @@ export class Entrees {
     window.addEventListener('blur', this.toutRelacher);
     window.addEventListener('wheel', this.surMolette, { passive: false });
     document.addEventListener('mousemove', this.surSouris);
+    document.addEventListener('pointerlockchange', () => { this.ignorerProchainMouvement = true; });
   }
 
   /** Vrai si la souris est capturée (vue à la 3e personne). */
@@ -29,13 +32,22 @@ export class Entrees {
   /** Capture la souris sur l'élément (le curseur disparaît, ses mouvements tournent la caméra). */
   capturerSouris(element: HTMLElement): void {
     if (this.sourisCapturee) return;
-    try {
-      // Navigateurs récents : une promesse, refusée si le geste de l'utilisateur manque
-      const resultat = element.requestPointerLock() as unknown;
-      if (resultat instanceof Promise) resultat.catch(() => {});
-    } catch {
-      // Capture refusée : la caméra garde son orientation
-    }
+    // Mouvement brut de la souris (sans l'accélération du système) : évite aussi les sauts
+    // de caméra de Chrome sous Windows ; repli sur la capture simple s'il n'est pas proposé
+    const capturer = (options?: { unadjustedMovement: boolean }) => {
+      try {
+        // Navigateurs récents : une promesse, refusée si le geste de l'utilisateur manque
+        const resultat = (element.requestPointerLock as (o?: object) => unknown).call(element, options);
+        return resultat instanceof Promise ? resultat : Promise.resolve();
+      } catch (erreur) {
+        return Promise.reject(erreur);
+      }
+    };
+    capturer({ unadjustedMovement: true })
+      .catch((erreur: unknown) => (erreur as Error | null)?.name === 'NotSupportedError' ? capturer() : undefined)
+      .catch(() => {
+        // Capture refusée : la caméra garde son orientation
+      });
   }
 
   libererSouris(): void {
@@ -82,6 +94,12 @@ export class Entrees {
 
   private readonly surSouris = (e: MouseEvent): void => {
     if (!this.sourisCapturee) return;
+    // Sauts aberrants (curseur qui « rebondit » au bord de la fenêtre) : ignorés
+    const saut = CONFIG.camera.sautSourisMax;
+    if (this.ignorerProchainMouvement || Math.abs(e.movementX) > saut || Math.abs(e.movementY) > saut) {
+      this.ignorerProchainMouvement = false;
+      return;
+    }
     this.sourisX += e.movementX;
     this.sourisY += e.movementY;
   };

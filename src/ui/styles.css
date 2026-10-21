@@ -191,21 +191,26 @@ img { image-rendering: pixelated; }
 .rarete-soin { color: var(--mc-or); }
 
 /* --- Écran de chargement ------------------------------------------------- */
-/* La scène « La pause des mobs » derrière le logo (fond de terre tant qu'elle n'est pas prête) */
+/* Logo, la map de la partie qui apparaît chunk par chunk, puis l'étape et la barre */
 #chargement {
-  position: fixed; inset: 0; z-index: 20; overflow: hidden;
-  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
-  padding: 7vh 16px 6vh;
+  position: fixed; inset: 0; z-index: 20;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+  padding: 16px;
 }
-.chargement-scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; animation: apparition 0.4s ease-out; }
-@keyframes apparition { from { opacity: 0; } }
-/* Bords assombris autour du feu (un flou d'arrière-plan en CSS coûterait trop cher pendant le chargement) */
-.chargement-vignette { position: absolute; inset: 0; pointer-events: none; display: none; background: radial-gradient(ellipse 75% 70% at 50% 58%, transparent 45%, rgba(8, 4, 18, 0.7) 100%); }
-#chargement.avec-scene .chargement-vignette { display: block; }
-.chargement-titre, .chargement-bas { position: relative; }
-.chargement-bas { display: flex; flex-direction: column; align-items: center; gap: 10px; width: min(480px, 80vw); }
-.chargement-cadre { width: 100%; height: 4px; background: rgba(0, 0, 0, 0.45); }
-#chargement-barre { height: 100%; width: 0; background: #fff; transition: width 0.15s linear; }
+.chargement-titre { font-size: 48px; line-height: 56px; }
+#chargement-carte {
+  width: min(60vh, 80vw); height: auto; max-height: 60vh; object-fit: contain;
+  image-rendering: pixelated;
+  box-shadow: 0 0 0 2px #000, 0 6px 18px rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.25);
+}
+.chargement-bas { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.chargement-cadre {
+  width: min(400px, 80vw); height: 12px;
+  border: 2px solid #000;
+  background: #555;
+}
+#chargement-barre { height: 100%; width: 0; background: var(--mc-vert); transition: width 0.15s linear; }
 #chargement.erreur #chargement-texte { color: var(--mc-rouge); }
 
 /* --- Menu principal ------------------------------------------------------- */

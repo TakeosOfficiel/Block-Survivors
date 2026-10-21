@@ -5,6 +5,18 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.31.0] — 2026-10-21
+
+### Changements
+- **Nouvel écran de chargement façon Minecraft** : la vraie map de la partie apparaît vue de dessus, chunk par chunk, en partant du point de départ (marqué par la tête de ton héros) à mesure que la barre avance. Chaque chunk qui arrive s'allume d'un bref éclair.
+  - Les couleurs sont celles des vrais blocs de la map (moyenne de leur texture), avec le relief ombré comme sur une carte de Minecraft.
+  - Marche sur les arènes du jeu comme sur les maps importées (on voit toute la construction, décor compris).
+  - L'écran ne dessine que quand la barre avance : il ne ralentit plus le chargement et ne peut pas saccader.
+- La scène 3D du feu de camp est retirée.
+
+### Corrections
+- **Vue F5 (3e personne)** : la caméra ne saute plus brusquement quand on bouge la souris. Le jeu lit maintenant le mouvement brut de la souris et ignore les faux sauts du curseur que Chrome produit parfois sous Windows.
+
 ## [0.30.1] — 2026-10-21
 
 ### Corrections

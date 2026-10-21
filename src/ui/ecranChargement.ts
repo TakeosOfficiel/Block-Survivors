@@ -1,19 +1,20 @@
 /**
- * Écran de chargement : la scène « La pause des mobs » derrière le logo (fond
- * de terre si elle est indisponible), une phrase des mobs et une barre de
- * progression. Une seule barre pour tout le chargement : planifier() annonce
- * le nombre d'étapes, chacune en remplit une part égale, et la barre ne
- * recule jamais ; la phrase suit l'avancement (une par cinquième de la barre).
+ * Écran de chargement façon Minecraft : fond de terre assombri, la vraie map
+ * de la partie qui apparaît chunk par chunk (voir carteChargement.ts), l'étape
+ * en cours et une barre de progression. Une seule barre pour tout le
+ * chargement : planifier() annonce le nombre d'étapes, chacune en remplit une
+ * part égale, et la barre ne recule jamais ; seul le libellé change.
  */
-import { PHRASES_FEU_DE_CAMP } from '../donnees/feuDeCamp';
+import type { VueDessus } from '../monde/vueDessus';
+import { CarteChargement } from './carteChargement';
 import { element } from './dom';
-import type { SceneChargement } from './sceneChargement';
 
 export class EcranChargement {
   private readonly racine = element('chargement');
   private readonly texte = element('chargement-texte');
   private readonly barre = element('chargement-barre');
-  private scene: SceneChargement | null = null;
+  private readonly carte = new CarteChargement();
+  private libelle = 'Chargement…';
   private etapes = 1;
   private index = -1;
   /** Part déjà remplie (0 à 1). */
@@ -32,17 +33,9 @@ export class EcranChargement {
     this.barre.style.width = '0%';
   }
 
-  /** Branche la scène 3D (elle arrive après le premier affichage, une fois ses textures chargées). */
-  brancher(scene: SceneChargement): void {
-    this.scene = scene;
-    scene.definirProgression(this.rempli);
-    if (!this.racine.classList.contains('cache')) scene.demarrer();
-    this.racine.classList.add('avec-scene');
-  }
-
-  /** Étape suivante : la barre continue depuis où elle en est (le vrai libellé reste lisible dans data-etape). */
+  /** Étape suivante : nouveau libellé, la barre continue depuis où elle en est. */
   etape(libelle: string): void {
-    this.racine.dataset.etape = libelle;
+    this.libelle = libelle;
     this.index = Math.min(this.index + 1, this.etapes - 1);
     this.remplir(this.index / this.etapes);
   }
@@ -52,6 +45,16 @@ export class EcranChargement {
     this.remplir((Math.max(0, this.index) + ratio) / this.etapes);
   }
 
+  /** Taille de la map de la partie connue : sa grille de chunks s'affiche, encore sombre. */
+  annoncerCarte(largeur: number, profondeur: number): void {
+    this.carte.annoncer(largeur, profondeur);
+  }
+
+  /** La map vue de dessus est prête : ses chunks s'allument avec la suite du chargement. */
+  montrerCarte(vue: VueDessus, tete: CanvasImageSource | null): void {
+    this.carte.montrer(vue, this.rempli, tete);
+  }
+
   erreur(message: string): void {
     this.texte.textContent = message;
     this.racine.classList.add('erreur');
@@ -59,20 +62,18 @@ export class EcranChargement {
 
   afficher(): void {
     this.racine.classList.remove('cache');
-    this.scene?.demarrer();
   }
 
   masquer(): void {
     this.racine.classList.add('cache');
-    this.scene?.arreter();
+    this.carte.cacher();
   }
 
   private remplir(part: number): void {
     this.rempli = Math.max(this.rempli, Math.min(1, part));
-    this.scene?.definirProgression(this.rempli);
+    this.carte.progression(this.rempli);
     const pourcent = Math.round(this.rempli * 100);
-    const phrase = PHRASES_FEU_DE_CAMP[Math.min(PHRASES_FEU_DE_CAMP.length - 1, Math.floor(this.rempli * PHRASES_FEU_DE_CAMP.length))];
-    this.texte.textContent = `${phrase} ${pourcent} %`;
+    this.texte.textContent = `${this.libelle} ${pourcent} %`;
     this.barre.style.width = `${pourcent}%`;
   }
 }

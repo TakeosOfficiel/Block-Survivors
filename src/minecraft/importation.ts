@@ -12,14 +12,19 @@ import type { BibliothequeTextures } from '../assets/textures';
 import type { DefinitionArene } from '../donnees/types';
 import { BLOQUE_MARCHE, BLOQUE_TIR, CarteMonde } from '../monde/carte';
 import type { MondeGenere } from '../monde/generation';
+import { colorierVue, couleurMoyenne, teinter, type VueDessus } from '../monde/vueDessus';
 import { Atlas, construireMaillage } from './maillage';
-import { BibliothequeModeles } from './modeles';
-import { physiqueDe, type Physique } from './proprietes';
+import { BibliothequeModeles, TEXTURE_EAU, TEXTURE_LAVE, type BlocCuit } from './modeles';
+import { physiqueDe, teinteDe, type Physique } from './proprietes';
 import { lireSchematique, type Schematique } from './schematique';
 
 export interface SuiviImportation {
   etape(texte: string): void;
   progression(faites: number, total: number): void;
+  /** Taille de toute la map, dès qu'elle est lue. */
+  dimensions?(largeur: number, profondeur: number): void;
+  /** Vue de dessus de toute la map, dès que ses textures sont chargées. */
+  vue?(vue: VueDessus): void;
 }
 
 export interface AreneImportee {
@@ -38,6 +43,7 @@ export async function importerArene(
   suivi.etape('Lecture de la map Minecraft…');
   const reponse = await fetch(definition.source.fichier);
   const schem = await lireSchematique(await reponse.arrayBuffer());
+  suivi.dimensions?.(schem.largeur, schem.profondeur);
 
   suivi.etape('Chargement des modèles de blocs…');
   const blocs = await new BibliothequeModeles().cuire(schem.palette);
@@ -48,6 +54,7 @@ export async function importerArene(
 
   suivi.etape('Chargement des textures de la map…');
   await textures.charger(BibliothequeModeles.textures(blocs), (faites, total) => suivi.progression(faites, total));
+  suivi.vue?.(vueDessusSchematique(schem, blocs, textures, { x: zone.departX, z: zone.departZ }));
   suivi.etape('Construction de la map…');
   await new Promise((resoudre) => requestAnimationFrame(resoudre));
   const atlas = new Atlas(BibliothequeModeles.textures(blocs), textures);
@@ -69,6 +76,44 @@ export async function importerArene(
   const inconnus = blocs.filter((b) => b.inconnu).map((b) => b.etat);
   if (inconnus.length > 0) console.warn('Blocs Minecraft sans modèle :', inconnus);
   return { arene, monde: { blocs: new Map(), carte, decor }, inconnus };
+}
+
+// --- Vue de dessus ------------------------------------------------------------------
+
+/** Toute la map vue de dessus : la couleur du bloc visible le plus haut de chaque colonne. */
+function vueDessusSchematique(
+  schem: Schematique,
+  blocs: readonly BlocCuit[],
+  textures: BibliothequeTextures,
+  depart: { readonly x: number; readonly z: number },
+): VueDessus {
+  const { largeur: L, hauteur: H, profondeur: P } = schem;
+  // Couleur de chaque état de la palette (−1 : rien à voir de dessus, comme l'air)
+  const couleurPalette = blocs.map((bloc) => {
+    if (bloc.liquide === 'eau') return teinter(couleurMoyenne(textures, TEXTURE_EAU) ?? 0xffffff, teinteDe('water'));
+    if (bloc.liquide === 'lave') return couleurMoyenne(textures, TEXTURE_LAVE) ?? 0xd96415;
+    const quads = bloc.parties.flatMap((partie) => partie[0]?.modele.quads ?? []);
+    if (quads.length === 0) return -1;
+    // La face tournée vers le haut la plus haute, sinon n'importe laquelle (plantes en croix)
+    let quad = quads[0];
+    for (const q of quads) if (q.normale[1] > 0.5 && (quad.normale[1] <= 0.5 || q.positions[1] > quad.positions[1])) quad = q;
+    const moyenne = couleurMoyenne(textures, quad.texture) ?? 0x7f7f7f;
+    return quad.teinte ? teinter(moyenne, teinteDe(bloc.nom)) : moyenne;
+  });
+  const couleur = new Int32Array(L * P).fill(-1);
+  const hauteur = new Float32Array(L * P);
+  for (let z = 0; z < P; z++) {
+    for (let x = 0; x < L; x++) {
+      for (let y = H - 1; y >= 0; y--) {
+        const c = couleurPalette[schem.blocs[(y * P + z) * L + x]];
+        if (c < 0) continue;
+        couleur[z * L + x] = c;
+        hauteur[z * L + x] = y;
+        break;
+      }
+    }
+  }
+  return { largeur: L, profondeur: P, couleurs: colorierVue(L, P, couleur, hauteur), depart };
 }
 
 // --- Zone jouable -------------------------------------------------------------------

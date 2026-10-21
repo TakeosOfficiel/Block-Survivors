@@ -5,6 +5,11 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.35.2] — 2026-10-21
+
+### Corrections
+- **Retour des losanges** sur le cadre de l'écran de chargement, mais refaits proprement : pixels tous de la même taille, émeraude plus grande dans un bord d'or en relief, et centrés exactement en hauteur sur le liseré (aux angles) et sur le milieu de la barre (aux deux bouts). Le remplissage de la barre part maintenant de la pointe des losanges.
+
 ## [0.35.1] — 2026-10-21
 
 ### Corrections

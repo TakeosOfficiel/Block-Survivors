@@ -1,11 +1,12 @@
 /**
  * Ornements de l'écran de chargement, dessinés en pixel art au lancement :
- * une plaque d'or carrée avec une émeraude sertie au centre (coins du cadre,
- * bouts de la barre). Elle est affichée exactement 3 fois plus grande, comme
- * le liseré du cadre (3 pixels par trait) : tous les pixels ont la même taille.
+ * un losange d'or avec une émeraude sertie au centre (coins du cadre, bouts
+ * de la barre). Il est affiché exactement 3 fois plus grand, comme le liseré
+ * du cadre (3 pixels par trait) : tous les pixels ont la même taille, et sa
+ * rangée du milieu recouvre exactement le trait d'or.
  */
 
-/** Côté de la plaque, en pixels du dessin (impair : un trait de 1 pixel passe par sa rangée du milieu). */
+/** Côté du losange, en pixels du dessin (impair : un trait de 1 pixel passe par sa rangée du milieu). */
 export const COTE_PLAQUE = 13;
 
 /** Couleurs de l'or et de l'émeraude. */
@@ -20,33 +21,26 @@ const COULEURS = {
 } as const;
 
 /**
- * Couleur du pixel (x, y) de la plaque, par anneaux depuis le bord : contour
- * sombre (coins arrondis), biseau éclairé en haut à gauche, or, sertissure
- * sombre, puis l'émeraude au centre (reflet en haut à gauche, ombre en bas à droite).
+ * Couleur du pixel (x, y) du losange, par anneaux depuis le bord (distance
+ * « en losange » au centre) : contour sombre, biseau éclairé en haut à
+ * gauche, or, puis l'émeraude au centre (reflet en haut à
+ * gauche, ombre en bas à droite). Hors du losange : transparent.
  */
 function pixelPlaque(x: number, y: number): string | null {
-  const n = COTE_PLAQUE - 1;
-  const anneau = Math.min(x, y, n - x, n - y);
-  if (anneau === 0) {
-    const coin = (x === 0 || x === n) && (y === 0 || y === n);
-    return coin ? null : COULEURS.contour;
-  }
-  if (anneau === 1) {
-    const hautGauche = x === 1 || y === 1;
-    const basDroite = x === n - 1 || y === n - 1;
-    if (hautGauche && basDroite) return COULEURS.or;   // coins du biseau
-    return hautGauche ? COULEURS.orClair : COULEURS.orSombre;
-  }
+  const c = (COTE_PLAQUE - 1) / 2;
+  const anneau = c - (Math.abs(x - c) + Math.abs(y - c));
+  if (anneau < 0) return null;
+  const hautGauche = x + y < 2 * c;   // au-dessus de la diagonale qui monte vers la droite
+  if (anneau === 0) return COULEURS.contour;
+  if (anneau === 1) return hautGauche ? COULEURS.orClair : COULEURS.orSombre;
   if (anneau === 2) return COULEURS.or;
-  if (anneau === 3) return COULEURS.contour;
-  // Émeraude (5 x 5)
-  const u = x - 4, v = y - 4;
-  if (u + v <= 1) return COULEURS.reflet;
-  if (u === 4 || v === 4) return COULEURS.emeraudeSombre;
-  return COULEURS.emeraude;
+  // Émeraude (losange de 7 pixels de haut)
+  if (x === c - 1 && y === c - 1) return COULEURS.reflet;
+  if (x === c && y === c - 2) return COULEURS.reflet;
+  return hautGauche || (x + y === 2 * c && x < c) ? COULEURS.emeraude : COULEURS.emeraudeSombre;
 }
 
-/** La plaque, en image PNG (adresse data:) de COTE_PLAQUE pixels de côté. */
+/** Le losange, en image PNG (adresse data:) de COTE_PLAQUE pixels de côté. */
 export function dessinerPlaque(): string {
   const toile = document.createElement('canvas');
   toile.width = COTE_PLAQUE;

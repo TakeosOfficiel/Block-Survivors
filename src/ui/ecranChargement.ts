@@ -1,6 +1,6 @@
 /**
  * Écran de chargement en plein écran : la photo de l'arène (voir
- * assets/photosArenes.ts) dans un cadre doré à plaques serties d'émeraudes (ui/ornements.ts),
+ * assets/photosArenes.ts) dans un cadre doré à losanges sertis d'émeraudes (ui/ornements.ts),
  * le nom de l'arène, une astuce et la barre. Au lancement du jeu, seulement le
  * logo et la barre. Une seule barre pour tout le chargement : planifier() annonce le
  * nombre d'étapes, chacune en remplit une part égale, et la barre ne recule

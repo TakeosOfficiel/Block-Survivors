@@ -214,7 +214,7 @@ img { image-rendering: pixelated; }
     radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(6, 8, 12, 0.45) 100%);
 }
 /* Liseré doré tout autour de l'écran, bordé de sombre : trois traits de 3 px (sombre, or, sombre).
-   Les plaques (13 pixels de dessin × 3) sont centrées sur ses angles : leur rangée du milieu
+   Les losanges (13 pixels de dessin × 3) sont centrés sur ses angles : leur rangée du milieu
    [3 + 18, 3 + 21) recouvre exactement le trait d'or [21, 24) */
 .chargement-lisere {
   position: absolute; inset: 21px; pointer-events: none;
@@ -233,10 +233,11 @@ img { image-rendering: pixelated; }
 .chargement-bas { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; width: min(760px, 80vw); }
 #chargement-arene { font-size: 32px; line-height: 38px; color: #ffd75e; text-shadow: 3px 3px 0 #3f2f05; text-align: center; }
 #chargement-astuce { color: #d0d0d0; text-align: center; min-height: 20px; margin-bottom: 12px; }
-/* Barre dans le cadre doré (or 3 px, fond 3 px, remplissage 9 px : 21 px de haut), une plaque
-   à chaque bout centrée sur le trait d'or vertical ; remplissage émeraude */
+/* Barre dans le cadre doré (or 3 px, fond 3 px, remplissage 9 px : 21 px de haut), un losange
+   à chaque bout : sa rangée du milieu [−9 + 18, −9 + 21) = [9, 12) est le milieu de la barre,
+   sa colonne du milieu le trait d'or vertical ; le remplissage émeraude part de sa pointe */
 #chargement-cadre {
-  position: relative; width: 100%; height: 21px; padding: 3px;
+  position: relative; width: 100%; height: 21px; padding: 3px 18px;
   background: #0d0a05; border: 3px solid var(--or);
   box-shadow: 0 0 0 3px var(--or-contour), 0 6px 16px rgba(0, 0, 0, 0.6);
 }

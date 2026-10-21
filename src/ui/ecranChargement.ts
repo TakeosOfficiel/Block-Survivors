@@ -1,6 +1,6 @@
 /**
  * Écran de chargement en plein écran : la photo de l'arène (voir
- * assets/photosArenes.ts) dans un cadre doré à joyaux émeraude (ui/ornements.ts),
+ * assets/photosArenes.ts) dans un cadre doré à plaques serties d'émeraudes (ui/ornements.ts),
  * le nom de l'arène, une astuce et la barre. Au lancement du jeu, seulement le
  * logo et la barre. Une seule barre pour tout le chargement : planifier() annonce le
  * nombre d'étapes, chacune en remplit une part égale, et la barre ne recule
@@ -10,7 +10,7 @@ import { photoArene } from '../assets/photosArenes';
 import { ASTUCES } from '../donnees/astuces';
 import type { DefinitionArene } from '../donnees/types';
 import { element } from './dom';
-import { dessinerJoyau } from './ornements';
+import { dessinerPlaque } from './ornements';
 
 export class EcranChargement {
   private readonly racine = element('chargement');
@@ -28,7 +28,7 @@ export class EcranChargement {
   private areneVoulue = '';
 
   constructor() {
-    this.racine.style.setProperty('--joyau', `url("${dessinerJoyau()}")`);
+    this.racine.style.setProperty('--joyau', `url("${dessinerPlaque()}")`);
   }
 
   /** L'arène de la partie qui se charge : sa photo en plein écran, son nom et une astuce. */

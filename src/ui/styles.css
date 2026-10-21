@@ -213,37 +213,39 @@ img { image-rendering: pixelated; }
     linear-gradient(to bottom, rgba(6, 8, 12, 0.55) 0%, rgba(6, 8, 12, 0) 20%),
     radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(6, 8, 12, 0.45) 100%);
 }
-/* Liseré doré tout autour de l'écran, bordé de sombre */
+/* Liseré doré tout autour de l'écran, bordé de sombre : trois traits de 3 px (sombre, or, sombre).
+   Les plaques (13 pixels de dessin × 3) sont centrées sur ses angles : leur rangée du milieu
+   [3 + 18, 3 + 21) recouvre exactement le trait d'or [21, 24) */
 .chargement-lisere {
-  position: absolute; inset: 20px; pointer-events: none;
+  position: absolute; inset: 21px; pointer-events: none;
   border: 3px solid var(--or);
-  box-shadow: 0 0 0 3px var(--or-contour), inset 0 0 0 3px var(--or-contour), inset 0 0 0 5px rgba(255, 229, 138, 0.35);
+  box-shadow: 0 0 0 3px var(--or-contour), inset 0 0 0 3px var(--or-contour);
 }
 .chargement-joyau {
-  position: absolute; width: 42px; height: 42px; pointer-events: none;
-  background: var(--joyau) center / 100% 100% no-repeat; image-rendering: pixelated;
+  position: absolute; width: 39px; height: 39px; pointer-events: none;
+  background: var(--joyau) 0 0 / 39px 39px no-repeat; image-rendering: pixelated;
 }
-.chargement-joyau.hg { left: 0; top: 0; }
-.chargement-joyau.hd { right: 0; top: 0; }
-.chargement-joyau.bg { left: 0; bottom: 0; }
-.chargement-joyau.bd { right: 0; bottom: 0; }
+.chargement-joyau.hg { left: 3px; top: 3px; }
+.chargement-joyau.hd { right: 3px; top: 3px; }
+.chargement-joyau.bg { left: 3px; bottom: 3px; }
+.chargement-joyau.bd { right: 3px; bottom: 3px; }
 .chargement-titre { position: relative; font-size: 40px; line-height: 48px; }
 .chargement-bas { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; width: min(760px, 80vw); }
 #chargement-arene { font-size: 32px; line-height: 38px; color: #ffd75e; text-shadow: 3px 3px 0 #3f2f05; text-align: center; }
-#chargement-astuce { color: #d0d0d0; text-align: center; min-height: 20px; margin-bottom: 8px; }
-/* Barre dans le cadre doré, un joyau à chaque bout ; remplissage émeraude */
+#chargement-astuce { color: #d0d0d0; text-align: center; min-height: 20px; margin-bottom: 12px; }
+/* Barre dans le cadre doré (or 3 px, fond 3 px, remplissage 9 px : 21 px de haut), une plaque
+   à chaque bout centrée sur le trait d'or vertical ; remplissage émeraude */
 #chargement-cadre {
-  position: relative; width: 100%; height: 18px; padding: 3px;
+  position: relative; width: 100%; height: 21px; padding: 3px;
   background: #0d0a05; border: 3px solid var(--or);
-  box-shadow: 0 0 0 3px var(--or-contour), inset 0 0 0 1px var(--or-contour), 0 6px 16px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 0 3px var(--or-contour), 0 6px 16px rgba(0, 0, 0, 0.6);
 }
-#chargement-cadre .chargement-joyau { width: 36px; height: 36px; top: 50%; transform: translateY(-50%); }
-#chargement-cadre .gauche { left: -24px; }
-#chargement-cadre .droite { right: -24px; }
+#chargement-cadre .chargement-joyau { top: -9px; }
+#chargement-cadre .gauche { left: -18px; }
+#chargement-cadre .droite { right: -18px; }
 #chargement-barre {
   height: 100%; width: 0; transition: width 0.15s linear;
-  background: linear-gradient(to bottom, #b4ffd0 0%, #b4ffd0 18%, #17dd62 19%, #0fb24e 70%, #0a8a3a 100%);
-  box-shadow: 0 0 10px rgba(23, 221, 98, 0.55);
+  background: linear-gradient(to bottom, #b4ffd0 0 3px, #17dd62 3px 6px, #0a8a3a 6px 9px);
 }
 #chargement-texte { color: #a8a8a8; }
 #chargement.erreur #chargement-texte { color: var(--mc-rouge); }

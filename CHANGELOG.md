@@ -5,6 +5,11 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.35.1] — 2026-10-21
+
+### Corrections
+- **Cadre de l'écran de chargement refait** : les losanges des coins et de la barre étaient mal dessinés (pixels de tailles inégales, bords en escalier, mal placés sur les traits). Ils sont remplacés par des plaques d'or carrées avec une émeraude sertie, dessinées au pixel près et centrées exactement sur les angles du liseré et sur les bouts de la barre.
+
 ## [0.35.0] — 2026-10-21
 
 ### Changements

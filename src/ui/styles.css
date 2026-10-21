@@ -236,9 +236,10 @@ img { image-rendering: pixelated; }
 /* Barre dans le cadre doré (or 3 px, fond 3 px, remplissage 9 px : 21 px de haut), un losange
    à chaque bout. Les losanges se placent depuis l'intérieur de la bordure (3 px) : top −12 px
    met leur rangée du milieu sur [9, 12), le milieu de la barre ; left/right −21 px leur colonne
-   du milieu sur le trait d'or vertical. Le remplissage émeraude part de leur pointe */
+   du milieu sur le trait d'or vertical. Le remplissage émeraude occupe toute la largeur et
+   passe sous les losanges (dessinés après lui) */
 #chargement-cadre {
-  position: relative; width: 100%; height: 21px; padding: 3px 18px;
+  position: relative; width: 100%; height: 21px; padding: 3px 0;
   background: #0d0a05; border: 3px solid var(--or);
   box-shadow: 0 0 0 3px var(--or-contour), 0 6px 16px rgba(0, 0, 0, 0.6);
 }

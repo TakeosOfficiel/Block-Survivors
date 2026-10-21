@@ -29,9 +29,13 @@ jobs:
       - run: npm ci
       - run: npm run build
       # Sous Windows, l'icône et les métadonnées peuvent être écrites dans l'exe
-      # latest.yml et le .blockmap servent aux mises à jour automatiques du jeu installé
+      # latest.yml et le .blockmap servent aux mises à jour automatiques du jeu installé.
+      # socle.json : empreinte de tout ce qui n'est pas la page du jeu ; tant
+      # qu'elle ne change pas, le jeu installé ne télécharge que la page (jeu.json)
+      - run: node scripts/socle.mjs --ecrire
       - run: npx electron-builder --win nsis --publish never --config.win.signAndEditExecutable=true
         shell: bash
+      - run: node scripts/socle.mjs --page release
       - uses: actions/upload-artifact@v4
         with:
           name: BlockSurvivors
@@ -39,6 +43,8 @@ jobs:
             release/BlockSurvivors-Setup-*.exe
             release/BlockSurvivors-Setup-*.exe.blockmap
             release/latest.yml
+            release/jeu-*.html
+            release/jeu.json
       - name: Publier la release de la version et « derniere-version »
         shell: bash
         env:
@@ -69,8 +75,10 @@ jobs:
             --notes-file notes.md
       # Dépôt public TakeosOfficiel/Block-Survivors-version : le code reste privé, mais
       # les joueurs doivent pouvoir télécharger le jeu. On y publie donc la release
-      # « vX.Y.Z » avec l'installateur, son .blockmap et latest.yml : le jeu installé
-      # lit latest.yml de la dernière release pour se mettre à jour tout seul.
+      # « vX.Y.Z » avec l'installateur, son .blockmap et latest.yml, plus la page du
+      # jeu seule et jeu.json : le jeu installé lit jeu.json de la dernière release et
+      # ne télécharge que la page quand Electron n'a pas changé, sinon latest.yml et
+      # l'installateur complet.
       # Puis version.json, que lisent les anciens exe portables et la version
       # navigateur (l'installateur d'abord : on n'annonce pas une version qu'on ne
       # peut pas encore télécharger).
@@ -92,6 +100,8 @@ jobs:
             "release/BlockSurvivors-Setup-$VERSION.exe" \
             "release/BlockSurvivors-Setup-$VERSION.exe.blockmap" \
             release/latest.yml \
+            "release/jeu-$VERSION.html" \
+            release/jeu.json \
             --repo "$DEPOT" \
             --title "Block Survivors $VERSION" \
             --notes-file notes-publiques.md \

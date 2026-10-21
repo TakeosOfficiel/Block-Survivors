@@ -5,6 +5,12 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.36.0] — 2026-10-21
+
+### Changements
+- **Mises à jour éclair** : le jeu entier tient dans une seule page de quelques Mo, mais chaque mise à jour réinstallait toute l'application (plus de 300 Mo d'Electron, revérifiés par Windows). Désormais, quand seul le jeu a changé (presque toujours), le lanceur télécharge juste la nouvelle page, vérifie son empreinte et ouvre le jeu directement dessus : quelques secondes au lieu d'une réinstallation. L'installateur complet ne sert plus que quand Electron lui-même change. Les sauvegardes ne bougent pas. Cette version-ci s'installe encore à l'ancienne ; les suivantes profiteront du nouveau système.
+- **Barre de chargement** : le remplissage vert passe maintenant derrière les losanges et ressort de leur pointe.
+
 ## [0.35.3] — 2026-10-21
 
 ### Corrections

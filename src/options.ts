@@ -22,8 +22,8 @@ export interface Options {
   vue: ModeVue;
 }
 
-export type ModeVue = 'dessus' | 'troisieme' | 'premiere';
-export const MODES_VUE: readonly ModeVue[] = ['dessus', 'troisieme', 'premiere'];
+export type ModeVue = 'dessus' | 'troisieme';
+export const MODES_VUE: readonly ModeVue[] = ['dessus', 'troisieme'];
 
 export type NiveauShaders = 'aucun' | 'legers' | 'complets';
 export const NIVEAUX_SHADERS: readonly NiveauShaders[] = ['aucun', 'legers', 'complets'];

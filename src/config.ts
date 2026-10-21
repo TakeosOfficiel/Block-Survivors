@@ -70,7 +70,7 @@ export const CONFIG = {
     lissageZoom: 12,         // raideur du zoom (1/s)
     // Secousse (explosions, coups, boss) : décalage ∝ intensité², intensité décroissante
     secousse: { amplitude: 0.55, decroissance: 2.2, frequence: 31 },
-    // Vues à la souris (touche F5) : la souris tourne la caméra, ZQSD suit son orientation
+    // Vue à la 3e personne (touche F5) : la souris tourne la caméra, ZQSD suit son orientation
     sensibiliteSouris: 0.0024,  // rad par pixel
     // 3e personne façon WoW : assez loin et en hauteur au départ ; la molette
     // rapproche jusque dans le dos du joueur ou éloigne pour voir la mêlée
@@ -84,12 +84,6 @@ export const CONFIG = {
       tangageMin: 0,
       tangageMax: 80,
       suivi: 30,
-    },
-    premiere: {
-      fov: 75,
-      yeux: 0.9,               // hauteur des yeux, en part de la taille du personnage
-      tangageMin: -85,
-      tangageMax: 85,
     },
   },
 
@@ -172,6 +166,8 @@ export const CONFIG = {
       // ralenti, espacement des racines, demi-largeur, période des ralentissements)
       provocationAlpha: 2.5,
       haie: { distance: 8, ralenti: 0.4, espacement: 0.7, largeur: 0.9, periode: 0.5, racinesMax: 48 },
+      // Un allié tué ne revient qu'après `rappel` recharges de son arme (sa place reste vide d'ici là)
+      rappel: 1.5, rappelsMax: 16,
       // Les alliés qui bougent s'écartent les uns des autres (et du joueur) : passes de résolution, marge (blocs)
       separation: { passes: 3, marge: 0.1, rayonJoueur: 0.45 },
     },
@@ -189,8 +185,15 @@ export const CONFIG = {
     // Heurt de bouclier : marge de recherche de cible et portée du renvoi des projectiles (blocs)
     heurt: { marge: 1.2, porteeRenvoi: 1.5 },
     // Tornade de feu : cubes par colonne, rotation (rad/s), hauteur (blocs), recherche de cible (blocs)
+    // Tornade de feu en entonnoir : sa silhouette est faite de rubans en spirale (`exterieurs` autour,
+    // `interieurs` au cœur, plus serrés et plus rapides) texturés de feu animé, de `segments` points sur
+    // `tours` tours ; la bande s'épaissit de `bande[0]` à `bande[1]` blocs vers le haut, le haut ondule
+    // (`oscillation`, part de la largeur). Débris arrachés et dalles de sol brûlé ; les particules
+    // ne font que l'habiller. Elle pousse du sol en `apparition` s et s'effondre en `effondrement` s.
     tornade: {
-      capacite: 6, cubes: 14, portee: 10, recherche: 8, rotation: 7, hauteur: 2.6, periodeBraises: 0.12, imagesParSeconde: 2.5,
+      capacite: 6, portee: 10, recherche: 8, rotation: 7, hauteur: 3.6, periodeBraises: 0.12, imagesParSeconde: 2.5,
+      exterieurs: 4, interieurs: 2, segments: 40, tours: 1.25, pasU: 0.3, bande: [0.42, 0.9], debris: 8, dalles: 10,
+      oscillation: 0.3, imagesFeu: 16, apparition: 0.35, effondrement: 0.55,
       // Tempête de feu : zone en plus (part), durée en plus (s), marge de détection du météore (blocs)
       magma: { zone: 0.5, duree: 2, marge: 0.5 },
     },

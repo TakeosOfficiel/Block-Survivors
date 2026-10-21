@@ -161,6 +161,16 @@ const gerbes = {
     { particule: 'flamme', nombre: 2, vitesse: 1.5, dispersion: 0.5, montee: 2.5 },
     { particule: 'fumee', nombre: 1, vitesse: 0.6, dispersion: 0.4, montee: 1.5 },
   ],
+  // Braises arrachées au bord de la tornade
+  braisesTornade: [
+    { particule: 'flamme', nombre: 1, vitesse: 1.2, dispersion: 0.1, montee: 1.5 },
+    { particule: 'etincelleFusee', nombre: 1, vitesse: 2, dispersion: 0.1, montee: 2 },
+  ],
+  // Effondrement de la tornade : nuage de fumée et dernières flammes
+  finTornade: [
+    { particule: 'fumee', nombre: 12, vitesse: 2.5, dispersion: 0.8, montee: 1.2 },
+    { particule: 'flamme', nombre: 8, vitesse: 3, dispersion: 0.6, montee: 1.5 },
+  ],
   gel: [
     { particule: 'morceau', nombre: 3, vitesse: 3, dispersion: 0.2, montee: 2.5 },
     { particule: 'effetLenteur', nombre: 1, vitesse: 1, dispersion: 0.3, montee: 0.6 },

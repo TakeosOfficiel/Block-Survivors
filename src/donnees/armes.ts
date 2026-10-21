@@ -236,7 +236,10 @@ const definitions = {
     description: 'Une colonne de braises tourbillonne vers les ennemis et les aspire.',
     icone: 'item/blaze_powder',
     famille: 'feu',
-    mecanique: { type: 'tornade', texture: 'block/magma', vitesse: 3.5, intervalle: 0.4 },
+    mecanique: {
+      type: 'tornade', texture: 'block/magma', feu: 'block/fire_0',
+      debris: 'block/coarse_dirt', sol: 'block/blackstone_top', vitesse: 3.5, intervalle: 0.4,
+    },
     stats: { ...BASE, degats: 6, cadence: 8, duree: 4, zone: 1.5, recul: -2 },
     niveaux: [
       { description: 'La tornade dure 2 s de plus', modif: { duree: 2 } },

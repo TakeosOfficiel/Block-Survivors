@@ -21,7 +21,7 @@ export class Entrees {
     document.addEventListener('mousemove', this.surSouris);
   }
 
-  /** Vrai si la souris est capturée (vues à la 1re et à la 3e personne). */
+  /** Vrai si la souris est capturée (vue à la 3e personne). */
   get sourisCapturee(): boolean {
     return document.pointerLockElement !== null;
   }

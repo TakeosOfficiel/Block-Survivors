@@ -16,7 +16,6 @@ const LIBELLES_CATEGORIES: Readonly<Record<CategorieSon, string>> = {
 const LIBELLES_VUES: Readonly<Record<ModeVue, string>> = {
   dessus: 'DE DESSUS',
   troisieme: '3E PERSONNE',
-  premiere: '1RE PERSONNE',
 };
 
 /** Passe à la vue suivante (bouton des options et touche F5). */

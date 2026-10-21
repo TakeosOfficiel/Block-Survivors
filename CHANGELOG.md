@@ -5,6 +5,21 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.24.0] — 2026-10-21
+
+### Nouveautés
+- **Tornade de feu refaite en volume**, façon Minecraft Dungeons :
+  - sa forme est un vrai entonnoir de rubans en spirale, recouverts du feu animé du jeu ; elle se reconnaît même sans aucune particule ;
+  - la base est étroite et le haut large ; les rubans du cœur tournent plus vite ; le sommet ondule en retard sur la base ;
+  - des mottes de terre sont arrachées du sol et montent en spirale, un anneau de dalles noircies brûle sous elle ;
+  - flammes, braises et fumée l'habillent par-dessus ;
+  - elle pousse du sol à l'apparition et s'effondre dans un nuage de fumée à la fin ;
+  - après la Tempête de feu, c'est un entonnoir de magma.
+
+### Changements
+- La vue à la 1re personne est retirée : F5 alterne entre la vue de dessus et la 3e personne.
+- Invocations : un allié tué ne revient plus à la relance suivante. Sa place reste vide pendant 1,5 fois la recharge de son arme (environ 10 s pour un loup, 9 s pour un vex, 24 s pour un golem).
+
 ## [0.23.0] — 2026-10-21
 
 ### Nouveautés

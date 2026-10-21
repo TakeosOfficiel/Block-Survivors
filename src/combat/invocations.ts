@@ -97,6 +97,11 @@ export class Invocations implements SourceEntites {
   private readonly blocs: RenduBlocs = { cubes: new Map(), racines: new Map() };
   private readonly barres: BarresVie;
   private prochainId = 1;
+  /**
+   * Par type d'allié : instants (tempsJeu) où les places des alliés tués se
+   * libèrent ; tant qu'une place est en rappel, elle compte dans le quota.
+   */
+  private readonly rappels: Float64Array[] = IDS_ALLIES.map(() => new Float64Array(CONFIG.armes.invocations.rappelsMax));
   /** s avant le prochain ralentissement de la haie du Bosquet. */
   private minuterieHaie = 0;
 
@@ -150,7 +155,7 @@ export class Invocations implements SourceEntites {
     let nouveaux = 0;
     for (let k = 0; k < arme.stats.nombre; k++) {
       const quota = def.quota + this.contexte.talents.quotaAllie(def);
-      if (this.presents(indexType) < quota && this.creer(arme, indexType)) nouveaux++;
+      if (this.presents(indexType) + this.enRappel(indexType) < quota && this.creer(arme, indexType)) nouveaux++;
       else if (def.remplacement) this.replanter(indexType, arme.stats.duree);
       else this.renouveler(indexType, arme.stats.duree);
     }
@@ -165,6 +170,28 @@ export class Invocations implements SourceEntites {
       if (a.indexType === indexType && a.arme && a.pv > 0) n++;
     }
     return n;
+  }
+
+  /** Places de ce type encore en rappel (allié tué trop récemment). */
+  private enRappel(indexType: number): number {
+    const rappels = this.rappels[indexType];
+    const maintenant = this.contexte.etat.tempsJeu;
+    let n = 0;
+    for (let i = 0; i < rappels.length; i++) if (rappels[i] > maintenant) n++;
+    return n;
+  }
+
+  /** Bloque la place d'un allié tué pendant `rappel` recharges de son arme. */
+  private mettreEnRappel(a: Allie): void {
+    if (a.temporaire || !a.arme) return;
+    const rappels = this.rappels[a.indexType];
+    const maintenant = this.contexte.etat.tempsJeu;
+    for (let i = 0; i < rappels.length; i++) {
+      if (rappels[i] <= maintenant) {
+        rappels[i] = maintenant + a.arme.stats.cadence * CONFIG.armes.invocations.rappel;
+        return;
+      }
+    }
   }
 
   /** L'allié vivant de ce type qui a le moins de temps restant. */
@@ -565,6 +592,7 @@ export class Invocations implements SourceEntites {
     // Mort (0 PV) : un talent peut le ramener, sinon il disparaît au prochain pas (poof d'invocation)
     if (this.contexte.talents.surMortAllie(a)) return;
     retours.son(a.definition.sonMort);
+    this.mettreEnRappel(a);
     a.vie = 0;
   }
 

@@ -215,7 +215,7 @@ export class Jeu implements CallbacksBoucle, Retours {
       scene,
       textures,
     );
-    this.camera = new CameraJeu(rendu.camera, this.entrees, this.etat, this.joueur.hauteur);
+    this.camera = new CameraJeu(rendu.camera, this.entrees, this.etat);
 
     // Combat du joueur
     this.mecaniques = new Talents(this.etat);
@@ -293,8 +293,8 @@ export class Jeu implements CallbacksBoucle, Retours {
       e.preventDefault();
       if (!e.repeat) this.panneauOptions.modifier((o) => { o.compteurDegats = !o.compteurDegats; });
     });
-    // F5 : vue de dessus → 3e personne → 1re personne (comme en jeu) ; la touche est
-    // un geste de l'utilisateur, la souris peut être capturée tout de suite
+    // F5 : vue de dessus ↔ 3e personne ; la touche est un geste de l'utilisateur,
+    // la souris peut être capturée tout de suite
     window.addEventListener('keydown', (e) => {
       if (e.code !== 'F5') return;
       e.preventDefault();
@@ -303,7 +303,7 @@ export class Jeu implements CallbacksBoucle, Retours {
       if (this.camera.alaSouris && this.vueInteractive()) this.entrees.capturerSouris(this.toile);
       else this.entrees.libererSouris();
     });
-    // Vues à la souris : un clic dans le jeu capture la souris
+    // Vue à la 3e personne : un clic dans le jeu capture la souris
     window.addEventListener('click', () => {
       if (this.camera.alaSouris && this.vueInteractive()) this.entrees.capturerSouris(this.toile);
     });
@@ -372,7 +372,6 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.hud.afficherFps = options.afficherFps;
     this.camera.secoussesActives = options.secousses;
     if (options.vue !== this.camera.vue) this.camera.definirMode(options.vue);
-    this.joueur.masque = options.vue === 'premiere';
     this.chiffres.actif = options.chiffresDegats;
     this.compteurDegats.definir(options.compteurDegats);
     this.vegetation.definirShaders(options.shaders !== 'aucun');
@@ -494,7 +493,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     return !this.ecranCartes.ouvert && !this.ecranPause.active && !this.panneauOptions.ouvert && this.etat.issue === null;
   }
 
-  /** Vues à la souris : rend le curseur aux écrans, rappelle de cliquer sinon. */
+  /** Vue à la 3e personne : rend le curseur aux écrans, rappelle de cliquer sinon. */
   private majVueSouris(): void {
     const interactive = this.vueInteractive();
     if (!interactive) this.entrees.libererSouris();

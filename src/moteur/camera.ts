@@ -1,9 +1,9 @@
 /**
- * Caméra de jeu, trois vues (touche F5) :
+ * Caméra de jeu, deux vues (touche F5) :
  * - de dessus : inclinée, suit le joueur, zoom molette ;
- * - à la 3e personne : derrière le joueur, la souris capturée la fait tourner ;
- * - à la 1re personne : aux yeux du joueur, la souris oriente le regard.
- * Secousses dans toutes les vues.
+ * - à la 3e personne (façon WoW) : en hauteur derrière le joueur, la souris
+ *   capturée la fait tourner, la molette la rapproche ou l'éloigne.
+ * Secousses dans les deux vues.
  */
 import * as THREE from 'three';
 import { CONFIG } from '../config';
@@ -19,7 +19,6 @@ export class CameraJeu implements DetecteurVisibilite {
   private readonly camera: THREE.PerspectiveCamera;
   private readonly entrees: Entrees;
   private readonly etat: EtatPartie;
-  private readonly hauteurJoueur: number;
   private readonly sinInclinaison: number;
   private readonly cosInclinaison: number;
   private readonly champ = new THREE.Frustum();
@@ -43,11 +42,10 @@ export class CameraJeu implements DetecteurVisibilite {
   secoussesActives = true;
   distance: number = CONFIG.camera.distance;
 
-  constructor(camera: THREE.PerspectiveCamera, entrees: Entrees, etat: EtatPartie, hauteurJoueur: number) {
+  constructor(camera: THREE.PerspectiveCamera, entrees: Entrees, etat: EtatPartie) {
     this.camera = camera;
     this.entrees = entrees;
     this.etat = etat;
-    this.hauteurJoueur = hauteurJoueur;
 
     const inclinaison = (CONFIG.camera.inclinaisonDeg * Math.PI) / 180;
     this.sinInclinaison = Math.sin(inclinaison);
@@ -63,7 +61,7 @@ export class CameraJeu implements DetecteurVisibilite {
     return this.mode;
   }
 
-  /** Vrai pour les vues tournées à la souris (1re et 3e personne). */
+  /** Vrai pour la vue tournée à la souris (3e personne). */
   get alaSouris(): boolean {
     return this.mode !== 'dessus';
   }
@@ -80,8 +78,7 @@ export class CameraJeu implements DetecteurVisibilite {
     // En quittant la vue de dessus : on regarde dans le sens où marche le joueur
     if (ancien === 'dessus' && mode !== 'dessus') this.lacet = this.etat.joueur.angle + Math.PI;
     if (mode === 'troisieme') this.tangage = c.troisieme.tangage * DEG;
-    if (mode === 'premiere') this.tangage = 0;
-    this.camera.fov = mode === 'dessus' ? c.fov : mode === 'troisieme' ? c.troisieme.fov : c.premiere.fov;
+    this.camera.fov = mode === 'dessus' ? c.fov : c.troisieme.fov;
     this.camera.rotation.set(mode === 'dessus' ? -Math.asin(this.sinInclinaison) : -this.tangage, mode === 'dessus' ? 0 : this.lacet, 0);
     this.camera.updateProjectionMatrix();
     this.x = this.etat.joueur.x;
@@ -108,22 +105,16 @@ export class CameraJeu implements DetecteurVisibilite {
     } else {
       // La souris tourne la caméra même en pause : on peut regarder autour de soi
       this.lacet -= this.souris.x * c.sensibiliteSouris;
-      const v = this.mode === 'troisieme' ? c.troisieme : c.premiere;
+      const v = c.troisieme;
       this.tangage = borner(this.tangage + this.souris.y * c.sensibiliteSouris, v.tangageMin * DEG, v.tangageMax * DEG);
       this.camera.rotation.set(-this.tangage, this.lacet, 0);
-      if (this.mode === 'troisieme') {
-        if (molette !== 0) {
-          this.distanceTroisieme = borner(this.distanceTroisieme * Math.exp(molette * c.sensibiliteZoom), c.troisieme.distanceMin, c.troisieme.distanceMax);
-        }
-        const kSuivi = facteurLissage(c.troisieme.suivi, dtJeu);
-        this.x += (j.x - this.x) * kSuivi;
-        this.z += (j.z - this.z) * kSuivi;
-        this.distance += (this.distanceTroisieme - this.distance) * facteurLissage(c.lissageZoom, dtReel);
-      } else {
-        // Aux yeux : aucun retard
-        this.x = j.x;
-        this.z = j.z;
+      if (molette !== 0) {
+        this.distanceTroisieme = borner(this.distanceTroisieme * Math.exp(molette * c.sensibiliteZoom), v.distanceMin, v.distanceMax);
       }
+      const kSuivi = facteurLissage(v.suivi, dtJeu);
+      this.x += (j.x - this.x) * kSuivi;
+      this.z += (j.z - this.z) * kSuivi;
+      this.distance += (this.distanceTroisieme - this.distance) * facteurLissage(c.lissageZoom, dtReel);
     }
 
     // La secousse s'éteint en temps réel, mais reste figée pendant la pause
@@ -160,7 +151,7 @@ export class CameraJeu implements DetecteurVisibilite {
         CONFIG.camera.hauteurVisee + this.distance * this.sinInclinaison,
         this.z + decalageZ + this.distance * this.cosInclinaison,
       );
-    } else if (this.mode === 'troisieme') {
+    } else {
       // Derrière le point visé, à l'opposé du regard
       const horizontal = Math.cos(this.tangage) * this.distance;
       position.set(
@@ -168,8 +159,6 @@ export class CameraJeu implements DetecteurVisibilite {
         Math.max(0.3, CONFIG.camera.troisieme.hauteurVisee + Math.sin(this.tangage) * this.distance),
         this.z + Math.cos(this.lacet) * horizontal + decalageZ,
       );
-    } else {
-      position.set(this.x + decalageX * 0.3, this.hauteurJoueur * CONFIG.camera.premiere.yeux, this.z + decalageZ * 0.3);
     }
     this.camera.updateMatrixWorld();
     this.projection.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);

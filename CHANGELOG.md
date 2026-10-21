@@ -5,6 +5,13 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.29.0] — 2026-10-21
+
+### Changements
+- **Chargement des maps encore bien plus rapide** (mesuré au deuxième lancement : environ 10 s → 4 s sur la map importée, 7,5 s → 3,5 s sur la plaine) :
+  - les mobs, alliés et objets partagent maintenant leurs shaders : une quarantaine à préparer au lieu de plus de 300 ;
+  - la construction des maps Minecraft est environ quatre fois plus rapide.
+
 ## [0.28.0] — 2026-10-21
 
 ### Changements

@@ -130,13 +130,71 @@ function classer(pixels: ImageData): RenduTexture {
 
 // --- Maillage -----------------------------------------------------------------------
 
+/**
+ * Tableau de nombres qui s'agrandit tout seul (capacité doublée) : les sommets
+ * sont écrits directement dans le tableau typé envoyé à la carte graphique,
+ * sans passer par une liste JavaScript à convertir ensuite (bien plus lent).
+ */
+class Croissant<T extends Float32Array | Uint32Array> {
+  donnees: T;
+  longueur = 0;
+  private readonly creer: (taille: number) => T;
+
+  constructor(creer: (taille: number) => T) {
+    this.creer = creer;
+    this.donnees = creer(4096);
+  }
+
+  private reserver(n: number): void {
+    if (this.longueur + n <= this.donnees.length) return;
+    let taille = this.donnees.length * 2;
+    while (taille < this.longueur + n) taille *= 2;
+    const plus = this.creer(taille);
+    plus.set(this.donnees.subarray(0, this.longueur));
+    this.donnees = plus;
+  }
+
+  ajouter2(a: number, b: number): void {
+    this.reserver(2);
+    const d = this.donnees;
+    d[this.longueur++] = a;
+    d[this.longueur++] = b;
+  }
+
+  ajouter3(a: number, b: number, c: number): void {
+    this.reserver(3);
+    const d = this.donnees;
+    d[this.longueur++] = a;
+    d[this.longueur++] = b;
+    d[this.longueur++] = c;
+  }
+
+  ajouter4(a: number, b: number, c: number, e: number): void {
+    this.reserver(4);
+    const d = this.donnees;
+    d[this.longueur++] = a;
+    d[this.longueur++] = b;
+    d[this.longueur++] = c;
+    d[this.longueur++] = e;
+  }
+
+  /** Le contenu, sans la place réservée en trop. */
+  get contenu(): T {
+    return this.donnees.subarray(0, this.longueur) as T;
+  }
+}
+
+const flottants = (taille: number) => new Float32Array(taille);
+
 interface Tampons {
-  readonly positions: number[];
-  readonly normales: number[];
-  readonly uvs: number[];
-  readonly couleurs: number[];
-  readonly vent: number[];
-  readonly indices: number[];
+  readonly positions: Croissant<Float32Array>;
+  readonly normales: Croissant<Float32Array>;
+  readonly uvs: Croissant<Float32Array>;
+  readonly couleurs: Croissant<Float32Array>;
+  readonly vent: Croissant<Float32Array>;
+  readonly indices: Croissant<Uint32Array>;
+  /** Vrai si au moins un sommet ondule au vent. */
+  ondule: boolean;
 }
 
 const VOISINS: readonly [Direction, number, number, number][] = [
@@ -238,14 +296,14 @@ export function construireMaillage(
   groupe.name = 'minecraft';
   for (const rendu of RENDUS) {
     const t = tampons[rendu];
-    if (t.indices.length === 0) continue;
+    if (t.indices.longueur === 0) continue;
     const geometrie = new THREE.BufferGeometry();
-    geometrie.setAttribute('position', new THREE.Float32BufferAttribute(t.positions, 3));
-    geometrie.setAttribute('normal', new THREE.Float32BufferAttribute(t.normales, 3));
-    geometrie.setAttribute('uv', new THREE.Float32BufferAttribute(t.uvs, 2));
-    geometrie.setAttribute('color', new THREE.Float32BufferAttribute(t.couleurs, 3));
-    if (t.vent.some((v, k) => k % 4 === 3 && v !== VENT_AUCUN)) geometrie.setAttribute('aVent', new THREE.Float32BufferAttribute(t.vent, 4));
-    geometrie.setIndex(t.indices);
+    geometrie.setAttribute('position', new THREE.BufferAttribute(t.positions.contenu, 3));
+    geometrie.setAttribute('normal', new THREE.BufferAttribute(t.normales.contenu, 3));
+    geometrie.setAttribute('uv', new THREE.BufferAttribute(t.uvs.contenu, 2));
+    geometrie.setAttribute('color', new THREE.BufferAttribute(t.couleurs.contenu, 3));
+    if (t.ondule) geometrie.setAttribute('aVent', new THREE.BufferAttribute(t.vent.contenu, 4));
+    geometrie.setIndex(new THREE.BufferAttribute(t.indices.contenu, 1));
     geometrie.computeBoundingSphere();
     const materiau = new THREE.MeshLambertMaterial({
       map: atlas.texture,
@@ -270,7 +328,11 @@ interface Vent {
 }
 
 function nouveauxTampons(): Tampons {
-  return { positions: [], normales: [], uvs: [], couleurs: [], vent: [], indices: [] };
+  return {
+    positions: new Croissant(flottants), normales: new Croissant(flottants), uvs: new Croissant(flottants),
+    couleurs: new Croissant(flottants), vent: new Croissant(flottants), indices: new Croissant((taille) => new Uint32Array(taille)),
+    ondule: false,
+  };
 }
 
 /** Le modèle d'un bloc fait d'une seule partie sans variante, sinon null. */
@@ -302,7 +364,7 @@ function ajouterQuad(
   decoller: boolean,
   vent: Vent,
 ): void {
-  const base = t.positions.length / 3;
+  const base = t.positions.longueur / 3;
   const [nx, ny, nz] = q.normale;
   // Face découpée posée sur le bord du bloc (calque d'herbe…) : décollée d'un cheveu, sans scintillement
   let ex = 0;
@@ -319,16 +381,18 @@ function ajouterQuad(
   }
   uv.length = 0;
   for (let c = 0; c < 4; c++) {
-    t.positions.push(q.positions[c * 3] + ox + ex, q.positions[c * 3 + 1] + oy + ey, q.positions[c * 3 + 2] + oz + ez);
-    if (q.ombre) t.normales.push(nx, ny, nz);
-    else t.normales.push(0, 1, 0);
-    t.couleurs.push(couleur.r, couleur.g, couleur.b);
-    t.vent.push(vent.x, vent.pied, vent.z, vent.mode);
+    t.positions.ajouter3(q.positions[c * 3] + ox + ex, q.positions[c * 3 + 1] + oy + ey, q.positions[c * 3 + 2] + oz + ez);
+    if (q.ombre) t.normales.ajouter3(nx, ny, nz);
+    else t.normales.ajouter3(0, 1, 0);
+    t.couleurs.ajouter3(couleur.r, couleur.g, couleur.b);
+    t.vent.ajouter4(vent.x, vent.pied, vent.z, vent.mode);
     atlas.uv(q.texture, q.uv[c * 2], q.uv[c * 2 + 1], uv);
   }
-  t.uvs.push(...uv);
+  for (let k = 0; k < 8; k += 2) t.uvs.ajouter2(uv[k], uv[k + 1]);
+  if (vent.mode !== VENT_AUCUN) t.ondule = true;
   // Coins TL, TR, BR, BL vus de face : deux triangles dans le sens direct
-  t.indices.push(base, base + 3, base + 2, base, base + 2, base + 1);
+  t.indices.ajouter3(base, base + 3, base + 2);
+  t.indices.ajouter3(base, base + 2, base + 1);
 }
 
 /** Face d'un cube de liquide de hauteur `haut` (en blocs). */

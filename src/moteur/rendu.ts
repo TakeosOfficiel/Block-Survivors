@@ -37,6 +37,7 @@ export class Rendu {
     const repli = lireRepli() || !(await webgpuUtilisable());
     const rendu = new Rendu(conteneur, repli);
     await rendu.renderer.init();
+    partagerShadersInstances(rendu.renderer);
     // GPU perdu en cours de route (pilote, mise en veille…) : plutôt qu'un écran
     // vide, on recharge la page en WebGL2
     rendu.renderer.onDeviceLost = () => {
@@ -185,6 +186,19 @@ export class Rendu {
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   };
+}
+
+/**
+ * Les matrices des instances passent toujours par des attributs de sommets.
+ * Sinon, three range celles des petits maillages (moins de ~256 instances)
+ * dans un tableau uniforme propre à chacun : son nom et sa taille entrent
+ * dans le code du shader, et chaque morceau de chaque modèle demande ses
+ * propres shaders (≈ 290 à compiler au chargement au lieu d'une vingtaine).
+ * Cette limite ne sert qu'à ce choix (instances, squelettes, plages).
+ */
+function partagerShadersInstances(renderer: WebGPURenderer): void {
+  const capacites = (renderer.backend as { capabilities?: { getUniformBufferLimit(): number } }).capabilities;
+  if (capacites) capacites.getUniformBufferLimit = () => 0;
 }
 
 function lireRepli(): boolean {

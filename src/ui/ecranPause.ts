@@ -33,7 +33,6 @@ export class EcranPause {
     element<HTMLButtonElement>('pause-recommencer').addEventListener('click', () => this.actions.recommencer());
     element<HTMLButtonElement>('pause-menu').addEventListener('click', () => this.actions.menuPrincipal());
     window.addEventListener('keydown', this.surTouche);
-    window.addEventListener('blur', () => this.definir(true));
   }
 
   definir(active: boolean): void {

@@ -5,6 +5,11 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.31.1] — 2026-10-21
+
+### Corrections
+- **Le jeu ne se met plus en pause quand la fenêtre perd le focus** (clic sur un autre écran, une autre fenêtre…) : la partie continue. Échap met toujours en pause. Les touches enfoncées sont relâchées, pour que le héros ne continue pas à courir tout seul.
+
 ## [0.31.0] — 2026-10-21
 
 ### Changements

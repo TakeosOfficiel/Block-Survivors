@@ -3,7 +3,7 @@
  * camp, le héros, un zombie et un squelette attendent la partie ; un mouton
  * dort, un creeper n'ose pas approcher du feu. La vue tourne lentement autour
  * d'eux. Tout ce qui se règle (décor, places, rythmes, couleurs) est ici ;
- * src/ui/sceneChargement.ts construit et anime la scène.
+ * src/ui/feuDeCamp3d.ts construit et anime la scène (dans un worker).
  *
  * Angles en radians autour du feu (0 = vers +Z), distances en blocs depuis
  * le centre du feu.
@@ -89,8 +89,6 @@ export const FEU_DE_CAMP = {
   /** Cadence plafonnée de la scène, et ombres du feu recalculées une image sur `ombresToutesLes`. */
   imagesParSeconde: 30,
   ombresToutesLes: 3,
-  /** La fin à 100 % (secondes) : tout le monde se lève, puis l'écran s'efface. */
-  finale: { duree: 1.6 },
 } as const;
 
 /**

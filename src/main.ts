@@ -13,6 +13,7 @@ import { chargerPolice } from './assets/police';
 import { BibliothequeTextures } from './assets/textures';
 import { CONFIG, SOURCES_TEXTURES } from './config';
 import { PERSONNAGES } from './donnees/personnages';
+import type { ApparenceEntite } from './donnees/types';
 import { Jeu } from './jeu';
 import { choixDemande, memoriserChoix, partieDemandee } from './lancement';
 import { importerArene } from './minecraft/importation';
@@ -35,13 +36,18 @@ import { PanneauOptions } from './ui/panneauOptions';
 async function demarrer(): Promise<void> {
   suivreEchelleInterface();
   const ecran = new EcranChargement(SOURCES_TEXTURES[0].url(CONFIG.chargement.textureFond));
-  // Scène du chargement (le feu de camp) : prête en arrière-plan, affichée dès que ses textures sont là
   const textures = new BibliothequeTextures();
   let choix = choixDemande();
-  const scene = SceneChargement.creer(element('chargement'), textures, PERSONNAGES[choix.personnage]).catch(() => null).then((s) => {
-    if (s) ecran.brancher(s);
-    return s;
-  });
+  // Scène du chargement (le feu de camp), préparée en arrière-plan puis branchée sur l'écran
+  const preparerScene = (heros: ApparenceEntite) => SceneChargement.creer(element('chargement'), textures, heros)
+    .catch(() => null)
+    .then((s) => {
+      if (s) ecran.brancher(s);
+      return s;
+    });
+  // Partie lancée directement (Rejouer) : la scène tout de suite ; sinon une fois le menu affiché,
+  // pour ne pas ralentir le lancement du jeu
+  let scene = partieDemandee() ? preparerScene(PERSONNAGES[choix.personnage]) : Promise.resolve(null);
 
   let rendu: Rendu;
   try {
@@ -89,6 +95,7 @@ async function demarrer(): Promise<void> {
     // Héros en 3D du menu : même moteur que le jeu (repli WebGL2 compris)
     const apercu = await ApercuHeros.creer(textures, rendu.api !== 'WebGPU');
     ecran.masquer();
+    scene = preparerScene(apparenceJoueur(PERSONNAGES[choix.personnage], profil));
     choix = await new EcranMenu(textures, choix, panneauOptions, sauvegarde, new EcranProfil(textures, profil, apercu), apercu).attendreChoix();
     memoriserChoix(choix);
     ecran.planifier(etapesPartie(choix));
@@ -127,7 +134,7 @@ async function demarrer(): Promise<void> {
   jeu.appliquerOptions(options);
   ecran.etape('Préparation des modèles…');
   await jeu.prechauffer((faites, total) => ecran.progression(faites, total));
-  await ecran.terminer();
+  ecran.masquer();
   jeu.demarrer();
 
   // En développement uniquement : accès à la partie depuis la console du navigateur

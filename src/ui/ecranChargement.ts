@@ -67,13 +67,6 @@ export class EcranChargement {
     this.scene?.arreter();
   }
 
-  /** Fin d'un chargement de partie : la petite scène de fin à 100 %, puis l'écran s'efface. */
-  async terminer(): Promise<void> {
-    this.remplir(1);
-    await this.scene?.finale();
-    this.masquer();
-  }
-
   private remplir(part: number): void {
     this.rempli = Math.max(this.rempli, Math.min(1, part));
     this.scene?.definirProgression(this.rempli);

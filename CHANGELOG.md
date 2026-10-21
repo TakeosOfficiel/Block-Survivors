@@ -5,6 +5,14 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.30.1] — 2026-10-21
+
+### Corrections
+- **L'animation du chargement ne saccade plus** : la scène du feu de camp est maintenant dessinée à part (dans un « worker »), elle continue de tourner pendant que le jeu construit la map et prépare les modèles, au lieu de se figer plusieurs secondes.
+- La scène ne passe jamais avant le chargement de la partie : si la carte graphique est occupée par le jeu, elle attend son tour.
+- **Lancement du jeu** : la scène n'est plus préparée au démarrage, mais une fois le menu affiché.
+- La petite scène de fin à 100 % (tout le monde se lève) est retirée : la partie démarre dès que le chargement est fini.
+
 ## [0.30.0] — 2026-10-21
 
 ### Nouveautés

@@ -5,6 +5,15 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.27.0] — 2026-10-21
+
+### Changements
+- **Mises à jour façon Discord** : au lancement, une petite fenêtre du jeu cherche les mises à jour.
+  - S'il y en a une, elle la télécharge en montrant la progression, l'installe toute seule et relance le jeu à jour : plus de bouton à cliquer.
+  - Sinon, ou sans connexion, le jeu s'ouvre aussitôt.
+  - Si le téléchargement traîne, un lien permet de jouer sans l'attendre.
+  - Une version sortie pendant une partie se télécharge en arrière-plan et s'installe à la fermeture du jeu.
+
 ## [0.26.0] — 2026-10-21
 
 ### Changements

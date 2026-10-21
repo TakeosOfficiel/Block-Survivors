@@ -82,11 +82,12 @@ export class EcranMenu {
     element('menu-version-mc').textContent = VERSION_MINECRAFT;
     const lien = element<HTMLAnchorElement>('menu-mise-a-jour');
     if (bureau?.surMiseAJourPrete && bureau.installerMiseAJour) {
-      // Application installée : la mise à jour se télécharge seule ; un clic redémarre le jeu dessus
+      // Application installée : les mises à jour s'installent au lancement ; une version sortie
+      // pendant la partie s'installe à la fermeture (un clic redémarre le jeu dessus tout de suite)
       const installer = bureau.installerMiseAJour;
       bureau.surMiseAJourPrete((version) => {
         lien.removeAttribute('href');
-        lien.textContent = `Version ${version} prête ! Cliquez pour redémarrer le jeu et l'installer`;
+        lien.textContent = `Version ${version} téléchargée : elle s'installera à la fermeture du jeu (cliquez pour redémarrer maintenant)`;
         lien.classList.remove('cache');
       });
       lien.addEventListener('click', (e) => {

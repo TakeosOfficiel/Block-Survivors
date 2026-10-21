@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Block Survivors</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' file:">
+<style>
+  /* Fenêtre de lancement façon Discord : logo, état de la mise à jour, barre de progression */
+  :root { --fond: #1f1e22; --texte: #e8e6e3; --discret: #9a978f; --vert: #5fbf3a; --piste: #34323a; }
+  html, body { margin: 0; height: 100%; background: var(--fond); color: var(--texte); overflow: hidden; user-select: none; }
+  body {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    font: 600 14px/1.3 system-ui, "Segoe UI", sans-serif;
+    -webkit-app-region: drag;  /* fenêtre sans cadre : on la déplace en la tirant */
+  }
+  img { width: 112px; height: 112px; image-rendering: pixelated; animation: rebond 1.4s ease-in-out infinite; }
+  @keyframes rebond { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  h1 { margin: 2px 0 0; font-size: 20px; letter-spacing: 0.5px; }
+  #etat { min-height: 18px; color: var(--discret); text-align: center; padding: 0 16px; }
+  .piste { width: 200px; height: 6px; border-radius: 3px; background: var(--piste); overflow: hidden; position: relative; }
+  #barre { height: 100%; width: 0; background: var(--vert); border-radius: 3px; transition: width 0.2s; }
+  /* Sans pourcentage connu : un trait qui va et vient */
+  .piste.attente #barre { width: 35%; position: absolute; animation: va-et-vient 1.1s ease-in-out infinite alternate; }
+  @keyframes va-et-vient { from { left: 0; } to { left: 65%; } }
+  #passer {
+    -webkit-app-region: no-drag; visibility: hidden; margin-top: 4px;
+    background: none; border: 0; color: var(--discret); font: inherit; font-size: 12px; text-decoration: underline; cursor: pointer;
+  }
+  #passer:hover { color: var(--texte); }
+</style>
+</head>
+<body>
+  <img src="icone.png" alt="">
+  <h1>Block Survivors</h1>
+  <div id="etat">Recherche de mises à jour…</div>
+  <div class="piste attente"><div id="barre"></div></div>
+  <button id="passer" type="button">Jouer sans attendre la mise à jour</button>
+<script>
+  const etat = document.getElementById('etat');
+  const piste = document.querySelector('.piste');
+  const barre = document.getElementById('barre');
+  const passer = document.getElementById('passer');
+  // Progression entre 0 et 1, ou négative quand elle n'est pas connue
+  window.lanceur.surEtat((texte, progression) => {
+    etat.textContent = texte;
+    piste.classList.toggle('attente', progression < 0);
+    barre.style.width = progression < 0 ? '' : `${Math.round(progression * 100)}%`;
+  });
+  window.lanceur.surPassable(() => { passer.style.visibility = 'visible'; });
+  passer.addEventListener('click', () => window.lanceur.passer());
+</script>
+</body>
+</html>

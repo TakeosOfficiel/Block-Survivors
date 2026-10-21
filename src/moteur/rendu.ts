@@ -15,8 +15,8 @@ const CLE_REPLI_WEBGL = 'block-survivors.repli-webgl';
 /** Objets qui ne projettent pas d'ombre (effets translucides, sol lointain). */
 const SANS_OMBRE_PORTEE = new Set([
   'ombres', 'balayage', 'foudre', 'exterieur', 'particules', 'chiffres', 'etiquette', 'barres-vie',
-  // Le feu et le magma de la tornade éclairent ; son sol brûlé est collé au sol
-  'tornades:feu', 'tornades:magma', 'tornades:sol',
+  // Le feu et le magma de la tornade éclairent ; ses brûlures sont collées au sol
+  'tornades:feu', 'tornades:magma', 'tornades:brûlures',
 ]);
 
 export class Rendu {

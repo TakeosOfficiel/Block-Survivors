@@ -5,6 +5,19 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.26.0] — 2026-10-21
+
+### Changements
+- **Tornade de feu simplifiée et plus lisible** :
+  - trois grandes spirales de feu continues, séparées par des vides, qui dessinent un entonnoir net même quand on fige l'image ;
+  - les irrégularités sont sur les bords (bas dentelé, haut en flammes courtes) ; plus de grandes pointes au sommet, de trous au milieu des rubans ni de traînées fines ;
+  - le feu monte toujours le long des spirales.
+- **Plus de cubes ni de plaques noires au sol** autour de la tornade : elle laisse une discrète trace de brûlure brune, à plat, qui s'estompe derrière elle. Seules quelques braises restent à son pied.
+- **Tornade de magma** : rouge, traversée de zones jaunes incandescentes qui montent, avec quelques fragments de magma.
+
+### Corrections
+- Le vent fait de nouveau onduler l'herbe, les fougères, les fleurs et les feuilles sur les maps importées de Minecraft (comme sur la plaine).
+
 ## [0.25.0] — 2026-10-21
 
 ### Changements

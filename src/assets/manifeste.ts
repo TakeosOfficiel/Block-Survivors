@@ -86,7 +86,7 @@ export function texturesRequises(
     const m = arme.mecanique;
     if (m.type === 'balayage' || m.type === 'tourbillon') for (const image of m.effet) chemins.add(image);
     if (m.type === 'chute') chemins.add(m.image);
-    if (m.type === 'tornade') chemins.add(m.texture).add(m.feu).add(m.debris).add(m.sol);
+    if (m.type === 'tornade') chemins.add(m.texture).add(m.feu).add(m.brulure);
     if (m.type === 'orbes') chemins.add(m.texture);
     if (m.type === 'nova') chemins.add(m.texture).add(m.sol);
     if (m.type === 'meteore') chemins.add(m.texture).add(m.feu);

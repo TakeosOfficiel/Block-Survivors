@@ -10,6 +10,27 @@ import { TEXTURE_EAU, TEXTURE_LAVE } from './modeles';
 import { teinteDe } from './proprietes';
 import type { Schematique } from './schematique';
 
+/**
+ * Ondulation au vent d'un bloc (attribut `aVent` de chaque sommet : centre x, pied y, centre z, mode),
+ * reprise par monde/vegetation.ts : feuillage qui frémit, plantes dont le sommet se balance.
+ */
+export const VENT_AUCUN = 0;
+export const VENT_FEUILLAGE = 1;
+export const VENT_PLANTE = 2;
+
+/** Plantes qui se balancent (fleurs, herbes, pousses, cultures, lianes…). */
+const PLANTES = new RegExp('(_sapling|_tulip)$|^(short_grass|grass|tall_grass|fern|large_fern|dandelion|poppy|blue_orchid|allium|azure_bluet'
+  + '|oxeye_daisy|cornflower|lily_of_the_valley|wither_rose|torchflower|sunflower|lilac|rose_bush|peony|sweet_berry_bush|dead_bush'
+  + '|bush|firefly_bush|short_dry_grass|tall_dry_grass|wildflowers|pink_petals|leaf_litter|cactus_flower|open_eyeblossom'
+  + '|closed_eyeblossom|wheat|carrots|potatoes|beetroots|seagrass|tall_seagrass|kelp|kelp_plant|vine|cave_vines|cave_vines_plant'
+  + '|weeping_vines|weeping_vines_plant|twisting_vines|twisting_vines_plant|hanging_roots|brown_mushroom|red_mushroom'
+  + '|crimson_roots|warped_roots|nether_sprouts|spore_blossom|pitcher_plant|small_dripleaf)$');
+
+function modeVent(bloc: BlocCuit): number {
+  if (bloc.nom.endsWith('_leaves')) return VENT_FEUILLAGE;
+  return PLANTES.test(bloc.nom) ? VENT_PLANTE : VENT_AUCUN;
+}
+
 /** Rendu d'une texture : opaque, découpée (feuilles, plantes, vitres) ou translucide (verre teinté, eau). */
 type RenduTexture = 'opaque' | 'decoupe' | 'translucide';
 const RENDUS: readonly RenduTexture[] = ['opaque', 'decoupe', 'translucide'];
@@ -114,6 +135,7 @@ interface Tampons {
   readonly normales: number[];
   readonly uvs: number[];
   readonly couleurs: number[];
+  readonly vent: number[];
   readonly indices: number[];
 }
 
@@ -148,12 +170,14 @@ export function construireMaillage(
   const eau = blocs.map((b) => b.liquide === 'eau' || b.proprietes.waterlogged === 'true');
   const lave = blocs.map((b) => b.liquide === 'lave');
   const teintes = blocs.map((b) => new THREE.Color(teinteDe(b.liquide === 'eau' ? 'water' : b.nom)));
+  const vents = blocs.map(modeVent);
   const blanc = new THREE.Color(0xffffff);
 
   const tampons: Record<RenduTexture, Tampons> = {
     opaque: nouveauxTampons(), decoupe: nouveauxTampons(), translucide: nouveauxTampons(),
   };
   const uv: number[] = [];
+  const venti: Vent = { mode: VENT_AUCUN, x: 0, pied: 0, z: 0 };
 
   const cache = (x: number, y: number, z: number, d: Direction, ici: number): boolean => {
     const [dx, dy, dz] = DECALAGES[d];
@@ -176,14 +200,20 @@ export function construireMaillage(
         const oy = y - origine.y;
         const oz = z - origine.z;
 
+        // Vent : centre du bloc, et pied de la plante (celui du bloc du bas pour la moitié haute d'une grande plante)
+        venti.mode = vents[i];
+        venti.x = ox + 0.5;
+        venti.z = oz + 0.5;
+        venti.pied = oy - (bloc.proprietes.half === 'upper' ? 1 : 0);
         for (const partie of bloc.parties) {
           const modele = choisir(partie, x, y, z);
           for (const q of modele.quads) {
             if (q.cullface && cache(x, y, z, q.cullface, i)) continue;
             const rendu = atlas.rendu(q.texture);
-            ajouterQuad(tampons[rendu], q, ox, oy, oz, q.teinte ? teintes[i] : blanc, atlas, uv, rendu !== 'opaque');
+            ajouterQuad(tampons[rendu], q, ox, oy, oz, q.teinte ? teintes[i] : blanc, atlas, uv, rendu !== 'opaque', venti);
           }
         }
+        venti.mode = VENT_AUCUN;
 
         // Liquides : cube abaissé de 2 pixels, sauf sous le même liquide
         if (eau[i] || lave[i]) {
@@ -197,7 +227,7 @@ export function construireMaillage(
           for (const [d, dx, dy, dz] of VOISINS) {
             if (memeLiquide(x + dx, y + dy, z + dz) || cache(x, y, z, d, -1)) continue;
             const rendu = atlas.rendu(texture);
-            ajouterQuad(tampons[rendu], quadLiquide(d, haut, texture), ox, oy, oz, eau[i] ? teintes[i] : blanc, atlas, uv, false);
+            ajouterQuad(tampons[rendu], quadLiquide(d, haut, texture), ox, oy, oz, eau[i] ? teintes[i] : blanc, atlas, uv, false, venti);
           }
         }
       }
@@ -214,6 +244,7 @@ export function construireMaillage(
     geometrie.setAttribute('normal', new THREE.Float32BufferAttribute(t.normales, 3));
     geometrie.setAttribute('uv', new THREE.Float32BufferAttribute(t.uvs, 2));
     geometrie.setAttribute('color', new THREE.Float32BufferAttribute(t.couleurs, 3));
+    if (t.vent.some((v, k) => k % 4 === 3 && v !== VENT_AUCUN)) geometrie.setAttribute('aVent', new THREE.Float32BufferAttribute(t.vent, 4));
     geometrie.setIndex(t.indices);
     geometrie.computeBoundingSphere();
     const materiau = new THREE.MeshLambertMaterial({
@@ -230,8 +261,16 @@ export function construireMaillage(
   return groupe;
 }
 
+/** Ondulation du bloc en cours de maillage. */
+interface Vent {
+  mode: number;
+  x: number;
+  pied: number;
+  z: number;
+}
+
 function nouveauxTampons(): Tampons {
-  return { positions: [], normales: [], uvs: [], couleurs: [], indices: [] };
+  return { positions: [], normales: [], uvs: [], couleurs: [], vent: [], indices: [] };
 }
 
 /** Le modèle d'un bloc fait d'une seule partie sans variante, sinon null. */
@@ -261,6 +300,7 @@ function ajouterQuad(
   atlas: Atlas,
   uv: number[],
   decoller: boolean,
+  vent: Vent,
 ): void {
   const base = t.positions.length / 3;
   const [nx, ny, nz] = q.normale;
@@ -283,6 +323,7 @@ function ajouterQuad(
     if (q.ombre) t.normales.push(nx, ny, nz);
     else t.normales.push(0, 1, 0);
     t.couleurs.push(couleur.r, couleur.g, couleur.b);
+    t.vent.push(vent.x, vent.pied, vent.z, vent.mode);
     atlas.uv(q.texture, q.uv[c * 2], q.uv[c * 2 + 1], uv);
   }
   t.uvs.push(...uv);

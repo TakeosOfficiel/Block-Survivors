@@ -157,14 +157,10 @@ const gerbes = {
     { particule: 'poof', nombre: 5, vitesse: 2, dispersion: 0.4, montee: 0.4 },
   ],
   // Mage : braises de la tornade, éclats de la nova, impact du météore, orbes
+  // Pied de la tornade : une braise et un peu de fumée
   tornade: [
-    { particule: 'flamme', nombre: 2, vitesse: 1.5, dispersion: 0.5, montee: 2.5 },
-    { particule: 'fumee', nombre: 1, vitesse: 0.6, dispersion: 0.4, montee: 1.5 },
-  ],
-  // Braises arrachées au bord de la tornade
-  braisesTornade: [
-    { particule: 'flamme', nombre: 1, vitesse: 1.2, dispersion: 0.1, montee: 1.5 },
-    { particule: 'etincelleFusee', nombre: 1, vitesse: 2, dispersion: 0.1, montee: 2 },
+    { particule: 'flamme', nombre: 1, vitesse: 0.8, dispersion: 0.35, montee: 0.8 },
+    { particule: 'fumee', nombre: 1, vitesse: 0.4, dispersion: 0.4, montee: 0.6 },
   ],
   // Effondrement de la tornade : nuage de fumée et dernières flammes
   finTornade: [
@@ -211,7 +207,7 @@ const gerbes = {
   epines: [{ particule: 'critique', nombre: 3, vitesse: 3, dispersion: 0.15, montee: 2 }],
   repousse: [{ particule: 'poof', nombre: 2, vitesse: 2.5, dispersion: 0.1, montee: 0.3 }],
   // Tornade de magma (Tempête de feu) : gouttes de lave
-  braisesMagma: [{ particule: 'lave', nombre: 2, vitesse: 3, dispersion: 0.5, montee: 4 }],
+  braisesMagma: [{ particule: 'lave', nombre: 1, vitesse: 2, dispersion: 0.4, montee: 2.5 }],
   // Nuage toxique : tourbillons verts de l'effet Poison
   nuage: [{ particule: 'effetPoison', nombre: 1, vitesse: 0.4, dispersion: 0.2, montee: 0.3 }],
 } satisfies Record<string, DefinitionGerbe>;

@@ -361,12 +361,12 @@ export type MecaniqueArme =
   | { readonly type: 'heurt'; readonly angle: number; readonly renvoi: number }
   /** Colonne de cubes (`texture`) qui avance vers les ennemis et blesse autour d'elle toutes les `intervalle` s. */
   /**
-   * Tornade en entonnoir : rubans de `feu` (de `texture`, le magma, après la Tempête de feu),
-   * `debris` du sol arrachés qui montent en spirale, sol brûlé (`sol`) dessous.
+   * Tornade en entonnoir : spirales de `feu` ; `texture` : fragments de magma (Tempête de feu) ;
+   * `brulure` : trace laissée au sol.
    */
   | {
       readonly type: 'tornade'; readonly texture: CheminTexture; readonly feu: CheminTexture;
-      readonly debris: CheminTexture; readonly sol: CheminTexture; readonly vitesse: number; readonly intervalle: number;
+      readonly brulure: CheminTexture; readonly vitesse: number; readonly intervalle: number;
     }
   /**
    * Anneau d'éclats (`texture`) qui s'étend autour du joueur en `expansion` s ; dès le rang `solAuRang`,

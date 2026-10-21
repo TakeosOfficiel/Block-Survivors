@@ -1,14 +1,16 @@
 /**
- * Mécanique « tornade » (Tornade de feu) : un entonnoir de cubes de feu qui
+ * Mécanique « tornade » (Tornade de feu) : un entonnoir de feu qui
  * tourbillonne et avance vers l'ennemi le plus proche ; toutes les
  * `intervalle` secondes, elle blesse les ennemis dans son rayon et les aspire
  * vers son centre (recul négatif). En volume, façon Minecraft Dungeons : la
- * silhouette est un entonnoir de rubans en spirale texturés de feu animé
- * (lisible sans aucune particule), avec des débris du sol arrachés et un sol
- * brûlé dessous ; flammes, braises et fumée ne font que l'habiller. Elle
- * pousse du sol puis s'effondre en fumée.
+ * silhouette est faite de quelques spirales continues, texturées de feu animé
+ * et séparées par des vides, lisible même figée ; les irrégularités sont sur
+ * leurs bords. Elle laisse derrière elle une trace de brûlure à plat qui
+ * s'estompe ; quelques braises à son pied l'habillent. Elle pousse du sol
+ * puis s'effondre en fumée.
  * Talent Tempête de feu : un météore tombé dedans la change en tornade de
- * magma, plus large et plus durable (`renforcer`).
+ * magma, plus large et plus durable (`renforcer`), aux zones jaunes
+ * incandescentes et chargée de quelques fragments de magma.
  */
 import * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
@@ -17,7 +19,7 @@ import { ARMES, IDS_ARMES } from '../donnees/armes';
 import { GERBES } from '../donnees/particules';
 import { CubesTextures } from '../effets/cubesTextures';
 import { Rubans } from '../effets/rubans';
-import { longueur } from '../utils/maths';
+import { borner, longueur } from '../utils/maths';
 import { Pool } from '../utils/pool';
 import type { ArmeEquipee } from './armeEquipee';
 import type { ContexteCombat } from './contexte';
@@ -37,8 +39,19 @@ interface Tornade {
   magma: boolean;
   zone: number;
   duree: number;
-  /** Tire au sort la forme de ses rubans (deux tornades ne se ressemblent pas). */
+  /** Tire au sort les petits écarts de ses spirales (deux tornades ne se ressemblent pas). */
   graine: number;
+  /** Distance parcourue depuis la dernière brûlure posée (blocs). */
+  depuisTrace: number;
+}
+
+/** Brûlure laissée au sol, qui s'estompe (rétrécit) avec l'âge. */
+interface Trace {
+  x: number;
+  z: number;
+  age: number;
+  taille: number;
+  rotation: number;
 }
 
 /** Nombre pseudo-aléatoire stable dans [0, 1[ tiré de `n`. */
@@ -56,55 +69,59 @@ interface FormeTornade {
   longueurVisible: number;
 }
 
-/** Réutilisée pour chaque tornade : rien n'est alloué pendant le rendu. */
+/** Réutilisés pour chaque tornade et chaque brûlure : rien n'est alloué pendant le rendu. */
 const forme: FormeTornade = { largeur: 0, ecartement: 1, affaissement: 0, retrecissement: 1, longueurVisible: 1 };
+const matrice = new THREE.Matrix4();
+const position = new THREE.Vector3();
+const orientation = new THREE.Quaternion();
+const echelle = new THREE.Vector3();
+const AXE_Y = new THREE.Vector3(0, 1, 0);
 
 export class Tornades {
   private readonly contexte: ContexteCombat;
   private readonly tampon = new Int32Array(128);
   private readonly tornades: Pool<Tornade>;
-  /**
-   * Rubans de feu ; après la Tempête de feu, feu rougeoyant, veines de magma et
-   * fragments incandescents ; débris et sol brûlé.
-   */
+  private readonly traces: Pool<Trace>;
+  /** Spirales de feu (celles des tornades de magma ont leurs zones jaunes), fragments de magma, brûlures. */
   private readonly feu: Rubans;
-  private readonly feuMagma: Rubans;
-  private readonly veines: Rubans;
   private readonly fragments: CubesTextures;
-  private readonly debris: CubesTextures;
-  private readonly sol: CubesTextures;
-  /** Copies répétées le long des rubans des textures animées, et leurs originaux (qui portent l'image courante). */
-  private readonly animees: { readonly copie: THREE.Texture; readonly source: THREE.Texture }[] = [];
+  private readonly brulures: THREE.InstancedMesh;
+  /** Copie du feu animé répétée le long des spirales, et son original (qui porte l'image courante). */
+  private readonly feuRepete: THREE.Texture | null;
+  private readonly feuSource: THREE.Texture | null;
 
   constructor(contexte: ContexteCombat, textures: BibliothequeTextures, scene: THREE.Scene) {
     const c = CONFIG.armes.tornade;
     this.contexte = contexte;
     this.tornades = new Pool<Tornade>(c.capacite, () => ({
-      arme: null, x: 0, z: 0, dirX: 0, dirZ: 1, temps: 0, prochainCoup: 0, prochainesBraises: 0, facteur: 1, magma: false, zone: 1, duree: 0, graine: 0,
+      arme: null, x: 0, z: 0, dirX: 0, dirZ: 1, temps: 0, prochainCoup: 0, prochainesBraises: 0, facteur: 1, magma: false, zone: 1, duree: 0,
+      graine: 0, depuisTrace: 0,
     }));
+    this.traces = new Pool<Trace>(c.trace.capacite, () => ({ x: 0, z: 0, age: 0, taille: 0, rotation: 0 }));
     const m = IDS_ARMES.map((id) => ARMES[id].mecanique).find((mec) => mec.type === 'tornade');
     if (m?.type !== 'tornade') throw new Error('Aucune arme de type tornade');
     textures.animer(m.texture, c.imagesParSeconde);
     textures.animer(m.feu, c.imagesFeu);
-    const rubans = c.capacite * (c.exterieurs + c.interieurs);
-    const feu = this.repetee(textures, m.feu);
-    this.feu = new Rubans(scene, feu, 0xff8a2a, rubans, c.segments, c.pasU, 'tornades:feu');
-    this.feuMagma = new Rubans(scene, feu, 0xd0401a, rubans, c.segments, c.pasU, 'tornades:feu', c.magma.teinte);
-    this.veines = new Rubans(scene, this.repetee(textures, m.texture), 0xc0401a, c.capacite * c.magma.veines, c.segments, c.pasU, 'tornades:magma');
+    this.feuSource = textures.obtenir(m.feu);
+    this.feuRepete = this.feuSource?.clone() ?? null;
+    if (this.feuRepete) {
+      this.feuRepete.wrapS = THREE.RepeatWrapping;
+      this.feuRepete.needsUpdate = true;
+    }
+    this.feu = new Rubans(scene, this.feuRepete, 0xff8a2a, c.capacite * c.spirales, c.segments, c.pasU, 'tornades:feu', c.vHaut);
     this.fragments = new CubesTextures(scene, textures, m.texture, c.capacite * c.magma.fragments, true, 'tornades:magma');
-    this.debris = new CubesTextures(scene, textures, m.debris, c.capacite * c.debris, false, 'tornades:débris');
-    this.sol = new CubesTextures(scene, textures, m.sol, c.capacite * c.dalles, false, 'tornades:sol');
-  }
-
-  /** Copie de la texture animée qui se répète le long des rubans (l'image courante reste celle de l'original). */
-  private repetee(textures: BibliothequeTextures, chemin: string): THREE.Texture | null {
-    const source = textures.obtenir(chemin);
-    if (!source) return null;
-    const copie = source.clone();
-    copie.wrapS = THREE.RepeatWrapping;
-    copie.needsUpdate = true;
-    this.animees.push({ copie, source });
-    return copie;
+    // Brûlures : carrés à plat de la texture brune, éclairés comme le sol, sans relief
+    const map = textures.obtenir(m.brulure);
+    this.brulures = new THREE.InstancedMesh(
+      new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2),
+      new THREE.MeshLambertMaterial(map ? { map } : { color: 0x4c3a2f }),
+      c.trace.capacite,
+    );
+    this.brulures.name = 'tornades:brûlures';
+    this.brulures.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.brulures.frustumCulled = false;
+    this.brulures.count = 0;
+    scene.add(this.brulures);
   }
 
   /** Lance les tornades vers l'ennemi le plus proche ; faux si personne n'est à portée. */
@@ -132,6 +149,7 @@ export class Tornades {
       t.zone = 1;
       t.duree = s.duree;
       t.graine = Math.random() * 1000;
+      t.depuisTrace = Infinity;  // première brûlure dès l'apparition
     }
     return true;
   }
@@ -179,8 +197,13 @@ export class Tornades {
       const nx = t.x + t.dirX * m.vitesse * dt;
       const nz = t.z + t.dirZ * m.vitesse * dt;
       if (!carte.bloqueMarche(nx, nz)) {
+        t.depuisTrace += longueur(nx - t.x, nz - t.z);
         t.x = nx;
         t.z = nz;
+      }
+      if (t.depuisTrace >= c.trace.espacement) {
+        t.depuisTrace = 0;
+        this.bruler(t);
       }
       t.prochainCoup -= dt;
       if (t.prochainCoup <= 0) {
@@ -191,37 +214,45 @@ export class Tornades {
       t.prochainesBraises -= dt;
       if (t.prochainesBraises <= 0) {
         t.prochainesBraises = c.periodeBraises;
-        particules.emettre(t.x, 0.6, t.z, GERBES.tornade);
-        // Braises arrachées au bord de l'entonnoir, à une hauteur au hasard
-        const h = Math.random();
-        const a = Math.random() * Math.PI * 2;
-        const r = (arme.stats.zone * t.zone / 1.5) * (0.18 + 0.9 * h ** 1.3);
-        particules.emettre(t.x + Math.sin(a) * r, 0.2 + h * c.hauteur, t.z + Math.cos(a) * r, GERBES.braisesTornade);
-        if (t.magma) particules.emettre(t.x, 1.2, t.z, GERBES.braisesMagma);
+        // Quelques braises au pied, rien de plus : l'attention reste sur le vortex
+        particules.emettre(t.x, 0.15, t.z, GERBES.tornade);
+        if (t.magma) particules.emettre(t.x, 0.3, t.z, GERBES.braisesMagma);
       }
     }
+    for (let i = this.traces.nombre - 1; i >= 0; i--) {
+      const trace = this.traces.elements[i];
+      trace.age += dt;
+      if (trace.age >= c.trace.duree) this.traces.liberer(i);
+    }
+  }
+
+  /** Pose une brûlure sous la tornade, de la taille de son pied. */
+  private bruler(t: Tornade): void {
+    const trace = this.traces.acquerir();
+    if (!trace || !t.arme) return;
+    const c = CONFIG.armes.tornade.trace;
+    trace.x = t.x + (Math.random() - 0.5) * 0.3;
+    trace.z = t.z + (Math.random() - 0.5) * 0.3;
+    trace.age = 0;
+    trace.taille = ((t.arme.stats.zone * t.zone) / 1.5) * c.taille * (0.85 + Math.random() * 0.3);
+    trace.rotation = Math.random() * Math.PI * 2;
   }
 
   majVisuel(): void {
     const c = CONFIG.armes.tornade;
-    const { feu, feuMagma, veines, fragments, debris, sol } = this;
-    // Image courante de l'animation, et le feu qui monte le long des rubans
-    const temps = this.contexte.etat.tempsJeu;
-    for (const a of this.animees) {
-      a.copie.offset.y = a.source.offset.y;
-      a.copie.offset.x = -((temps * c.defilement) % 1);
+    const { feu, fragments } = this;
+    // Image courante de l'animation, et le feu qui monte le long des spirales
+    if (this.feuRepete && this.feuSource) {
+      this.feuRepete.offset.y = this.feuSource.offset.y;
+      this.feuRepete.offset.x = -((this.contexte.etat.tempsJeu * c.defilement) % 1);
     }
     feu.commencer();
-    feuMagma.commencer();
-    veines.commencer();
     fragments.commencer();
-    debris.commencer();
-    sol.commencer();
     for (let i = 0; i < this.tornades.nombre; i++) {
       const t = this.tornades.elements[i];
       if (!t.arme) continue;
       const largeur = (t.arme.stats.zone * t.zone) / 1.5;
-      // Pousse du sol (les rubans s'allongent vers le haut), puis s'effondre :
+      // Pousse du sol (les spirales s'allongent vers le haut), puis s'effondre :
       // l'entonnoir s'écarte, s'affaisse et s'amincit
       const pousse = Math.min(1, t.temps / c.apparition);
       const chute = Math.max(0, 1 - (t.duree - t.temps) / c.effondrement);
@@ -230,106 +261,96 @@ export class Tornades {
       forme.affaissement = chute * chute * c.hauteur;
       forme.retrecissement = 1 - chute * 0.6;
       forme.longueurVisible = Math.min(1, pousse * 1.15);
+      for (let r = 0; r < c.spirales; r++) this.spirale(t, forme, r);
 
-      for (let r = 0; r < c.exterieurs + c.interieurs; r++) {
-        const interieur = r >= c.exterieurs;
-        const groupe = interieur ? c.interieurs : c.exterieurs;
-        const phase = ((interieur ? r - c.exterieurs + 0.5 : r) / groupe) * Math.PI * 2;
-        this.ruban(t.magma ? feuMagma : feu, t, forme, r, phase, interieur ? 0.45 : 1, interieur ? 1.6 : 1,
-          (interieur ? 0.8 : 1) * (t.magma ? c.magma.bande : 1), false);
-      }
       if (t.magma) {
-        // Veines de magma au cœur, et fragments incandescents qui montent en spirale
-        for (let r = 0; r < c.magma.veines; r++) {
-          this.ruban(veines, t, forme, r + 10, (r / c.magma.veines) * Math.PI * 2 + 0.4, 0.7, 1.3, 1, true);
-        }
+        // Quelques fragments de magma incandescents emportés dans le vortex
         for (let k = 0; k < c.magma.fragments; k++) {
           const h = (t.temps * 0.7 + k / c.magma.fragments) % 1;
           const angle = t.temps * c.rotation * 1.1 + k * 2.4;
-          const r = largeur * (0.18 + 0.9 * h ** 1.3) * 1.05 * forme.ecartement;
+          const r = largeur * (0.18 + 0.9 * h ** 1.3) * 0.9 * forme.ecartement;
           const taille = c.magma.tailleFragment * (1 - h * 0.5) * forme.retrecissement * Math.min(1, pousse * 2);
           fragments.ajouter(
-            t.x + Math.sin(angle) * r, 0.1 + h * c.hauteur - forme.affaissement, t.z + Math.cos(angle) * r,
+            t.x + Math.sin(angle) * r, 0.2 + h * c.hauteur * 0.9 - forme.affaissement, t.z + Math.cos(angle) * r,
             taille, angle * 1.3, t.temps * 4 + k,
           );
         }
       }
-
-      // Débris du sol arrachés : montent en spirale, s'écartent, retombent au sommet
-      const { ecartement, affaissement, retrecissement } = forme;
-      const tailleDebris = 0.2 * pousse * retrecissement;
-      for (let k = 0; k < c.debris; k++) {
-        const phase = (t.temps * 0.55 + k / c.debris) % 1;
-        const angle = t.temps * c.rotation * 1.2 + k * 2.4;
-        const r = (0.3 + phase * 0.95) * largeur * ecartement;
-        const y = 0.1 + Math.sin(phase * Math.PI) * c.hauteur * 0.9 - affaissement;
-        debris.ajouter(t.x + Math.sin(angle) * r, Math.max(0.1, y), t.z + Math.cos(angle) * r, tailleDebris, angle * 1.7, t.temps * 5 + k);
-      }
-
-      // Sol brûlé : anneau de dalles noircies qui tourne lentement sous la tornade
-      const tailleDalle = 0.34 * Math.min(1, pousse * 1.5) * (1 - chute * 0.5);
-      for (let k = 0; k < c.dalles; k++) {
-        const angle = t.temps * 0.8 + (k / c.dalles) * Math.PI * 2;
-        const r = largeur * (k % 2 === 0 ? 0.55 : 0.85);
-        sol.ajouterDalle(t.x + Math.sin(angle) * r, t.z + Math.cos(angle) * r, tailleDalle, 0.04, angle);
-      }
     }
     feu.terminer();
-    feuMagma.terminer();
-    veines.terminer();
     fragments.terminer();
-    debris.terminer();
-    sol.terminer();
+
+    // Brûlures : à plat sur le sol, elles rétrécissent en s'estompant
+    const tr = c.trace;
+    let n = 0;
+    for (let i = 0; i < this.traces.nombre; i++) {
+      const trace = this.traces.elements[i];
+      const reste = 1 - trace.age / tr.duree;
+      const taille = trace.taille * Math.min(1, trace.age / 0.15) * Math.sqrt(reste);
+      if (taille <= 0) continue;
+      // Hauteurs légèrement différentes : les brûlures qui se chevauchent ne scintillent pas
+      position.set(trace.x, tr.hauteur + (i % 8) * 0.001, trace.z);
+      orientation.setFromAxisAngle(AXE_Y, trace.rotation);
+      matrice.compose(position, orientation, echelle.set(taille, 1, taille));
+      this.brulures.setMatrixAt(n++, matrice);
+    }
+    this.brulures.count = n;
+    this.brulures.instanceMatrix.needsUpdate = true;
   }
 
   /**
-   * Un ruban en spirale de la tornade, irrégulier : son rayon, sa vitesse, ses
-   * tours et sa longueur sont tirés de la graine ; des ondes montent le long
-   * de lui, son bas est dentelé et son bout s'amincit. `veine` : bande fine de
-   * largeur fixe (magma) au lieu d'une bande de flammes.
+   * Une spirale principale de l'entonnoir : un ruban continu, régulier dans son
+   * tracé (seuls de petits écarts tirés de la graine), dont les irrégularités
+   * sont sur les bords : bas dentelé, haut découpé par les flammes de la
+   * texture. Sur une tornade de magma, des zones jaunes incandescentes
+   * remontent le long du rouge.
    */
-  private ruban(
-    rubans: Rubans, t: Tornade, f: FormeTornade, r: number, phase: number,
-    facteurRayon: number, facteurVitesse: number, facteurBande: number, veine: boolean,
-  ): void {
+  private spirale(t: Tornade, f: FormeTornade, r: number): void {
+    const rubans = this.feu;
     if (!rubans.place) return;
     const c = CONFIG.armes.tornade;
     const g = t.graine + r * 17.31;
     const ir = c.irregularite;
-    const rayonRuban = facteurRayon * (1 - ir + 2 * ir * alea(g));
-    const vitesse = c.rotation * facteurVitesse * (1 - ir + 2 * ir * alea(g + 1.1));
+    const rayonRuban = 1 - ir + 2 * ir * alea(g);
     const tours = c.tours * (1 - ir + 2 * ir * alea(g + 2.2));
-    const longueur = (1 - 1.2 * ir * alea(g + 3.3)) * f.longueurVisible;
-    const decalage = phase + (alea(g + 4.4) - 0.5) * 0.6;
+    const decalage = (r / c.spirales) * Math.PI * 2 + (alea(g + 4.4) - 0.5) * 0.4;
     const o = c.ondes;
+    const m = c.magma;
     for (let k = 0; k <= c.segments; k++) {
       const s = k / c.segments;
-      const h = s * longueur;
+      const h = s * f.longueurVisible;
       // Le haut ondule en retard sur la base
       const ondulation = h * h * c.oscillation * f.largeur;
       const cx = t.x + Math.sin(t.temps * 1.9 + h * 2.2) * ondulation;
       const cz = t.z + Math.cos(t.temps * 1.4 + h * 2.2) * ondulation;
       const y = 0.05 + h * c.hauteur - f.affaissement * (0.4 + h);
-      // Ondes qui montent le long du ruban : il gonfle et s'écarte par vagues
+      // Une onde douce monte le long de la spirale
       const onde = Math.sin(h * o.frequence - t.temps * o.vitesse + g);
       const rayon = (f.largeur * (0.18 + 0.9 * h ** 1.3) * rayonRuban + f.largeur * o.amplitude * onde) * f.ecartement;
-      const angle = t.temps * vitesse * (1 + 0.4 * h) + decalage + h * tours * Math.PI * 2;
-      // Bande : s'épaissit vers le haut et palpite ; au bout du ruban elle ne
-      // s'amincit qu'un peu (pas de longue traînée fine) : les flammes de la
-      // texture en découpent la pointe
-      const effile = Math.min(1, 0.45 + 0.55 * Math.min(1, (1 - s) / 0.06), 0.5 + s * 6);
-      const bande = veine
-        ? c.magma.largeurVeine * f.retrecissement * effile
-        : (c.bande[0] + (c.bande[1] - c.bande[0]) * h) * facteurBande * f.retrecissement * effile * (1 + c.palpitation * Math.sin(h * 7.3 + t.temps * 5 + g));
+      const angle = t.temps * c.rotation * (1 + 0.4 * h) + decalage + h * tours * Math.PI * 2;
+      // Bande pleine sur toute la longueur (pas de traînée fine), à peine plus mince tout en bas
+      const bande = (c.bande[0] + (c.bande[1] - c.bande[0]) * h) * f.retrecissement
+        * Math.min(1, 0.6 + s * 8) * (1 + c.palpitation * onde);
       const sin = Math.sin(angle);
       const cos = Math.cos(angle);
       // Le bord haut penche vers l'extérieur (la paroi s'évase) ; le bord bas est dentelé
       const rayonHaut = rayon + bande * 0.35;
-      const dent = veine || k % 2 === 0 ? 0 : bande * c.dents;
+      const dent = k % 2 === 0 ? 0 : bande * c.dents;
+      let rouge = 1;
+      let vert = 1;
+      let bleu = 1;
+      if (t.magma) {
+        // Rouge sombre, traversé de zones jaunes incandescentes qui montent
+        const chaleur = borner((Math.sin(h * m.frequenceChaleur - t.temps * m.vitesseChaleur + g) - 0.2) * 1.6, 0, 1);
+        rouge = m.rouge[0] + (m.jaune[0] - m.rouge[0]) * chaleur;
+        vert = m.rouge[1] + (m.jaune[1] - m.rouge[1]) * chaleur;
+        bleu = m.rouge[2] + (m.jaune[2] - m.rouge[2]) * chaleur;
+      }
       rubans.point(
         k,
         cx + sin * rayon, Math.max(0.02, y - bande * 0.3 + dent), cz + cos * rayon,
         cx + sin * rayonHaut, Math.max(0.05, y + bande * 0.7), cz + cos * rayonHaut,
+        rouge, vert, bleu,
       );
     }
     rubans.fermer();

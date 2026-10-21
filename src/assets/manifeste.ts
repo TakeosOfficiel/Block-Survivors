@@ -31,8 +31,6 @@ export function texturesInterface(): Set<CheminTexture> {
   for (const id of IDS_ARMES) chemins.add(ARMES[id].icone);
   for (const arene of ARENES) chemins.add(arene.icone);
   chemins.add(CONFIG.hud.coeurs.plein).add(CONFIG.hud.coeurs.dore);
-  // Barre d'expérience : aussi la barre de l'écran de chargement
-  chemins.add(CONFIG.hud.barreXp.fond).add(CONFIG.hud.barreXp.progression);
   chemins.add(RECOMPENSES.icone);
   for (const nom of SKINS_VANILLA) chemins.add(cheminSkinVanilla(nom, false)).add(cheminSkinVanilla(nom, true));
   for (const id of IDS_PERSONNAGES) {

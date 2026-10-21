@@ -60,7 +60,6 @@ async function demarrer(): Promise<void> {
     textures.charger(texturesInterface(), (faites, total) => ecran.progression(faites, total)),
   ]);
   appliquerHabillage(textures);
-  ecran.habiller(textures);
   // Skins du joueur (éditeur, importée) : enregistrées comme des textures du jeu
   textures.enregistrer(CHEMIN_SKIN_PERSO, dessinerSkinPerso(profil.traits, profil.brasFins));
   if (profil.skinImporte) {

@@ -5,6 +5,15 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.35.0] — 2026-10-21
+
+### Changements
+- **Écran de chargement de nouveau en plein écran**, avec un cadre propre à Block Survivors :
+  - la photo de l'arène remplit l'écran, nette (photos fournies refaites en pleine taille, sans zoom) ;
+  - un liseré doré fait le tour de l'écran, avec un joyau émeraude serti d'or dans chaque coin ;
+  - la barre de chargement est dans le même cadre doré, un joyau à chaque bout, et se remplit en vert émeraude ;
+  - le nom de l'arène en doré et une astuce au-dessus de la barre.
+
 ## [0.34.0] — 2026-10-21
 
 ### Changements

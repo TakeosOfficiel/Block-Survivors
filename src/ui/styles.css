@@ -191,40 +191,61 @@ img { image-rendering: pixelated; }
 .rarete-soin { color: var(--mc-or); }
 
 /* --- Écran de chargement ------------------------------------------------- */
-/* Le logo, puis (pendant le chargement d'une partie) la photo de l'arène encadrée dans un
-   panneau du jeu avec son nom et une astuce, et la barre d'expérience comme barre de chargement */
+/* Plein écran : la photo de l'arène, un cadre doré propre au jeu (liseré et joyaux émeraude
+   aux coins, voir ui/ornements.ts), le logo en haut ; en bas le nom de l'arène, une astuce et
+   la barre dans le même cadre doré */
 #chargement {
   position: fixed; inset: 0; z-index: 20; overflow: hidden;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
-  padding: 16px;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  padding: 6vh 16px 6vh;
   background: radial-gradient(ellipse at 50% 40%, #262b36 0%, #0b0d12 75%);
+  --or-clair: #ffe58a; --or: #e0b040; --or-sombre: #8a6418; --or-contour: #1a1206;
 }
-.chargement-titre { font-size: 40px; line-height: 48px; }
-#chargement-fenetre {
-  width: min(1040px, 88vw, calc((100vh - 300px) * 16 / 9));
-  display: flex; flex-direction: column; gap: 6px;
-  padding: 10px 12px 12px;
-}
-/* La photo, creusée dans le panneau comme une case d'inventaire */
 #chargement-image {
-  aspect-ratio: 16 / 9;
-  background: #1d1d1d center / cover no-repeat;
-  border: 2px solid; border-color: #373737 #ffffff #ffffff #373737;
-  opacity: 0; transition: opacity 0.4s ease-out;
+  position: absolute; inset: 0; background: center / cover no-repeat;
+  opacity: 0; transition: opacity 0.5s ease-out;
 }
 #chargement-image.visible { opacity: 1; }
-#chargement-arene { color: var(--mc-texte-panneau); font-size: 24px; line-height: 30px; text-align: center; margin-top: 4px; }
-#chargement-astuce { color: #555555; text-align: center; min-height: 18px; }
-.chargement-bas { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-/* Barre d'expérience vanilla (182x5) en triple taille ; couleurs de secours sans les sprites */
-#chargement-cadre {
-  width: 546px; max-width: 86vw; height: 15px;
-  background: #2a2a2a center / 100% 100% no-repeat; image-rendering: pixelated;
+.chargement-voile {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    linear-gradient(to top, rgba(6, 8, 12, 0.95) 0%, rgba(6, 8, 12, 0.8) 18%, rgba(6, 8, 12, 0.3) 34%, rgba(6, 8, 12, 0) 50%),
+    linear-gradient(to bottom, rgba(6, 8, 12, 0.55) 0%, rgba(6, 8, 12, 0) 20%),
+    radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(6, 8, 12, 0.45) 100%);
 }
+/* Liseré doré tout autour de l'écran, bordé de sombre */
+.chargement-lisere {
+  position: absolute; inset: 20px; pointer-events: none;
+  border: 3px solid var(--or);
+  box-shadow: 0 0 0 3px var(--or-contour), inset 0 0 0 3px var(--or-contour), inset 0 0 0 5px rgba(255, 229, 138, 0.35);
+}
+.chargement-joyau {
+  position: absolute; width: 42px; height: 42px; pointer-events: none;
+  background: var(--joyau) center / 100% 100% no-repeat; image-rendering: pixelated;
+}
+.chargement-joyau.hg { left: 0; top: 0; }
+.chargement-joyau.hd { right: 0; top: 0; }
+.chargement-joyau.bg { left: 0; bottom: 0; }
+.chargement-joyau.bd { right: 0; bottom: 0; }
+.chargement-titre { position: relative; font-size: 40px; line-height: 48px; }
+.chargement-bas { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; width: min(760px, 80vw); }
+#chargement-arene { font-size: 32px; line-height: 38px; color: #ffd75e; text-shadow: 3px 3px 0 #3f2f05; text-align: center; }
+#chargement-astuce { color: #d0d0d0; text-align: center; min-height: 20px; margin-bottom: 8px; }
+/* Barre dans le cadre doré, un joyau à chaque bout ; remplissage émeraude */
+#chargement-cadre {
+  position: relative; width: 100%; height: 18px; padding: 3px;
+  background: #0d0a05; border: 3px solid var(--or);
+  box-shadow: 0 0 0 3px var(--or-contour), inset 0 0 0 1px var(--or-contour), 0 6px 16px rgba(0, 0, 0, 0.6);
+}
+#chargement-cadre .chargement-joyau { width: 36px; height: 36px; top: 50%; transform: translateY(-50%); }
+#chargement-cadre .gauche { left: -24px; }
+#chargement-cadre .droite { right: -24px; }
 #chargement-barre {
   height: 100%; width: 0; transition: width 0.15s linear;
-  background: #80ff20 left center / 546px 15px no-repeat; image-rendering: pixelated;
+  background: linear-gradient(to bottom, #b4ffd0 0%, #b4ffd0 18%, #17dd62 19%, #0fb24e 70%, #0a8a3a 100%);
+  box-shadow: 0 0 10px rgba(23, 221, 98, 0.55);
 }
+#chargement-texte { color: #a8a8a8; }
 #chargement.erreur #chargement-texte { color: var(--mc-rouge); }
 
 /* --- Menu principal ------------------------------------------------------- */

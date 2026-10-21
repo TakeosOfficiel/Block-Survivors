@@ -4,6 +4,7 @@
  * Convention : maj(dt) = simulation en temps de jeu (ne touche qu'à l'état),
  * majVisuel(...) = recopie de l'état dans la scène et le DOM.
  */
+import * as THREE from 'three';
 import type { LecteurSons } from './audio/sons';
 import type { BibliothequeTextures } from './assets/textures';
 import { cumulerBonusArmes } from './combat/armeEquipee';
@@ -97,6 +98,8 @@ export class Jeu implements CallbacksBoucle, Retours {
   private recompense: Recompense | null = null;
   private readonly etat: EtatPartie;
   private readonly terrain: Terrain;
+  /** Taille du décor à photographier (blocs) : l'arène, ou toute la construction d'une map Minecraft. */
+  private readonly tailleDecor: number;
   private readonly vegetation: Vegetation;
   private readonly entrees = new Entrees();
   private readonly aideSouris = element('hud-aide-souris');
@@ -192,6 +195,10 @@ export class Jeu implements CallbacksBoucle, Retours {
     rendu.appliquerAmbiance(arene);
     this.vegetation = new Vegetation(scene);
     this.terrain = { carte: monde.carte, flux: new ChampDeFlux(monde.carte) };
+    const boite = monde.decor ? new THREE.Box3().setFromObject(monde.decor) : null;
+    this.tailleDecor = boite && !boite.isEmpty()
+      ? Math.max(boite.max.x - boite.min.x, boite.max.z - boite.min.z) * CONFIG.chargement.photo.cadreDecor
+      : Math.max(arene.largeur, arene.profondeur);
     const carte = monde.carte;
     this.ombres = new Ombres(textures.obtenir(CONFIG.ombre.texture), scene);
     this.particules = new Particules(scene, rendu.camera, textures, IDS_OBJETS.map((id) => OBJETS[id].icone));
@@ -357,6 +364,35 @@ export class Jeu implements CallbacksBoucle, Retours {
   prechauffer(surProgression?: (faites: number, total: number) => void): Promise<void> {
     this.camera.majVisuel(0, 0);
     return this.rendu.prechauffer(surProgression);
+  }
+
+  /**
+   * Belle vue de l'arène pour l'écran de chargement (comme les images de zone
+   * de WoW) : de biais et de haut, toute l'arène dans le cadre, le brouillard
+   * repoussé le temps de la photo. À prendre une fois tout préparé, avant le
+   * début de la partie.
+   */
+  photographier(): HTMLCanvasElement | null {
+    const P = CONFIG.chargement.photo;
+    const taille = this.tailleDecor;
+    const camera = new THREE.PerspectiveCamera(P.champ, 16 / 9, 0.5, 600);
+    const distance = taille * P.recul;
+    const plongee = P.plongeeDeg * Math.PI / 180, azimut = P.azimutDeg * Math.PI / 180;
+    camera.position.set(
+      Math.sin(azimut) * Math.cos(plongee) * distance,
+      Math.sin(plongee) * distance,
+      Math.cos(azimut) * Math.cos(plongee) * distance,
+    );
+    camera.lookAt(0, 0, 0);
+    const brouillard = this.rendu.scene.fog as THREE.Fog | null;
+    const avant = brouillard ? [brouillard.near, brouillard.far] : null;
+    if (brouillard) {
+      brouillard.near = distance * 0.8;
+      brouillard.far = distance * 2.4;
+    }
+    const photo = this.rendu.photographier(camera, P.largeur);
+    if (brouillard && avant) [brouillard.near, brouillard.far] = avant;
+    return photo;
   }
 
   demarrer(): void {

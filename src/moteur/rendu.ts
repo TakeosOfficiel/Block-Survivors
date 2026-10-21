@@ -141,6 +141,33 @@ export class Rendu {
   }
 
   /**
+   * Photo de la scène vue par `camera`, réduite à `largeur` pixels de large
+   * (image de l'écran de chargement). Dessinée sur le canvas du jeu, caché
+   * sous l'écran de chargement, puis recopiée tout de suite ; null si elle ne
+   * peut pas être relue ou si elle est vide.
+   */
+  photographier(camera: THREE.PerspectiveCamera, largeur: number): HTMLCanvasElement | null {
+    const toile = this.renderer.domElement;
+    camera.aspect = toile.width / toile.height;
+    camera.updateProjectionMatrix();
+    this.renderer.render(this.scene, camera);
+    const photo = document.createElement('canvas');
+    photo.width = Math.min(largeur, toile.width);
+    photo.height = Math.round((photo.width * toile.height) / toile.width);
+    const ctx = photo.getContext('2d', { willReadFrequently: true });
+    if (!ctx || photo.height < 1) return null;
+    try {
+      ctx.drawImage(toile, 0, 0, photo.width, photo.height);
+      // Une image toute noire ou transparente : le dessin n'a pas pu être relu
+      const centre = ctx.getImageData(photo.width >> 1, photo.height >> 1, 1, 1).data;
+      if (centre[3] === 0 || centre[0] + centre[1] + centre[2] === 0) return null;
+    } catch {
+      return null;
+    }
+    return photo;
+  }
+
+  /**
    * Prépare la carte graphique pendant le chargement : chaque maillage encore
    * vide (boss, mobs pas encore apparus, golem, particules…) reçoit une
    * instance, puis tous les shaders sont compilés d'un coup, en parallèle.

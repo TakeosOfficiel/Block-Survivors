@@ -9,6 +9,7 @@
 import './ui/styles.css';
 import { Sons } from './audio/sons';
 import { texturesInterface, texturesRequises } from './assets/manifeste';
+import { memoriserPhoto } from './assets/photosArenes';
 import { chargerPolice } from './assets/police';
 import { BibliothequeTextures } from './assets/textures';
 import { PERSONNAGES } from './donnees/personnages';
@@ -16,7 +17,6 @@ import { Jeu } from './jeu';
 import { choixDemande, memoriserChoix, partieDemandee } from './lancement';
 import { importerArene } from './minecraft/importation';
 import { genererMonde, type MondeGenere } from './monde/generation';
-import { texturesDessus, vueDessusMonde } from './monde/vueDessus';
 import { Rendu } from './moteur/rendu';
 import { chargerOptions } from './options';
 import { Sauvegarde } from './progression/sauvegarde';
@@ -35,6 +35,8 @@ async function demarrer(): Promise<void> {
   const ecran = new EcranChargement();
   const textures = new BibliothequeTextures();
   let choix = choixDemande();
+  // Au lancement : la photo de la dernière arène jouée (son nom seulement si la partie suit)
+  ecran.decor(choix.arene, partieDemandee());
 
   let rendu: Rendu;
   try {
@@ -86,10 +88,8 @@ async function demarrer(): Promise<void> {
     memoriserChoix(choix);
     ecran.planifier(etapesPartie(choix));
   }
+  ecran.decor(choix.arene, true);
   ecran.afficher();
-  // La map de la partie apparaît vue de dessus, chunk par chunk, avec la tête du joueur au départ
-  const skin = textures.obtenir(apparenceJoueur(PERSONNAGES[choix.personnage], profil).skin)?.image as CanvasImageSource | undefined;
-  const tete = skin ?? null;
 
   let monde: MondeGenere;
   if (choix.arene.source) {
@@ -98,8 +98,6 @@ async function demarrer(): Promise<void> {
       const importee = await importerArene(choix.arene, textures, {
         etape: (texte) => ecran.etape(texte),
         progression: (faites, total) => ecran.progression(faites, total),
-        dimensions: (largeur, profondeur) => ecran.annoncerCarte(choix.arene.nom, largeur, profondeur),
-        vue: (vue) => ecran.montrerCarte(vue, tete),
       });
       choix = { ...choix, arene: importee.arene };
       monde = importee.monde;
@@ -108,12 +106,9 @@ async function demarrer(): Promise<void> {
       return;
     }
   } else {
-    ecran.annoncerCarte(choix.arene.nom, choix.arene.largeur, choix.arene.profondeur);
     ecran.etape('Génération du monde…');
     await new Promise((resoudre) => requestAnimationFrame(resoudre));  // laisse s'afficher l'étape
     monde = genererMonde(choix.arene);
-    await textures.charger(texturesDessus(monde));
-    ecran.montrerCarte(vueDessusMonde(monde, choix.arene, textures), tete);
   }
   ecran.etape('Chargement des textures…');
   await textures.charger(
@@ -125,8 +120,11 @@ async function demarrer(): Promise<void> {
   jeu.appliquerOptions(options);
   ecran.etape('Préparation des modèles…');
   await jeu.prechauffer((faites, total) => ecran.progression(faites, total));
+  // Photo de l'arène pour le prochain chargement, prise juste avant que la partie ne commence
+  const photo = jeu.photographier();
   ecran.masquer();
   jeu.demarrer();
+  if (photo) memoriserPhoto(choix.arene.id, photo);
 
   // En développement uniquement : accès à la partie depuis la console du navigateur
   if (import.meta.env.DEV) Object.assign(window, { blockSurvivors: { jeu, rendu } });

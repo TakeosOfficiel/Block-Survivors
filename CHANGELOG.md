@@ -5,6 +5,15 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.33.0] — 2026-10-21
+
+### Changements
+- **Écran de chargement façon WoW** : une belle image de l'arène en plein écran, qui avance très doucement, avec son nom en doré, une astuce de jeu au hasard et une barre de chargement dorée en bas.
+  - L'image est une vraie photo de la map : à la fin de chaque chargement, le jeu en prend une sous un bel angle et la garde. Elle s'affiche au chargement suivant de cette arène, toujours à jour, et fonctionne aussi avec les maps que tu importes.
+  - Les arènes du jeu ont déjà leur photo, dès la première partie.
+  - Au lancement du jeu, l'écran montre la dernière arène jouée.
+- La carte vue de dessus est retirée.
+
 ## [0.32.0] — 2026-10-21
 
 ### Changements

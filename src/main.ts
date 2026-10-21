@@ -25,14 +25,23 @@ import { apparenceJoueur, chargerProfil, CHEMIN_SKIN_IMPORTE, CHEMIN_SKIN_PERSO 
 import { ApercuHeros } from './ui/apercuHeros';
 import { chargerImageSkin, EcranProfil } from './ui/ecranProfil';
 import { EcranChargement } from './ui/ecranChargement';
+import { SceneChargement } from './ui/sceneChargement';
 import { EcranMenu } from './ui/ecranMenu';
 import { suivreEchelleInterface } from './ui/echelle';
+import { element } from './ui/dom';
 import { appliquerHabillage } from './ui/habillage';
 import { PanneauOptions } from './ui/panneauOptions';
 
 async function demarrer(): Promise<void> {
   suivreEchelleInterface();
   const ecran = new EcranChargement(SOURCES_TEXTURES[0].url(CONFIG.chargement.textureFond));
+  // Scène du chargement (le feu de camp) : prête en arrière-plan, affichée dès que ses textures sont là
+  const textures = new BibliothequeTextures();
+  let choix = choixDemande();
+  const scene = SceneChargement.creer(element('chargement'), textures, PERSONNAGES[choix.personnage]).catch(() => null).then((s) => {
+    if (s) ecran.brancher(s);
+    return s;
+  });
 
   let rendu: Rendu;
   try {
@@ -48,9 +57,7 @@ async function demarrer(): Promise<void> {
   const profil = chargerProfil();
   const sons = new Sons(options.volume, options.volumes);
   sons.precharger();
-  const textures = new BibliothequeTextures();
   // Une seule barre : l'interface seule avant le menu, ou l'interface et la partie (Rejouer)
-  let choix = choixDemande();
   ecran.planifier(1 + (partieDemandee() ? etapesPartie(choix) : 0));
   ecran.etape('Chargement de l\'interface…');
   await Promise.all([
@@ -85,8 +92,11 @@ async function demarrer(): Promise<void> {
     choix = await new EcranMenu(textures, choix, panneauOptions, sauvegarde, new EcranProfil(textures, profil, apercu), apercu).attendreChoix();
     memoriserChoix(choix);
     ecran.planifier(etapesPartie(choix));
-    ecran.afficher();
   }
+  // Au coin du feu : le héros de la partie, avec sa classe et sa skin
+  const heros = apparenceJoueur(PERSONNAGES[choix.personnage], profil);
+  void scene.then((s) => s?.changerHeros(heros));
+  ecran.afficher();
 
   let monde: MondeGenere;
   if (choix.arene.source) {
@@ -117,7 +127,7 @@ async function demarrer(): Promise<void> {
   jeu.appliquerOptions(options);
   ecran.etape('Préparation des modèles…');
   await jeu.prechauffer((faites, total) => ecran.progression(faites, total));
-  ecran.masquer();
+  await ecran.terminer();
   jeu.demarrer();
 
   // En développement uniquement : accès à la partie depuis la console du navigateur

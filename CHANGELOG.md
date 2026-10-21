@@ -5,6 +5,18 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.30.0] — 2026-10-21
+
+### Nouveautés
+- **Nouvel écran de chargement : « La pause des mobs »**. Le soir, autour d'un vrai feu de camp de Minecraft (fumée, braises qui sautent, flammes animées), les mobs font une pause avant la partie pendant que la vue tourne lentement autour d'eux :
+  - ton héros (ta classe, ta skin et son arme) caresse un mouton qui dort ;
+  - le zombie fait griller un cookie au bout d'un bâton, et le cookie dore au fur et à mesure du chargement ;
+  - le squelette compte ses os, un os à la main ;
+  - le creeper essaie d'approcher du feu, tremble et recule ;
+  - autour : une tente, une pile de bûches, une lanterne, des fleurs, des champignons et des lucioles.
+- Ce sont les mobs qui racontent le chargement (« Le squelette compte ses os… 40 % »).
+- **À 100 %**, tout le monde se lève : le mouton se réveille et sautille, le zombie croque son cookie, le héros fait coucou, et la partie commence.
+
 ## [0.29.0] — 2026-10-21
 
 ### Changements

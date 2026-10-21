@@ -5,6 +5,11 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.35.3] — 2026-10-21
+
+### Corrections
+- **Losanges de la barre de chargement enfin centrés** : ils étaient 3 pixels trop bas et trop vers l'intérieur (leur position partait de l'intérieur de la bordure de la barre). Ils sont maintenant exactement au milieu de la barre et sur ses bords dorés (mesuré au pixel près).
+
 ## [0.35.2] — 2026-10-21
 
 ### Corrections

@@ -1,4 +1,9 @@
-/** Écran de chargement façon Minecraft (fond de terre assombri, étape, barre de progression). */
+/**
+ * Écran de chargement façon Minecraft (fond de terre assombri, étape, barre de
+ * progression). Une seule barre pour tout le chargement : planifier() annonce
+ * le nombre d'étapes, chacune en remplit une part égale, et la barre ne
+ * recule jamais ; seul le libellé change d'une étape à l'autre.
+ */
 import { element } from './dom';
 
 export class EcranChargement {
@@ -6,23 +11,34 @@ export class EcranChargement {
   private readonly texte = element('chargement-texte');
   private readonly barre = element('chargement-barre');
   private libelle = 'Chargement…';
+  private etapes = 1;
+  private index = -1;
+  /** Part déjà remplie (0 à 1). */
+  private rempli = 0;
 
   /** `urlFond` : texture tuilée en fond ; la couleur CSS sert de secours si elle est indisponible. */
   constructor(urlFond: string) {
     this.racine.style.backgroundImage = `url("${urlFond}")`;
   }
 
-  /** Nouvelle étape : libellé affiché, barre remise à zéro. */
+  /** Nouveau chargement de `etapes` étapes : la barre repart de zéro. */
+  planifier(etapes: number): void {
+    this.etapes = Math.max(1, etapes);
+    this.index = -1;
+    this.rempli = 0;
+    this.barre.style.width = '0%';
+  }
+
+  /** Étape suivante : nouveau libellé, la barre continue depuis où elle en est. */
   etape(libelle: string): void {
     this.libelle = libelle;
-    this.texte.textContent = libelle;
-    this.barre.style.width = '0%';
+    this.index = Math.min(this.index + 1, this.etapes - 1);
+    this.remplir(this.index / this.etapes);
   }
 
   progression(faites: number, total: number): void {
     const ratio = total > 0 ? faites / total : 1;
-    this.texte.textContent = `${this.libelle} ${faites} / ${total}`;
-    this.barre.style.width = `${Math.round(ratio * 100)}%`;
+    this.remplir((Math.max(0, this.index) + ratio) / this.etapes);
   }
 
   erreur(message: string): void {
@@ -36,5 +52,12 @@ export class EcranChargement {
 
   masquer(): void {
     this.racine.classList.add('cache');
+  }
+
+  private remplir(part: number): void {
+    this.rempli = Math.max(this.rempli, Math.min(1, part));
+    const pourcent = Math.round(this.rempli * 100);
+    this.texte.textContent = `${this.libelle} ${pourcent} %`;
+    this.barre.style.width = `${pourcent}%`;
   }
 }

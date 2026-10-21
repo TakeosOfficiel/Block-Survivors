@@ -49,6 +49,9 @@ async function demarrer(): Promise<void> {
   const sons = new Sons(options.volume, options.volumes);
   sons.precharger();
   const textures = new BibliothequeTextures();
+  // Une seule barre : l'interface seule avant le menu, ou l'interface et la partie (Rejouer)
+  let choix = choixDemande();
+  ecran.planifier(1 + (partieDemandee() ? etapesPartie(choix) : 0));
   ecran.etape('Chargement de l\'interface…');
   await Promise.all([
     chargerPolice(),
@@ -75,18 +78,16 @@ async function demarrer(): Promise<void> {
   });
 
   // Menu, sauf si l'adresse demande de jouer tout de suite (Rejouer)
-  let choix = choixDemande();
   if (!partieDemandee()) {
     // Héros en 3D du menu : même moteur que le jeu (repli WebGL2 compris)
     const apercu = await ApercuHeros.creer(textures, rendu.api !== 'WebGPU');
     ecran.masquer();
     choix = await new EcranMenu(textures, choix, panneauOptions, sauvegarde, new EcranProfil(textures, profil, apercu), apercu).attendreChoix();
     memoriserChoix(choix);
+    ecran.planifier(etapesPartie(choix));
     ecran.afficher();
   }
 
-  ecran.etape('Génération du monde…');
-  await new Promise((resoudre) => requestAnimationFrame(resoudre));  // laisse s'afficher l'étape
   let monde: MondeGenere;
   if (choix.arene.source) {
     // Map construite dans Minecraft : sa taille et son décor viennent de la schématique
@@ -102,6 +103,8 @@ async function demarrer(): Promise<void> {
       return;
     }
   } else {
+    ecran.etape('Génération du monde…');
+    await new Promise((resoudre) => requestAnimationFrame(resoudre));  // laisse s'afficher l'étape
     monde = genererMonde(choix.arene);
   }
   ecran.etape('Chargement des textures…');
@@ -119,6 +122,11 @@ async function demarrer(): Promise<void> {
 
   // En développement uniquement : accès à la partie depuis la console du navigateur
   if (import.meta.env.DEV) Object.assign(window, { blockSurvivors: { jeu, rendu } });
+}
+
+/** Étapes du chargement d'une partie : le monde (une map importée en compte quatre), les textures, les modèles. */
+function etapesPartie(choix: { readonly arene: { readonly source?: unknown } }): number {
+  return (choix.arene.source ? 4 : 1) + 2;
 }
 
 void demarrer();

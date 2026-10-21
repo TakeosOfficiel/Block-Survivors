@@ -201,7 +201,7 @@ img { image-rendering: pixelated; }
   border: 2px solid #000;
   background: #555;
 }
-#chargement-barre { height: 100%; width: 0; background: var(--mc-vert); }
+#chargement-barre { height: 100%; width: 0; background: var(--mc-vert); transition: width 0.15s linear; }
 #chargement.erreur #chargement-texte { color: var(--mc-rouge); }
 
 /* --- Menu principal ------------------------------------------------------- */

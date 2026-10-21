@@ -8,6 +8,7 @@
  */
 import * as THREE from 'three';
 import { CONFIG, SOURCES_TEXTURES, type IdSourceTexture } from '../config';
+import { obtenirFichier } from './cacheLocal';
 import type { CheminTexture } from '../donnees/types';
 
 export interface BilanTextures {
@@ -158,23 +159,14 @@ async function chargerDepuisSources(
   return null;
 }
 
-function chargerImage(url: string, delaiMs: number): Promise<HTMLImageElement> {
+/** Image depuis le cache local, sinon téléchargée (puis gardée pour les prochains lancements). */
+async function chargerImage(url: string, delaiMs: number): Promise<HTMLImageElement> {
+  const contenu = await obtenirFichier(url, delaiMs);
   return new Promise((resolve, reject) => {
     const image = new Image();
-    // CORS obligatoire pour WebGL : une image non autorisée échoue ici au lieu de planter au rendu
-    image.crossOrigin = 'anonymous';
-    const minuterie = window.setTimeout(() => {
-      image.src = '';
-      reject(new Error(`Délai dépassé : ${url}`));
-    }, delaiMs);
-    image.onload = () => {
-      window.clearTimeout(minuterie);
-      resolve(image);
-    };
-    image.onerror = () => {
-      window.clearTimeout(minuterie);
-      reject(new Error(`Introuvable : ${url}`));
-    };
-    image.src = url;
+    // Adresse locale (blob:) : l'image reste utilisable par WebGL et par l'interface HTML
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`Image illisible : ${url}`));
+    image.src = URL.createObjectURL(contenu);
   });
 }

@@ -5,6 +5,14 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.28.0] — 2026-10-21
+
+### Changements
+- **Chargement des parties deux fois plus rapide** (mesuré : environ 15 s → 7 s au deuxième lancement) :
+  - les shaders sont tous préparés en même temps, en parallèle, au lieu d'un petit paquet après l'autre ;
+  - les textures et les modèles de blocs téléchargés sont gardés sur l'ordinateur : après le premier lancement, plus rien ne passe par internet (et le jeu se charge même hors ligne).
+- **Une seule barre de chargement**, qui avance de 0 à 100 % sans jamais repartir de zéro ; seul le texte de l'étape change.
+
 ## [0.27.0] — 2026-10-21
 
 ### Changements

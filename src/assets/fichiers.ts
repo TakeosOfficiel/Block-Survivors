@@ -1,5 +1,9 @@
-/** Fichiers JSON vanilla (police, états et modèles de blocs), cherchés dans SOURCES_FICHIERS. */
-import { SOURCES_FICHIERS } from '../config';
+/**
+ * Fichiers JSON vanilla (police, états et modèles de blocs), cherchés dans
+ * SOURCES_FICHIERS et gardés dans le cache local après le premier téléchargement.
+ */
+import { CONFIG, SOURCES_FICHIERS } from '../config';
+import { obtenirFichier } from './cacheLocal';
 
 const cache = new Map<string, Promise<unknown>>();
 
@@ -16,8 +20,7 @@ export function chargerJsonVanilla(chemin: string): Promise<unknown> {
 async function chercher(chemin: string): Promise<unknown> {
   for (const source of SOURCES_FICHIERS) {
     try {
-      const reponse = await fetch(source(chemin));
-      if (reponse.ok) return await reponse.json();
+      return JSON.parse(await (await obtenirFichier(source(chemin), CONFIG.textures.delaiMaxMs)).text());
     } catch {
       // Source suivante
     }

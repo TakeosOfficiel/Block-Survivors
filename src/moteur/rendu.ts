@@ -141,31 +141,41 @@ export class Rendu {
 
   /**
    * Prépare la carte graphique pendant le chargement : chaque maillage encore
-   * vide (boss, mobs pas encore apparus, golem, particules…) est dessiné une
-   * fois, ce qui compile ses shaders et envoie ses données. Sans cela, la
-   * première apparition d'un boss ou d'un nouveau mob fige le jeu un instant.
+   * vide (boss, mobs pas encore apparus, golem, particules…) reçoit une
+   * instance, puis tous les shaders sont compilés d'un coup, en parallèle.
+   * Sans cela, la première apparition d'un boss ou d'un nouveau mob fige le
+   * jeu un instant. `surProgression(faites, total)` suit la préparation.
    */
   async prechauffer(surProgression?: (faites: number, total: number) => void): Promise<void> {
     const vides: THREE.InstancedMesh[] = [];
+    const maillages: THREE.Mesh[] = [];
     this.scene.traverse((objet) => {
       const maillage = objet as THREE.InstancedMesh;
       if (maillage.isInstancedMesh && maillage.count === 0 && maillage.visible) vides.push(maillage);
+      if ((objet as THREE.Mesh).isMesh && objet.visible) maillages.push(objet as THREE.Mesh);
     });
-    // Par paquets, une image chacun : la barre de progression avance et la page reste réactive
-    for (const m of vides) m.visible = false;
-    // Un seul pixel dessiné : les shaders se compilent pareil, le dessin ne coûte rien
+    // Un premier dessin sans aucun modèle met en place la lumière et les ombres :
+    // les shaders compilés ensuite sont exactement ceux que le jeu utilisera
     this.renderer.setScissorTest(true);
     this.renderer.setScissor(0, 0, 1, 1);
-    const PAQUET = 16;
-    for (let i = 0; i < vides.length; i += PAQUET) {
-      for (const m of vides.slice(i, i + PAQUET)) {
-        m.visible = true;
-        m.count = 1;
-      }
-      this.renderer.render(this.scene, this.camera);
-      surProgression?.(Math.min(i + PAQUET, vides.length), vides.length);
-      await new Promise((resoudre) => requestAnimationFrame(resoudre));
-    }
+    for (const m of maillages) m.visible = false;
+    this.renderer.render(this.scene, this.camera);
+    for (const m of maillages) m.visible = true;
+    // Tous les modèles encore vides reçoivent une instance le temps de la préparation
+    for (const m of vides) m.count = 1;
+    // Toutes les compilations sont lancées d'un coup : la carte graphique les mène en
+    // parallèle (au lieu d'attendre la fin de chacune avant la suivante)
+    // (la barre en montre les trois quarts : le dernier quart est le dessin final)
+    const total = maillages.length * 4;
+    let faites = 0;
+    await Promise.all(maillages.map((m) => this.renderer.compileAsync(m, this.camera, this.scene).then(() => {
+      surProgression?.(++faites * 3, total);
+    })));
+    await new Promise((resoudre) => requestAnimationFrame(resoudre));  // laisse la barre s'afficher
+    // Un dessin d'un seul pixel compile ce qui reste (passes d'ombre, que le moteur ne sait
+    // compiler qu'en dessinant) sans rien coûter à l'écran
+    this.renderer.render(this.scene, this.camera);
+    surProgression?.(total, total);
     this.renderer.setScissorTest(false);
     for (const m of vides) m.count = 0;
   }

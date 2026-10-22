@@ -26,7 +26,8 @@ import { caseImage } from './bilan';
 import { element } from './dom';
 import { EcranNouveautes } from './ecranNouveautes';
 import type { EcranProfil } from './ecranProfil';
-import { compteurEmeraudes, EcranTalents } from './ecranTalents';
+import { EcranTalents } from './ecranTalents';
+import { bandeauMaitrise } from './maitrise';
 import type { PanneauOptions } from './panneauOptions';
 
 const NOMBRE = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 });
@@ -104,11 +105,10 @@ export class EcranMenu {
       });
     }
 
-    // Passage aux nouveaux arbres : les émeraudes des anciens talents ont été rendues
-    const rendu = sauvegarde.annoncerRemboursement();
-    if (rendu > 0) {
+    // Passage à la maîtrise : les talents achetés en émeraudes ont été remis à zéro
+    if (sauvegarde.annoncerReinitialisation()) {
       const bouton = element<HTMLButtonElement>('menu-remboursement');
-      bouton.textContent = `Nouveaux arbres de talents : ${rendu} émeraudes rendues. Cliquez pour les dépenser`;
+      bouton.textContent = 'Nouveau : chaque classe a sa maîtrise, qui monte avec l’XP ramassée ; un niveau = un point de talent. Talents remis à zéro, cliquez pour voir';
       bouton.classList.remove('cache');
       bouton.addEventListener('click', () => {
         bouton.classList.add('cache');
@@ -164,7 +164,10 @@ export class EcranMenu {
 
   /** Tout ce qui dépend du choix courant, de la sauvegarde ou du profil. */
   private rafraichir(): void {
-    element('menu-emeraudes').replaceChildren(...compteurEmeraudes(this.textures, this.sauvegarde.emeraudes));
+    const p = this.personnage;
+    element('menu-maitrise').replaceChildren(bandeauMaitrise(
+      this.textures, PERSONNAGES[p].nom, this.sauvegarde.maitrise(p), this.sauvegarde.pointsLibres(p, this.sauvegarde.arbreActif(p)),
+    ));
     for (const bouton of this.listePersonnages.children) {
       bouton.classList.toggle('choisie', (bouton as HTMLElement).dataset['id'] === this.personnage);
     }

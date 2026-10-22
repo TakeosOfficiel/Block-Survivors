@@ -1,7 +1,8 @@
 /**
- * Progression entre les parties : émeraudes gagnées en jouant, arbres de
- * talents (deux par classe, un seul actif par partie) et déblocages des
- * personnages et des arènes.
+ * Progression entre les parties : maîtrise de chaque classe (l'XP ramassée en
+ * partie la fait monter, chaque niveau donne un point de talent), arbres de
+ * talents (deux par classe, un seul actif par partie ; chacun a tous les
+ * points de la classe) et déblocages des personnages et des arènes.
  *
  * Chaque arbre est un graphe : un talent relié s'achète quand un des talents
  * reliés au-dessus de lui est complet ; un talent libre s'ouvre avec son
@@ -10,24 +11,7 @@
  * une option par talent à choix, une seule arme de départ en plus.
  */
 import type { IdPersonnage } from './personnages';
-import type { DefinitionArbre, DefinitionDeblocage, DefinitionRecompenses, NoeudTalent } from './types';
-
-/** Coût des rangs selon la ligne du talent ; un talent à un seul rang coûte `un`. */
-const COUTS: readonly { readonly rangs: readonly number[]; readonly un: number }[] = [
-  { rangs: [5], un: 5 },
-  { rangs: [5, 10, 15], un: 10 },
-  { rangs: [10, 20], un: 15 },
-  { rangs: [20, 30], un: 25 },
-  { rangs: [30, 45], un: 40 },
-  { rangs: [40, 60], un: 50 },
-  { rangs: [80], un: 80 },
-];
-
-/** Prix de chaque rang du talent. */
-export function coutsTalent(noeud: NoeudTalent): readonly number[] {
-  const c = COUTS[noeud.ligne];
-  return noeud.rangMax === 1 ? [c.un] : c.rangs.slice(0, noeud.rangMax);
-}
+import type { DefinitionArbre, DefinitionDeblocage, DefinitionMaitrise } from './types';
 
 /** Paliers : la ligne `ligne` et les suivantes s'ouvrent avec `rangs` rangs achetés au-dessus d'elle. */
 export const PALIERS: readonly { readonly ligne: number; readonly rangs: number }[] = [
@@ -315,14 +299,29 @@ export const ARBRES: Readonly<Record<IdPersonnage, readonly [DefinitionArbre, De
 
 };
 
-/** Émeraudes gagnées en fin de partie. */
-export const RECOMPENSES: DefinitionRecompenses = {
-  icone: 'item/emerald',
-  parSecondes: 20,     // 1 émeraude toutes les 20 s survécues
-  parTues: 40,         // 1 émeraude tous les 40 ennemis tués
-  parBoss: 10,
-  victoire: 25,
+/**
+ * Maîtrise : niveau 1 à 700 XP ramassées avec la classe, chaque niveau suivant
+ * en demande 175 de plus (une partie complète en rapporte environ 9 000). Un
+ * niveau = un point de talent, un point = un rang : un arbre (31 rangs) se
+ * complète en une douzaine de parties complètes.
+ */
+export const MAITRISE: DefinitionMaitrise = {
+  icone: 'item/experience_bottle',
+  premierNiveau: 700,
+  increment: 175,
 };
+
+/** XP de maîtrise totale pour atteindre ce niveau. */
+export function xpPourNiveau(niveau: number): number {
+  return niveau * MAITRISE.premierNiveau + MAITRISE.increment * (niveau * (niveau - 1)) / 2;
+}
+
+/** Niveau de maîtrise atteint avec cette XP. */
+export function niveauMaitrise(xp: number): number {
+  let niveau = 0;
+  while (xpPourNiveau(niveau + 1) <= xp) niveau++;
+  return niveau;
+}
 
 /** Ce qui n'est pas disponible dès la première partie, et comment l'obtenir. */
 export const DEBLOCAGES: readonly DefinitionDeblocage[] = [

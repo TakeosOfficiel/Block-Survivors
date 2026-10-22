@@ -1,19 +1,21 @@
 /**
  * Talents (depuis le menu) : pour chaque personnage, deux arbres en graphe ;
  * un seul est actif pendant les parties. Un clic sur un talent ouvre sa fiche :
- * achat d'un rang avec les émeraudes gagnées en jouant, choix de l'option
- * d'un talent à choix, talent final actif, arme de départ active.
+ * achat d'un rang avec un point de talent (un par niveau de maîtrise de la
+ * classe ; chaque arbre a tous les points), choix de l'option d'un talent à
+ * choix, talent final actif, arme de départ active.
  *
  * Schéma : les liens de redstone s'allument quand le talent du dessus est
  * complet ; les lignes pointillées sont les paliers (rangs à acheter au-dessus).
  */
 import type { BibliothequeTextures } from '../assets/textures';
 import { IDS_PERSONNAGES, PERSONNAGES, type IdPersonnage } from '../donnees/personnages';
-import { ARBRES, coutsTalent, MECANIQUES_PRETES, PALIERS, RECOMPENSES } from '../donnees/talents';
+import { ARBRES, MECANIQUES_PRETES, PALIERS } from '../donnees/talents';
 import type { BrancheArbre, NoeudTalent, TypeNoeud } from '../donnees/types';
 import type { Sauvegarde } from '../progression/sauvegarde';
 import { caseImage } from './bilan';
 import { element } from './dom';
+import { bandeauMaitrise } from './maitrise';
 import { portrait } from './portraits';
 
 /** Placement des talents sur le schéma (px). */
@@ -33,7 +35,7 @@ export class EcranTalents {
   private readonly racine = element('talents');
   private readonly onglets = element('talents-personnages');
   private readonly contenu = element('talents-arbres');
-  private readonly compteur = element('talents-emeraudes');
+  private readonly compteur = element('talents-maitrise');
   private readonly textures: BibliothequeTextures;
   private readonly sauvegarde: Sauvegarde;
   private personnage: IdPersonnage = IDS_PERSONNAGES[0];
@@ -80,7 +82,10 @@ export class EcranTalents {
 
   /** Reconstruit tout l'écran (une centaine d'éléments : simple et sûr). */
   private dessiner(): void {
-    this.compteur.replaceChildren(...compteurEmeraudes(this.textures, this.sauvegarde.emeraudes));
+    const p = this.personnage;
+    this.compteur.replaceChildren(bandeauMaitrise(
+      this.textures, PERSONNAGES[p].nom, this.sauvegarde.maitrise(p), this.sauvegarde.pointsLibres(p, this.arbre),
+    ));
     this.onglets.replaceChildren(...IDS_PERSONNAGES.map((id) => {
       const def = PERSONNAGES[id];
       const bouton = document.createElement('button');
@@ -118,7 +123,7 @@ export class EcranTalents {
       const rangs = this.sauvegarde.points(p, index);
       textes.append(
         texte(index === actif ? `${def.nom} ★` : def.nom, 'option-nom'),
-        texte(`${def.description} · ${rangs} rang${rangs > 1 ? 's' : ''}`, 'option-description'),
+        texte(`${def.description} · ${rangs} point${rangs > 1 ? 's' : ''} dépensé${rangs > 1 ? 's' : ''}`, 'option-description'),
       );
       bouton.append(caseImage(this.textures.url(def.icone), def.nom), textes);
       bouton.addEventListener('click', () => this.changerArbre(index));
@@ -135,11 +140,11 @@ export class EcranTalents {
       this.sauvegarde.choisirArbre(p, this.arbre);
       this.dessiner();
     });
-    const valeur = this.sauvegarde.valeur(p, this.arbre);
+    const valeur = this.sauvegarde.points(p, this.arbre);
     const reinitialiser = document.createElement('button');
     reinitialiser.className = 'bouton-mc';
-    reinitialiser.textContent = valeur > 0 ? `Réinitialiser (+${valeur})` : 'Réinitialiser';
-    reinitialiser.title = 'Rend toutes les émeraudes dépensées dans cet arbre';
+    reinitialiser.textContent = valeur > 0 ? `Réinitialiser (+${valeur} point${valeur > 1 ? 's' : ''})` : 'Réinitialiser';
+    reinitialiser.title = 'Rend tous les points dépensés dans cet arbre (gratuit)';
     reinitialiser.disabled = valeur === 0;
     reinitialiser.addEventListener('click', () => {
       this.sauvegarde.reinitialiser(p, this.arbre);
@@ -305,8 +310,7 @@ export class EcranTalents {
       infos.append(dt, dd);
     };
     ajouter('Prérequis', this.prerequis(n), this.sauvegarde.ouvert(p, a, n) ? '' : 'refuse');
-    const couts = coutsTalent(n);
-    ajouter('Coût', `${couts.join(' / ')} émeraudes`);
+    ajouter('Coût', '1 point de talent par rang');
     if (n.type === 'final') ajouter('Activation', 'Un seul talent final actif par arbre, changeable avant chaque partie.');
     if (n.armeDepart) ajouter('Activation', 'Une seule arme de départ en plus par arbre ; désactivable sans perdre l’achat.');
     if (n.options) ajouter('Activation', 'L’achat débloque les deux options ; une seule joue à la fois.');
@@ -321,8 +325,9 @@ export class EcranTalents {
     if (refus === 'max') {
       acheter.textContent = 'Complet';
     } else {
-      acheter.append(rang === 0 ? 'Acheter ' : 'Rang suivant ', ...compteurEmeraudes(this.textures, couts[rang]));
-      acheter.title = refus === 'verrou' ? 'Prérequis non remplis' : refus === 'prix' ? 'Pas assez d’émeraudes' : '';
+      acheter.textContent = rang === 0 ? 'Acheter (1 point)' : 'Rang suivant (1 point)';
+      acheter.title = refus === 'verrou' ? 'Prérequis non remplis'
+        : refus === 'points' ? 'Plus de point libre : jouez cette classe pour monter sa maîtrise' : '';
     }
     acheter.disabled = refus !== null;
     acheter.addEventListener('click', () => {
@@ -371,21 +376,6 @@ export class EcranTalents {
     if (palier) parties.push(`${palier.rangs} rangs achetés au-dessus`);
     return parties.join(' · ');
   }
-}
-
-/** Icône d'émeraude suivie d'un nombre. */
-export function compteurEmeraudes(textures: BibliothequeTextures, nombre: number): Node[] {
-  const url = textures.url(RECOMPENSES.icone);
-  const noeuds: Node[] = [];
-  if (url) {
-    const icone = document.createElement('img');
-    icone.src = url;
-    icone.alt = 'émeraudes';
-    icone.className = 'icone-texte';
-    noeuds.push(icone);
-  }
-  noeuds.push(document.createTextNode(new Intl.NumberFormat('fr-FR').format(nombre)));
-  return noeuds;
 }
 
 function texte(contenu: string, classe: string): HTMLElement {

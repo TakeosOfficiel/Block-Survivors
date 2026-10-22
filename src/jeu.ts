@@ -33,7 +33,6 @@ import { Entrees } from './controles/entrees';
 import type { IdEnnemi } from './donnees/ennemis';
 import { IDS_OBJETS, OBJETS } from './donnees/objets';
 import { GERBES } from './donnees/particules';
-import { RECOMPENSES } from './donnees/talents';
 import { PROGRESSION } from './donnees/progression';
 import type { IdSon } from './donnees/sons';
 import { Ombres } from './effets/ombres';
@@ -325,7 +324,7 @@ export class Jeu implements CallbacksBoucle, Retours {
       rejouer: () => lancerPartie(this.choix),
       menuPrincipal: () => retournerAuMenu(this.choix),
       remplirBilan: bilan,
-    }, textures.url(RECOMPENSES.icone));
+    }, textures);
 
     this.sourcesEntites = [
       this.joueur, this.ennemis, this.projectilesEnnemis, this.projectilesJoueur, this.ricochets, this.invocations, this.orbes, this.objets,
@@ -351,9 +350,9 @@ export class Jeu implements CallbacksBoucle, Retours {
       changerPersonnage: (id) => lancerPartie({ ...this.choix, personnage: id }),
       changerArene: (arene) => lancerPartie({ ...this.choix, arene }),
       frapper: () => this.frapperAutourDuJoueur(),
-      offrirEmeraudes: () => {
-        this.sauvegarde.offrir(100);
-        this.hud.afficherMessage(`${this.sauvegarde.emeraudes} émeraudes`);
+      offrirMaitrise: () => {
+        const m = this.sauvegarde.offrirNiveau(this.choix.personnage);
+        this.hud.afficherMessage(`Maîtrise ${m.niveau}`);
       },
     });
     this.rendu.preparerOmbres();
@@ -567,11 +566,11 @@ export class Jeu implements CallbacksBoucle, Retours {
     if (etat.issue !== null) {
       this.minuterieFin = 0;
       this.recompense = this.sauvegarde.terminerPartie({
+        personnage: this.choix.personnage,
         arene: etat.arene.id,
         temps: etat.tempsJeu,
-        tues: etat.ennemisTues,
+        xp: etat.stats.xpTotale,
         boss: etat.stats.bossVaincus,
-        victoire: etat.issue === 'victoire',
       });
     }
   }

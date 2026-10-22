@@ -10,7 +10,7 @@ import { IDS_PASSIFS, PASSIFS } from '../donnees/passifs';
 import { PROGRESSION } from '../donnees/progression';
 import { ARENES, blocDuSol } from '../donnees/arenes';
 import { IDS_PERSONNAGES, PERSONNAGES } from '../donnees/personnages';
-import { ARBRES, RECOMPENSES } from '../donnees/talents';
+import { ARBRES, MAITRISE } from '../donnees/talents';
 import { IDS_PROJECTILES, PROJECTILES } from '../donnees/projectiles';
 import { SKINS_VANILLA } from '../donnees/skins';
 import type { ApparenceEntite, CheminTexture, DefinitionArene } from '../donnees/types';
@@ -31,7 +31,7 @@ export function texturesInterface(): Set<CheminTexture> {
   for (const id of IDS_ARMES) chemins.add(ARMES[id].icone);
   for (const arene of ARENES) chemins.add(arene.icone);
   chemins.add(CONFIG.hud.coeurs.plein).add(CONFIG.hud.coeurs.dore);
-  chemins.add(RECOMPENSES.icone);
+  chemins.add(MAITRISE.icone);
   for (const nom of SKINS_VANILLA) chemins.add(cheminSkinVanilla(nom, false)).add(cheminSkinVanilla(nom, true));
   for (const id of IDS_PERSONNAGES) {
     for (const arbre of ARBRES[id]) {

@@ -1,24 +1,31 @@
 /**
- * Sauvegarde de la progression entre les parties (stockage local) :
- * émeraudes, talents achetés dans les deux arbres de chaque classe, réglages
- * de chaque arbre (option des talents à choix, talent final actif, arme de
- * départ active), arbre actif, records qui débloquent personnages et arènes.
+ * Sauvegarde de la progression entre les parties (stockage local) : XP de
+ * maîtrise de chaque classe, talents achetés dans les deux arbres de chaque
+ * classe, réglages de chaque arbre (option des talents à choix, talent final
+ * actif, arme de départ active), arbre actif, records qui débloquent
+ * personnages et arènes.
  *
- * Version 2 : arbres en graphe. Les achats de la version 1 sont remboursés.
+ * Chaque niveau de maîtrise donne un point de talent ; un rang coûte un point.
+ * Les deux arbres d'une classe ont chacun tous ses points (comme une double
+ * spécialisation) : changer d'arbre ne coûte rien.
+ *
+ * Version 3 : maîtrise par classe. Les talents achetés avec les émeraudes des
+ * versions précédentes sont remis à zéro (records et arbre actif gardés).
  */
 import type { IdArme } from '../donnees/armes';
 import type { IdPersonnage } from '../donnees/personnages';
-import { ARBRES, coutsTalent, DEBLOCAGES, PALIERS, RECOMPENSES } from '../donnees/talents';
+import { ARBRES, DEBLOCAGES, niveauMaitrise, PALIERS, xpPourNiveau } from '../donnees/talents';
 import type { BonusArmeTalent, DefinitionDeblocage, EffetTalent, Modificateurs, NoeudTalent } from '../donnees/types';
 import { ecrireStockage, lireStockage } from '../options';
 import { cumulerModificateurs } from './modificateurs';
 
 const CLE = 'block-survivors.progression';
-const VERSION = 2;
+const VERSION = 3;
 
 interface Donnees {
   version: number;
-  emeraudes: number;
+  /** XP de maîtrise cumulée, par personnage. */
+  maitrise: Record<string, number>;
   /** Rang acheté, par « personnage.arbre.talent ». */
   rangs: Record<string, number>;
   /** Option choisie (0 ou 1) des talents à choix, par « personnage.arbre.talent ». */
@@ -33,8 +40,8 @@ interface Donnees {
   records: Record<string, number>;
   bossVaincus: number;
   parties: number;
-  /** Émeraudes rendues au passage aux nouveaux arbres, pas encore annoncées. */
-  rembourse: number;
+  /** Talents remis à zéro au passage à la maîtrise, pas encore annoncé. */
+  reinitialise: boolean;
 }
 
 /** Ce que l'arbre actif donne au départ d'une partie. */
@@ -51,40 +58,33 @@ export interface BonusTalents {
 
 /** Bilan d'une partie terminée, pour les récompenses. */
 export interface BilanPartie {
+  readonly personnage: IdPersonnage;
   readonly arene: string;
   readonly temps: number;
-  readonly tues: number;
+  /** XP ramassée pendant la partie : elle va à la maîtrise de la classe. */
+  readonly xp: number;
   readonly boss: number;
-  readonly victoire: boolean;
+}
+
+/** Où en est la maîtrise d'une classe. */
+export interface EtatMaitrise {
+  readonly niveau: number;
+  readonly xp: number;
+  /** XP du début du niveau actuel et du suivant. */
+  readonly debutNiveau: number;
+  readonly finNiveau: number;
 }
 
 export interface Recompense {
-  readonly emeraudes: number;
+  readonly personnage: IdPersonnage;
+  readonly xp: number;
+  readonly avant: EtatMaitrise;
+  readonly apres: EtatMaitrise;
   readonly deblocages: readonly DefinitionDeblocage[];
 }
 
 /** Pourquoi un rang ne peut pas être acheté. */
-export type RefusAchat = 'max' | 'verrou' | 'prix' | null;
-
-/** Coûts des talents de la version 1, pour les rembourser (« personnage.arbre.talent »). */
-const ANCIENS_COUTS: Readonly<Record<string, readonly number[]>> = {
-  'guerrier.gladiateur.lame': [5, 10, 15], 'guerrier.gladiateur.precision': [5, 10, 15], 'guerrier.gladiateur.maitre': [15, 25],
-  'guerrier.gladiateur.fougue': [15, 25, 35], 'guerrier.gladiateur.fatal': [40, 70], 'guerrier.gladiateur.tourbillon': [40, 70],
-  'guerrier.gardien.robustesse': [5, 10, 15], 'guerrier.gardien.souffle': [5, 10, 15], 'guerrier.gardien.bouclier': [15, 25],
-  'guerrier.gardien.endurance': [15, 25, 35], 'guerrier.gardien.immortel': [80], 'guerrier.gardien.forteresse': [40, 70],
-  'archer.elite.pointes': [5, 10, 15], 'archer.elite.oeil': [5, 10, 15], 'archer.elite.visee': [15, 25, 35],
-  'archer.elite.arc': [15, 25], 'archer.elite.tete': [40, 70], 'archer.elite.salve': [80],
-  'archer.rodeuse.pas': [5, 10, 15], 'archer.rodeuse.flair': [5, 10, 15], 'archer.rodeuse.ruse': [15, 25],
-  'archer.rodeuse.cadence': [15, 25, 35], 'archer.rodeuse.baies': [40, 70], 'archer.rodeuse.sous_bois': [40, 70],
-  'mage.pyromancien.braise': [5, 10, 15], 'mage.pyromancien.souffle': [5, 10, 15], 'mage.pyromancien.boules': [15, 25],
-  'mage.pyromancien.combustion': [15, 25, 35], 'mage.pyromancien.brasier': [40, 70], 'mage.pyromancien.meteores': [80],
-  'mage.arcaniste.concentration': [5, 10, 15], 'mage.arcaniste.vigueur': [5, 10, 15], 'mage.arcaniste.meditation': [15, 25, 35],
-  'mage.arcaniste.savoir': [15, 25], 'mage.arcaniste.tempete': [80], 'mage.arcaniste.egide': [40, 70],
-  'invocateur.maitre_chien.crocs': [5, 10, 15], 'invocateur.maitre_chien.piste': [5, 10, 15], 'invocateur.maitre_chien.dressage': [15, 25],
-  'invocateur.maitre_chien.instinct': [15, 25, 35], 'invocateur.maitre_chien.alpha': [80], 'invocateur.maitre_chien.jugulaire': [40, 70],
-  'invocateur.evocateur.robustesse': [5, 10, 15], 'invocateur.evocateur.incantation': [5, 10, 15], 'invocateur.evocateur.vex': [15, 25],
-  'invocateur.evocateur.protection': [15, 25], 'invocateur.evocateur.golem': [80], 'invocateur.evocateur.longevite': [40, 70],
-};
+export type RefusAchat = 'max' | 'verrou' | 'points' | null;
 
 export class Sauvegarde {
   private readonly donnees: Donnees;
@@ -109,7 +109,7 @@ export class Sauvegarde {
     const actuelle = lu.version === VERSION;
     const donnees: Donnees = {
       version: VERSION,
-      emeraudes: Math.floor(nombre(lu.emeraudes)),
+      maitrise: actuelle ? table(lu.maitrise) : {},
       rangs: actuelle ? table(lu.rangs) : {},
       options: actuelle ? table(lu.options) : {},
       finals: actuelle ? textes(lu.finals) : {},
@@ -118,35 +118,31 @@ export class Sauvegarde {
       records: table(lu.records),
       bossVaincus: nombre(lu.bossVaincus),
       parties: nombre(lu.parties),
-      rembourse: nombre(lu.rembourse),
+      // Une ancienne sauvegarde existait : ses talents sont remis à zéro, on le dira une fois
+      reinitialise: actuelle ? lu.reinitialise === true : lireStockage(CLE) !== null,
     };
-    // Version 1 : chaque rang acheté est rendu à son prix d'achat
-    if (!actuelle) {
-      let rendu = 0;
-      for (const [cle, rang] of Object.entries(table(lu.talents))) {
-        const couts = ANCIENS_COUTS[cle];
-        if (couts) for (let r = 0; r < Math.min(rang, couts.length); r++) rendu += couts[r];
-      }
-      donnees.emeraudes += rendu;
-      donnees.rembourse += rendu;
-    }
     const sauvegarde = new Sauvegarde(donnees);
     if (!actuelle && lireStockage(CLE) !== null) sauvegarde.enregistrer();
     return sauvegarde;
   }
 
-  get emeraudes(): number {
-    return this.donnees.emeraudes;
+  /** Vrai une seule fois si les talents viennent d'être remis à zéro (passage à la maîtrise). */
+  annoncerReinitialisation(): boolean {
+    if (!this.donnees.reinitialise) return false;
+    this.donnees.reinitialise = false;
+    this.enregistrer();
+    return true;
   }
 
-  /** Émeraudes rendues au passage aux nouveaux arbres (une seule fois, puis 0). */
-  annoncerRemboursement(): number {
-    const rendu = this.donnees.rembourse;
-    if (rendu > 0) {
-      this.donnees.rembourse = 0;
-      this.enregistrer();
-    }
-    return rendu;
+  // --- Maîtrise ------------------------------------------------------------
+
+  maitrise(personnage: IdPersonnage): EtatMaitrise {
+    return etatMaitrise(this.donnees.maitrise[personnage] ?? 0);
+  }
+
+  /** Points de talent encore libres dans cet arbre (chaque arbre a tous les points de la classe). */
+  pointsLibres(personnage: IdPersonnage, arbre: number): number {
+    return Math.max(0, this.maitrise(personnage).niveau - this.points(personnage, arbre));
   }
 
   // --- Arbres --------------------------------------------------------------
@@ -195,34 +191,20 @@ export class Sauvegarde {
     const rang = this.rang(personnage, arbre, noeud);
     if (rang >= noeud.rangMax) return 'max';
     if (!this.ouvert(personnage, arbre, noeud)) return 'verrou';
-    if (this.donnees.emeraudes < coutsTalent(noeud)[rang]) return 'prix';
+    if (this.pointsLibres(personnage, arbre) < 1) return 'points';
     return null;
   }
 
   acheter(personnage: IdPersonnage, arbre: number, noeud: NoeudTalent): boolean {
     if (this.refusAchat(personnage, arbre, noeud) !== null) return false;
-    const rang = this.rang(personnage, arbre, noeud);
-    this.donnees.emeraudes -= coutsTalent(noeud)[rang];
-    this.donnees.rangs[cleNoeud(personnage, arbre, noeud)] = rang + 1;
+    this.donnees.rangs[cleNoeud(personnage, arbre, noeud)] = this.rang(personnage, arbre, noeud) + 1;
     this.enregistrer();
     return true;
   }
 
-  /** Émeraudes rendues si l'arbre était remis à zéro. */
-  valeur(personnage: IdPersonnage, arbre: number): number {
-    let total = 0;
-    for (const noeud of ARBRES[personnage][arbre].noeuds) {
-      const couts = coutsTalent(noeud);
-      const rang = this.rang(personnage, arbre, noeud);
-      for (let r = 0; r < rang; r++) total += couts[r];
-    }
-    return total;
-  }
-
-  /** Rend toutes les émeraudes dépensées dans l'arbre et efface ses réglages. */
+  /** Rend tous les points dépensés dans l'arbre et efface ses réglages. */
   reinitialiser(personnage: IdPersonnage, arbre: number): void {
     const d = this.donnees;
-    d.emeraudes += this.valeur(personnage, arbre);
     for (const noeud of ARBRES[personnage][arbre].noeuds) {
       delete d.rangs[cleNoeud(personnage, arbre, noeud)];
       delete d.options[cleNoeud(personnage, arbre, noeud)];
@@ -336,30 +318,42 @@ export class Sauvegarde {
 
   // --- Fin de partie -------------------------------------------------------
 
-  /** Récompense une partie terminée et enregistre ses records. */
+  /** Ajoute l'XP de la partie à la maîtrise de la classe et enregistre ses records. */
   terminerPartie(bilan: BilanPartie): Recompense {
-    const r = RECOMPENSES;
-    const emeraudes = Math.floor(bilan.temps / r.parSecondes) + Math.floor(bilan.tues / r.parTues)
-      + bilan.boss * r.parBoss + (bilan.victoire ? r.victoire : 0);
     const verrouillesAvant = DEBLOCAGES.filter((d) => !this.rempli(d));
     const d = this.donnees;
-    d.emeraudes += emeraudes;
+    const avant = this.maitrise(bilan.personnage);
+    const xp = Math.max(0, Math.floor(bilan.xp));
+    d.maitrise[bilan.personnage] = avant.xp + xp;
     d.records[bilan.arene] = Math.max(d.records[bilan.arene] ?? 0, bilan.temps);
     d.bossVaincus += bilan.boss;
     d.parties++;
     this.enregistrer();
-    return { emeraudes, deblocages: verrouillesAvant.filter((deblocage) => this.rempli(deblocage)) };
+    return {
+      personnage: bilan.personnage,
+      xp,
+      avant,
+      apres: this.maitrise(bilan.personnage),
+      deblocages: verrouillesAvant.filter((deblocage) => this.rempli(deblocage)),
+    };
   }
 
-  /** Debug : émeraudes offertes. */
-  offrir(emeraudes: number): void {
-    this.donnees.emeraudes += emeraudes;
+  /** Debug : un niveau de maîtrise offert à la classe. */
+  offrirNiveau(personnage: IdPersonnage): EtatMaitrise {
+    const m = this.maitrise(personnage);
+    this.donnees.maitrise[personnage] = m.finNiveau;
     this.enregistrer();
+    return this.maitrise(personnage);
   }
 
   private enregistrer(): void {
     ecrireStockage(CLE, this.donnees);
   }
+}
+
+function etatMaitrise(xp: number): EtatMaitrise {
+  const niveau = niveauMaitrise(xp);
+  return { niveau, xp, debutNiveau: xpPourNiveau(niveau), finNiveau: xpPourNiveau(niveau + 1) };
 }
 
 function cleArbre(personnage: IdPersonnage, arbre: number): string {

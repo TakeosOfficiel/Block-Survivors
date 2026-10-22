@@ -5,6 +5,14 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.38.0] — 2026-10-22
+
+### Changements
+- **Maîtrise par classe** : les talents ne s'achètent plus en émeraudes. Chaque classe a sa maîtrise, qui monte avec toute l'XP ramassée pendant vos parties (les gros mobs et les boss en donnent plus) ; chaque niveau de maîtrise donne **1 point de talent**, et **1 point = 1 rang**. Jouer l'Archère fait progresser l'Archère.
+- **Les deux arbres d'une classe ont chacun tous les points** (comme une double spécialisation) : changer d'arbre ne coûte rien, et la réinitialisation est gratuite.
+- **Fin de partie** : la barre de maîtrise de la classe se remplit avec l'XP de la partie et annonce les points gagnés. Le menu et l'écran des talents affichent la maîtrise et les points libres.
+- **Talents remis à zéro** (records et déblocages gardés). Les émeraudes reviendront bientôt sous une autre forme, en partie.
+
 ## [0.37.2] — 2026-10-22
 
 ### Corrections

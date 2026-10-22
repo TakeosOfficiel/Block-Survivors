@@ -857,12 +857,13 @@ export interface DefinitionArbre {
   readonly noeuds: readonly NoeudTalent[];
 }
 
-export interface DefinitionRecompenses {
+/** Maîtrise d'une classe : XP de partie cumulée, niveaux, un point de talent par niveau. */
+export interface DefinitionMaitrise {
   readonly icone: CheminTexture;
-  readonly parSecondes: number;
-  readonly parTues: number;
-  readonly parBoss: number;
-  readonly victoire: number;
+  /** XP pour le niveau 1. */
+  readonly premierNiveau: number;
+  /** XP en plus demandée par chaque niveau suivant. */
+  readonly increment: number;
 }
 
 export type ConditionDeblocage =

@@ -1,10 +1,14 @@
 /**
  * Fin de partie : écran de mort du jeu (voile rouge, « Vous êtes mort ! »)
- * ou de victoire (voile doré), score, bilan, Rejouer et Menu principal.
+ * ou de victoire (voile doré), score, maîtrise de la classe gagnée avec l'XP
+ * de la partie, bilan, Rejouer et Menu principal.
  */
+import type { BibliothequeTextures } from '../assets/textures';
+import { PERSONNAGES } from '../donnees/personnages';
 import type { IssuePartie } from '../etat';
 import type { Recompense } from '../progression/sauvegarde';
 import { element } from './dom';
+import { bandeauMaitrise, partNiveau } from './maitrise';
 
 export interface ActionsFin {
   rejouer(): void;
@@ -18,13 +22,13 @@ export class EcranFin {
   private readonly sousTitre = element('fin-sous-titre');
   private readonly bilan = element('fin-bilan');
   private readonly recompense = element('fin-recompense');
-  private readonly iconeEmeraude: string | null;
+  private readonly textures: BibliothequeTextures;
   private readonly hud = element('hud');
   private readonly actions: ActionsFin;
 
-  constructor(actions: ActionsFin, iconeEmeraude: string | null) {
+  constructor(actions: ActionsFin, textures: BibliothequeTextures) {
     this.actions = actions;
-    this.iconeEmeraude = iconeEmeraude;
+    this.textures = textures;
     element<HTMLButtonElement>('fin-rejouer').addEventListener('click', () => this.actions.rejouer());
     element<HTMLButtonElement>('fin-menu').addEventListener('click', () => this.actions.menuPrincipal());
     window.addEventListener('keydown', this.surTouche);
@@ -54,20 +58,27 @@ export class EcranFin {
     this.racine.classList.remove('cache');
   }
 
-  /** « +12 émeraudes » et ce que la partie a débloqué. */
+  /** Maîtrise de la classe (la barre se remplit de l'XP de la partie) et ce que la partie a débloqué. */
   private afficherRecompense(recompense: Recompense | null): void {
     this.recompense.replaceChildren();
     if (!recompense) return;
-    const gain = document.createElement('div');
-    gain.className = 'fin-emeraudes';
-    if (this.iconeEmeraude) {
-      const image = document.createElement('img');
-      image.src = this.iconeEmeraude;
-      image.alt = '';
-      gain.append(image);
+    const { avant, apres } = recompense;
+    const bandeau = bandeauMaitrise(this.textures, PERSONNAGES[recompense.personnage].nom, apres, null);
+    // La barre part d'où elle en était (du début si un niveau est passé) et se remplit
+    const rempli = bandeau.querySelector<HTMLElement>('.maitrise-rempli');
+    if (rempli) {
+      const final = rempli.style.width;
+      rempli.style.width = apres.niveau > avant.niveau ? '0%' : `${partNiveau(avant) * 100}%`;
+      requestAnimationFrame(() => requestAnimationFrame(() => { rempli.style.width = final; }));
     }
-    gain.append(`+${recompense.emeraudes} émeraude${recompense.emeraudes > 1 ? 's' : ''}`);
-    this.recompense.append(gain);
+    const gain = document.createElement('div');
+    gain.className = 'fin-maitrise';
+    const niveaux = apres.niveau - avant.niveau;
+    gain.textContent = niveaux > 0
+      ? `+${new Intl.NumberFormat('fr-FR').format(recompense.xp)} XP · niveau ${avant.niveau} → ${apres.niveau} : +${niveaux} point${niveaux > 1 ? 's' : ''} de talent !`
+      : `+${new Intl.NumberFormat('fr-FR').format(recompense.xp)} XP de maîtrise`;
+    gain.classList.toggle('niveau', niveaux > 0);
+    this.recompense.append(bandeau, gain);
     for (const deblocage of recompense.deblocages) {
       const ligne = document.createElement('div');
       ligne.className = 'fin-deblocage';

@@ -52,8 +52,8 @@ export interface SourcesDebug {
   gagnerNiveau(): void;
   apparaitreBoss(): void;
   allerVersFin(): void;
-  /** Émeraudes offertes (talents à tester). */
-  offrirEmeraudes(): void;
+  /** Un niveau de maîtrise offert à la classe jouée (talents à tester). */
+  offrirMaitrise(): void;
   changerPersonnage(id: IdPersonnage): void;
   changerArene(arene: DefinitionArene): void;
   frapper(): void;
@@ -88,7 +88,7 @@ export class PanneauDebug {
     niveau: element<HTMLButtonElement>('dbg-niveau'),
     boss: element<HTMLButtonElement>('dbg-boss'),
     fin: element<HTMLButtonElement>('dbg-fin'),
-    emeraudes: element<HTMLButtonElement>('dbg-emeraudes'),
+    maitrise: element<HTMLButtonElement>('dbg-maitrise'),
     personnages: element('dbg-personnages'),
     arenes: element('dbg-arenes'),
   };
@@ -111,7 +111,7 @@ export class PanneauDebug {
     this.lierBouton(this.dom.niveau, () => this.sources.gagnerNiveau());
     this.lierBouton(this.dom.boss, () => this.sources.apparaitreBoss());
     this.lierBouton(this.dom.fin, () => this.sources.allerVersFin());
-    this.lierBouton(this.dom.emeraudes, () => this.sources.offrirEmeraudes());
+    this.lierBouton(this.dom.maitrise, () => this.sources.offrirMaitrise());
 
     // Une icône par ennemi, arme, bonus et objet, générées depuis les tables de données
     const { textures } = sources;

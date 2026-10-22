@@ -111,6 +111,9 @@ export class Arsenal {
         continue;
       }
       arme.minuterie -= dt;
+      // Invocation : la vague suivante attend le départ de la précédente, puis une courte pause
+      const pause = CONFIG.armes.invocations.pause;
+      if (arme.minuterie < pause && this.systemes.invocations.vagueEnPlace(arme)) arme.minuterie = pause;
       if (arme.minuterie > 0) continue;
       const talents = this.contexte.talents;
       talents.avantDeclenchement(arme);

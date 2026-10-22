@@ -5,6 +5,11 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.41.3] — 2026-10-22
+
+### Corrections
+- **Invocations moins envahissantes** (loups, blazes, golem, totem, vex…) : la vague suivante arrivait avant que la précédente parte, et chaque invocation rallongeait la durée des créatures déjà là, si bien qu'elles ne partaient jamais. Maintenant, une nouvelle vague attend que la précédente soit repartie (ou morte), puis 3 s de pause. L'allay, qui reste en permanence, n'est pas concerné.
+
 ## [0.41.2] — 2026-10-22
 
 ### Corrections

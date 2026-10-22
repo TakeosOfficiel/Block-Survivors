@@ -264,7 +264,7 @@ export interface DefinitionEnnemi extends ApparenceEntite {
   readonly boss?: { readonly couleurBarre: CouleurBarreBoss };
   /** Mini-boss : arrive à son heure (CALENDRIER_MINIBOSS), barre de vie au-dessus de la tête. */
   readonly miniBoss?: true;
-  /** Émeraudes lâchées à la mort (mini-boss, boss), éparpillées autour du corps. */
+  /** Tas d'émeraudes lâchés à la mort (mini-boss), éparpillés autour du corps. */
   readonly emeraudes?: number;
   /** Sons joués quand il est blessé et quand il meurt. */
   readonly sons?: { readonly blessure: IdSon; readonly mort: IdSon };
@@ -637,8 +637,6 @@ export interface DefinitionCoffre {
   /** Cartes choisies à l'ouverture (une à la fois). */
   readonly choix: number;
   readonly son: IdSon;
-  /** Couleur du faisceau lumineux qui le signale de loin. */
-  readonly couleurFaisceau: number;
 }
 
 /** Quand et où les coffres apparaissent, et leur prix. */
@@ -653,7 +651,6 @@ export interface ReglesCoffres {
   readonly rayonOuverture: number;     // blocs
   readonly dureeOuverture: number;     // s : le couvercle se lève
   readonly resteOuvert: number;        // s avant de disparaître
-  readonly faisceau: { readonly hauteur: number; readonly largeur: number; readonly intensite: number };
 }
 
 // --------------------------------------------------------------------------
@@ -663,8 +660,8 @@ export interface DefinitionObjet {
   readonly nom: string;
   readonly icone: CheminTexture;
   readonly soin: number;             // PV rendus
-  /** Émeraudes données au ramassage (monnaie de la partie, pour les coffres). */
-  readonly emeraudes?: number;
+  /** Tas d'émeraudes (monnaie de la partie, pour les coffres) : entre [min, max] au hasard, plus gros quand il en vaut plus. */
+  readonly emeraudes?: readonly [number, number];
   /** Probabilité d'être lâché par un ennemi ordinaire. */
   readonly chance: number;
   readonly taille: number;           // blocs

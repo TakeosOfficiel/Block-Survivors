@@ -281,7 +281,6 @@ const definitions = {
     comportement: { type: 'melee', degats: 8, portee: 0.8, cadence: 1.5 },
     xp: 60,
     butin: 'pomme_doree',
-    emeraudes: 10,
     boss: { couleurBarre: 'purple' },
   },
   seigneur_wither: {
@@ -302,7 +301,6 @@ const definitions = {
     comportement: { type: 'archer', projectile: 'fleche', degats: 4, distanceIdeale: 10, portee: 16, cadence: 1.4, nombre: 5, dispersion: 0.15 },
     xp: 100,
     butin: 'pomme_doree',
-    emeraudes: 10,
     boss: { couleurBarre: 'red' },
   },
   reine_araignee: {
@@ -323,7 +321,6 @@ const definitions = {
     comportement: { type: 'melee', degats: 6, portee: 0.6, cadence: 0.9 },
     xp: 70,
     butin: 'pomme_doree',
-    emeraudes: 10,
     boss: { couleurBarre: 'blue' },
   },
   magma_geant: {
@@ -344,7 +341,6 @@ const definitions = {
     comportement: { type: 'melee', degats: 8, portee: 0.6, cadence: 1.4 },
     xp: 80,
     butin: 'pomme_doree',
-    emeraudes: 10,
     boss: { couleurBarre: 'yellow' },
   },
 } satisfies Record<string, DefinitionEnnemi>;

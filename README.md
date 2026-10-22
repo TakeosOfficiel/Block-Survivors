@@ -151,18 +151,20 @@ rang coûte un point ; les paliers s'ouvrent après 8 puis 18 rangs achetés au-
 
 ## Émeraudes, coffres, mini-boss
 
-En partie, les ennemis lâchent parfois une **émeraude** (2 %), les mini-boss
-4 ou 5, les boss 10 ; elles ne servent que pendant la partie. Un **coffre**
-apparaît près du joueur tous les tant d'ennemis tués (100, puis +150, +200…) et
-à la mort de chaque mini-boss : marcher dessus l'ouvre si l'on a assez
-d'émeraudes (2, puis 3, 4… à chaque coffre ouvert), et l'on choisit une carte
-d'amélioration. Les boss lâchent un **coffre de l'Ender** gratuit (deux cartes).
-Un faisceau de lumière signale les coffres, leur prix flotte au-dessus.
+En partie, les ennemis lâchent parfois un **tas d'émeraudes** (2 %, de 1 à 4
+émeraudes, plus gros quand il en vaut plus), les mini-boss 4 ou 5 tas ; elles
+ne servent que pendant la partie. Un **coffre** apparaît près du joueur tous
+les tant d'ennemis tués (100, puis +150, +200…) et à la mort de chaque
+mini-boss : marcher dessus l'ouvre si l'on a assez d'émeraudes (3, puis 5, 7…
+à chaque coffre ouvert), et l'on choisit une carte d'amélioration. Les boss
+lâchent un **coffre de l'Ender** gratuit (deux cartes). Le prix flotte
+au-dessus des coffres.
 Données : donnees/coffres.ts, donnees/objets.ts.
 
 Les **mini-boss** (Zombie colosse, Vagabond, Araignée géante, Brute piglin,
-Champion wither) arrivent toutes les 75 s dès 1:30 (`CALENDRIER_MINIBOSS`),
-avec une barre de vie au-dessus de la tête ; chaque arène choisit les siens.
+Champion wither) arrivent sans prévenir toutes les 75 s dès 1:30
+(`CALENDRIER_MINIBOSS`), avec une barre de vie au-dessus de la tête ; chaque
+arène choisit les siens.
 
 | Personnage | Arbres |
 | --- | --- |

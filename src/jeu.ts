@@ -296,10 +296,11 @@ export class Jeu implements CallbacksBoucle, Retours {
     });
     this.directeur = new DirecteurApparitions(this.etat, this.terrain, this.ennemis, this.camera);
     this.directeurBoss = new DirecteurBoss({
-      calendrier: CALENDRIER_BOSS, liste: (a) => a.boss, annonce: (nom) => `Un boss approche : ${nom} !`, distance: 12, secousse: 0.6,
+      calendrier: CALENDRIER_BOSS, liste: (a) => a.boss, annonce: (nom) => `Un boss approche : ${nom} !`, distance: 12, son: 'boss', secousse: 0.6,
     }, this.etat, this.terrain, this.ennemis, this.camera, this.hud, this);
     this.directeurMiniBoss = new DirecteurBoss({
-      calendrier: CALENDRIER_MINIBOSS, liste: (a) => a.miniBoss, annonce: (nom) => `Mini-boss : ${nom} !`, distance: 10, secousse: 0.3,
+      // Les mini-boss arrivent sans prévenir, comme les autres ennemis
+      calendrier: CALENDRIER_MINIBOSS, liste: (a) => a.miniBoss, annonce: null, distance: 10, son: null, secousse: 0,
     }, this.etat, this.terrain, this.ennemis, this.camera, this.hud, this);
 
     // Progression et écrans

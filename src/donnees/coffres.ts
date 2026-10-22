@@ -15,7 +15,6 @@ const definitions = {
     payant: true,
     choix: 1,
     son: 'coffre',
-    couleurFaisceau: 0xffc860,
   },
   coffre_ender: {
     nom: "Coffre de l'Ender",
@@ -24,7 +23,6 @@ const definitions = {
     payant: false,
     choix: 2,
     son: 'coffre_ender',
-    couleurFaisceau: 0x7a5cff,
   },
 } satisfies Record<string, DefinitionCoffre>;
 
@@ -38,10 +36,9 @@ export const REGLES_COFFRES: ReglesCoffres = {
   capacite: 8,
   // Une dizaine de coffres par partie complète (≈ 3 300 ennemis tués), plus un par mini-boss
   tues: { premier: 100, intervalle: 150, croissance: 50 },
-  prix: { base: 2, increment: 1 },
+  prix: { base: 3, increment: 2 },
   distance: [7, 12],
   rayonOuverture: 1.1,
   dureeOuverture: 0.5,
   resteOuvert: 1.2,
-  faisceau: { hauteur: 7, largeur: 0.7, intensite: 0.9 },
 };

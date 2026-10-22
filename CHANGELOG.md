@@ -5,6 +5,15 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.39.1] — 2026-10-22
+
+### Corrections
+- **Coffres fidèles à Minecraft** : le dessus et l'intérieur étaient inversés (la texture des coffres est faite pour les blocs, à l'envers de celle des mobs). Le couvercle a maintenant ses planches et son cadre, et à l'ouverture on voit l'intérieur noir et le dessous du couvercle, comme en jeu.
+- **Plus de faisceau de lumière** au-dessus des coffres : seul leur prix flotte au-dessus.
+- **Tas d'émeraudes** : un ramassage vaut de 1 à 4 émeraudes (le tas est plus gros quand il en vaut plus). En contrepartie, les coffres coûtent plus cher à chaque ouverture : 3, puis 5, 7, 9…
+- **Boss** : ils ne lâchent plus d'émeraudes, puisqu'ils donnent déjà un coffre de l'Ender gratuit.
+- **Mini-boss** : ils arrivent sans annonce, sans son ni secousse.
+
 ## [0.39.0] — 2026-10-22
 
 ### Nouveautés

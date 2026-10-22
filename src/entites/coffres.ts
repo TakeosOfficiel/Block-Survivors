@@ -4,11 +4,10 @@
  * joueur, sur une case qu'il peut atteindre) et à la mort de chaque mini-boss ;
  * le boss lâche un coffre de l'Ender. Marcher dessus l'ouvre si l'on a assez
  * d'émeraudes (gratuit pour l'Ender) : le couvercle se lève, puis les cartes
- * d'amélioration s'ouvrent (écran des cartes, voir jeu.ts). Un faisceau de
- * lumière les signale de loin et leur prix flotte au-dessus d'eux.
+ * d'amélioration s'ouvrent (écran des cartes, voir jeu.ts). Leur prix flotte
+ * au-dessus d'eux.
  */
-import * as THREE from 'three';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import type * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
 import { COFFRES, IDS_COFFRES, REGLES_COFFRES, type IdCoffre } from '../donnees/coffres';
 import { MODELES } from '../donnees/modeles';
@@ -40,8 +39,8 @@ interface Coffre {
 const PRIX_ABORDABLE = '#55ff55';
 const PRIX_TROP_CHER = '#ff5555';
 
-const matrice = new THREE.Matrix4();
-const couleur = new THREE.Color();
+/** Hauteur du coffre (blocs) : le modèle, décrit tête en bas, est retourné autour d'elle. */
+const HAUTEUR = 14 / 16;
 
 export class Coffres {
   private readonly etat: EtatPartie;
@@ -54,7 +53,6 @@ export class Coffres {
   /** Index des parties du couvercle et du loquet (elles pivotent ensemble). */
   private readonly partiesCouvercle: number[];
   private readonly etiquettes: Etiquette[];
-  private readonly faisceaux: THREE.InstancedMesh;
   /** Ennemis tués à atteindre pour le prochain coffre, et l'écart suivant. */
   private prochainSeuil = REGLES_COFFRES.tues.premier;
   private intervalle = REGLES_COFFRES.tues.intervalle;
@@ -76,32 +74,6 @@ export class Coffres {
     this.pose = creerPoseModele(modele);
     this.partiesCouvercle = modele.parties.flatMap((p, i) => (p.nom === 'couvercle' || p.nom === 'loquet' ? [i] : []));
     this.etiquettes = Array.from({ length: r.capacite }, () => new Etiquette(scene, ''));
-
-    // Faisceau : deux plans croisés, lumière qui s'efface vers le haut (mélange additif)
-    const toile = document.createElement('canvas');
-    toile.width = 4;
-    toile.height = 64;
-    const ctx = toile.getContext('2d');
-    if (ctx) {
-      const degrade = ctx.createLinearGradient(0, 0, 0, 64);
-      degrade.addColorStop(0, 'rgba(255,255,255,0)');
-      degrade.addColorStop(1, 'rgba(255,255,255,1)');
-      ctx.fillStyle = degrade;
-      ctx.fillRect(0, 0, 4, 64);
-    }
-    const plan = new THREE.PlaneGeometry(r.faisceau.largeur, r.faisceau.hauteur).translate(0, r.faisceau.hauteur / 2, 0);
-    const croise = plan.clone().rotateY(Math.PI / 2);
-    const geometrie = mergeGeometries([plan, croise]);
-    const materiau = new THREE.MeshBasicMaterial({
-      map: new THREE.CanvasTexture(toile), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
-    });
-    this.faisceaux = new THREE.InstancedMesh(geometrie, materiau, r.capacite);
-    this.faisceaux.name = 'faisceaux de coffres';
-    this.faisceaux.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    this.faisceaux.setColorAt(0, couleur.set(0xffffff));  // crée l'attribut de couleur
-    this.faisceaux.frustumCulled = false;
-    this.faisceaux.count = 0;
-    scene.add(this.faisceaux);
   }
 
   get actifs(): number {
@@ -177,7 +149,6 @@ export class Coffres {
     const etat = this.etat;
     const pose = this.pose;
     for (let t = 0; t < this.rendus.length; t++) this.rendus[t].commencer();
-    let faisceaux = 0;
     for (let i = 0; i < r.capacite; i++) {
       const etiquette = this.etiquettes[i];
       if (i >= this.pool.nombre) {
@@ -185,16 +156,17 @@ export class Coffres {
         continue;
       }
       const c = this.pool.elements[i];
-      const def = COFFRES[IDS_COFFRES[c.indexType]];
       // Couvercle : se lève en douceur à l'ouverture (vers l'arrière)
       const p = c.ouvert < 0 ? 0 : Math.min(1, c.ouvert / r.dureeOuverture);
       const ouverture = -(1 - (1 - p) * (1 - p)) * Math.PI * 0.45;
       pose.rotations.fill(0);
       for (let k = 0; k < this.partiesCouvercle.length; k++) pose.rotations[this.partiesCouvercle[k] * 3] = ouverture;
+      // Retourné (voir le modèle) : loquet en −Z, d'où le demi-tour
       pose.x = c.x;
       pose.z = c.z;
-      pose.y = 0;
-      pose.angle = c.angle;
+      pose.y = HAUTEUR;
+      pose.echelleY = -1;
+      pose.angle = c.angle + Math.PI;
       this.rendus[c.indexType].ajouter(pose);
 
       // Prix au-dessus du coffre fermé, vert s'il est payable
@@ -205,18 +177,8 @@ export class Coffres {
         etiquette.ecrire(c.prix > 0 ? `${c.prix} émeraude${c.prix > 1 ? 's' : ''}` : 'Gratuit', abordable ? PRIX_ABORDABLE : PRIX_TROP_CHER);
       }
       etiquette.placer(c.x, 1.1 + Math.sin(temps * 3 + i) * 0.05, c.z, c.ouvert < 0);
-
-      // Faisceau des coffres fermés, qui pulse doucement
-      if (c.ouvert < 0) {
-        matrice.makeTranslation(c.x, 0.4, c.z);
-        this.faisceaux.setMatrixAt(faisceaux, matrice);
-        this.faisceaux.setColorAt(faisceaux++, couleur.set(def.couleurFaisceau).multiplyScalar(r.faisceau.intensite * (0.75 + 0.25 * Math.sin(temps * 4 + i))));
-      }
     }
     for (let t = 0; t < this.rendus.length; t++) this.rendus[t].terminer();
-    this.faisceaux.count = faisceaux;
-    this.faisceaux.instanceMatrix.needsUpdate = true;
-    if (this.faisceaux.instanceColor) this.faisceaux.instanceColor.needsUpdate = true;
   }
 
   /** Case accessible au hasard entre `min` et `max` blocs de (x, z). */

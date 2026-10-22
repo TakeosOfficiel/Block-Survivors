@@ -1,12 +1,13 @@
 /**
  * Directeur des boss (ou des mini-boss) : à intervalles réguliers (son
- * calendrier), annonce l'arrivée du prochain quelques secondes avant, puis le
+ * calendrier), annonce (si demandé) l'arrivée du prochain quelques secondes avant, puis le
  * fait apparaître hors du champ de la caméra. Les mini-boss ont les PV
  * multipliés comme les ennemis ordinaires à ce moment de la partie.
  */
 import { APPARITIONS } from '../donnees/apparitions';
 import { ENNEMIS, type IdEnnemi } from '../donnees/ennemis';
 import { PROGRESSION } from '../donnees/progression';
+import type { IdSon } from '../donnees/sons';
 import type { DefinitionArene, DefinitionCalendrierBoss } from '../donnees/types';
 import type { Retours } from '../effets/retours';
 import type { EtatPartie } from '../etat';
@@ -25,10 +26,11 @@ export interface ReglagesDirecteur {
   readonly calendrier: DefinitionCalendrierBoss;
   /** Ordre d'arrivée dans l'arène (puis en boucle). */
   readonly liste: (arene: DefinitionArene) => readonly IdEnnemi[];
-  /** Texte de l'alerte avant l'apparition. */
-  readonly annonce: (nom: string) => string;
-  /** Distance minimale au joueur (blocs) et secousse à l'apparition. */
+  /** Texte de l'alerte avant l'apparition (null : arrive sans prévenir). */
+  readonly annonce: ((nom: string) => string) | null;
+  /** Distance minimale au joueur (blocs) ; son et secousse à l'apparition (null / 0 : aucun). */
   readonly distance: number;
+  readonly son: IdSon | null;
   readonly secousse: number;
 }
 
@@ -82,7 +84,7 @@ export class DirecteurBoss {
     const t = this.etat.tempsJeu;
     if (!this.annonce && t >= this.moment - c.avertissement) {
       this.annonce = true;
-      this.afficheur.alerter(this.reglages.annonce(this.prochainNom), c.avertissement);
+      if (this.reglages.annonce) this.afficheur.alerter(this.reglages.annonce(this.prochainNom), c.avertissement);
     }
     if (t >= this.moment) {
       this.faireApparaitre();
@@ -125,7 +127,7 @@ export class DirecteurBoss {
     const montee = Math.min(this.etat.tempsJeu / a.dureeMontee, 1);
     const pv = this.reglages.calendrier.pvSelonTemps ? a.multiplicateurPv.debut + (a.multiplicateurPv.fin - a.multiplicateurPv.debut) * montee : 1;
     this.ennemis.apparaitre(id, x, z, pv);
-    this.retours.son('boss');
-    this.retours.secousse(this.reglages.secousse);
+    if (this.reglages.son) this.retours.son(this.reglages.son);
+    if (this.reglages.secousse > 0) this.retours.secousse(this.reglages.secousse);
   }
 }

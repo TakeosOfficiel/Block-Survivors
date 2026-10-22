@@ -1,7 +1,7 @@
 /**
  * Ce que lâche un ennemi vaincu : son XP, son butin garanti, et parfois un
- * objet (soin, émeraude). Un mini-boss lâche aussi des émeraudes et un coffre,
- * un boss des émeraudes et un coffre de l'Ender. Mort au-dessus de la lave,
+ * objet (soin, tas d'émeraudes). Un mini-boss lâche aussi des émeraudes et un
+ * coffre, un boss un coffre de l'Ender (gratuit). Mort au-dessus de la lave,
  * dans un mur ou hors d'atteinte (blaze, boss volants), il lâche tout sur la
  * case accessible la plus proche.
  */

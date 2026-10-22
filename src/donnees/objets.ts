@@ -18,12 +18,12 @@ const definitions = {
     taille: 0.8,
     couleurSecours: 0xffd23a,
   },
-  // Monnaie de la partie : ouvre les coffres (voir coffres.ts)
+  // Monnaie de la partie : un tas de 1 à 4 émeraudes, qui ouvrent les coffres (voir coffres.ts)
   emeraude: {
     nom: 'Émeraude',
     icone: 'item/emerald',
     soin: 0,
-    emeraudes: 1,
+    emeraudes: [1, 4],
     chance: 0.02,
     taille: 0.6,
     couleurSecours: 0x17dd62,

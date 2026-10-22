@@ -12,10 +12,10 @@ export const CALENDRIER_BOSS: DefinitionCalendrierBoss = {
   pvSelonTemps: false,
 };
 
-/** Un mini-boss toutes les 75 s dès 1:30 ; ses PV suivent la montée en difficulté. */
+/** Un mini-boss toutes les 75 s dès 1:30, sans annonce ; ses PV suivent la montée en difficulté. */
 export const CALENDRIER_MINIBOSS: DefinitionCalendrierBoss = {
   premierPassage: 90,
   intervalle: 75,
-  avertissement: 3,
+  avertissement: 0,
   pvSelonTemps: true,
 };

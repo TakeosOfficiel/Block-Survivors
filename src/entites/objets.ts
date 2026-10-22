@@ -19,17 +19,23 @@ interface Objet {
   x: number;
   z: number;
   phase: number;
+  /** Émeraudes du tas (0 pour un soin). */
+  valeur: number;
 }
+
+/** Grossissement d'un tas d'émeraudes par émeraude au-delà de la première. */
+const GROSSISSEMENT_TAS = 0.15;
 
 const CAPACITE = 192;
 
 const matrice = new THREE.Matrix4();
+const echelle = new THREE.Vector3();
 
 export class Objets {
   private readonly etat: EtatPartie;
   private readonly particules: Particules;
   private readonly retours: Retours;
-  private readonly pool = new Pool<Objet>(CAPACITE, () => ({ indexType: 0, x: 0, z: 0, phase: 0 }));
+  private readonly pool = new Pool<Objet>(CAPACITE, () => ({ indexType: 0, x: 0, z: 0, phase: 0, valeur: 0 }));
   private readonly maillages: THREE.InstancedMesh[];
   private readonly comptes: Int32Array;
 
@@ -69,6 +75,8 @@ export class Objets {
     o.x = x;
     o.z = z;
     o.phase = Math.random() * 10;
+    const tas = OBJETS[id].emeraudes;
+    o.valeur = tas ? tas[0] + Math.floor(Math.random() * (tas[1] - tas[0] + 1)) : 0;
   }
 
   maj(): void {
@@ -80,8 +88,8 @@ export class Objets {
       if ((o.x - j.x) ** 2 + (o.z - j.z) ** 2 > portee * portee) continue;
       const def = OBJETS[IDS_OBJETS[o.indexType]];
       if (def.emeraudes) {
-        this.etat.emeraudes += def.emeraudes;
-        this.etat.stats.emeraudesRamassees += def.emeraudes;
+        this.etat.emeraudes += o.valeur;
+        this.etat.stats.emeraudesRamassees += o.valeur;
         this.retours.son('emeraude');
       } else {
         const avant = j.pv;
@@ -100,6 +108,8 @@ export class Objets {
       const o = this.pool.elements[i];
       // Balancement et rotation des objets au sol du jeu (un tour toutes les ~6 s)
       matrice.makeRotationY(temps + o.phase).setPosition(o.x, 0.55 + Math.sin(temps * 2 + o.phase) * 0.1, o.z);
+      // Un tas d'émeraudes est d'autant plus gros qu'il en vaut
+      if (o.valeur > 1) matrice.scale(echelle.setScalar(1 + GROSSISSEMENT_TAS * (o.valeur - 1)));
       this.maillages[o.indexType].setMatrixAt(this.comptes[o.indexType]++, matrice);
     }
     for (let t = 0; t < this.maillages.length; t++) {

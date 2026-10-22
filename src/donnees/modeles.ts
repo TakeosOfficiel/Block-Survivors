@@ -525,13 +525,16 @@ const definitions = {
     },
   },
 
-  // Coffre (skin de bloc 64x64) : caisse, couvercle articulé au bord arrière, loquet sur le devant (+Z)
+  // Coffre (skin de bloc 64x64). Sa texture est dessinée pour l'espace des blocs, à l'envers de
+  // celui des mobs : le modèle est donc décrit tête en bas (y = 14 − hauteur réelle, loquet en −Z
+  // comme le patron) et affiché retourné (échelle −1 en Y, voir entites/coffres.ts). Couvercle
+  // articulé au bord arrière (+Z), loquet à cheval sur la jointure, devant (−Z)
   coffre: {
     tailleTexture: [64, 64],
     parties: {
-      caisse:    { taille: [14, 10, 14], pivot: [0, 0, 0],  centre: [0, 5, 0],     uv: [0, 19] },
-      couvercle: { taille: [14, 5, 14],  pivot: [0, 9, -7], centre: [0, 2.5, 7],  uv: [0, 0] },
-      loquet:    { taille: [2, 4, 1],    pivot: [0, 9, -7], centre: [0, -1, 14.5], uv: [0, 0] },
+      caisse:    { taille: [14, 10, 14], pivot: [0, 0, 0], centre: [0, 9, 0],       uv: [0, 19] },
+      couvercle: { taille: [14, 5, 14],  pivot: [0, 5, 7], centre: [0, -2.5, -7],   uv: [0, 0] },
+      loquet:    { taille: [2, 4, 1],    pivot: [0, 5, 7], centre: [0, 1, -14.5],   uv: [0, 0] },
     },
   },
 

@@ -5,6 +5,11 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.43.1] — 2026-10-22
+
+### Nouveautés
+- **Transférer sa progression d'une version du jeu à l'autre** (navigateur, Windows, Linux) : chaque version garde ses données de son côté, d'où une progression « perdue » en changeant de version. Dans Options, « Exporter ma sauvegarde » crée un fichier `.bssave` (progression, talents, records, pseudo, skin, options) ; dans l'autre version, Options → « Importer » le reprend et le jeu redémarre avec. Le fichier est chiffré : illisible, et refusé s'il a été modifié.
+
 ## [0.43.0] — 2026-10-22
 
 ### Nouveautés

@@ -2,8 +2,10 @@
  * Écran des options (depuis le menu ou la pause) : volume général et volume
  * de chaque famille de sons, compteur de FPS,
  * secousses de l'écran, ombres et vent, chiffres des dégâts. Chaque changement est appliqué et enregistré aussitôt.
+ * En bas, exporter ou importer la sauvegarde (progression/transfert.ts).
  */
 import type { CategorieSon } from '../donnees/types';
+import { exporterSauvegarde, importerSauvegarde } from '../progression/transfert';
 import { CATEGORIES_SONS, enregistrerOptions, MODES_VUE, NIVEAUX_SHADERS, type ModeVue, type NiveauShaders, type Options } from '../options';
 
 const LIBELLES_CATEGORIES: Readonly<Record<CategorieSon, string>> = {
@@ -91,10 +93,35 @@ export class PanneauOptions {
     this.boutonCompteur.addEventListener('click', () => this.modifier((o) => { o.compteurDegats = !o.compteurDegats; }));
     this.boutonVue.addEventListener('click', () => this.modifier(vueSuivante));
     element<HTMLButtonElement>('options-fermer').addEventListener('click', () => this.fermer());
+    this.brancherSauvegarde();
     // Enregistré avant les autres écrans : Échap ferme d'abord les options
     window.addEventListener('keydown', this.surTouche);
     this.rafraichir();
     this.appliquer(this.options);
+  }
+
+  /** Exporter : fichier chiffré (.bssave). Importer : choix du fichier, confirmation, puis le jeu redémarre sur le menu. */
+  private brancherSauvegarde(): void {
+    const fichier = element<HTMLInputElement>('option-fichier');
+    const texte = element('option-sauvegarde-texte');
+    element<HTMLButtonElement>('option-exporter').addEventListener('click', async () => {
+      await exporterSauvegarde();
+      texte.textContent = 'Sauvegarde exportée : ouvrez Options → « Importer » dans l\'autre version du jeu.';
+    });
+    element<HTMLButtonElement>('option-importer').addEventListener('click', () => fichier.click());
+    fichier.addEventListener('change', async () => {
+      const choisi = fichier.files?.[0];
+      fichier.value = '';
+      if (!choisi) return;
+      if (!window.confirm('Remplacer la progression de ce jeu par celle du fichier ? Le jeu va redémarrer (une partie en cours sera perdue).')) return;
+      const erreur = await importerSauvegarde(choisi);
+      if (erreur) {
+        texte.textContent = erreur;
+        return;
+      }
+      // Tout est relu au démarrage ; sans « ?jouer=1 », on revient au menu
+      window.location.replace(window.location.href.split('?')[0]);
+    });
   }
 
   get ouvert(): boolean {

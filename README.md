@@ -25,6 +25,10 @@ Chaque push construit l'application de bureau, dans la release
 La fenêtre s'ouvre agrandie, l'interface s'adapte à sa taille (sans
 défilement) et `F11` bascule en plein écran.
 
+Chaque version (navigateur, Windows, Linux) garde sa progression de son côté.
+Pour la reprendre ailleurs : Options → « Exporter ma sauvegarde » (fichier
+`.bssave` chiffré), puis Options → « Importer » dans l'autre version.
+
 ## Lancer depuis le code
 
 ```bash

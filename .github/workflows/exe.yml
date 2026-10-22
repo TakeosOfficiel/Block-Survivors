@@ -1,5 +1,6 @@
-# Construit l'installateur Windows (BlockSurvivors-Setup-X.Y.Z.exe) à chaque push
-# et le publie deux fois :
+# Construit l'installateur Windows (BlockSurvivors-Setup-X.Y.Z.exe) à chaque push.
+# Seul main publie (les autres branches gardent l'exe en artefact, pour essai),
+# deux fois :
 #   - release « vX.Y.Z » (version de package.json), notes tirées de CHANGELOG.md ;
 #     tant que le numéro ne change pas, elle suit le dernier commit de la version ;
 #   - release « derniere-version » : lien fixe vers la plus récente.
@@ -13,8 +14,9 @@ on:
 permissions:
   contents: write
 
+# Une construction à la fois par branche : une branche de travail n'annule pas celle de main
 concurrency:
-  group: exe
+  group: exe-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -46,6 +48,7 @@ jobs:
             release/jeu-*.html
             release/jeu.json
       - name: Publier la release de la version et « derniere-version »
+        if: github.ref == 'refs/heads/main'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -84,6 +87,7 @@ jobs:
       # peut pas encore télécharger).
       # Sans le secret VERSION_TOKEN, l'étape ne fait rien.
       - name: Publier l'exe et le numéro de version sur le dépôt public
+        if: github.ref == 'refs/heads/main'
         shell: bash
         env:
           VERSION_TOKEN: ${{ secrets.VERSION_TOKEN }}

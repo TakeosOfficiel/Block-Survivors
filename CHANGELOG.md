@@ -5,6 +5,13 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.42.1] — 2026-10-22
+
+### Corrections
+- **Araignées venimeuses de la Mine moins rapides** : elles allaient plus vite que presque toutes les classes, impossible de leur échapper. Elles passent de 5,2 à 4,2 blocs/s, sous la vitesse de toutes les classes.
+- **Invocations moins envahissantes** (loups, blazes, golem, totem, vex…) : la vague suivante arrivait avant que la précédente parte, et chaque invocation rallongeait la durée des créatures déjà là, si bien qu'elles ne partaient jamais. Maintenant, une nouvelle vague attend que la précédente soit repartie (ou morte), puis 3 s de pause. L'allay, qui reste en permanence, n'est pas concerné.
+- Seule la version principale du jeu est publiée : des versions d'essai (0.41.2, 0.41.3 et une 0.42.0 Linux) étaient parties par erreur ; elles sont toutes comprises dans celle-ci.
+
 ## [0.42.0] — 2026-10-22
 
 ### Nouveautés

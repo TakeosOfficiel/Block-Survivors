@@ -162,6 +162,17 @@ export class Invocations implements SourceEntites {
     return nouveaux;
   }
 
+  /** Vrai si des alliés de cette arme sont encore là (hors temporaires et alliés de soutien). */
+  vagueEnPlace(arme: ArmeEquipee): boolean {
+    const m = arme.definition.mecanique;
+    if (m.type !== 'invocation' || ALLIES[m.allie].soutien) return false;
+    for (let i = 0; i < this.pool.nombre; i++) {
+      const a = this.pool.elements[i];
+      if (a.arme === arme && a.pv > 0 && !a.temporaire) return true;
+    }
+    return false;
+  }
+
   /** Alliés vivants de ce type. */
   presents(indexType: number): number {
     let n = 0;

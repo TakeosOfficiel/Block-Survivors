@@ -171,6 +171,8 @@ export const CONFIG = {
       haie: { distance: 8, ralenti: 0.4, espacement: 0.7, largeur: 0.9, periode: 0.5, racinesMax: 48 },
       // Un allié tué ne revient qu'après `rappel` recharges de son arme (sa place reste vide d'ici là)
       rappel: 1.5, rappelsMax: 16,
+      // Pas de nouvelle vague tant que la précédente est là, puis `pause` s après son départ (sauf alliés de soutien)
+      pause: 3,
       // Les alliés qui bougent s'écartent les uns des autres (et du joueur) : passes de résolution, marge (blocs)
       separation: { passes: 3, marge: 0.1, rayonJoueur: 0.45 },
     },

@@ -265,15 +265,6 @@ img { image-rendering: pixelated; }
   filter: drop-shadow(4px 4px 0 #1e1e1e) drop-shadow(0 4px 0 #000);
   image-rendering: pixelated;
 }
-/* Phrase d'accroche jaune, penchée et pulsante, comme sur l'écran-titre */
-.accroche {
-  position: absolute; right: 0; top: 50%;
-  font-size: 16px; color: var(--mc-jaune);
-  transform: translate(calc(50% + 24px), -50%) rotate(-20deg);
-  animation: pulsation 0.5s ease-in-out infinite alternate;
-  white-space: nowrap;
-}
-@keyframes pulsation { to { transform: translate(calc(50% + 24px), -50%) rotate(-20deg) scale(1.1); } }
 
 /* Accueil : photo de l'arène choisie en plein écran, classes à gauche, héros au centre, arènes à
    droite. Police moderne pour les textes, police pixel pour le logo, les titres et « Jouer » */
@@ -304,12 +295,6 @@ img { image-rendering: pixelated; }
   color: #fff; text-shadow: 4px 4px 0 #3f3f3f; white-space: nowrap;
 }
 #menu-titre span { color: var(--menu-or-clair); text-shadow: 4px 4px 0 #3f2f05; }
-/* Accroche sous le logo, légèrement penchée */
-#menu .accroche {
-  font-family: var(--police); right: auto; left: 150px; top: 100%;
-  transform: rotate(-4deg); transform-origin: left center; animation-name: pulsation-menu;
-}
-@keyframes pulsation-menu { to { transform: rotate(-4deg) scale(1.08); } }
 #menu-maitrise { position: absolute; top: 14px; right: 18px; }
 #menu-maitrise .maitrise-nom { text-shadow: 0 2px 4px #000; }
 .menu-section {
@@ -405,14 +390,14 @@ img { image-rendering: pixelated; }
 .menu-jouer:hover { background: linear-gradient(#3cb850, #22803a); box-shadow: 0 0 0 1px #1a1206, 0 0 30px rgba(255, 200, 80, 0.6), 0 8px 20px rgba(0, 0, 0, 0.6); }
 #menu-jouer-titre { font-family: var(--police); font-size: 32px; line-height: 38px; letter-spacing: 2px; text-transform: uppercase; text-shadow: 3px 3px 0 #0c2a0a; }
 #menu-jouer-sous-titre { font-size: 14px; font-weight: 600; color: #d8ffd0; }
-.menu-liens { position: absolute; left: 32px; bottom: 30px; display: flex; gap: 6px; }
-.menu-liens button {
-  position: relative; padding: 4px 8px; cursor: pointer; font-size: 15px;
-  color: #dcdcdc; background: transparent; border: none; text-shadow: 0 2px 4px #000;
+.menu-liens { position: absolute; left: 32px; bottom: 30px; display: flex; gap: 8px; }
+.menu-liens .bouton-menu { position: relative; }
+/* Pastille « Nouveau » : petite étiquette dorée, droite, dans le style du menu */
+#menu #menu-nouveautes.nouveau::after {
+  top: -11px; right: -8px; padding: 1px 7px; transform: none;
+  font: 700 11px var(--menu-police); letter-spacing: 0.5px; text-transform: uppercase;
+  color: #2a1d02; background: var(--menu-or-clair); border: none; border-radius: 999px;
 }
-.menu-liens button:hover { color: var(--menu-or-clair); }
-#menu .menu-liens #menu-nouveautes.nouveau::after { top: -18px; right: -30px; font-family: var(--police); }
-.menu-aide { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-size: 12px; color: rgba(255, 255, 255, 0.45); pointer-events: none; }
 .menu-pied { position: absolute; right: 32px; bottom: 30px; text-align: right; font-size: 12px; color: rgba(255, 255, 255, 0.55); text-shadow: 0 1px 3px #000; }
 #menu .mise-a-jour { font-family: var(--police); }
 
@@ -885,19 +870,82 @@ img { image-rendering: pixelated; }
 .bilan-degats .jauge { grid-column: 2 / -1; height: 4px; background: #8b8b8b; margin-bottom: 4px; }
 .bilan-degats .jauge > div { height: 100%; background: var(--mc-vert-fonce); }
 
-/* Éditeur de personnage : traits avec flèches */
+/* Apparence : liste des skins */
 .profil-reglages { width: 430px; }
 .profil-skins { grid-template-columns: repeat(3, 1fr); }
-.profil-panneau-traits { width: 330px; display: flex; flex-direction: column; gap: 4px; }
-.profil-traits { display: flex; flex-direction: column; gap: 3px; }
-.profil-trait-nom { color: #5a5a5a; }
-.profil-trait-valeur { display: grid; grid-template-columns: 36px 1fr 36px; align-items: center; gap: 4px; }
-.profil-trait-valeur > span { text-align: center; color: #202020; display: flex; align-items: center; justify-content: center; gap: 6px; }
-.bouton-mc.profil-fleche { width: 36px; min-width: 0; height: 28px; padding: 0; border-width: 4px; }
-.profil-trait-couleur { display: inline-block; width: 14px; height: 14px; border: 2px solid #373737; }
 /* Pastille sur « Nouveautés » tant que celles de la version n'ont pas été lues */
 #menu-nouveautes.nouveau::after {
   content: "Nouveau !"; position: absolute; top: -10px; right: -14px;
   padding: 0 4px; font-size: 16px; color: var(--mc-jaune);
   background: #2a1a3a; border: 2px solid var(--mc-jaune); transform: rotate(8deg);
 }
+
+/* --- Pages du menu (Options, Nouveautés, Talents, Apparence) ---------------------------------
+   Même style que l'accueil : fond sombre, titre doré en police pixel, panneaux translucides
+   arrondis, textes en police moderne, boutons du menu ; « Terminé » doré */
+.page {
+  --page-or: #e0b040;
+  --page-or-clair: #ffd75e;
+  --page-police: "Segoe UI", "Noto Sans", system-ui, -apple-system, sans-serif;
+  font-family: var(--page-police); font-size: 15px; line-height: 1.35;
+  text-shadow: none; -webkit-font-smoothing: auto;
+  background: radial-gradient(ellipse at 50% -10%, rgba(38, 46, 68, 0.95), rgba(8, 10, 16, 0.97) 70%);
+  gap: 14px;
+}
+.page button, .page input { font-family: inherit; }
+.page .ecran-titre { font-family: var(--police); font-size: 24px; line-height: 30px; color: var(--page-or-clair); text-shadow: 3px 3px 0 #3f2f05; }
+.page .ecran-aide { color: #9aa0ad; font-size: 13px; }
+.page .panneau-mc {
+  color: #e8e8e8; padding: 12px; border: 1px solid rgba(255, 255, 255, 0.12); border-image: none;
+  border-radius: 12px; background: rgba(255, 255, 255, 0.045); text-shadow: none;
+}
+.page .titre-panneau { font-family: var(--police); color: var(--page-or-clair); text-shadow: 2px 2px 0 #3f2f05; }
+.page .bouton-mc {
+  height: 40px; color: #e8e8e8; font-weight: 600; text-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.22); border-image: none; border-radius: 8px;
+  background: rgba(12, 14, 20, 0.65); box-shadow: none;
+}
+.page .bouton-mc:hover, .page .bouton-mc:focus-visible { color: var(--page-or-clair); border-color: var(--page-or); background: rgba(60, 45, 10, 0.6); }
+.page .bouton-mc:disabled { color: #8a8a8a; border-color: rgba(255, 255, 255, 0.1); background: rgba(12, 14, 20, 0.45); }
+.page .bouton-mc.page-fermer {
+  font-family: var(--police); font-weight: normal; font-size: 18px; letter-spacing: 1px;
+  color: #fff; text-shadow: 2px 2px 0 #0c2a0a;
+  background: linear-gradient(#34a046, #1d6b2a); border: 2px solid var(--page-or);
+  box-shadow: 0 0 0 1px #1a1206, 0 0 16px rgba(255, 200, 80, 0.3);
+}
+.page .bouton-mc.page-fermer:hover { color: #fff; background: linear-gradient(#3cb850, #22803a); }
+.page .case-mc { border: 1px solid rgba(255, 255, 255, 0.18); border-image: none; border-radius: 6px; background: rgba(255, 255, 255, 0.08); }
+.page .option-menu { color: #e8e8e8; border: 1px solid transparent; border-radius: 8px; background: rgba(255, 255, 255, 0.04); }
+.page .option-menu:hover { background: rgba(255, 255, 255, 0.09); }
+.page .option-menu.choisie { border-color: var(--page-or); background: rgba(255, 215, 94, 0.12); box-shadow: none; }
+.page .option-nom { color: #fff; font-weight: 600; }
+.page .option-menu.choisie .option-nom { color: var(--page-or-clair); }
+.page .option-description { color: #b0b4be; }
+.page .titre-centre { color: inherit; }
+
+/* Curseurs de volume */
+.page .curseur-mc { border: 1px solid rgba(255, 255, 255, 0.22); border-image: none; border-radius: 8px; background: rgba(12, 14, 20, 0.65); overflow: hidden; }
+.page .curseur-mc:hover { border-color: var(--page-or); }
+.page .curseur-mc span { text-shadow: 0 1px 3px #000; font-weight: 600; }
+.page .curseur-mc input::-webkit-slider-thumb { width: 10px; background: var(--page-or-clair); border-radius: 3px; }
+.page .curseur-mc input::-moz-range-thumb { width: 10px; background: var(--page-or-clair); border-radius: 3px; }
+
+/* Nouveautés */
+.page .nouveautes-titre { color: #fff; font-weight: 700; }
+.page .nouveautes-titre.actuelle { color: var(--page-or-clair); }
+.page .nouveautes-section { color: #8fe08f; font-weight: 600; }
+.page .nouveautes-version ul { color: #d8d8d8; }
+.page .nouveautes-version strong { color: #fff; }
+
+/* Apparence */
+.page .menu-grand-nom { color: #fff; font-size: 22px; line-height: 28px; font-weight: 700; }
+.page .profil-apercu { background: radial-gradient(ellipse 30% 4% at 50% 92%, rgba(0, 0, 0, 0.55), transparent); box-shadow: none; }
+.page .menu-apercu-aide { color: #9aa0ad; }
+.page .page .page .profil-erreur { color: #ff8a8a; }
+
+/* Talents */
+.page .talents-onglet, .page .talents-onglet-arbre { color: #e8e8e8; }
+.page .talents-onglet.choisie, .page .talents-onglet-arbre.choisie { color: var(--page-or-clair); }
+.page .talents-schema { border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; box-shadow: none; background: rgba(0, 0, 0, 0.35); }
+.page .talents-porte-texte { background: #10131b; }
+.page .talents-fiche { border-radius: 12px; }

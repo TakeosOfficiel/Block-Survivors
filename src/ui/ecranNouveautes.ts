@@ -36,7 +36,7 @@ export class EcranNouveautes {
         const ul = document.createElement('ul');
         for (const ligne of section.lignes) {
           const li = document.createElement('li');
-          li.textContent = ligne;
+          li.append(...enGras(ligne));
           ul.append(li);
         }
         bloc.append(sous, ul);
@@ -68,6 +68,16 @@ export class EcranNouveautes {
   private fermer(): void {
     this.racine.classList.add('cache');
   }
+}
+
+/** « **Titre** : suite » : les passages entre ** en gras (le reste en texte simple). */
+function enGras(ligne: string): Node[] {
+  return ligne.split('**').map((morceau, i) => {
+    if (i % 2 === 0) return document.createTextNode(morceau);
+    const gras = document.createElement('strong');
+    gras.textContent = morceau;
+    return gras;
+  });
 }
 
 /** Découpe le journal : « ## [0.6.0] — date », « ### Section », « - ligne ». */

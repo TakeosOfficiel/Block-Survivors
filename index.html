@@ -29,7 +29,6 @@
     <div class="menu-voile"></div>
     <div class="menu-logo">
       <h1 id="menu-titre">Block <span>Survivors</span></h1>
-      <div id="menu-accroche" class="accroche"></div>
     </div>
     <div id="menu-maitrise" title="Maîtrise de la classe : monte avec l’XP ramassée en partie ; chaque niveau donne un point de talent"></div>
 
@@ -68,18 +67,17 @@
 
     <button id="menu-jouer" class="menu-jouer"><span id="menu-jouer-titre">Jouer</span><span id="menu-jouer-sous-titre"></span></button>
     <nav class="menu-liens">
-      <button id="menu-options">Options</button>
-      <button id="menu-nouveautes">Nouveautés</button>
-      <button id="menu-quitter" class="cache">Quitter</button>
+      <button id="menu-options" class="bouton-menu">Options</button>
+      <button id="menu-nouveautes" class="bouton-menu">Nouveautés</button>
+      <button id="menu-quitter" class="bouton-menu cache">Quitter</button>
     </nav>
-    <div class="menu-aide">ZQSD / WASD / Flèches : se déplacer · 1 2 3 : carte · R : relancer · Tab : dégâts · Échap : pause · Entrée : jouer</div>
-    <div class="menu-pied"><span id="menu-version"></span> · <span id="menu-rendu"></span> · textures Minecraft <span id="menu-version-mc"></span><br />Projet de fan, non affilié à Mojang</div>
+    <div class="menu-pied"><span id="menu-version"></span><br />Projet de fan, non affilié à Mojang</div>
     <a id="menu-mise-a-jour" class="mise-a-jour cache" target="_blank" rel="noopener">Nouvelle version disponible ! Cliquez pour la télécharger</a>
     <button id="menu-remboursement" class="mise-a-jour remboursement cache"></button>
   </div>
 
   <!-- Apparence (menu) : skin et gabarit, aperçu 3D -->
-  <div id="profil" class="ecran fond-terre cache">
+  <div id="profil" class="ecran page cache">
     <h2 class="ecran-titre">Apparence</h2>
     <div class="profil-corps">
       <div class="panneau-mc profil-reglages">
@@ -98,25 +96,20 @@
         <div id="profil-apercu" class="profil-apercu"></div>
         <div class="menu-apercu-aide titre-centre">Glisser le héros pour le tourner</div>
       </div>
-      <div class="panneau-mc profil-panneau-traits">
-        <div class="titre-panneau titre-centre">Traits</div>
-        <div id="profil-traits" class="profil-traits"></div>
-        <button id="profil-aleatoire" class="bouton-mc">Aléatoire</button>
-      </div>
     </div>
     <div class="ecran-aide">La skin ne change que l'apparence : la classe garde ses armes et ses statistiques</div>
-    <button id="profil-fermer" class="bouton-mc large">Terminé</button>
+    <button id="profil-fermer" class="bouton-mc large page-fermer">Terminé</button>
   </div>
 
   <!-- Nouveautés : journal des versions -->
-  <div id="nouveautes" class="ecran fond-terre cache">
+  <div id="nouveautes" class="ecran page cache">
     <h2 class="ecran-titre">Nouveautés</h2>
     <div id="nouveautes-liste" class="panneau-mc nouveautes-liste"></div>
-    <button id="nouveautes-fermer" class="bouton-mc large">Terminé</button>
+    <button id="nouveautes-fermer" class="bouton-mc large page-fermer">Terminé</button>
   </div>
 
   <!-- Talents (menu) : deux arbres par personnage -->
-  <div id="talents" class="ecran fond-terre cache">
+  <div id="talents" class="ecran page cache">
     <h2 class="ecran-titre">Talents</h2>
     <div class="talents-barre">
       <div id="talents-personnages" class="talents-onglets"></div>
@@ -124,11 +117,11 @@
     </div>
     <div id="talents-arbres" class="talents-arbres"></div>
     <div class="ecran-aide">Un arbre actif en partie · les achats des deux arbres sont gardés · ★ : arbre utilisé</div>
-    <button id="talents-fermer" class="bouton-mc large">Terminé</button>
+    <button id="talents-fermer" class="bouton-mc large page-fermer">Terminé</button>
   </div>
 
   <!-- Options (menu et pause) -->
-  <div id="options" class="ecran voile cache">
+  <div id="options" class="ecran page cache">
     <h2 class="ecran-titre">Options</h2>
     <div class="pile-boutons">
       <label class="curseur-mc large">
@@ -142,7 +135,7 @@
       <button id="option-degats" class="bouton-mc large">Chiffres des dégâts</button>
       <button id="option-compteur" class="bouton-mc large">Compteur de dégâts</button>
       <button id="option-vue" class="bouton-mc large">Vue</button>
-      <button id="options-fermer" class="bouton-mc large espace-avant">Terminé</button>
+      <button id="options-fermer" class="bouton-mc large espace-avant page-fermer">Terminé</button>
     </div>
   </div>
 

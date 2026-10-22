@@ -10,9 +10,9 @@ import type { ApparenceEntite, CubeModele } from '../donnees/types';
 
 const cache = new Map<string, string | null>();
 
-/** Oublie les visages déjà découpés (une skin a changé sous le même chemin). */
-export function oublierPortraits(): void {
-  cache.clear();
+/** Oublie les visages découpés dans cette skin (elle a changé sous le même chemin). */
+export function oublierPortraits(skin: string): void {
+  for (const cle of cache.keys()) if (cle.endsWith(`|${skin}`)) cache.delete(cle);
 }
 
 /** Adresse d'une image du visage (pixels d'origine), ou null si la skin manque. */
@@ -39,7 +39,8 @@ export function portrait(textures: BibliothequeTextures, apparence: ApparenceEnt
     const canvas = document.createElement('canvas');
     canvas.width = Math.ceil(xMax - xMin);
     canvas.height = Math.ceil(yMax - yMin);
-    const ctx = canvas.getContext('2d');
+    // Canvas logiciel : toDataURL ne fait pas un aller-retour vers la carte graphique (lent)
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (ctx) {
       ctx.imageSmoothingEnabled = false;
       // De l'arrière vers l'avant : les parties proches recouvrent les autres

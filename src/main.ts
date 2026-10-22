@@ -20,8 +20,7 @@ import { genererMonde, type MondeGenere } from './monde/generation';
 import { Rendu } from './moteur/rendu';
 import { chargerOptions } from './options';
 import { Sauvegarde } from './progression/sauvegarde';
-import { dessinerSkinPerso } from './assets/skinPerso';
-import { apparenceJoueur, chargerProfil, CHEMIN_SKIN_IMPORTE, CHEMIN_SKIN_PERSO } from './profil';
+import { apparenceJoueur, chargerProfil, CHEMIN_SKIN_IMPORTE } from './profil';
 import { ApercuHeros } from './ui/apercuHeros';
 import { chargerImageSkin, EcranProfil } from './ui/ecranProfil';
 import { EcranChargement } from './ui/ecranChargement';
@@ -60,14 +59,12 @@ async function demarrer(): Promise<void> {
     textures.charger(texturesInterface(), (faites, total) => ecran.progression(faites, total)),
   ]);
   appliquerHabillage(textures);
-  // Skins du joueur (éditeur, importée) : enregistrées comme des textures du jeu
-  textures.enregistrer(CHEMIN_SKIN_PERSO, dessinerSkinPerso(profil.traits, profil.brasFins));
+  // Skin importée du joueur : enregistrée comme une texture du jeu
   if (profil.skinImporte) {
     const image = await chargerImageSkin(profil.skinImporte);
     if (image) textures.enregistrer(CHEMIN_SKIN_IMPORTE, image);
     else if (profil.skin === 'importe') profil.skin = 'classe';
   }
-  document.getElementById('menu-rendu')?.replaceChildren(rendu.api);
   // Clic sur tout bouton de l'interface, comme en jeu
   document.addEventListener('click', (e) => {
     if ((e.target as Element | null)?.closest('button')) sons.jouer('clic');

@@ -1,16 +1,13 @@
 /**
- * Apparence (depuis le menu) : skin (celle de la classe, le personnage de
- * l'éditeur, une des skins par défaut du jeu, ou un PNG importé) et gabarit
- * des bras, avec le héros en 3D qu'on fait tourner. Le panneau « Traits »
- * compose le skin de l'éditeur. Chaque changement est enregistré aussitôt.
+ * Apparence (depuis le menu) : skin (celle de la classe, une des skins par
+ * défaut du jeu, ou un PNG importé) et gabarit des bras, avec le héros en 3D
+ * qu'on fait tourner. Chaque changement est enregistré aussitôt.
  */
 import type { BibliothequeTextures } from '../assets/textures';
-import { dessinerSkinPerso } from '../assets/skinPerso';
 import { NOMS_SKINS, SKINS_VANILLA } from '../donnees/skins';
-import { IDS_TRAITS, TRAITS, type IdTrait } from '../donnees/traits';
 import type { ApparenceEntite } from '../donnees/types';
 import {
-  apparenceJoueur, CHEMIN_SKIN_IMPORTE, CHEMIN_SKIN_PERSO, cheminSkinVanilla, enregistrerProfil, type ChoixSkin, type Profil,
+  apparenceJoueur, CHEMIN_SKIN_IMPORTE, cheminSkinVanilla, enregistrerProfil, type ChoixSkin, type Profil,
 } from '../profil';
 import type { ApercuHeros } from './apercuHeros';
 import { caseImage } from './bilan';
@@ -29,7 +26,6 @@ export class EcranProfil {
   private readonly boutonBras = element<HTMLButtonElement>('profil-bras');
   private readonly fichier = element<HTMLInputElement>('profil-fichier');
   private readonly erreur = element('profil-erreur');
-  private readonly traits = element('profil-traits');
   private readonly textures: BibliothequeTextures;
   private readonly apercu: ApercuHeros | null;
   readonly profil: Profil;
@@ -42,13 +38,6 @@ export class EcranProfil {
     this.apercu = apercu;
     this.boutonBras.addEventListener('click', () => {
       this.profil.brasFins = !this.profil.brasFins;
-      this.redessinerPerso();  // les bras du skin de l'éditeur changent de largeur
-      this.changer();
-    });
-    element<HTMLButtonElement>('profil-aleatoire').addEventListener('click', () => {
-      for (const id of IDS_TRAITS) this.profil.traits[id] = Math.floor(Math.random() * TRAITS[id].choix.length);
-      this.profil.skin = 'perso';
-      this.redessinerPerso();
       this.changer();
     });
     element<HTMLButtonElement>('profil-importer').addEventListener('click', () => this.fichier.click());
@@ -77,7 +66,6 @@ export class EcranProfil {
     const skin = this.profil.skin;
     if (skin === 'classe') return 'skin de la classe';
     if (skin === 'importe') return 'skin importée';
-    if (skin === 'perso') return 'personnage personnalisé';
     return `skin ${NOMS_SKINS[skin]}`;
   }
 
@@ -96,7 +84,6 @@ export class EcranProfil {
     if (!classe) return;
     const choix: { id: ChoixSkin; nom: string; apparence: ApparenceEntite }[] = [
       { id: 'classe', nom: 'Classe', apparence: classe },
-      { id: 'perso', nom: 'Perso', apparence: { ...classe, modele: this.profil.brasFins ? 'humanoide_fin' : 'humanoide', skin: CHEMIN_SKIN_PERSO } },
       ...SKINS_VANILLA.map((nom) => ({
         id: nom as ChoixSkin,
         nom: NOMS_SKINS[nom],
@@ -121,57 +108,9 @@ export class EcranProfil {
     this.boutonBras.textContent = `Bras : ${this.profil.brasFins ? 'fins' : 'larges'}`;
     this.boutonBras.disabled = this.profil.skin === 'classe';
 
-    this.dessinerTraits();
     element('profil-nom').textContent = this.profil.pseudo || 'Sans pseudo';
     element('profil-sous-titre').textContent = `${classe.nom} · ${this.nomSkin()}`;
     this.apercu?.afficher(apparenceJoueur(classe, this.profil));
-  }
-
-  /** Une ligne par trait : intitulé, ◀ valeur ▶. Changer un trait choisit le skin de l'éditeur. */
-  private dessinerTraits(): void {
-    this.traits.replaceChildren(...IDS_TRAITS.map((id) => {
-      const trait = TRAITS[id];
-      const index = this.profil.traits[id];
-      const ligne = document.createElement('div');
-      ligne.className = 'profil-trait';
-      const intitule = document.createElement('div');
-      intitule.className = 'profil-trait-nom';
-      intitule.textContent = trait.nom;
-      const valeur = document.createElement('div');
-      valeur.className = 'profil-trait-valeur';
-      const nom = document.createElement('span');
-      nom.textContent = `${trait.choix[index].nom} (${index + 1}/${trait.choix.length})`;
-      const echantillon = 'couleur' in trait.choix[index] ? (trait.choix[index] as { couleur: number }).couleur : null;
-      if (echantillon !== null) {
-        const pastille = document.createElement('span');
-        pastille.className = 'profil-trait-couleur';
-        pastille.style.background = `#${echantillon.toString(16).padStart(6, '0')}`;
-        nom.prepend(pastille);
-      }
-      valeur.append(this.fleche('◀', id, -1), nom, this.fleche('▶', id, 1));
-      ligne.append(intitule, valeur);
-      return ligne;
-    }));
-  }
-
-  private fleche(texte: string, id: IdTrait, sens: number): HTMLButtonElement {
-    const bouton = document.createElement('button');
-    bouton.className = 'bouton-mc profil-fleche';
-    bouton.textContent = texte;
-    bouton.addEventListener('click', () => {
-      const n = TRAITS[id].choix.length;
-      this.profil.traits[id] = (this.profil.traits[id] + sens + n) % n;
-      this.profil.skin = 'perso';
-      this.redessinerPerso();
-      this.changer();
-    });
-    return bouton;
-  }
-
-  /** Redessine le skin de l'éditeur et l'enregistre comme texture (aperçu, visages, partie). */
-  private redessinerPerso(): void {
-    this.textures.enregistrer(CHEMIN_SKIN_PERSO, dessinerSkinPerso(this.profil.traits, this.profil.brasFins));
-    oublierPortraits();
   }
 
   /** Lit un PNG de skin choisi par le joueur. */
@@ -192,7 +131,7 @@ export class EcranProfil {
     }
     this.erreur.textContent = '';
     this.textures.enregistrer(CHEMIN_SKIN_IMPORTE, image);
-    oublierPortraits();
+    oublierPortraits(CHEMIN_SKIN_IMPORTE);
     this.profil.skinImporte = adresse;
     this.profil.skin = 'importe';
     this.changer();

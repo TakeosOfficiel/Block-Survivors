@@ -5,6 +5,18 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.41.0] — 2026-10-22
+
+### Changements
+- **Pages Options, Nouveautés, Talents et Apparence** au style du nouveau menu : fond sombre (plus de terre), titre doré, panneaux arrondis, textes lisibles et bouton « Terminé » doré.
+- **Menu d'accueil épuré** : plus de phrase penchée sous le logo ; Options et Nouveautés sont de vrais boutons, comme Apparence et Talents ; en bas, seulement la version et la mention de fan.
+- **Éditeur de personnage retiré** : l'Apparence propose la skin de la classe, les skins du jeu ou une skin importée. Si vous utilisiez l'ancien « Perso », c'est la skin de la classe qui revient.
+- **Arc** : ses flèches ne traversent plus d'ennemi au départ (le niveau « traversent 1 ennemi de plus » et l'éveil Flèches perforantes restent).
+
+### Corrections
+- **Import de skin bien plus fluide** : il recalculait les visages de toutes les skins (près d'une seconde de gel) ; seul celui de la skin importée l'est désormais.
+- Nouveautés : le texte en gras s'affiche en gras (au lieu des « ** »).
+
 ## [0.40.0] — 2026-10-22
 
 ### Changements

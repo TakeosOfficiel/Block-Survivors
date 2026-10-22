@@ -6,8 +6,7 @@
  */
 import { photoArene } from '../assets/photosArenes';
 import type { BibliothequeTextures } from '../assets/textures';
-import { CONFIG, VERSION_MINECRAFT } from '../config';
-import { ACCROCHES } from '../donnees/accroches';
+import { CONFIG } from '../config';
 import { ARENES } from '../donnees/arenes';
 import { ARMES } from '../donnees/armes';
 import { CALENDRIER_BOSS } from '../donnees/boss';
@@ -83,9 +82,7 @@ export class EcranMenu {
       ? ARENES.find((a) => !sauvegarde.verrou('arene', a.id)) ?? choix.arene
       : choix.arene;
 
-    element('menu-accroche').textContent = ACCROCHES[Math.floor(Math.random() * ACCROCHES.length)];
     element('menu-version').textContent = libelleVersion();
-    element('menu-version-mc').textContent = VERSION_MINECRAFT;
     const lien = element<HTMLAnchorElement>('menu-mise-a-jour');
     if (bureau?.surMiseAJourPrete && bureau.installerMiseAJour) {
       // Application installée : les mises à jour s'installent au lancement ; une version sortie

@@ -64,7 +64,7 @@ const definitions = {
     icone: 'item/bow',
     famille: 'projectile',
     mecanique: { type: 'tir', projectile: 'fleche', dispersion: 0.18 },
-    stats: { ...BASE, degats: 10, cadence: 1.1, vitesse: 22, portee: 15, perforation: 2, recul: 3 },
+    stats: { ...BASE, degats: 10, cadence: 1.1, vitesse: 22, portee: 15, perforation: 1, recul: 3 },
     niveaux: [
       { description: '+1 flèche', modif: { nombre: 1 } },
       { description: 'Dégâts +4', modif: { degats: 4 } },

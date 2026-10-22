@@ -179,6 +179,9 @@ est sauvegardé dans le navigateur (`src/donnees/talents.ts` pour les réglages)
 
 ## Accueil et apparence
 
+Les pages Options, Nouveautés, Talents et Apparence ont le même style que
+l'accueil (fond sombre, titre doré, panneaux arrondis, « Terminé » doré).
+
 L'accueil affiche en plein écran la **photo de l'arène** choisie (celle de
 l'écran de chargement). À gauche, les **classes** (rôle, puis pour la choisie :
 cœurs, vitesse, arme de départ, bonus, bonus exclusifs, talents actifs) ; au
@@ -187,11 +190,9 @@ pour le changer, dé pour un pseudo au hasard), « Apparence » et « Talents »
 à droite, les **arènes** en vignettes photo (mobs, boss et leur heure
 d'arrivée, record, conditions de déblocage). Le grand bouton « Jouer » (ou
 Entrée) lance la partie. Textes en police moderne, logo et titres en police
-pixel du jeu.
+pixel du jeu. En bas : Options et Nouveautés, la version et la mention de fan.
 
-« Apparence… » : **skin** de la classe, le **perso** de l'éditeur (panneau
-« Traits » : peau, yeux, coiffure, cheveux, barbe, haut et sa couleur,
-pantalon, chaussures, bouton Aléatoire), une des 9 skins par défaut du jeu, ou
+« Apparence » : **skin** de la classe, une des 9 skins par défaut du jeu, ou
 un PNG importé (64×64, format du jeu, HD acceptée), bras larges ou fins, avec
 le héros en 3D. La seconde couche des skins (chapeau, veste…) est affichée. Le pseudo s'affiche au-dessus du personnage comme dans le jeu ;
 la skin ne change que l'apparence.

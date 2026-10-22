@@ -4,12 +4,11 @@
  * skin ; la classe choisie garde ses statistiques, ses armes et son objet en main.
  */
 import { SKINS_VANILLA, type NomSkin } from './donnees/skins';
-import { IDS_TRAITS, TRAITS, TRAITS_PAR_DEFAUT, type Traits } from './donnees/traits';
 import type { ApparenceEntite, CheminTexture } from './donnees/types';
 import { ecrireStockage, lireStockage } from './options';
 
-/** Skin de la classe, skin importée, personnage de l'éditeur, ou une des skins par défaut du jeu. */
-export type ChoixSkin = 'classe' | 'importe' | 'perso' | NomSkin;
+/** Skin de la classe, skin importée, ou une des skins par défaut du jeu. */
+export type ChoixSkin = 'classe' | 'importe' | NomSkin;
 
 export interface Profil {
   pseudo: string;
@@ -18,33 +17,24 @@ export interface Profil {
   brasFins: boolean;
   /** Skin importée (PNG en data URL), ou null. */
   skinImporte: string | null;
-  /** Choix de l'éditeur de personnage. */
-  traits: Traits;
 }
 
 export const LONGUEUR_PSEUDO = 16;
 
 /** Chemin sous lequel la skin importée est enregistrée dans la bibliothèque de textures. */
 export const CHEMIN_SKIN_IMPORTE: CheminTexture = 'profil/skin';
-/** Chemin du skin dessiné par l'éditeur. */
-export const CHEMIN_SKIN_PERSO: CheminTexture = 'profil/perso';
 
 const CLE = 'block-survivors.profil';
 
 export function chargerProfil(): Profil {
-  const profil: Profil = { pseudo: 'Joueur', skin: 'classe', brasFins: false, skinImporte: null, traits: { ...TRAITS_PAR_DEFAUT } };
+  const profil: Profil = { pseudo: 'Joueur', skin: 'classe', brasFins: false, skinImporte: null };
   const lu = lireStockage<Partial<Profil>>(CLE);
   if (!lu) return profil;
   if (typeof lu.pseudo === 'string') profil.pseudo = nettoyerPseudo(lu.pseudo);
   if (typeof lu.brasFins === 'boolean') profil.brasFins = lu.brasFins;
   if (typeof lu.skinImporte === 'string' && lu.skinImporte.startsWith('data:image/')) profil.skinImporte = lu.skinImporte;
-  if (lu.traits && typeof lu.traits === 'object') {
-    for (const id of IDS_TRAITS) {
-      const v = (lu.traits as Partial<Traits>)[id];
-      if (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v < TRAITS[id].choix.length) profil.traits[id] = v;
-    }
-  }
-  if (lu.skin === 'classe' || lu.skin === 'perso' || (lu.skin === 'importe' && profil.skinImporte) || SKINS_VANILLA.includes(lu.skin as NomSkin)) {
+  // L'ancien personnage de l'éditeur (« perso ») n'existe plus : skin de la classe
+  if (lu.skin === 'classe' || (lu.skin === 'importe' && profil.skinImporte) || SKINS_VANILLA.includes(lu.skin as NomSkin)) {
     profil.skin = lu.skin as ChoixSkin;
   }
   return profil;
@@ -68,9 +58,7 @@ export function cheminSkinVanilla(nom: NomSkin, brasFins: boolean): CheminTextur
 export function apparenceJoueur<T extends ApparenceEntite>(classe: T, profil: Profil): T {
   if (profil.skin === 'classe') return classe;
   const modele = profil.brasFins ? 'humanoide_fin' : 'humanoide';
-  const skin = profil.skin === 'importe' ? CHEMIN_SKIN_IMPORTE
-    : profil.skin === 'perso' ? CHEMIN_SKIN_PERSO
-    : cheminSkinVanilla(profil.skin, profil.brasFins);
+  const skin = profil.skin === 'importe' ? CHEMIN_SKIN_IMPORTE : cheminSkinVanilla(profil.skin, profil.brasFins);
   return { ...classe, modele, skin };
 }
 

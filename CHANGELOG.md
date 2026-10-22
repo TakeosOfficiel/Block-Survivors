@@ -5,6 +5,11 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.41.2] — 2026-10-22
+
+### Corrections
+- **Araignées venimeuses de la Mine moins rapides** : elles allaient plus vite que presque toutes les classes, impossible de leur échapper. Elles passent de 5,2 à 4,2 blocs/s, sous la vitesse de toutes les classes.
+
 ## [0.41.1] — 2026-10-22
 
 ### Changements

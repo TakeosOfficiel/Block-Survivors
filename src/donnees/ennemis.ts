@@ -78,7 +78,7 @@ const definitions = {
     echelle: 0.7,
     rayonOmbre: 0.65,
     pv: 9,
-    vitesse: 5.2,
+    vitesse: 4.2,
     rayon: 0.45,
     traverseToiles: true,
     comportement: { type: 'melee', degats: 2, portee: 0.3, cadence: 0.6 },

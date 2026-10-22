@@ -5,6 +5,11 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.37.0] — 2026-10-22
+
+### Changements
+- **Pluie de flèches façon Salve de WoW** : un cercle doré marque la zone au sol (anneau plein, anneau en tirets, fond léger), apparaît en grandissant, reste un moment après la dernière flèche puis s'efface. Les flèches sont plus grosses et tombent en biais, toutes dans le même sens, comme une volée tirée par le joueur : avant, elles tombaient à la verticale et on ne voyait que leur pointe en vue de dessus. Elles restent plantées plus de 2 secondes puis s'enfoncent dans le sol.
+
 ## [0.36.0] — 2026-10-21
 
 ### Changements

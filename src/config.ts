@@ -232,8 +232,17 @@ export const CONFIG = {
     },
     // Flèche ricocheuse : rebonds au maximum (plafond), durée de vie max d'une flèche (s)
     ricochet: { capacite: 24, rebondsMax: 6, vieMax: 4 },
-    // Pluie de flèches : chute (s) depuis `hauteur`, flèche plantée `plantee` s, rayon de chaque impact
-    pluie: { zones: 4, fleches: 96, chute: 0.25, hauteur: 7, plantee: 0.6, rayonImpact: 0.9, taille: 0.9 },
+    // Pluie de flèches : chute (s) depuis `hauteur`, flèche plantée `plantee` s puis enfoncée dans le
+    // sol en `enfoncement` s, rayon de chaque impact, taille des flèches (× le projectile). Elles
+    // tombent penchées de `inclinaison` rad (± `ecartInclinaison`), venant du côté du joueur : de
+    // biais, on les voit bien d'en haut
+    pluie: {
+      zones: 8, fleches: 320, chute: 0.3, hauteur: 7, plantee: 2.2, enfoncement: 0.4, rayonImpact: 0.9, taille: 1.6,
+      inclinaison: 0.55, ecartInclinaison: 0.12, ecartAzimut: 0.25,
+      // Cercle au sol sur la zone : apparition (s), reste `reste` s après la dernière flèche puis
+      // s'efface en `fondu` s ; couleur (additive) et hauteur au-dessus du sol
+      cercle: { apparition: 0.18, reste: 1.2, fondu: 0.6, couleur: 0xffc860, hauteur: 0.03 },
+    },
     // Piège de ronces : buissons par piège, enracinement à l'entrée (s) et délai avant le suivant (s)
     piege: {
       capacite: 12, buissons: 5, taille: 0.9, recherche: 12, enracinement: 0.5, delaiEnracinement: 3,

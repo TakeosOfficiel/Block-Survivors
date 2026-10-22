@@ -1,5 +1,5 @@
 /**
- * Petites barres de vie au-dessus des alliés blessés : un fond sombre et un
+ * Petites barres de vie au-dessus des alliés blessés et des mini-boss : un fond sombre et un
  * remplissage du vert au rouge, toujours face à la caméra et lisibles par-dessus
  * le décor. Un InstancedMesh de rectangles (deux par barre), rempli à chaque image.
  */
@@ -43,19 +43,20 @@ export class BarresVie {
     droite.set(1, 0, 0).applyQuaternion(this.camera.quaternion);
   }
 
-  /** Barre centrée en (x, y, z) ; `part` de 0 à 1. */
-  ajouter(x: number, y: number, z: number, part: number): void {
+  /** Barre centrée en (x, y, z) ; `part` de 0 à 1 ; `taille` : longueur relative (1 = alliés). */
+  ajouter(x: number, y: number, z: number, part: number, taille = 1): void {
+    const longueur = LARGEUR * taille;
     if (this.compte + 2 > this.maillage.instanceMatrix.count) return;
     const q = this.camera.quaternion;
     // Fond
     position.set(x, y, z);
-    matrice.compose(position, q, echelle.set(LARGEUR + BORD * 2, HAUTEUR + BORD * 2, 1));
+    matrice.compose(position, q, echelle.set(longueur + BORD * 2, HAUTEUR * Math.sqrt(taille) + BORD * 2, 1));
     this.maillage.setMatrixAt(this.compte, matrice);
     this.maillage.setColorAt(this.compte++, FOND);
     // Remplissage, aligné à gauche
-    const largeur = LARGEUR * Math.max(0, Math.min(1, part));
-    position.set(x, y, z).addScaledVector(droite, (largeur - LARGEUR) / 2);
-    matrice.compose(position, q, echelle.set(Math.max(1e-3, largeur), HAUTEUR, 1));
+    const largeur = longueur * Math.max(0, Math.min(1, part));
+    position.set(x, y, z).addScaledVector(droite, (largeur - longueur) / 2);
+    matrice.compose(position, q, echelle.set(Math.max(1e-3, largeur), HAUTEUR * Math.sqrt(taille), 1));
     this.maillage.setMatrixAt(this.compte, matrice);
     this.maillage.setColorAt(this.compte++, couleur.copy(BAS).lerp(PLEIN, part));
   }

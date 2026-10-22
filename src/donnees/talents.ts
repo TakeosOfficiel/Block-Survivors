@@ -300,15 +300,16 @@ export const ARBRES: Readonly<Record<IdPersonnage, readonly [DefinitionArbre, De
 };
 
 /**
- * Maîtrise : niveau 1 à 700 XP ramassées avec la classe, chaque niveau suivant
- * en demande 175 de plus (une partie complète en rapporte environ 9 000). Un
- * niveau = un point de talent, un point = un rang : un arbre (31 rangs) se
- * complète en une douzaine de parties complètes.
+ * Maîtrise : niveau 1 à 300 XP ramassées avec la classe, chaque niveau suivant
+ * en demande 75 de plus. Une partie complète (15 min) rapporte 3 000 à 4 500 XP,
+ * soit environ 8 niveaux la première fois. Un niveau = un point de talent, un
+ * point = un rang : un arbre (31 rangs) se complète en une dizaine de parties
+ * complètes.
  */
 export const MAITRISE: DefinitionMaitrise = {
   icone: 'item/experience_bottle',
-  premierNiveau: 700,
-  increment: 175,
+  premierNiveau: 300,
+  increment: 75,
 };
 
 /** XP de maîtrise totale pour atteindre ce niveau. */

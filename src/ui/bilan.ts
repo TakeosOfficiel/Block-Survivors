@@ -38,6 +38,8 @@ export function remplirBilan(
     ligne('Dégâts subis', NOMBRE.format(s.degatsSubis)),
     ligne('PV soignés', NOMBRE.format(s.pvSoignes)),
     ligne('Totems utilisés', String(etat.joueur.viesUtilisees)),
+    ligne('Émeraudes ramassées', NOMBRE.format(s.emeraudesRamassees)),
+    ligne('Coffres ouverts', String(s.coffresOuverts)),
   );
 
   // Ennemis vaincus : visage et nombre, pour chaque type rencontré

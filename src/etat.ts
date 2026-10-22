@@ -45,6 +45,8 @@ export interface StatistiquesPartie {
   degatsSubis: number;
   pvSoignes: number;
   xpTotale: number;
+  emeraudesRamassees: number;
+  coffresOuverts: number;
   bossVaincus: number;
 }
 
@@ -61,6 +63,10 @@ export interface EtatPartie {
   niveauxEnAttente: number;
   /** Relances des cartes encore disponibles. */
   relancesRestantes: number;
+  /** Émeraudes ramassées dans la partie (elles ouvrent les coffres). */
+  emeraudes: number;
+  /** Cartes de coffre pas encore choisies, et titre de leur écran. */
+  readonly choixCoffre: { restants: number; titre: string };
   issue: IssuePartie;
   readonly stats: StatistiquesPartie;
   /** Bonus cumulés des passifs. */
@@ -85,6 +91,8 @@ export function creerEtatPartie(arene: DefinitionArene, idPersonnage: IdPersonna
     ennemisTues: 0,
     niveauxEnAttente: 0,
     relancesRestantes: PROGRESSION.relances,
+    emeraudes: 0,
+    choixCoffre: { restants: 0, titre: '' },
     issue: null,
     stats: {
       tuesParType: new Int32Array(IDS_ENNEMIS.length),
@@ -98,6 +106,8 @@ export function creerEtatPartie(arene: DefinitionArene, idPersonnage: IdPersonna
       pvSoignes: 0,
       xpTotale: 0,
       bossVaincus: 0,
+      emeraudesRamassees: 0,
+      coffresOuverts: 0,
     },
     modificateurs: creerModificateurs(),
     talents: { armes: {}, mecaniques: {} },

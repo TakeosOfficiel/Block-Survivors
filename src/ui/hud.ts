@@ -7,6 +7,7 @@ import type { BibliothequeTextures } from '../assets/textures';
 import type { Arsenal } from '../combat/arsenal';
 import { CONFIG } from '../config';
 import { JOUEUR_BASE } from '../donnees/joueur';
+import { OBJETS } from '../donnees/objets';
 import { PROGRESSION } from '../donnees/progression';
 import type { AfficheurAlerte } from '../entites/directeurBoss';
 import type { Ennemis } from '../entites/ennemis';
@@ -38,6 +39,7 @@ export class Hud implements AfficheurAlerte {
   private readonly elementChrono = element('hud-chrono');
   private readonly elementProchainBoss = element('hud-prochain-boss');
   private readonly elementTues = element('hud-tues-nombre');
+  private readonly elementEmeraudes = element('hud-emeraudes-nombre');
   private readonly elementVignette = element('vignette');
   private readonly elementTotems = element('hud-totems');
   private readonly elementNombreTotems = element('hud-totems-nombre');
@@ -55,6 +57,7 @@ export class Hud implements AfficheurAlerte {
   private secondeAffichee = -1;
   private secondeBossAffichee = -2;
   private tuesAffiches = -1;
+  private emeraudesAffichees = -1;
   private opaciteVignette = 0;
   private totemsAffiches = -1;
   private viesUtiliseesVues = 0;
@@ -74,6 +77,8 @@ export class Hud implements AfficheurAlerte {
     const image = element<HTMLImageElement>('hud-tues-icone');
     if (icone) image.src = icone;
     else image.classList.add('cache');
+    const emeraude = textures.url(OBJETS.emeraude.icone);
+    if (emeraude) element<HTMLImageElement>('hud-emeraudes-icone').src = emeraude;
     const totem = textures.url(CONFIG.joueur.totem.icone);
     if (totem) {
       element<HTMLImageElement>('hud-totems-icone').src = totem;
@@ -115,6 +120,10 @@ export class Hud implements AfficheurAlerte {
     if (etat.ennemisTues !== this.tuesAffiches) {
       this.tuesAffiches = etat.ennemisTues;
       this.elementTues.textContent = String(etat.ennemisTues);
+    }
+    if (etat.emeraudes !== this.emeraudesAffichees) {
+      this.emeraudesAffichees = etat.emeraudes;
+      this.elementEmeraudes.textContent = String(etat.emeraudes);
     }
     this.afficherVignette(etat);
     this.afficherTotems(etat);

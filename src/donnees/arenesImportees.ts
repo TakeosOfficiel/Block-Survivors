@@ -34,6 +34,7 @@ interface ReglagesCarte {
     readonly couleurSoleil: string | number;
   }>;
   readonly boss?: readonly IdEnnemi[];
+  readonly miniBoss?: readonly IdEnnemi[];
   readonly ennemis?: readonly ChoixEnnemi[];
   readonly zones?: readonly ZoneEnnemis[];
 }
@@ -83,6 +84,7 @@ export function arenesImportees(bases: readonly DefinitionArene[]): DefinitionAr
         couleurSoleil: couleur(r.lumiere?.couleurSoleil, base.lumiere.couleurSoleil),
       },
       boss: r.boss ?? base.boss,
+      miniBoss: r.miniBoss ?? base.miniBoss,
       ennemis: r.ennemis ?? base.ennemis,
       // Les zones de l'arène de base n'ont pas de sens ici : seulement celles du réglage
       zones: r.zones ?? [],

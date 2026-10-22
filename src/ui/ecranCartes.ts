@@ -1,6 +1,7 @@
 /**
- * Écran de montée de niveau : 3 cartes d'amélioration en infobulles du jeu,
- * nom coloré selon la famille, choisies à la souris ou avec les touches 1, 2, 3
+ * Écran de montée de niveau (ou d'ouverture d'un coffre) : 3 cartes
+ * d'amélioration en infobulles du jeu, nom coloré selon la famille, choisies
+ * à la souris ou avec les touches 1, 2, 3
  * (rangée du haut ou pavé numérique). « Relancer » (ou R) tire d'autres
  * cartes, un nombre limité de fois par partie.
  */
@@ -44,11 +45,12 @@ export class EcranCartes {
     return this.surChoix !== null;
   }
 
-  ouvrir(niveau: number, cartes: readonly Carte[], surChoix: (carte: Carte) => void, relance: Relance): void {
+  /** `titre` : « Niveau 5 ! », « Coffre ! »… */
+  ouvrir(titre: string, cartes: readonly Carte[], surChoix: (carte: Carte) => void, relance: Relance): void {
     this.surChoix = surChoix;
     this.relance = relance;
     this.ouvertureMs = performance.now();
-    this.titre.textContent = `Niveau ${niveau} !`;
+    this.titre.textContent = titre;
     this.afficherCartes(cartes);
     this.racine.classList.remove('cache');
   }

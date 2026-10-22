@@ -75,7 +75,7 @@ src/
   entites/              joueur, ennemis et comportements, projectiles ennemis, orbes d'XP,
                         objets de soin, butin, directeurs d'apparition (hordes et boss)
   combat/               armes du joueur : arsenal et une classe par mécanique
-  progression/          niveaux, bonus passifs, modificateurs, cartes d'amélioration, sauvegarde (émeraudes, talents)
+  progression/          niveaux, bonus passifs, modificateurs, cartes d'amélioration, sauvegarde (maîtrise, talents)
   modeles/              modèles cubiques : compilation, animation, rendu instancié
   effets/               ombres, particules vanilla (sprites face caméra), rendu des projectiles (instanciés), retours (sons, secousses)
   controles/            clavier et molette
@@ -139,13 +139,30 @@ les rendent plus fréquents ou plus forts.
 
 ## Progression entre les parties
 
-Chaque partie rapporte des **émeraudes** (1 toutes les 20 s survécues, 1 tous
-les 40 ennemis, 10 par boss, 25 pour une victoire), affichées à la fin.
+Chaque classe a sa **maîtrise** : toute l'XP ramassée en partie la fait monter
+(niveau 1 à 300 XP, chaque niveau suivant en demande 75 de plus, voir
+`MAITRISE` dans donnees/talents.ts). Chaque niveau donne **un point de
+talent**, affiché à la fin de la partie, au menu et dans l'écran des talents.
 
 **Talents** (bouton du menu) : chaque personnage a **deux arbres** au choix,
-un seul actif à la fois. Un talent s'achète rang par rang ; le palier 2 s'ouvre
-après 3 rangs achetés dans l'arbre, le palier 3 après 6. « Réinitialiser »
-rend toutes les émeraudes de l'arbre.
+un seul actif à la fois ; chacun dispose de tous les points de la classe. Un
+rang coûte un point ; les paliers s'ouvrent après 8 puis 18 rangs achetés au-dessus.
+« Réinitialiser » rend gratuitement tous les points de l'arbre.
+
+## Émeraudes, coffres, mini-boss
+
+En partie, les ennemis lâchent parfois une **émeraude** (2 %), les mini-boss
+4 ou 5, les boss 10 ; elles ne servent que pendant la partie. Un **coffre**
+apparaît près du joueur tous les tant d'ennemis tués (100, puis +150, +200…) et
+à la mort de chaque mini-boss : marcher dessus l'ouvre si l'on a assez
+d'émeraudes (2, puis 3, 4… à chaque coffre ouvert), et l'on choisit une carte
+d'amélioration. Les boss lâchent un **coffre de l'Ender** gratuit (deux cartes).
+Un faisceau de lumière signale les coffres, leur prix flotte au-dessus.
+Données : donnees/coffres.ts, donnees/objets.ts.
+
+Les **mini-boss** (Zombie colosse, Vagabond, Araignée géante, Brute piglin,
+Champion wither) arrivent toutes les 75 s dès 1:30 (`CALENDRIER_MINIBOSS`),
+avec une barre de vie au-dessus de la tête ; chaque arène choisit les siens.
 
 | Personnage | Arbres |
 | --- | --- |
@@ -227,7 +244,7 @@ ombres, *NON* revient au rendu d'origine. Les textures restent celles du jeu.
 
 `F3` ou `²` : panneau compact avec FPS, appels de dessin, moteur, entités,
 textures ; vitesse du temps (`-` / `+`), invincibilité (`I`), frappe de zone
-(`K`), +1 niveau (`L`), prochain boss (`B`), saut à 14:50, +100 émeraudes ; puis des rangées
+(`K`), +1 niveau (`L`), prochain boss (`B`), saut à 14:50, +1 niveau de maîtrise ; puis des rangées
 d'icônes (nom au survol) pour faire apparaître chaque ennemi, donner chaque
 arme ou bonus (exclusifs compris, ex. le totem), poser chaque objet, et
 changer de personnage ou d'arène (même verrouillés).

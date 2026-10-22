@@ -525,6 +525,16 @@ const definitions = {
     },
   },
 
+  // Coffre (skin de bloc 64x64) : caisse, couvercle articulé au bord arrière, loquet sur le devant (+Z)
+  coffre: {
+    tailleTexture: [64, 64],
+    parties: {
+      caisse:    { taille: [14, 10, 14], pivot: [0, 0, 0],  centre: [0, 5, 0],     uv: [0, 19] },
+      couvercle: { taille: [14, 5, 14],  pivot: [0, 9, -7], centre: [0, 2.5, 7],  uv: [0, 0] },
+      loquet:    { taille: [2, 4, 1],    pivot: [0, 9, -7], centre: [0, -1, 14.5], uv: [0, 0] },
+    },
+  },
+
   // Crocs d'évocateur (Crocs de l'évocateur) : skin 64x32, socle enterré et deux mâchoires qui claquent
   crocs: {
     tailleTexture: [64, 32],

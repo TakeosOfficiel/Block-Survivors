@@ -119,6 +119,7 @@ export const CONFIG = {
     interruption: 1,         // s avant l'attaque suivante d'un ennemi interrompu (coup de bouclier)
     essaisGroupe: 12,        // ennemis examinés pour trouver le plus gros groupe
     chocMur: 4,              // recul minimal (blocs/s) pour un choc contre un mur (Lame lourde)
+    barreMiniBoss: 2,        // longueur de la barre de vie des mini-boss (× celle des alliés)
     amortissementRecul: 6,   // décroissance du recul (1/s)
     vitesseRotation: 10,     // orientation vers la direction de marche (1/s)
     dureeMort: 0.6,          // chute sur le côté avant disparition (s)

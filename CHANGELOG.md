@@ -5,6 +5,18 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.39.0] — 2026-10-22
+
+### Nouveautés
+- **Mini-boss** : entre les mobs et les boss, un mini-boss arrive toutes les 75 s dès 1:30, annoncé à l'écran, avec une barre de vie au-dessus de la tête. Ce sont des géants des mobs de l'arène : **Zombie colosse** et **Vagabond** (Prairie), **Araignée géante** (Mine), **Brute piglin** et **Champion wither** (Nether). Ils deviennent plus solides au fil de la partie.
+- **Émeraudes** : elles reviennent, mais en partie. Les ennemis en lâchent parfois une au sol, les mini-boss 4 ou 5, les boss 10 ; on les ramasse en marchant dessus (compteur en haut à droite).
+- **Coffres** (vrais coffres Minecraft) : un coffre apparaît près de vous tous les tant d'ennemis tués, et chaque mini-boss en laisse un à sa mort. Marchez dessus pour l'ouvrir si vous avez assez d'émeraudes (2, puis 3, 4… le prix monte à chaque coffre) : le couvercle se lève et vous choisissez une carte d'amélioration. Un faisceau de lumière les signale de loin et leur prix flotte au-dessus (vert si vous pouvez payer).
+- **Coffre de l'Ender** : lâché par chaque boss, gratuit, il offre **deux** cartes.
+- Fin de partie : émeraudes ramassées et coffres ouverts dans le bilan.
+
+### Changements
+- **Maîtrise recalibrée** : niveau 1 à 300 XP, puis +75 par niveau. Une partie complète rapporte environ 8 niveaux la première fois (au lieu de 4).
+
 ## [0.38.0] — 2026-10-22
 
 ### Changements

@@ -1,6 +1,6 @@
 /**
- * Objets ramassables posés au sol (soins) : icône d'objet tournée vers la
- * caméra, qui flotte doucement ; ramassée au contact du joueur.
+ * Objets ramassables posés au sol (soins, émeraudes) : icône d'objet en relief
+ * qui tourne et flotte doucement ; ramassée au contact du joueur.
  * Pool + un InstancedMesh par type d'objet.
  */
 import * as THREE from 'three';
@@ -21,7 +21,7 @@ interface Objet {
   phase: number;
 }
 
-const CAPACITE = 64;
+const CAPACITE = 192;
 
 const matrice = new THREE.Matrix4();
 
@@ -79,10 +79,16 @@ export class Objets {
       const o = this.pool.elements[i];
       if ((o.x - j.x) ** 2 + (o.z - j.z) ** 2 > portee * portee) continue;
       const def = OBJETS[IDS_OBJETS[o.indexType]];
-      const avant = j.pv;
-      j.pv = Math.min(j.pvMax, j.pv + def.soin * (1 + this.etat.modificateurs.soinsObjets));
-      this.etat.stats.pvSoignes += j.pv - avant;
-      this.retours.son('manger');
+      if (def.emeraudes) {
+        this.etat.emeraudes += def.emeraudes;
+        this.etat.stats.emeraudesRamassees += def.emeraudes;
+        this.retours.son('emeraude');
+      } else {
+        const avant = j.pv;
+        j.pv = Math.min(j.pvMax, j.pv + def.soin * (1 + this.etat.modificateurs.soinsObjets));
+        this.etat.stats.pvSoignes += j.pv - avant;
+        this.retours.son('manger');
+      }
       this.particules.emettre(o.x, 0.8, o.z, GERBES.ramassage, def.icone);
       this.pool.liberer(i);
     }

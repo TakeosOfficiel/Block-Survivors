@@ -4,6 +4,7 @@ import { ALLIES, IDS_ALLIES, CREATURES_TALENTS } from '../donnees/allies';
 import { ARMES, IDS_ARMES } from '../donnees/armes';
 import { BLOCS, type IdBloc } from '../donnees/blocs';
 import { ENNEMIS, IDS_ENNEMIS } from '../donnees/ennemis';
+import { COFFRES, IDS_COFFRES } from '../donnees/coffres';
 import { IDS_OBJETS, OBJETS } from '../donnees/objets';
 import { IDS_PARTICULES, PARTICULES } from '../donnees/particules';
 import { IDS_PASSIFS, PASSIFS } from '../donnees/passifs';
@@ -68,6 +69,7 @@ export function texturesRequises(
     if (ennemi.boss) for (const sprite of BarreBoss.sprites(ennemi.boss.couleurBarre)) chemins.add(sprite);
   }
   for (const id of IDS_OBJETS) chemins.add(OBJETS[id].icone);
+  for (const id of IDS_COFFRES) chemins.add(COFFRES[id].apparence.skin);
   for (const id of IDS_PROJECTILES) chemins.add(PROJECTILES[id].texture);
   for (const id of IDS_ALLIES) {
     const allie = ALLIES[id];

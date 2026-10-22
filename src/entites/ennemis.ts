@@ -11,6 +11,7 @@ import { ENNEMIS, IDS_ENNEMIS, type IdEnnemi } from '../donnees/ennemis';
 import { ETATS, RESISTANCE_BOSS } from '../donnees/etats';
 import { JOUEUR_BASE } from '../donnees/joueur';
 import { MODELES } from '../donnees/modeles';
+import type { BarresVie } from '../effets/barresVie';
 import type { Ombres } from '../effets/ombres';
 import type { Retours } from '../effets/retours';
 import type { Particules } from '../effets/particules';
@@ -113,10 +114,11 @@ export class Ennemis implements SourceEntites {
     this.grille = new GrilleSpatiale(Math.max(etat.arene.largeur, etat.arene.profondeur) / 2 + 1, CONFIG.ennemis.celluleGrille, CONFIG.ennemis.capacite);
     this.scene = scene;
     this.textures = textures;
-    // Seuls les mobs et boss de l'arène sont préparés (moins de shaders à compiler au chargement)
+    // Seuls les mobs, mini-boss et boss de l'arène sont préparés (moins de shaders à compiler au chargement)
     const a = etat.arene;
     const presents = new Set<IdEnnemi>([...a.ennemis, ...a.zones.flatMap((z) => z.ennemis)].map((e) => e.ennemi));
     for (const id of a.boss) presents.add(id);
+    for (const id of a.miniBoss) presents.add(id);
     this.rendus = IDS_ENNEMIS.map(() => null);
     for (const id of presents) this.rendu(IDS_ENNEMIS.indexOf(id));
     this.hauteurs = Float32Array.from(IDS_ENNEMIS, (id) => compilerModele(MODELES[ENNEMIS[id].modele]).hauteur * (ENNEMIS[id].echelle ?? 1) + 0.3);
@@ -551,8 +553,9 @@ export class Ennemis implements SourceEntites {
     }
   }
 
-  majVisuel(ombres: Ombres): void {
+  majVisuel(ombres: Ombres, barres: BarresVie): void {
     for (let t = 0; t < this.rendus.length; t++) this.rendus[t]?.instances.commencer();
+    barres.commencer();
 
     const blessure = CONFIG.surcouche.blessure;
     const flash = CONFIG.surcouche.flash;
@@ -606,9 +609,14 @@ export class Ennemis implements SourceEntites {
 
       rendu.instances.ajouter(pose);
       ombres.ajouter(e.x, e.z, e.definition.rayonOmbre * (pose.echelleXZ / echelle));
+      // Mini-boss : sa barre de vie au-dessus de la tête, toujours visible
+      if (e.definition.miniBoss && e.mort < 0) {
+        barres.ajouter(e.x, pose.y + this.hauteurs[e.indexType], e.z, e.pv / e.pvMax, g.barreMiniBoss);
+      }
     }
 
     for (let t = 0; t < this.rendus.length; t++) this.rendus[t]?.instances.terminer();
+    barres.terminer();
   }
 
   // -----------------------------------------------------------------------

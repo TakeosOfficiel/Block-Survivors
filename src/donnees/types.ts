@@ -262,6 +262,10 @@ export interface DefinitionEnnemi extends ApparenceEntite {
   readonly traverseToiles?: boolean;
   /** Présent pour les boss : affichage de leur barre de vie. */
   readonly boss?: { readonly couleurBarre: CouleurBarreBoss };
+  /** Mini-boss : arrive à son heure (CALENDRIER_MINIBOSS), barre de vie au-dessus de la tête. */
+  readonly miniBoss?: true;
+  /** Émeraudes lâchées à la mort (mini-boss, boss), éparpillées autour du corps. */
+  readonly emeraudes?: number;
   /** Sons joués quand il est blessé et quand il meurt. */
   readonly sons?: { readonly blessure: IdSon; readonly mort: IdSon };
   /** Hauteur de ses sons (1 = normale ; < 1 = plus grave, pour les boss). */
@@ -582,6 +586,8 @@ export interface DefinitionArene {
   };
   /** Boss de l'arène, dans l'ordre d'arrivée (puis en boucle). */
   readonly boss: readonly IdEnnemi[];
+  /** Mini-boss de l'arène, dans l'ordre d'arrivée (puis en boucle). */
+  readonly miniBoss: readonly IdEnnemi[];
   /** Population hors zones. */
   readonly ennemis: readonly ChoixEnnemi[];
   /** Zones à population propre (la première qui contient le point d'apparition l'emporte). */
@@ -608,11 +614,46 @@ export interface DefinitionStructure {
 // --------------------------------------------------------------------------
 // Boss
 // --------------------------------------------------------------------------
-/** Calendrier des boss : apparitions à intervalles réguliers, annoncées à l'écran. */
+/** Calendrier des boss (ou des mini-boss) : apparitions à intervalles réguliers, annoncées à l'écran. */
 export interface DefinitionCalendrierBoss {
   readonly premierPassage: number;   // s de jeu avant le premier boss
   readonly intervalle: number;       // s entre deux boss
   readonly avertissement: number;    // s d'alerte avant l'apparition
+  /** PV multipliés comme ceux des ennemis ordinaires à ce moment de la partie (mini-boss). */
+  readonly pvSelonTemps: boolean;
+}
+
+// --------------------------------------------------------------------------
+// Coffres
+// --------------------------------------------------------------------------
+/** Coffre posé sur la carte : ouvert au contact, il offre des cartes d'amélioration. */
+export interface DefinitionCoffre {
+  readonly nom: string;
+  /** Titre de l'écran des cartes à l'ouverture. */
+  readonly titre: string;
+  readonly apparence: ApparenceEntite;
+  /** Payé en émeraudes (prix croissant) ; sinon gratuit. */
+  readonly payant: boolean;
+  /** Cartes choisies à l'ouverture (une à la fois). */
+  readonly choix: number;
+  readonly son: IdSon;
+  /** Couleur du faisceau lumineux qui le signale de loin. */
+  readonly couleurFaisceau: number;
+}
+
+/** Quand et où les coffres apparaissent, et leur prix. */
+export interface ReglesCoffres {
+  readonly capacite: number;
+  /** Un coffre après `premier` ennemis tués, puis tous les `intervalle` (+ `croissance` à chaque fois). */
+  readonly tues: { readonly premier: number; readonly intervalle: number; readonly croissance: number };
+  /** Prix du premier coffre payant ouvert, puis + `increment` à chacun. */
+  readonly prix: { readonly base: number; readonly increment: number };
+  /** Distance au joueur (blocs) des coffres qui apparaissent après des ennemis tués. */
+  readonly distance: readonly [number, number];
+  readonly rayonOuverture: number;     // blocs
+  readonly dureeOuverture: number;     // s : le couvercle se lève
+  readonly resteOuvert: number;        // s avant de disparaître
+  readonly faisceau: { readonly hauteur: number; readonly largeur: number; readonly intensite: number };
 }
 
 // --------------------------------------------------------------------------
@@ -622,6 +663,8 @@ export interface DefinitionObjet {
   readonly nom: string;
   readonly icone: CheminTexture;
   readonly soin: number;             // PV rendus
+  /** Émeraudes données au ramassage (monnaie de la partie, pour les coffres). */
+  readonly emeraudes?: number;
   /** Probabilité d'être lâché par un ennemi ordinaire. */
   readonly chance: number;
   readonly taille: number;           // blocs

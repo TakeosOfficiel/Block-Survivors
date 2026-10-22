@@ -1,11 +1,14 @@
 /**
  * Ce que lâche un ennemi vaincu : son XP, son butin garanti, et parfois un
- * objet de soin. Mort au-dessus de la lave, dans un mur ou hors d'atteinte
- * (blaze, boss volants), il lâche tout sur la case accessible la plus proche.
+ * objet (soin, émeraude). Un mini-boss lâche aussi des émeraudes et un coffre,
+ * un boss des émeraudes et un coffre de l'Ender. Mort au-dessus de la lave,
+ * dans un mur ou hors d'atteinte (blaze, boss volants), il lâche tout sur la
+ * case accessible la plus proche.
  */
 import { IDS_OBJETS, OBJETS } from '../donnees/objets';
 import type { DefinitionEnnemi } from '../donnees/types';
 import type { Terrain } from '../monde/navigation';
+import type { Coffres } from './coffres';
 import type { Objets } from './objets';
 import type { DepotXp } from './orbes';
 
@@ -13,6 +16,7 @@ export class Butin {
   private readonly orbes: DepotXp;
   private readonly objets: Objets;
   private readonly terrain: Terrain;
+  private coffres: Coffres | null = null;
   // Résultat de placer (évite d'allouer un objet)
   private x = 0;
   private z = 0;
@@ -23,11 +27,25 @@ export class Butin {
     this.terrain = terrain;
   }
 
+  /** Les coffres des mini-boss et des boss (créés après le butin). */
+  brancherCoffres(coffres: Coffres): void {
+    this.coffres = coffres;
+  }
+
   lacher(ennemi: DefinitionEnnemi, xMort: number, zMort: number): void {
     this.placer(xMort, zMort);
     const x = this.x;
     const z = this.z;
     this.orbes.deposer(x, z, ennemi.xp);
+    // Émeraudes en couronne autour du corps
+    const n = ennemi.emeraudes ?? 0;
+    for (let k = 0; k < n; k++) {
+      const angle = (k / n) * Math.PI * 2;
+      this.placer(x + Math.sin(angle) * 1.2, z + Math.cos(angle) * 1.2);
+      this.objets.poser('emeraude', this.x, this.z);
+    }
+    if (ennemi.miniBoss) this.coffres?.poser('coffre', x, z);
+    if (ennemi.boss) this.coffres?.poser('coffre_ender', x, z);
     if (ennemi.butin) {
       this.objets.poser(ennemi.butin, x, z);
       return;

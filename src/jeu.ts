@@ -30,6 +30,7 @@ import { Orbites } from './combat/orbites';
 import { ProjectilesJoueur } from './combat/projectilesJoueur';
 import { CONFIG } from './config';
 import { Entrees } from './controles/entrees';
+import { CALENDRIER_BOSS, CALENDRIER_MINIBOSS } from './donnees/boss';
 import type { IdEnnemi } from './donnees/ennemis';
 import { IDS_OBJETS, OBJETS } from './donnees/objets';
 import { GERBES } from './donnees/particules';
@@ -43,6 +44,7 @@ import { Particules } from './effets/particules';
 import { RenduProjectiles } from './effets/renduProjectiles';
 import type { Retours } from './effets/retours';
 import { Butin } from './entites/butin';
+import { Coffres } from './entites/coffres';
 import { DirecteurApparitions } from './entites/directeur';
 import { DirecteurBoss } from './entites/directeurBoss';
 import { Ennemis } from './entites/ennemis';
@@ -108,6 +110,7 @@ export class Jeu implements CallbacksBoucle, Retours {
 
   // Effets
   private readonly ombres: Ombres;
+  private readonly barresMiniBoss: BarresVie;
   private readonly particules: Particules;
   private readonly chiffres: ChiffresDegats;
   private readonly etiquette: Etiquette;
@@ -119,8 +122,10 @@ export class Jeu implements CallbacksBoucle, Retours {
   private readonly projectilesEnnemis: ProjectilesEnnemis;
   private readonly orbes: Orbes;
   private readonly objets: Objets;
+  private readonly coffres: Coffres;
   private readonly directeur: DirecteurApparitions;
   private readonly directeurBoss: DirecteurBoss;
+  private readonly directeurMiniBoss: DirecteurBoss;
 
   // Combat du joueur
   private readonly arsenal: Arsenal;
@@ -200,6 +205,7 @@ export class Jeu implements CallbacksBoucle, Retours {
       : Math.max(arene.largeur, arene.profondeur);
     const carte = monde.carte;
     this.ombres = new Ombres(textures.obtenir(CONFIG.ombre.texture), scene);
+    this.barresMiniBoss = new BarresVie(scene, rendu.camera, 8);
     this.particules = new Particules(scene, rendu.camera, textures, IDS_OBJETS.map((id) => OBJETS[id].icone));
     this.renduProjectiles = new RenduProjectiles(textures, scene, rendu.camera);
     this.chiffres = new ChiffresDegats(scene, rendu.camera);
@@ -211,12 +217,15 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.projectilesEnnemis = new ProjectilesEnnemis(this.etat, carte, this.joueur);
     this.orbes = new Orbes(this.etat, this, scene, textures, rendu.camera);
     this.objets = new Objets(this.etat, this.particules, this, scene, textures);
+    this.coffres = new Coffres(this.etat, this.terrain, this.particules, this, scene, textures);
+    const butin = new Butin(this.orbes, this.objets, this.terrain);
+    butin.brancherCoffres(this.coffres);
     this.ennemis = new Ennemis(
       this.etat,
       this.terrain,
       { cible: this.joueur, tireur: this.projectilesEnnemis },
       this.particules,
-      new Butin(this.orbes, this.objets, this.terrain),
+      butin,
       this,
       scene,
       textures,
@@ -286,7 +295,12 @@ export class Jeu implements CallbacksBoucle, Retours {
       bossAVaincre: () => this.prolongation,
     });
     this.directeur = new DirecteurApparitions(this.etat, this.terrain, this.ennemis, this.camera);
-    this.directeurBoss = new DirecteurBoss(this.etat, this.terrain, this.ennemis, this.camera, this.hud, this);
+    this.directeurBoss = new DirecteurBoss({
+      calendrier: CALENDRIER_BOSS, liste: (a) => a.boss, annonce: (nom) => `Un boss approche : ${nom} !`, distance: 12, secousse: 0.6,
+    }, this.etat, this.terrain, this.ennemis, this.camera, this.hud, this);
+    this.directeurMiniBoss = new DirecteurBoss({
+      calendrier: CALENDRIER_MINIBOSS, liste: (a) => a.miniBoss, annonce: (nom) => `Mini-boss : ${nom} !`, distance: 10, secousse: 0.3,
+    }, this.etat, this.terrain, this.ennemis, this.camera, this.hud, this);
 
     // Progression et écrans
     this.ameliorations = new Ameliorations(this.etat, this.arsenal, this.passifs);
@@ -327,7 +341,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     }, textures);
 
     this.sourcesEntites = [
-      this.joueur, this.ennemis, this.projectilesEnnemis, this.projectilesJoueur, this.ricochets, this.invocations, this.orbes, this.objets,
+      this.joueur, this.ennemis, this.projectilesEnnemis, this.projectilesJoueur, this.ricochets, this.invocations, this.orbes, this.objets, this.coffres,
     ];
 
     this.debug = new PanneauDebug({
@@ -438,11 +452,13 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.terrain.flux.maj(this.etat.joueur.x, this.etat.joueur.z);
     this.directeur.maj(dt);
     this.directeurBoss.maj();
+    this.directeurMiniBoss.maj();
     this.ennemis.maj(dt);           // reconstruit la grille utilisée par les armes
     this.arsenal.maj(dt);
     this.mecaniques.maj(dt);
     this.orbes.maj(dt);
     this.objets.maj();
+    this.coffres.maj(dt);
     this.projectilesJoueur.maj(dt);
     this.invocations.maj(dt);
     this.foudre.maj(dt);
@@ -482,7 +498,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.joueur.majVisuel(this.ombres);
     const j = this.etat.joueur;
     this.etiquette.placer(j.x, this.joueur.hauteur, j.z, !j.mort && !this.camera.alaSouris);
-    this.ennemis.majVisuel(this.ombres);
+    this.ennemis.majVisuel(this.ombres, this.barresMiniBoss);
     this.invocations.majVisuel(this.ombres);
     this.mecaniques.majVisuel(this.ombres);
     this.chutes.majVisuel(this.ombres);
@@ -498,6 +514,7 @@ export class Jeu implements CallbacksBoucle, Retours {
 
     this.orbes.majVisuel(this.etat.tempsJeu);
     this.objets.majVisuel(this.etat.tempsJeu);
+    this.coffres.majVisuel(this.etat.tempsJeu);
     this.balayages.majVisuel(dtJeu);
     this.foudre.majVisuel();
     this.fissures.majVisuel();
@@ -597,14 +614,18 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.son('niveau');
   }
 
-  /** Ouvre les cartes d'un niveau en attente (un niveau à la fois). */
+  /** Ouvre les cartes d'un niveau en attente (un niveau à la fois), puis celles des coffres ouverts. */
   private proposerCartes(): void {
-    if (this.etat.niveauxEnAttente === 0 || this.ecranCartes.ouvert || this.etat.issue !== null) return;
+    const etat = this.etat;
+    if (this.ecranCartes.ouvert || etat.issue !== null) return;
+    if (etat.niveauxEnAttente === 0 && etat.choixCoffre.restants === 0) return;
     this.ecranPause.definir(false);
-    const niveau = this.etat.joueur.niveau - this.etat.niveauxEnAttente + 1;
-    this.ecranCartes.ouvrir(niveau, this.ameliorations.tirer(), (carte: Carte) => {
+    const coffre = etat.niveauxEnAttente === 0;
+    const titre = coffre ? etat.choixCoffre.titre : `Niveau ${etat.joueur.niveau - etat.niveauxEnAttente + 1} !`;
+    this.ecranCartes.ouvrir(titre, this.ameliorations.tirer(), (carte: Carte) => {
       this.ameliorations.appliquer(carte.amelioration);
-      this.etat.niveauxEnAttente--;
+      if (coffre) etat.choixCoffre.restants--;
+      else etat.niveauxEnAttente--;
     }, {
       restantes: () => this.etat.relancesRestantes,
       relancer: () => {

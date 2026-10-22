@@ -1,4 +1,4 @@
-/** Objets ramassables (soins). Ajouter un objet = ajouter une entrée. */
+/** Objets ramassables (soins, émeraudes). Ajouter un objet = ajouter une entrée. */
 import type { DefinitionObjet } from './types';
 
 const definitions = {
@@ -17,6 +17,16 @@ const definitions = {
     chance: 0.004,
     taille: 0.8,
     couleurSecours: 0xffd23a,
+  },
+  // Monnaie de la partie : ouvre les coffres (voir coffres.ts)
+  emeraude: {
+    nom: 'Émeraude',
+    icone: 'item/emerald',
+    soin: 0,
+    emeraudes: 1,
+    chance: 0.02,
+    taille: 0.6,
+    couleurSecours: 0x17dd62,
   },
 } satisfies Record<string, DefinitionObjet>;
 

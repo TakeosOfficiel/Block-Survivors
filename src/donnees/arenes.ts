@@ -46,6 +46,7 @@ const prairie: DefinitionArene = {
   brouillard: { debut: 45, fin: 120 },
   lumiere: { ambiante: 0.35, soleil: 0.75, couleurAmbiante: 0xffffff, couleurSoleil: 0xffffff },
   boss: ['geant', 'seigneur_wither'],
+  miniBoss: ['zombie_colosse', 'vagabond'],
   ennemis: [
     { ennemi: 'zombie', depuis: 0, poids: 6 },
     { ennemi: 'araignee', depuis: 20, poids: 6 },
@@ -106,6 +107,7 @@ const mine: DefinitionArene = {
   brouillard: { debut: 28, fin: 70 },
   lumiere: { ambiante: 0.22, soleil: 0.4, couleurAmbiante: 0x9aa0c0, couleurSoleil: 0xffe0b0 },
   boss: ['reine_araignee', 'geant'],
+  miniBoss: ['araignee_geante', 'zombie_colosse'],
   ennemis: [
     { ennemi: 'zombie', depuis: 0, poids: 5 },
     { ennemi: 'araignee_venimeuse', depuis: 0, poids: 5 },
@@ -164,6 +166,7 @@ const nether: DefinitionArene = {
   brouillard: { debut: 25, fin: 80 },
   lumiere: { ambiante: 0.4, soleil: 0.45, couleurAmbiante: 0xffb0a0, couleurSoleil: 0xff9060 },
   boss: ['magma_geant', 'seigneur_wither'],
+  miniBoss: ['brute_piglin', 'champion_wither'],
   ennemis: [
     { ennemi: 'piglin_zombifie', depuis: 0, poids: 7 },
     { ennemi: 'cube_magma', depuis: 15, poids: 5 },

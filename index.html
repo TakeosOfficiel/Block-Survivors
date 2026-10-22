@@ -22,73 +22,60 @@
     </div>
   </div>
 
-  <!-- Menu principal : classe, héros, arène -->
-  <div id="menu" class="fond-terre cache">
-    <div id="menu-maitrise" title="Maîtrise de la classe : monte avec l’XP ramassée en partie ; chaque niveau donne un point de talent"></div>
-    <div class="menu-entete">
-      <h1 id="menu-titre" class="logo">Block Survivors</h1>
+  <!-- Menu principal : la photo de l'arène en fond, les classes à gauche, le héros au centre,
+       les arènes à droite, le grand bouton « Jouer » en bas -->
+  <div id="menu" class="cache">
+    <div id="menu-fond"></div>
+    <div class="menu-voile"></div>
+    <div class="menu-logo">
+      <h1 id="menu-titre">Block <span>Survivors</span></h1>
       <div id="menu-accroche" class="accroche"></div>
     </div>
-    <div class="menu-trois">
-      <!-- Classe : choix et détails -->
-      <section class="panneau-mc menu-colonne">
-        <h2 class="titre-panneau titre-centre">Classe</h2>
-        <div id="menu-personnages" class="menu-classes"></div>
-        <div class="menu-separateur"></div>
-        <div id="menu-classe-nom" class="menu-grand-nom"></div>
-        <div id="menu-classe-description" class="option-description"></div>
-        <div id="menu-classe-tuiles" class="menu-tuiles"></div>
-        <div id="menu-classe-bonus" class="option-stats"></div>
-        <div class="menu-sous-titre">Bonus exclusifs</div>
-        <div id="menu-classe-exclusifs" class="menu-icones"></div>
-        <div class="menu-sous-titre">Arbres de talents</div>
-        <div id="menu-classe-arbres" class="menu-arbres"></div>
-      </section>
+    <div id="menu-maitrise" title="Maîtrise de la classe : monte avec l’XP ramassée en partie ; chaque niveau donne un point de talent"></div>
 
-      <!-- Héros : aperçu 3D, pseudo, apparence et talents -->
-      <section class="panneau-mc menu-colonne menu-heros">
-        <div class="menu-heros-haut">
-          <div class="menu-apercu-cadre">
-            <div id="menu-apercu" class="menu-apercu"></div>
-            <div class="menu-apercu-aide">Glisser pour tourner</div>
-          </div>
-          <div class="menu-heros-infos">
-            <label class="menu-sous-titre" for="menu-pseudo">Pseudo</label>
-            <div class="menu-pseudo">
-              <input id="menu-pseudo" class="champ-mc" type="text" autocomplete="off" spellcheck="false" />
-              <button id="menu-pseudo-aleatoire" class="bouton-mc" title="Pseudo au hasard">Aléatoire</button>
-            </div>
-            <div id="menu-heros-ligne" class="menu-heros-ligne"></div>
-            <div id="menu-heros-skin" class="option-description"></div>
-          </div>
-        </div>
-        <div class="rangee-boutons menu-heros-boutons">
-          <button id="menu-profil-bouton" class="bouton-mc">Apparence…</button>
-          <button id="menu-talents" class="bouton-mc">Talents…</button>
-        </div>
-        <div class="menu-sous-titre" id="menu-arbre-titre">Talents</div>
-        <div id="menu-talents-actifs" class="menu-icones"></div>
-      </section>
+    <!-- Classe : liste, puis détails de la classe choisie -->
+    <section class="menu-gauche">
+      <h2 class="menu-section">Classe</h2>
+      <div id="menu-personnages" class="menu-classes"></div>
+      <div id="menu-classe-description" class="menu-description"></div>
+      <div id="menu-classe-tuiles" class="menu-puces"></div>
+      <div id="menu-classe-bonus" class="menu-bonus"></div>
+      <div class="menu-intitule">Bonus exclusifs</div>
+      <div id="menu-classe-exclusifs" class="menu-icones"></div>
+      <div class="menu-intitule" id="menu-arbre-titre">Talents</div>
+      <div id="menu-talents-actifs" class="menu-icones"></div>
+    </section>
 
-      <!-- Arène : liste, boss, déblocages -->
-      <section class="panneau-mc menu-colonne">
-        <h2 class="titre-panneau titre-centre">Arène</h2>
-        <div id="menu-arenes" class="menu-arenes"></div>
-      </section>
-    </div>
-    <div class="menu-bas">
-      <div class="pile-boutons menu-bas-gauche">
-        <button id="menu-options" class="bouton-mc">Options…</button>
-        <button id="menu-nouveautes" class="bouton-mc">Nouveautés</button>
+    <!-- Héros : pseudo, aperçu 3D, apparence et talents -->
+    <section class="menu-centre">
+      <div class="menu-pseudo">
+        <input id="menu-pseudo" type="text" autocomplete="off" spellcheck="false" title="Votre pseudo (cliquez pour le changer)" />
+        <button id="menu-pseudo-aleatoire" class="menu-de" title="Pseudo au hasard">⚄</button>
       </div>
-      <button id="menu-jouer" class="bouton-mc bouton-jouer"><span id="menu-jouer-titre">Jouer</span><span id="menu-jouer-sous-titre"></span></button>
-      <button id="menu-quitter" class="bouton-mc cache">Quitter le jeu</button>
-    </div>
+      <div id="menu-apercu" class="menu-apercu" title="Glisser pour tourner"></div>
+      <div class="menu-heros-boutons">
+        <button id="menu-profil-bouton" class="bouton-menu">Apparence</button>
+        <button id="menu-talents" class="bouton-menu">Talents</button>
+      </div>
+    </section>
+
+    <!-- Arène : vignettes photo, détails de l'arène choisie -->
+    <section class="menu-droite">
+      <h2 class="menu-section">Arène</h2>
+      <div id="menu-arenes" class="menu-arenes"></div>
+      <div id="menu-arene-details" class="menu-arene-details"></div>
+    </section>
+
+    <button id="menu-jouer" class="menu-jouer"><span id="menu-jouer-titre">Jouer</span><span id="menu-jouer-sous-titre"></span></button>
+    <nav class="menu-liens">
+      <button id="menu-options">Options</button>
+      <button id="menu-nouveautes">Nouveautés</button>
+      <button id="menu-quitter" class="cache">Quitter</button>
+    </nav>
     <div class="menu-aide">ZQSD / WASD / Flèches : se déplacer · 1 2 3 : carte · R : relancer · Tab : dégâts · Échap : pause · Entrée : jouer</div>
-    <div class="pied pied-gauche">Block Survivors <span id="menu-version"></span> · <span id="menu-rendu"></span> · textures Minecraft <span id="menu-version-mc"></span></div>
+    <div class="menu-pied"><span id="menu-version"></span> · <span id="menu-rendu"></span> · textures Minecraft <span id="menu-version-mc"></span><br />Projet de fan, non affilié à Mojang</div>
     <a id="menu-mise-a-jour" class="mise-a-jour cache" target="_blank" rel="noopener">Nouvelle version disponible ! Cliquez pour la télécharger</a>
     <button id="menu-remboursement" class="mise-a-jour remboursement cache"></button>
-    <div class="pied pied-droite">Projet de fan, non affilié à Mojang</div>
   </div>
 
   <!-- Apparence (menu) : skin et gabarit, aperçu 3D -->

@@ -1,8 +1,10 @@
 /**
- * Menu principal en trois colonnes : la classe (choix et détails), le héros
- * (aperçu 3D, pseudo, apparence, talents) et l'arène (boss, déblocages),
- * puis le grand bouton « Jouer » (ou Entrée).
+ * Menu principal : la photo de l'arène choisie en plein écran, les classes à
+ * gauche (avec les détails de la choisie), le héros en 3D au centre (pseudo,
+ * apparence, talents), les arènes en vignettes photo à droite (boss, record,
+ * déblocages), puis le grand bouton « Jouer » (ou Entrée).
  */
+import { photoArene } from '../assets/photosArenes';
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG, VERSION_MINECRAFT } from '../config';
 import { ACCROCHES } from '../donnees/accroches';
@@ -46,6 +48,9 @@ export class EcranMenu {
   private readonly racine = element('menu');
   private readonly listePersonnages = element('menu-personnages');
   private readonly listeArenes = element('menu-arenes');
+  private readonly fond = element('menu-fond');
+  /** Arène dont la photo de fond est demandée (une demande plus récente l'emporte). */
+  private fondVoulu = '';
   private readonly pseudo = element<HTMLInputElement>('menu-pseudo');
   private readonly textures: BibliothequeTextures;
   private readonly options: PanneauOptions;
@@ -174,9 +179,27 @@ export class EcranMenu {
     this.afficherClasse();
     this.afficherHeros();
     this.afficherArenes();
-    const def = PERSONNAGES[this.personnage];
-    element('menu-jouer-titre').textContent = `Jouer — ${this.arene.nom}`;
-    element('menu-jouer-sous-titre').textContent = `${def.nom} · ${this.prochainsBoss(this.arene)[0]?.texte ?? ''}`;
+    this.afficherFond();
+    element('menu-jouer-titre').textContent = 'Jouer';
+    element('menu-jouer-sous-titre').textContent = `${PERSONNAGES[this.personnage].nom} · ${this.arene.nom}`;
+  }
+
+  /** La photo de l'arène choisie, en fond (fondu à chaque changement d'arène). */
+  private afficherFond(): void {
+    const id = this.arene.id;
+    if (id === this.fondVoulu) return;
+    this.fondVoulu = id;
+    this.fond.classList.remove('visible');
+    void photoArene(id).then((adresse) => {
+      if (!adresse || this.fondVoulu !== id) return;
+      const image = new Image();
+      image.onload = () => {
+        if (this.fondVoulu !== id) return;
+        this.fond.style.backgroundImage = `url("${adresse}")`;
+        this.fond.classList.add('visible');
+      };
+      image.src = adresse;
+    });
   }
 
   // --- Classe ---------------------------------------------------------------
@@ -186,9 +209,13 @@ export class EcranMenu {
     const bouton = document.createElement('button');
     bouton.className = 'menu-classe';
     bouton.dataset['id'] = id;
-    const icone = def.objetEnMain ?? ARMES[def.armesDepart[0]].icone;
-    bouton.title = def.nom;
-    bouton.append(caseImage(this.textures.url(icone), def.nom, 'grande'));
+    const icone = document.createElement('span');
+    icone.className = 'menu-classe-icone';
+    const url = this.textures.url(def.objetEnMain ?? ARMES[def.armesDepart[0]].icone);
+    if (url) icone.append(image(url));
+    const textes = document.createElement('span');
+    textes.append(texte(def.nom, 'menu-classe-nom'), texte(def.role, 'menu-classe-role'));
+    bouton.append(icone, textes);
     bouton.addEventListener('click', () => {
       this.personnage = id;
       this.rafraichir();
@@ -199,14 +226,13 @@ export class EcranMenu {
 
   private afficherClasse(): void {
     const def = PERSONNAGES[this.personnage];
-    element('menu-classe-nom').textContent = def.nom;
     element('menu-classe-description').textContent = def.description;
 
     const arme = ARMES[def.armesDepart[0]];
     element('menu-classe-tuiles').replaceChildren(
-      tuile('Cœurs', NOMBRE.format(def.pv / 2), this.textures.url(CONFIG.hud.coeurs.plein)),
-      tuile('Vitesse', NOMBRE.format(def.vitesse)),
-      tuile('Commence avec', arme.nom, this.textures.url(arme.icone)),
+      puce(NOMBRE.format(def.pv / 2), this.textures.url(CONFIG.hud.coeurs.plein), 'Cœurs'),
+      puce(`Vitesse ${NOMBRE.format(def.vitesse)}`),
+      puce(arme.nom, this.textures.url(arme.icone), 'Arme de départ'),
     );
     element('menu-classe-bonus').replaceChildren(...decrireBonus(def.bonus).map((ligne) => texte(ligne)));
     element('menu-classe-exclusifs').replaceChildren(...def.cartesExclusives.map((id) => {
@@ -214,19 +240,6 @@ export class EcranMenu {
       const caseIcone = caseImage(this.textures.url(passif.icone), passif.nom);
       caseIcone.title = `${passif.nom} : ${passif.description}`;
       return caseIcone;
-    }));
-    // Les deux arbres de la classe ; l'actif est en évidence
-    const actif = this.sauvegarde.arbreActif(this.personnage);
-    element('menu-classe-arbres').replaceChildren(...ARBRES[this.personnage].map((arbre, index) => {
-      const ligne = document.createElement('div');
-      ligne.className = 'menu-arbre';
-      ligne.classList.toggle('actif', index === actif);
-      const textes = document.createElement('div');
-      textes.className = 'option-textes';
-      textes.append(texte(index === actif ? `${arbre.nom} (actif)` : arbre.nom, 'option-nom'));
-      ligne.title = arbre.description;
-      ligne.append(caseImage(this.textures.url(arbre.icone), arbre.nom), textes);
-      return ligne;
     }));
   }
 
@@ -254,8 +267,7 @@ export class EcranMenu {
   private afficherHeros(): void {
     const def = PERSONNAGES[this.personnage];
     this.pseudo.value = this.profil.profil.pseudo;
-    element('menu-heros-ligne').textContent = def.nom;
-    element('menu-heros-skin').textContent = this.profil.nomSkin();
+    element('menu-apercu').title = `${this.profil.nomSkin()} · glisser pour tourner`;
     // L'aperçu revient au menu après l'écran d'apparence
     if (this.apercu && !this.profil.ouvert && !this.racine.classList.contains('cache')) {
       this.apercu.attacher(element('menu-apercu'));
@@ -280,7 +292,7 @@ export class EcranMenu {
         if (n.rangMax > 1) caseIcone.append(texte(String(rang), 'talent-rang'));
         return caseIcone;
       })
-      : [texte('Aucun talent acheté : gagnez des émeraudes en jouant.', 'option-description')]));
+      : [texte('Aucun talent acheté : jouez cette classe pour monter sa maîtrise.', 'menu-talents-vide')]));
   }
 
   // --- Arènes ---------------------------------------------------------------
@@ -288,30 +300,19 @@ export class EcranMenu {
   private afficherArenes(): void {
     this.listeArenes.replaceChildren(...ARENES.map((arene) => {
       const verrou = this.sauvegarde.verrou('arene', arene.id);
-      const choisie = arene.id === this.arene.id;
       const bouton = document.createElement('button');
       bouton.className = 'menu-arene';
-      bouton.classList.toggle('choisie', choisie);
+      bouton.classList.toggle('choisie', arene.id === this.arene.id);
       bouton.classList.toggle('verrouillee', verrou !== null);
-
-      const entete = document.createElement('div');
-      entete.className = 'menu-arene-entete';
-      entete.append(caseImage(this.textures.url(arene.icone), arene.nom), texte(arene.nom, 'option-nom'));
-      bouton.append(entete);
+      bouton.title = arene.description;
+      bouton.append(texte(arene.nom, 'menu-arene-nom'));
+      void photoArene(arene.id).then((adresse) => {
+        if (adresse) bouton.style.backgroundImage = `url("${adresse}")`;
+      });
       if (verrou) {
-        bouton.append(texte(`Verrouillée : ${verrou.texte}`, 'option-verrou'));
+        bouton.append(texte(`Verrouillée · ${verrou.texte}`, 'menu-arene-verrou'));
         bouton.disabled = true;
         return bouton;
-      }
-      if (choisie) {
-        bouton.append(texte(arene.description, 'option-description'));
-        bouton.append(texte(`Mobs : ${this.nomsMobs(arene)}`, 'menu-arene-mobs'));
-        const boss = document.createElement('div');
-        boss.className = 'menu-puces';
-        boss.append(...this.prochainsBoss(arene).map((b) => texte(b.texte, 'menu-puce')));
-        bouton.append(boss);
-        const record = this.sauvegarde.record(arene.id);
-        if (record > 0) bouton.append(texte(`Record : ${formaterTemps(record)}`, 'menu-arene-record'));
       }
       bouton.addEventListener('click', () => {
         this.arene = arene;
@@ -320,6 +321,16 @@ export class EcranMenu {
       bouton.addEventListener('dblclick', () => this.jouer());
       return bouton;
     }));
+
+    // Détails de l'arène choisie : mobs, boss, record
+    const a = this.arene;
+    const boss = document.createElement('div');
+    boss.className = 'menu-arene-boss';
+    boss.append(...this.prochainsBoss(a).map((b) => texte(b.texte)));
+    const details: HTMLElement[] = [texte(a.description), texte(`Mobs : ${this.nomsMobs(a)}`, 'menu-arene-mobs'), boss];
+    const record = this.sauvegarde.record(a.id);
+    if (record > 0) details.push(texte(`Record : ${formaterTemps(record)}`, 'menu-arene-record'));
+    element('menu-arene-details').replaceChildren(...details);
   }
 
   /** Noms des mobs de l'arène (toutes zones), dans l'ordre d'arrivée. */
@@ -348,20 +359,18 @@ function texte(contenu: string, classe?: string): HTMLElement {
   return span;
 }
 
-/** Petite case « intitulé / valeur » (points de vie, arme de départ…). */
-function tuile(intitule: string, valeur: string, icone?: string | null): HTMLElement {
-  const boite = document.createElement('div');
-  boite.className = 'menu-tuile';
-  boite.append(texte(intitule, 'menu-tuile-intitule'));
-  const ligne = texte('', 'menu-tuile-valeur');
-  if (icone) {
-    const image = document.createElement('img');
-    image.src = icone;
-    image.alt = '';
-    image.className = 'icone-texte';
-    ligne.append(image);
-  }
-  ligne.append(valeur);
-  boite.append(ligne);
-  return boite;
+/** Pastille arrondie : icône (facultative) et valeur ; `titre` en infobulle. */
+function puce(valeur: string, icone?: string | null, titre?: string): HTMLElement {
+  const pastille = texte('', 'menu-puce');
+  if (icone) pastille.append(image(icone));
+  pastille.append(valeur);
+  if (titre) pastille.title = titre;
+  return pastille;
+}
+
+function image(url: string): HTMLImageElement {
+  const img = document.createElement('img');
+  img.src = url;
+  img.alt = '';
+  return img;
 }

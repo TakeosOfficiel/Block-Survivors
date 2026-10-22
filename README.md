@@ -179,11 +179,15 @@ est sauvegardé dans le navigateur (`src/donnees/talents.ts` pour les réglages)
 
 ## Accueil et apparence
 
-L'accueil a trois colonnes : la **classe** (cœurs, vitesse, arme de départ,
-bonus exclusifs, arbres de talents), le **héros** en 3D (glisser pour le
-tourner), son **pseudo** (bouton « Aléatoire »), « Apparence… » et
-« Talents… », et l'**arène** (mobs, boss et leur heure d'arrivée, record,
-conditions de déblocage). Le grand bouton « Jouer » (ou Entrée) lance la partie.
+L'accueil affiche en plein écran la **photo de l'arène** choisie (celle de
+l'écran de chargement). À gauche, les **classes** (rôle, puis pour la choisie :
+cœurs, vitesse, arme de départ, bonus, bonus exclusifs, talents actifs) ; au
+centre, le **héros** en 3D (glisser pour le tourner), son **pseudo** (cliquer
+pour le changer, dé pour un pseudo au hasard), « Apparence » et « Talents » ;
+à droite, les **arènes** en vignettes photo (mobs, boss et leur heure
+d'arrivée, record, conditions de déblocage). Le grand bouton « Jouer » (ou
+Entrée) lance la partie. Textes en police moderne, logo et titres en police
+pixel du jeu.
 
 « Apparence… » : **skin** de la classe, le **perso** de l'éditeur (panneau
 « Traits » : peau, yeux, coiffure, cheveux, barbe, haut et sa couleur,

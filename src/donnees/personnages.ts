@@ -14,6 +14,7 @@ const HUMAIN_SECOURS = {
 const definitions = {
   guerrier: {
     nom: 'Guerrier',
+    role: 'Mêlée, robuste',
     objetEnMain: 'item/iron_sword',
     description: "Robuste et cuirassé, il taille la horde à l'épée.",
     modele: 'humanoide',
@@ -30,6 +31,7 @@ const definitions = {
   },
   archer: {
     nom: 'Archère',
+    role: 'Rapide, à distance',
     objetEnMain: 'item/bow',
     description: 'Rapide et précise, elle tire de loin.',
     modele: 'humanoide_fin',
@@ -46,6 +48,7 @@ const definitions = {
   },
   mage: {
     nom: 'Mage',
+    role: 'Zones et éléments',
     objetEnMain: 'item/blaze_rod',
     description: 'Fragile, mais ses sorts couvrent de larges zones.',
     modele: 'humanoide',
@@ -62,6 +65,7 @@ const definitions = {
   },
   invocateur: {
     nom: 'Invocateur',
+    role: 'Alliés et totems',
     objetEnMain: 'item/bone',
     description: 'Fragile seul, il commande des loups, des vex et des golems.',
     modele: 'humanoide',

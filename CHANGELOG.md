@@ -5,6 +5,12 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.40.0] — 2026-10-22
+
+### Changements
+- **Nouveau menu d'accueil** : fini la terre en fond. La photo de l'arène choisie remplit l'écran (elle change quand vous choisissez une autre arène). Les classes sont à gauche, avec leur rôle et les détails de la classe choisie ; votre héros est au centre en 3D, avec son pseudo (cliquez dessus pour le changer, le dé en tire un au hasard), Apparence et Talents ; les arènes sont à droite en vignettes photo, avec mobs, boss, record et conditions de déblocage. Un grand bouton doré « JOUER » en bas.
+- Style plus moderne : textes lisibles, panneaux arrondis et accents dorés ; le logo et les titres gardent la police du jeu.
+
 ## [0.39.5] — 2026-10-22
 
 ### Corrections

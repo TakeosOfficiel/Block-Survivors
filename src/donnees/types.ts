@@ -189,6 +189,8 @@ export interface DefinitionJoueur {
 /** Personnage jouable : apparence, statistiques, arme de départ, cartes exclusives. */
 export interface DefinitionPersonnage extends ApparenceEntite {
   readonly nom: string;
+  /** Rôle en quelques mots, sous le nom (menu d'accueil). */
+  readonly role: string;
   readonly description: string;
   readonly pv: number;               // 20 = 10 cœurs
   readonly vitesse: number;          // blocs / seconde

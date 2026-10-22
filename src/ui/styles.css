@@ -254,20 +254,7 @@ img { image-rendering: pixelated; }
 #chargement.erreur #chargement-texte { color: var(--mc-rouge); }
 
 /* --- Menu principal ------------------------------------------------------- */
-#menu {
-  position: fixed; inset: 0; z-index: 10;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
-  padding: 16px;
-  overflow: hidden;
-}
-#menu::before {
-  content: ""; position: fixed; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.55) 100%);
-}
-#menu > * { position: relative; }
-.menu-entete { position: relative; z-index: 1; text-align: center; }
-
-/* Logo : texture de pierre découpée dans le texte, relief noir */
+/* Logo : texture de pierre découpée dans le texte, relief noir (écran de chargement) */
 .logo {
   font-size: 64px; line-height: 72px;
   color: #d0d0d0;
@@ -288,33 +275,149 @@ img { image-rendering: pixelated; }
 }
 @keyframes pulsation { to { transform: translate(calc(50% + 24px), -50%) rotate(-20deg) scale(1.1); } }
 
-/* --- Accueil en trois colonnes : classe, héros, arène --------------------- */
-#menu { gap: 10px; }
-#menu .logo { font-size: 40px; line-height: 46px; }
-.menu-trois { display: grid; grid-template-columns: 360px 440px 380px; gap: 12px; height: 580px; }
-.menu-colonne { display: flex; flex-direction: column; gap: 6px; min-height: 0; overflow: hidden; }
-.titre-centre { text-align: center; }
-.menu-separateur { height: 2px; background: #8b8b8b; box-shadow: 0 2px 0 #fff; margin: 4px 0; }
-.menu-sous-titre { color: #5a5a5a; margin-top: 4px; }
-.menu-grand-nom { font-size: 24px; line-height: 28px; color: #202020; }
-.menu-classes { display: flex; justify-content: center; gap: 8px; }
-.menu-classe {
-  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px;
-  font: inherit; color: var(--mc-texte-panneau); background: rgba(0, 0, 0, 0.06);
-  border: 2px solid transparent; cursor: pointer;
+/* Accueil : photo de l'arène choisie en plein écran, classes à gauche, héros au centre, arènes à
+   droite. Police moderne pour les textes, police pixel pour le logo, les titres et « Jouer » */
+#menu {
+  --menu-or: #e0b040;
+  --menu-or-clair: #ffd75e;
+  --menu-police: "Segoe UI", "Noto Sans", system-ui, -apple-system, sans-serif;
+  position: fixed; inset: 0; z-index: 10; overflow: hidden;
+  font-family: var(--menu-police); font-size: 15px; line-height: 1.3;
+  color: #fff; background: #0b0e16;
 }
-.menu-classe:hover { background: rgba(255, 255, 255, 0.35); }
-.menu-classe.choisie { background: rgba(255, 255, 255, 0.5); border-color: #fff; box-shadow: 0 0 0 2px #000; color: #202020; }
-.menu-tuiles { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 4px; margin-top: 4px; }
-.menu-tuile { display: flex; flex-direction: column; padding: 4px 6px; background: rgba(0, 0, 0, 0.08); border: 2px solid #8b8b8b; }
-.menu-tuile-intitule { color: #6a6a6a; }
-.menu-tuile-valeur { color: #202020; display: flex; align-items: center; }
-.menu-icones { display: flex; flex-wrap: wrap; gap: 4px; }
-.menu-icones .case-mc { position: relative; }
+#menu-fond {
+  position: absolute; inset: 0; background: center / cover no-repeat;
+  opacity: 0; transition: opacity 0.4s ease-out;
+}
+#menu-fond.visible { opacity: 1; }
+.menu-voile {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    linear-gradient(to right, rgba(6, 8, 14, 0.92) 0, rgba(6, 8, 14, 0.55) 26%, rgba(6, 8, 14, 0.05) 40%,
+      rgba(6, 8, 14, 0.05) 60%, rgba(6, 8, 14, 0.55) 74%, rgba(6, 8, 14, 0.92) 100%),
+    linear-gradient(rgba(6, 8, 14, 0.35), transparent 18%, transparent 60%, rgba(6, 8, 14, 0.85));
+}
+#menu button { font-family: inherit; }
+.menu-logo { position: absolute; top: 18px; left: 32px; }
+#menu-titre {
+  font-family: var(--police); font-size: 40px; line-height: 46px; font-weight: normal;
+  color: #fff; text-shadow: 4px 4px 0 #3f3f3f; white-space: nowrap;
+}
+#menu-titre span { color: var(--menu-or-clair); text-shadow: 4px 4px 0 #3f2f05; }
+/* Accroche sous le logo, légèrement penchée */
+#menu .accroche {
+  font-family: var(--police); right: auto; left: 150px; top: 100%;
+  transform: rotate(-4deg); transform-origin: left center; animation-name: pulsation-menu;
+}
+@keyframes pulsation-menu { to { transform: rotate(-4deg) scale(1.08); } }
+#menu-maitrise { position: absolute; top: 14px; right: 18px; }
+#menu-maitrise .maitrise-nom { text-shadow: 0 2px 4px #000; }
+.menu-section {
+  font-family: var(--police); font-size: 16px; font-weight: normal; letter-spacing: 1px;
+  color: var(--menu-or-clair); text-shadow: 2px 2px 0 #3f2f05; margin-bottom: 10px;
+}
+.menu-intitule { margin-top: 12px; color: #a8a8a8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
 
-.menu-heros-haut { display: flex; gap: 10px; }
-.menu-apercu-cadre { display: flex; flex-direction: column; align-items: center; }
-.menu-apercu, .profil-apercu {
+/* Colonne de gauche : classes, puis détails */
+.menu-gauche { position: absolute; left: 32px; top: 96px; width: 300px; bottom: 120px; display: flex; flex-direction: column; overflow: hidden; }
+.menu-classes { display: flex; flex-direction: column; gap: 6px; }
+.menu-classe {
+  display: flex; align-items: center; gap: 12px; padding: 6px; text-align: left; cursor: pointer;
+  color: #fff; background: transparent; border: 2px solid transparent; border-radius: 10px;
+}
+.menu-classe:hover { background: rgba(255, 255, 255, 0.07); }
+.menu-classe.choisie { border-color: var(--menu-or); background: rgba(255, 215, 94, 0.12); }
+.menu-classe-icone {
+  width: 44px; height: 44px; flex: none; display: flex; align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 8px;
+}
+.menu-classe-icone img { width: 32px; height: 32px; image-rendering: pixelated; }
+.menu-classe-nom { display: block; font-size: 16px; font-weight: 600; }
+.menu-classe.choisie .menu-classe-nom { color: var(--menu-or-clair); }
+.menu-classe-role { display: block; color: #b8b8b8; }
+.menu-description { margin-top: 14px; color: #d8d8d8; }
+.menu-puces { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.menu-puce {
+  display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; font-weight: 600;
+  background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 999px;
+}
+.menu-puce img { width: 16px; height: 16px; image-rendering: pixelated; }
+.menu-bonus { display: flex; flex-direction: column; margin-top: 8px; color: #6dff6d; }
+.menu-icones { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+#menu .menu-icones .case-mc { width: 36px; height: 36px; border-radius: 6px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.18); }
+#menu .menu-icones .case-mc img { width: 28px; height: 28px; }
+.menu-talents-vide { color: #a8a8a8; }
+
+/* Centre : pseudo, héros en 3D sur la photo, boutons */
+.menu-centre { position: absolute; left: 50%; top: 110px; width: 340px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
+.menu-pseudo { display: flex; align-items: center; gap: 6px; }
+#menu-pseudo {
+  width: 220px; padding: 2px 6px; text-align: center; font: 600 22px var(--menu-police);
+  color: #fff; text-shadow: 0 2px 6px #000; background: transparent; border: 1px solid transparent; border-radius: 6px;
+}
+#menu-pseudo:hover { border-color: rgba(255, 255, 255, 0.25); }
+#menu-pseudo:focus { outline: none; border-color: var(--menu-or); background: rgba(0, 0, 0, 0.4); }
+.menu-de {
+  width: 30px; height: 30px; font-size: 20px; line-height: 1; cursor: pointer;
+  color: #ddd; background: rgba(12, 14, 20, 0.6); border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 6px;
+}
+.menu-de:hover { color: var(--menu-or-clair); border-color: var(--menu-or); }
+.menu-apercu {
+  width: 300px; height: 470px; position: relative;
+  background: radial-gradient(ellipse 34% 4% at 50% 93%, rgba(0, 0, 0, 0.55), transparent);
+}
+.menu-heros-boutons { display: flex; gap: 8px; margin-top: 8px; }
+.bouton-menu {
+  min-width: 110px; height: 40px; padding: 0 14px; cursor: pointer; font-weight: 600; letter-spacing: 0.3px;
+  color: #e8e8e8; background: rgba(12, 14, 20, 0.6); border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 8px;
+}
+.bouton-menu:hover { color: var(--menu-or-clair); border-color: var(--menu-or); background: rgba(60, 45, 10, 0.6); }
+
+/* Colonne de droite : arènes en vignettes photo, détails de l'arène choisie */
+.menu-droite { position: absolute; right: 32px; top: 96px; width: 300px; bottom: 120px; display: flex; flex-direction: column; overflow: hidden; }
+.menu-arenes { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; }
+.menu-arene {
+  position: relative; flex: none; height: 96px; padding: 0; overflow: hidden; cursor: pointer; text-align: left;
+  color: #fff; background: #1a1d26 center / cover no-repeat; border: 2px solid rgba(255, 255, 255, 0.12); border-radius: 10px;
+}
+.menu-arene::before { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 30%, rgba(0, 0, 0, 0.85)); }
+.menu-arene:hover:not(:disabled) { border-color: rgba(255, 255, 255, 0.45); }
+.menu-arene.choisie { border-color: var(--menu-or); box-shadow: 0 0 18px rgba(255, 200, 80, 0.35); }
+.menu-arene.verrouillee { cursor: not-allowed; filter: grayscale(1) brightness(0.6); }
+.menu-arene-nom { position: absolute; left: 12px; right: 10px; bottom: 10px; font-size: 16px; font-weight: 700; text-shadow: 0 2px 4px #000; }
+.menu-arene.verrouillee .menu-arene-nom { top: 10px; bottom: auto; }
+.menu-arene-verrou { position: absolute; left: 12px; right: 10px; bottom: 10px; font-size: 13px; color: #ffb0a0; text-shadow: 0 2px 4px #000; }
+.menu-arene-details { margin-top: 10px; color: #d0d0d0; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
+.menu-arene-mobs { color: #8fe08f; }
+.menu-arene-boss { display: flex; flex-wrap: wrap; gap: 4px; }
+.menu-arene-boss span { padding: 1px 8px; color: #e8d8ff; background: rgba(110, 60, 160, 0.55); border-radius: 999px; }
+.menu-arene-record { color: var(--menu-or-clair); }
+
+/* Bas : « Jouer », liens, aide, pied de page */
+.menu-jouer {
+  position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%);
+  width: 480px; height: 72px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: #fff; background: linear-gradient(#34a046, #1d6b2a);
+  border: 2px solid var(--menu-or); border-radius: 10px;
+  box-shadow: 0 0 0 1px #1a1206, 0 0 22px rgba(255, 200, 80, 0.35), 0 8px 20px rgba(0, 0, 0, 0.6);
+}
+.menu-jouer:hover { background: linear-gradient(#3cb850, #22803a); box-shadow: 0 0 0 1px #1a1206, 0 0 30px rgba(255, 200, 80, 0.6), 0 8px 20px rgba(0, 0, 0, 0.6); }
+#menu-jouer-titre { font-family: var(--police); font-size: 32px; line-height: 38px; letter-spacing: 2px; text-transform: uppercase; text-shadow: 3px 3px 0 #0c2a0a; }
+#menu-jouer-sous-titre { font-size: 14px; font-weight: 600; color: #d8ffd0; }
+.menu-liens { position: absolute; left: 32px; bottom: 30px; display: flex; gap: 6px; }
+.menu-liens button {
+  position: relative; padding: 4px 8px; cursor: pointer; font-size: 15px;
+  color: #dcdcdc; background: transparent; border: none; text-shadow: 0 2px 4px #000;
+}
+.menu-liens button:hover { color: var(--menu-or-clair); }
+#menu .menu-liens #menu-nouveautes.nouveau::after { top: -18px; right: -30px; font-family: var(--police); }
+.menu-aide { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-size: 12px; color: rgba(255, 255, 255, 0.45); pointer-events: none; }
+.menu-pied { position: absolute; right: 32px; bottom: 30px; text-align: right; font-size: 12px; color: rgba(255, 255, 255, 0.55); text-shadow: 0 1px 3px #000; }
+#menu .mise-a-jour { font-family: var(--police); }
+
+/* Aperçu 3D de l'écran d'apparence */
+.profil-apercu {
   width: 180px; height: 280px; position: relative;
   background: radial-gradient(ellipse 28% 4% at 50% 90%, rgba(0, 0, 0, 0.35), transparent),
               linear-gradient(#b8b8b8, #9c9c9c);
@@ -322,36 +425,8 @@ img { image-rendering: pixelated; }
 }
 .apercu-heros { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
 .apercu-heros:active { cursor: grabbing; }
-.menu-apercu-aide { color: #6a6a6a; }
-.menu-heros-infos { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.menu-pseudo { display: flex; flex-direction: column; gap: 4px; }
-.menu-pseudo .bouton-mc { width: 100%; }
-.menu-heros-ligne { font-size: 16px; color: #2a4a9a; margin-top: 6px; }
-.menu-heros-boutons { margin-top: 6px; }
-.menu-heros-boutons .bouton-mc { width: 206px; }
-
-.menu-arenes { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; min-height: 0; }
-.menu-arene {
-  display: flex; flex-direction: column; gap: 3px; padding: 6px; text-align: left;
-  font: inherit; color: var(--mc-texte-panneau); background: rgba(0, 0, 0, 0.06);
-  border: 2px solid transparent; cursor: pointer;
-}
-.menu-arene:hover:not(:disabled) { background: rgba(255, 255, 255, 0.35); }
-.menu-arene.choisie { background: rgba(255, 255, 255, 0.5); border-color: #fff; box-shadow: 0 0 0 2px #000; }
-.menu-arene.verrouillee { cursor: not-allowed; filter: grayscale(1); opacity: 0.7; }
-.menu-arene-entete { display: flex; align-items: center; gap: 8px; }
-.menu-arene-mobs { color: #1f6f1f; }
-.menu-arene-record { color: #2a4a9a; }
-.menu-puces { display: flex; flex-wrap: wrap; gap: 4px; }
-.menu-puce { padding: 1px 6px; color: #fff; background: #5a3a7a; border: 2px solid #2a1a3a; }
-
-.menu-bas { display: flex; align-items: center; gap: 12px; }
-.menu-bas > .bouton-mc, .menu-bas-gauche .bouton-mc { width: 180px; }
-.menu-bas-gauche { gap: 4px; }
-.bouton-mc.bouton-jouer { width: 640px; height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 24px; line-height: 28px; }
-#menu-jouer-sous-titre { font-size: 16px; line-height: 18px; color: var(--mc-gris); }
-.bouton-jouer:hover #menu-jouer-sous-titre { color: var(--mc-jaune); }
-.menu-aide { color: var(--mc-gris); text-align: center; }
+.titre-centre { text-align: center; }
+.menu-sous-titre { color: #5a5a5a; margin-top: 4px; }
 
 /* Une option du menu : case + textes ; la sélection est encadrée de blanc */
 .option-menu {
@@ -375,9 +450,6 @@ img { image-rendering: pixelated; }
 .option-arme { display: flex; align-items: center; gap: 4px; color: #2a4a9a; }
 .option-arme img { width: 16px; height: 16px; }
 
-.pied { position: fixed !important; bottom: 6px; color: var(--mc-blanc); }
-.pied-gauche { left: 8px; }
-.pied-droite { right: 8px; }
 #menu-version { color: var(--mc-gris); }
 /* Mise à jour disponible : bandeau jaune en haut, cliquable */
 .mise-a-jour {
@@ -637,7 +709,6 @@ img { image-rendering: pixelated; }
 .maitrise-points.disponibles { color: var(--mc-jaune); }
 .maitrise-barre { height: 10px; background: #1a1a1a; border: 2px solid #000; box-shadow: inset 0 0 0 1px #3a3a3a; }
 .maitrise-rempli { height: 100%; width: 0; background: linear-gradient(to bottom, #b6ff6a 0 2px, #80ff20 2px 4px, #3d9a12 4px); }
-#menu-maitrise { position: fixed !important; top: 10px; right: 14px; }
 
 .option-menu.verrouillee { cursor: not-allowed; filter: grayscale(1); opacity: 0.7; }
 .option-menu.verrouillee:hover { background: rgba(0, 0, 0, 0.06); }
@@ -757,9 +828,6 @@ img { image-rendering: pixelated; }
 .profil-skins { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
 .profil-skin { align-items: center; padding: 3px; }
 .profil-erreur { color: #a03030; min-height: 1em; }
-.menu-arbres { display: flex; flex-direction: column; gap: 4px; }
-.menu-arbre { display: flex; align-items: center; gap: 8px; padding: 2px 4px; opacity: 0.7; }
-.menu-arbre.actif { opacity: 1; background: rgba(255, 255, 255, 0.35); }
 
 /* --- Nouveautés ---------------------------------------------------------- */
 #nouveautes { z-index: 14; }

@@ -30,9 +30,6 @@ interface Coffre {
   prix: number;
   /** −1 : fermé ; sinon s depuis l'ouverture. */
   ouvert: number;
-  /** Le joueur peut-il le payer (couleur de l'étiquette), et l'étiquette est-elle à jour ? */
-  abordable: boolean;
-  etiquetteAJour: boolean;
 }
 
 /** Couleurs du prix au-dessus du coffre : payable, trop cher. */
@@ -53,6 +50,12 @@ export class Coffres {
   /** Index des parties du couvercle et du loquet (elles pivotent ensemble). */
   private readonly partiesCouvercle: number[];
   private readonly etiquettes: Etiquette[];
+  /**
+   * Ce que montre chaque étiquette (prix × 2, +1 s'il est payable ; −1 : rien). Les étiquettes
+   * vont par emplacement du pool, et un coffre change d'emplacement quand un autre disparaît :
+   * on compare donc à ce qui est affiché, pas à ce qu'a vu le coffre.
+   */
+  private readonly affichees: Int32Array;
   /** Ennemis tués à atteindre pour le prochain coffre, et l'écart suivant. */
   private prochainSeuil = REGLES_COFFRES.tues.premier;
   private intervalle = REGLES_COFFRES.tues.intervalle;
@@ -68,12 +71,13 @@ export class Coffres {
     this.terrain = terrain;
     this.particules = particules;
     this.retours = retours;
-    this.pool = new Pool<Coffre>(r.capacite, () => ({ indexType: 0, x: 0, z: 0, angle: 0, prix: 0, ouvert: -1, abordable: false, etiquetteAJour: false }));
+    this.pool = new Pool<Coffre>(r.capacite, () => ({ indexType: 0, x: 0, z: 0, angle: 0, prix: 0, ouvert: -1 }));
     const modele = compilerModele(MODELES.coffre);
     this.rendus = IDS_COFFRES.map((id) => new ModeleInstancie(modele, COFFRES[id].apparence, textures, r.capacite, scene));
     this.pose = creerPoseModele(modele);
     this.partiesCouvercle = modele.parties.flatMap((p, i) => (p.nom === 'couvercle' || p.nom === 'loquet' ? [i] : []));
     this.etiquettes = Array.from({ length: r.capacite }, () => new Etiquette(scene, ''));
+    this.affichees = new Int32Array(r.capacite).fill(-1);
   }
 
   get actifs(): number {
@@ -97,7 +101,6 @@ export class Coffres {
     c.angle = Math.round(Math.atan2(j.x - c.x, j.z - c.z) / (Math.PI / 2)) * (Math.PI / 2);
     c.prix = def.payant ? REGLES_COFFRES.prix.base + REGLES_COFFRES.prix.increment * this.ouverts : 0;
     c.ouvert = -1;
-    c.etiquetteAJour = false;
     this.retours.son('coffre_apparition');
     this.particules.emettre(c.x, 0.6, c.z, GERBES.invocation);
   }
@@ -171,9 +174,9 @@ export class Coffres {
 
       // Prix au-dessus du coffre fermé, vert s'il est payable
       const abordable = etat.emeraudes >= c.prix;
-      if (abordable !== c.abordable || !c.etiquetteAJour) {
-        c.abordable = abordable;
-        c.etiquetteAJour = true;
+      const affichage = c.prix * 2 + (abordable ? 1 : 0);
+      if (affichage !== this.affichees[i]) {
+        this.affichees[i] = affichage;
         etiquette.ecrire(c.prix > 0 ? `${c.prix} émeraude${c.prix > 1 ? 's' : ''}` : 'Gratuit', abordable ? PRIX_ABORDABLE : PRIX_TROP_CHER);
       }
       etiquette.placer(c.x, 1.1 + Math.sin(temps * 3 + i) * 0.05, c.z, c.ouvert < 0);

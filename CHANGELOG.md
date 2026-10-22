@@ -5,6 +5,11 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.39.4] — 2026-10-22
+
+### Corrections
+- **Prix des coffres** : après l'ouverture d'un coffre (par exemple le coffre de l'Ender, gratuit), un autre coffre pouvait garder son étiquette (« Gratuit ») alors qu'il était payant, et refusait de s'ouvrir. Chaque coffre affiche maintenant toujours son vrai prix.
+
 ## [0.39.3] — 2026-10-22
 
 ### Changements

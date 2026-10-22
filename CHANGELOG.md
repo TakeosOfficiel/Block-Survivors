@@ -5,6 +5,14 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.43.0] — 2026-10-22
+
+### Nouveautés
+- **Version Linux** : chaque version est aussi publiée pour Linux, en AppImage (`BlockSurvivors-X.Y.Z.AppImage`, à côté de l'installateur Windows). Rendez-le exécutable puis lancez-le : rien à installer, et il se met à jour tout seul comme sous Windows.
+
+### Changements
+- Sous Windows, cette version se télécharge en entier une fois (l'application elle-même a changé) ; les suivantes redeviennent légères.
+
 ## [0.42.1] — 2026-10-22
 
 ### Corrections

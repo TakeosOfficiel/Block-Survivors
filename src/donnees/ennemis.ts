@@ -181,7 +181,6 @@ const definitions = {
     comportement: { type: 'melee', degats: 5, portee: 0.6, cadence: 1.1 },
     xp: 25,
     miniBoss: true,
-    emeraudes: 4,
   },
   vagabond: {
     nom: 'Vagabond',
@@ -200,7 +199,6 @@ const definitions = {
     comportement: { type: 'archer', projectile: 'fleche', degats: 3, distanceIdeale: 9, portee: 14, cadence: 2, nombre: 3, dispersion: 0.18 },
     xp: 25,
     miniBoss: true,
-    emeraudes: 4,
   },
   araignee_geante: {
     nom: 'Araignée géante',
@@ -220,7 +218,6 @@ const definitions = {
     comportement: { type: 'melee', degats: 4, portee: 0.5, cadence: 0.8 },
     xp: 25,
     miniBoss: true,
-    emeraudes: 4,
   },
   brute_piglin: {
     nom: 'Brute piglin',
@@ -240,7 +237,6 @@ const definitions = {
     comportement: { type: 'melee', degats: 7, portee: 0.6, cadence: 1.2 },
     xp: 30,
     miniBoss: true,
-    emeraudes: 5,
   },
   champion_wither: {
     nom: 'Champion wither',
@@ -260,7 +256,6 @@ const definitions = {
     comportement: { type: 'melee', degats: 7, portee: 0.7, cadence: 1.1 },
     xp: 30,
     miniBoss: true,
-    emeraudes: 5,
   },
 
   // --- Boss ----------------------------------------------------------------

@@ -5,6 +5,12 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.39.2] — 2026-10-22
+
+### Corrections
+- **Les mini-boss ne lâchent plus d'émeraudes** : ils donnent déjà un coffre.
+- **Émeraudes aspirées** : plus de miettes ni de bruit de bouche au ramassage. Un tas d'émeraudes est attiré vers vous comme les orbes d'XP dès qu'il entre dans votre rayon de collecte (l'Aimant l'agrandit), avec un petit tintement.
+
 ## [0.39.1] — 2026-10-22
 
 ### Corrections

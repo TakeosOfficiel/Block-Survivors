@@ -1,9 +1,9 @@
 /**
  * Ce que lâche un ennemi vaincu : son XP, son butin garanti, et parfois un
- * objet (soin, tas d'émeraudes). Un mini-boss lâche aussi des émeraudes et un
- * coffre, un boss un coffre de l'Ender (gratuit). Mort au-dessus de la lave,
- * dans un mur ou hors d'atteinte (blaze, boss volants), il lâche tout sur la
- * case accessible la plus proche.
+ * objet (soin, tas d'émeraudes). Un mini-boss lâche aussi un coffre, un boss
+ * un coffre de l'Ender (gratuit). Mort au-dessus de la lave, dans un mur ou
+ * hors d'atteinte (blaze, boss volants), il lâche tout sur la case accessible
+ * la plus proche.
  */
 import { IDS_OBJETS, OBJETS } from '../donnees/objets';
 import type { DefinitionEnnemi } from '../donnees/types';
@@ -37,13 +37,6 @@ export class Butin {
     const x = this.x;
     const z = this.z;
     this.orbes.deposer(x, z, ennemi.xp);
-    // Émeraudes en couronne autour du corps
-    const n = ennemi.emeraudes ?? 0;
-    for (let k = 0; k < n; k++) {
-      const angle = (k / n) * Math.PI * 2;
-      this.placer(x + Math.sin(angle) * 1.2, z + Math.cos(angle) * 1.2);
-      this.objets.poser('emeraude', this.x, this.z);
-    }
     if (ennemi.miniBoss) this.coffres?.poser('coffre', x, z);
     if (ennemi.boss) this.coffres?.poser('coffre_ender', x, z);
     if (ennemi.butin) {

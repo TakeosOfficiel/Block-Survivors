@@ -264,8 +264,6 @@ export interface DefinitionEnnemi extends ApparenceEntite {
   readonly boss?: { readonly couleurBarre: CouleurBarreBoss };
   /** Mini-boss : arrive à son heure (CALENDRIER_MINIBOSS), barre de vie au-dessus de la tête. */
   readonly miniBoss?: true;
-  /** Tas d'émeraudes lâchés à la mort (mini-boss), éparpillés autour du corps. */
-  readonly emeraudes?: number;
   /** Sons joués quand il est blessé et quand il meurt. */
   readonly sons?: { readonly blessure: IdSon; readonly mort: IdSon };
   /** Hauteur de ses sons (1 = normale ; < 1 = plus grave, pour les boss). */

@@ -1,6 +1,8 @@
 /**
  * Objets ramassables posés au sol (soins, émeraudes) : icône d'objet en relief
- * qui tourne et flotte doucement ; ramassée au contact du joueur.
+ * qui tourne et flotte doucement. Un soin se ramasse au contact du joueur
+ * (miettes et bruit de bouche) ; un tas d'émeraudes est aspiré vers lui comme
+ * les orbes d'XP, dès qu'il entre dans son rayon de collecte.
  * Pool + un InstancedMesh par type d'objet.
  */
 import * as THREE from 'three';
@@ -12,6 +14,8 @@ import { creerGeometrieRelief } from '../moteur/geometrie';
 import type { Particules } from '../effets/particules';
 import type { Retours } from '../effets/retours';
 import type { EtatPartie } from '../etat';
+import { CONFIG } from '../config';
+import { longueur } from '../utils/maths';
 import { Pool } from '../utils/pool';
 
 interface Objet {
@@ -21,6 +25,9 @@ interface Objet {
   phase: number;
   /** Émeraudes du tas (0 pour un soin). */
   valeur: number;
+  /** Tas d'émeraudes aspiré vers le joueur, et sa vitesse (blocs/s). */
+  aimante: boolean;
+  vitesse: number;
 }
 
 /** Grossissement d'un tas d'émeraudes par émeraude au-delà de la première. */
@@ -35,7 +42,7 @@ export class Objets {
   private readonly etat: EtatPartie;
   private readonly particules: Particules;
   private readonly retours: Retours;
-  private readonly pool = new Pool<Objet>(CAPACITE, () => ({ indexType: 0, x: 0, z: 0, phase: 0, valeur: 0 }));
+  private readonly pool = new Pool<Objet>(CAPACITE, () => ({ indexType: 0, x: 0, z: 0, phase: 0, valeur: 0, aimante: false, vitesse: 0 }));
   private readonly maillages: THREE.InstancedMesh[];
   private readonly comptes: Int32Array;
 
@@ -75,28 +82,46 @@ export class Objets {
     o.x = x;
     o.z = z;
     o.phase = Math.random() * 10;
+    o.aimante = false;
+    o.vitesse = 0;
     const tas = OBJETS[id].emeraudes;
     o.valeur = tas ? tas[0] + Math.floor(Math.random() * (tas[1] - tas[0] + 1)) : 0;
   }
 
-  maj(): void {
+  maj(dt: number): void {
     const j = this.etat.joueur;
     if (j.mort) return;
     const portee = JOUEUR_BASE.rayonRamassage;
+    const c = CONFIG.orbes;
+    const collecte = JOUEUR_BASE.collecte * this.etat.modificateurs.collecte;
     for (let i = this.pool.nombre - 1; i >= 0; i--) {
       const o = this.pool.elements[i];
-      if ((o.x - j.x) ** 2 + (o.z - j.z) ** 2 > portee * portee) continue;
       const def = OBJETS[IDS_OBJETS[o.indexType]];
+      const dx = j.x - o.x;
+      const dz = j.z - o.z;
+      const d = longueur(dx, dz);
       if (def.emeraudes) {
+        // Aspiré comme une orbe d'XP : droit sur le joueur, de plus en plus vite
+        if (d < collecte) o.aimante = true;
+        if (!o.aimante) continue;
+        o.vitesse = Math.min(c.vitesseMax, o.vitesse + c.attraction * dt);
+        const pas = o.vitesse * dt;
+        if (d > c.distanceCollecte && pas < d) {
+          o.x += (dx / d) * pas;
+          o.z += (dz / d) * pas;
+          continue;
+        }
         this.etat.emeraudes += o.valeur;
         this.etat.stats.emeraudesRamassees += o.valeur;
         this.retours.son('emeraude');
-      } else {
-        const avant = j.pv;
-        j.pv = Math.min(j.pvMax, j.pv + def.soin * (1 + this.etat.modificateurs.soinsObjets));
-        this.etat.stats.pvSoignes += j.pv - avant;
-        this.retours.son('manger');
+        this.pool.liberer(i);
+        continue;
       }
+      if (d > portee) continue;
+      const avant = j.pv;
+      j.pv = Math.min(j.pvMax, j.pv + def.soin * (1 + this.etat.modificateurs.soinsObjets));
+      this.etat.stats.pvSoignes += j.pv - avant;
+      this.retours.son('manger');
       this.particules.emettre(o.x, 0.8, o.z, GERBES.ramassage, def.icone);
       this.pool.liberer(i);
     }

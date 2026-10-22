@@ -458,7 +458,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.arsenal.maj(dt);
     this.mecaniques.maj(dt);
     this.orbes.maj(dt);
-    this.objets.maj();
+    this.objets.maj(dt);
     this.coffres.maj(dt);
     this.projectilesJoueur.maj(dt);
     this.invocations.maj(dt);

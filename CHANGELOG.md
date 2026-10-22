@@ -5,6 +5,11 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.37.1] — 2026-10-22
+
+### Corrections
+- **Cercle de la Pluie de flèches refait proprement** : fini le pixel art délavé et ses tirets en taches. C'est maintenant un anneau doré lisse et net, bordé d'un fin liseré sombre pour ressortir sur l'herbe comme sur la pierre, avec un léger voile doré qui monte vers le bord ; il s'efface en douceur sans éclaircir le sol.
+
 ## [0.37.0] — 2026-10-22
 
 ### Changements

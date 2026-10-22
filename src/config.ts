@@ -240,8 +240,13 @@ export const CONFIG = {
       zones: 8, fleches: 320, chute: 0.3, hauteur: 7, plantee: 2.2, enfoncement: 0.4, rayonImpact: 0.9, taille: 1.6,
       inclinaison: 0.55, ecartInclinaison: 0.12, ecartAzimut: 0.25,
       // Cercle au sol sur la zone : apparition (s), reste `reste` s après la dernière flèche puis
-      // s'efface en `fondu` s ; couleur (additive) et hauteur au-dessus du sol
-      cercle: { apparition: 0.18, reste: 1.2, fondu: 0.6, couleur: 0xffc860, hauteur: 0.03 },
+      // s'efface en `fondu` s ; hauteur au-dessus du sol ; couleurs de l'anneau (or, liseré sombre,
+      // reflet intérieur) et du voile doré qui monte vers le bord (ALPHA : son opacité)
+      cercle: {
+        apparition: 0.18, reste: 1.2, fondu: 0.6, hauteur: 0.03,
+        or: '#ffd36e', contour: 'rgba(40, 24, 0, 0.6)', reflet: 'rgba(255, 244, 210, 0.7)',
+        voile: 'rgba(255, 200, 90, ALPHA)', opaciteVoile: 0.28,
+      },
     },
     // Piège de ronces : buissons par piège, enracinement à l'entrée (s) et délai avant le suivant (s)
     piege: {

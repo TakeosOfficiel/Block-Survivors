@@ -50,45 +50,45 @@ const euler = new THREE.Euler(0, 0, 0, 'YXZ');
 const echelle = new THREE.Vector3();
 const axe = new THREE.Vector3();
 const BAS = new THREE.Vector3(0, -1, 0);
-const couleur = new THREE.Color();
 
-/** Côté de la texture du cercle (pixels) : environ 16 pixels par bloc, comme les blocs du jeu. */
-const COTE_CERCLE = 80;
+/** Côté de la texture du cercle (pixels) : lisse, filtrée, nette même quand la zone grandit. */
+const COTE_CERCLE = 256;
 
 /**
- * Cercle au sol en pixel art (blanc, teinté par instance) : anneau plein au
- * bord, anneau en tirets à l'intérieur, fond très léger. L'alpha sert
- * d'intensité (mélange additif).
+ * Cercle au sol, façon marqueur de zone : anneau doré fin bordé d'un liseré
+ * sombre (lisible sur l'herbe comme sur la pierre), reflet clair à
+ * l'intérieur et léger dégradé doré qui monte vers le bord. Centre vide.
  */
 function textureCercle(): THREE.CanvasTexture {
+  const k = CONFIG.armes.pluie.cercle;
   const toile = document.createElement('canvas');
   toile.width = COTE_CERCLE;
   toile.height = COTE_CERCLE;
   const ctx = toile.getContext('2d');
   const c = COTE_CERCLE / 2;
+  const r = c - 3;
   if (ctx) {
-    for (let y = 0; y < COTE_CERCLE; y++) {
-      for (let x = 0; x < COTE_CERCLE; x++) {
-        const dx = x + 0.5 - c;
-        const dy = y + 0.5 - c;
-        const d = Math.hypot(dx, dy);
-        const tiret = Math.floor(((Math.atan2(dy, dx) + Math.PI) / (Math.PI * 2)) * 32) % 2 === 0;
-        let alpha = 0;
-        if (d <= c && d > c - 3) alpha = 1;
-        else if (d <= c - 3 && d > c - 4) alpha = 0.45;
-        else if (d <= c - 8 && d > c - 10 && tiret) alpha = 0.55;
-        else if (d <= c - 3) alpha = 0.1;
-        if (alpha === 0) continue;
-        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
-        ctx.fillRect(x, y, 1, 1);
-      }
-    }
+    const voile = ctx.createRadialGradient(c, c, r * 0.5, c, c, r);
+    voile.addColorStop(0, k.voile.replace('ALPHA', '0'));
+    voile.addColorStop(1, k.voile.replace('ALPHA', String(k.opaciteVoile)));
+    ctx.fillStyle = voile;
+    ctx.beginPath();
+    ctx.arc(c, c, r, 0, Math.PI * 2);
+    ctx.fill();
+    const anneau = (rayon: number, epaisseur: number, couleurTrait: string) => {
+      ctx.strokeStyle = couleurTrait;
+      ctx.lineWidth = epaisseur;
+      ctx.beginPath();
+      ctx.arc(c, c, rayon, 0, Math.PI * 2);
+      ctx.stroke();
+    };
+    anneau(r - 3, 8, k.contour);
+    anneau(r - 3, 5, k.or);
+    anneau(r - 8, 1.5, k.reflet);
   }
   const texture = new THREE.CanvasTexture(toile);
-  texture.magFilter = THREE.NearestFilter;
-  texture.minFilter = THREE.NearestFilter;
-  texture.generateMipmaps = false;
   texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
   return texture;
 }
 
@@ -98,7 +98,8 @@ export class Pluies {
   private readonly zones: Pool<Zone>;
   private readonly fleches: Pool<FlecheTombante>;
   private readonly maillage: THREE.InstancedMesh;
-  private readonly cercles: THREE.InstancedMesh;
+  /** Un cercle par zone possible (chacun son opacité pour s'effacer). */
+  private readonly cercles: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>[] = [];
 
   constructor(contexte: ContexteCombat, textures: BibliothequeTextures, scene: THREE.Scene) {
     const c = CONFIG.armes.pluie;
@@ -121,16 +122,15 @@ export class Pluies {
     scene.add(this.maillage);
 
     const disque = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
-    const materiauCercle = new THREE.MeshBasicMaterial({
-      map: textureCercle(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-    });
-    this.cercles = new THREE.InstancedMesh(disque, materiauCercle, c.zones);
-    this.cercles.name = 'cercles de pluie';
-    this.cercles.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    this.cercles.setColorAt(0, couleur.set(c.cercle.couleur));  // crée l'attribut de couleur
-    this.cercles.frustumCulled = false;
-    this.cercles.count = 0;
-    scene.add(this.cercles);
+    const motif = textureCercle();
+    for (let i = 0; i < c.zones; i++) {
+      const cercle = new THREE.Mesh(disque, new THREE.MeshBasicMaterial({ map: motif, transparent: true, depthWrite: false }));
+      cercle.name = 'cercle de pluie';
+      cercle.visible = false;
+      cercle.renderOrder = 1;  // après les ombres rondes
+      this.cercles.push(cercle);
+      scene.add(cercle);
+    }
   }
 
   /** Vise les plus gros groupes ; faux si personne n'est à portée. */
@@ -231,19 +231,17 @@ export class Pluies {
 
     // Cercles : grandissent à l'apparition, restent, puis s'effacent
     const k = c.cercle;
-    let m = 0;
-    for (let i = 0; i < this.zones.nombre; i++) {
+    for (let i = 0; i < this.cercles.length; i++) {
+      const cercle = this.cercles[i];
+      cercle.visible = i < this.zones.nombre;
+      if (!cercle.visible) continue;
       const z = this.zones.elements[i];
       const fin = z.duree + c.chute + k.reste;
       const apparition = Math.min(1, z.temps / k.apparition);
-      const intensite = apparition * Math.max(0, Math.min(1, 1 - (z.temps - fin) / k.fondu));
-      const diametre = z.rayon * 2 * (0.7 + 0.3 * apparition);
-      matrice.makeScale(diametre, 1, diametre).setPosition(z.x, k.hauteur, z.z);
-      this.cercles.setMatrixAt(m, matrice);
-      this.cercles.setColorAt(m++, couleur.set(k.couleur).multiplyScalar(intensite));
+      const diametre = z.rayon * 2 * (0.85 + 0.15 * apparition);
+      cercle.material.opacity = apparition * Math.max(0, Math.min(1, 1 - (z.temps - fin) / k.fondu));
+      cercle.position.set(z.x, k.hauteur, z.z);
+      cercle.scale.set(diametre, 1, diametre);
     }
-    this.cercles.count = m;
-    this.cercles.instanceMatrix.needsUpdate = true;
-    if (this.cercles.instanceColor) this.cercles.instanceColor.needsUpdate = true;
   }
 }

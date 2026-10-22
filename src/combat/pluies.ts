@@ -3,8 +3,8 @@
  * flèches tombent du ciel en des points au hasard du plus gros groupe
  * d'ennemis ; chacune blesse autour de son point d'impact, reste plantée un
  * moment dans le sol, puis s'y enfonce. Les flèches sont les entités du jeu
- * (plans croisés de la texture de la flèche), pointe en bas, penchées comme
- * une volée tirée depuis le joueur. Un cercle doré marque la zone au sol et
+ * (plans croisés de la texture de la flèche), pointe en bas, chacune penchée
+ * dans une direction au hasard. Un cercle doré marque la zone au sol et
  * reste un peu après la dernière flèche avant de s'effacer.
  */
 import * as THREE from 'three';
@@ -26,8 +26,6 @@ interface Zone {
   rayon: number;
   /** Durée de la pluie (s), fixée au lancement. */
   duree: number;
-  /** Direction d'où viennent les flèches (rad, depuis le joueur). */
-  azimut: number;
   temps: number;
   prochaineFleche: number;
 }
@@ -104,7 +102,7 @@ export class Pluies {
   constructor(contexte: ContexteCombat, textures: BibliothequeTextures, scene: THREE.Scene) {
     const c = CONFIG.armes.pluie;
     this.contexte = contexte;
-    this.zones = new Pool<Zone>(c.zones, () => ({ arme: null, x: 0, z: 0, rayon: 0, duree: 0, azimut: 0, temps: 0, prochaineFleche: 0 }));
+    this.zones = new Pool<Zone>(c.zones, () => ({ arme: null, x: 0, z: 0, rayon: 0, duree: 0, temps: 0, prochaineFleche: 0 }));
     this.fleches = new Pool<FlecheTombante>(c.fleches, () => ({ arme: null, x: 0, z: 0, age: 0, azimut: 0, inclinaison: 0, touche: false }));
     const m = IDS_ARMES.map((id) => ARMES[id].mecanique).find((mec) => mec.type === 'pluie');
     const def = PROJECTILES[m?.type === 'pluie' ? m.projectile : 'fleche'];
@@ -148,8 +146,6 @@ export class Pluies {
       z.z = groupe.z;
       z.rayon = arme.stats.zone;
       z.duree = arme.stats.duree;
-      // Les flèches arrivent du côté du joueur, qui les a tirées en l'air
-      z.azimut = Math.atan2(j.x - groupe.x, j.z - groupe.z);
       z.temps = 0;
       z.prochaineFleche = 0;
       lancee = true;
@@ -184,8 +180,9 @@ export class Pluies {
         f.x = z.x + Math.sin(a) * r;
         f.z = z.z + Math.cos(a) * r;
         f.age = 0;
-        f.azimut = z.azimut + (Math.random() * 2 - 1) * c.ecartAzimut;
-        f.inclinaison = c.inclinaison + (Math.random() * 2 - 1) * c.ecartInclinaison;
+        // Chaque flèche penche de son côté : la pluie a l'air désordonnée, pas une rangée au garde-à-vous
+        f.azimut = Math.random() * Math.PI * 2;
+        f.inclinaison = c.inclinaison[0] + Math.random() * (c.inclinaison[1] - c.inclinaison[0]);
         f.touche = false;
       }
     }
@@ -214,7 +211,7 @@ export class Pluies {
     let n = 0;
     for (let i = 0; i < this.fleches.nombre; i++) {
       const f = this.fleches.elements[i];
-      // Pointe en bas, penchée : elle file à l'opposé du joueur, queue relevée de son côté
+      // Pointe en bas, penchée vers son azimut (elle arrive du côté opposé, en ligne droite)
       orientation.setFromEuler(euler.set(f.inclinaison, f.azimut, 0));
       axe.copy(BAS).applyQuaternion(orientation);  // sens de la chute, vers la pointe
       // Recule le long de son axe : arrive en ligne droite, puis plantée (pointe enfoncée de

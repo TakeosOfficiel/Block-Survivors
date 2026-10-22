@@ -233,12 +233,12 @@ export const CONFIG = {
     // Flèche ricocheuse : rebonds au maximum (plafond), durée de vie max d'une flèche (s)
     ricochet: { capacite: 24, rebondsMax: 6, vieMax: 4 },
     // Pluie de flèches : chute (s) depuis `hauteur`, flèche plantée `plantee` s puis enfoncée dans le
-    // sol en `enfoncement` s, rayon de chaque impact, taille des flèches (× le projectile). Elles
-    // tombent penchées de `inclinaison` rad (± `ecartInclinaison`), venant du côté du joueur : de
+    // sol en `enfoncement` s, rayon de chaque impact, taille des flèches (× le projectile). Chacune
+    // tombe penchée de `inclinaison` rad (entre les deux bornes) dans une direction au hasard : de
     // biais, on les voit bien d'en haut
     pluie: {
       zones: 8, fleches: 320, chute: 0.3, hauteur: 7, plantee: 2.2, enfoncement: 0.4, rayonImpact: 0.9, taille: 1.6,
-      inclinaison: 0.55, ecartInclinaison: 0.12, ecartAzimut: 0.25,
+      inclinaison: [0.25, 0.6] as const,
       // Cercle au sol sur la zone : apparition (s), reste `reste` s après la dernière flèche puis
       // s'efface en `fondu` s ; hauteur au-dessus du sol ; couleurs de l'anneau (or, liseré sombre,
       // reflet intérieur) et du voile doré qui monte vers le bord (ALPHA : son opacité)

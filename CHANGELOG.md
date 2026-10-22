@@ -5,6 +5,11 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.37.2] — 2026-10-22
+
+### Corrections
+- **Pluie de flèches moins alignée** : les flèches ne penchent plus toutes dans le même sens. Chacune tombe dans une direction au hasard, plus ou moins penchée : la pluie fait vraiment pluie.
+
 ## [0.37.1] — 2026-10-22
 
 ### Corrections

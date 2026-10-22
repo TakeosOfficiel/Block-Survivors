@@ -5,6 +5,11 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.39.5] — 2026-10-22
+
+### Corrections
+- **Prix des coffres partagé** : tous les coffres payants coûtent le même prix, celui du moment. Quand vous en ouvrez un, le prix de tous les autres monte aussitôt (avant, un coffre gardait le prix qu'il avait en apparaissant).
+
 ## [0.39.4] — 2026-10-22
 
 ### Corrections

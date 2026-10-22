@@ -185,30 +185,27 @@
   </div>
 
   <!-- Pause -->
-  <div id="pause" class="ecran voile cache">
-    <h2 class="ecran-titre">Jeu en pause</h2>
-    <div class="ecran-corps">
-      <div class="pile-boutons">
-        <button id="pause-reprendre" class="bouton-mc large">Reprendre la partie</button>
-        <button id="pause-options" class="bouton-mc large">Options…</button>
-        <div class="rangee-boutons">
-          <button id="pause-recommencer" class="bouton-mc">Recommencer</button>
-          <button id="pause-menu" class="bouton-mc">Menu principal</button>
-        </div>
+  <div id="pause" class="ecran page page-jeu cache">
+    <h2 class="ecran-titre">Pause</h2>
+    <div class="pause-boutons">
+      <button id="pause-reprendre" class="bouton-mc page-fermer pause-reprendre">Reprendre</button>
+      <div class="rangee-boutons">
+        <button id="pause-options" class="bouton-mc">Options</button>
+        <button id="pause-recommencer" class="bouton-mc">Recommencer</button>
+        <button id="pause-menu" class="bouton-mc">Menu principal</button>
       </div>
-      <div id="pause-bilan" class="panneau-mc bilan"></div>
     </div>
-    <div class="ecran-aide">ZQSD / WASD / Flèches : se déplacer · Molette : zoom · Échap : reprendre · F3 ou ² : debug</div>
+    <div id="pause-bilan" class="panneau-mc bilan"></div>
   </div>
 
   <!-- Fin de partie -->
-  <div id="fin" class="ecran cache">
+  <div id="fin" class="ecran page page-jeu cache">
     <h2 id="fin-titre" class="ecran-titre grand">Vous êtes mort !</h2>
     <div id="fin-sous-titre" class="ecran-sous-titre"></div>
     <div id="fin-recompense"></div>
     <div id="fin-bilan" class="panneau-mc bilan"></div>
     <div class="rangee-boutons">
-      <button id="fin-rejouer" class="bouton-mc">Rejouer</button>
+      <button id="fin-rejouer" class="bouton-mc page-fermer">Rejouer</button>
       <button id="fin-menu" class="bouton-mc">Menu principal</button>
     </div>
   </div>

@@ -5,6 +5,11 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.41.1] — 2026-10-22
+
+### Changements
+- **Pause et fin de partie au style du menu** : titre doré (rouge pour « Vous êtes mort ! »), bilan dans un panneau sombre lisible, boutons du menu. La pause est maintenant centrée : un grand bouton « Reprendre », puis Options, Recommencer et Menu principal, et le bilan en dessous ; plus de ligne des touches. « Rejouer » est doré comme « Jouer ».
+
 ## [0.41.0] — 2026-10-22
 
 ### Changements

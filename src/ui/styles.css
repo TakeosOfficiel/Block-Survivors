@@ -949,3 +949,27 @@ img { image-rendering: pixelated; }
 .page .talents-schema { border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; box-shadow: none; background: rgba(0, 0, 0, 0.35); }
 .page .talents-porte-texte { background: #10131b; }
 .page .talents-fiche { border-radius: 12px; }
+
+/* Pause et fin de partie : même style, la partie reste visible derrière un voile */
+.page.page-jeu { background: rgba(6, 8, 14, 0.74); }
+#fin.page { background: linear-gradient(rgba(70, 0, 0, 0.45), rgba(10, 6, 10, 0.88)); }
+#fin.page.victoire { background: linear-gradient(rgba(90, 70, 0, 0.42), rgba(14, 10, 4, 0.88)); }
+.page #fin-titre { font-size: 40px; line-height: 48px; color: #ff6a6a; text-shadow: 4px 4px 0 #3a0a0a; }
+.page#fin.victoire #fin-titre { color: var(--page-or-clair); text-shadow: 4px 4px 0 #3f2f05; }
+.page .ecran-sous-titre { color: #d0d0d0; }
+.page #fin-sous-titre .valeur { color: var(--page-or-clair); font-weight: 700; }
+.pause-boutons { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.page .bouton-mc.pause-reprendre { width: 420px; height: 56px; font-size: 22px; }
+.page .rangee-boutons .bouton-mc { width: auto; min-width: 136px; }
+.page #fin-rejouer { min-width: 200px; }
+
+/* Bilan de partie dans un panneau sombre */
+.page .bilan { color: #d8d8d8; }
+.page .bilan-ligne .valeur { color: #fff; font-weight: 600; }
+.page .bilan-vide { color: #9aa0ad; }
+.page .bilan-degats .entete { color: #9aa0ad; font-size: 13px; }
+.page .bilan-degats .nombre, .page .bilan-degats .nom { color: #fff; }
+.page .bilan-degats .jauge { background: rgba(255, 255, 255, 0.12); border-radius: 2px; }
+.page .bilan-degats .jauge > div { background: #3cb850; border-radius: 2px; }
+.page .bilan .titre-panneau { font-size: 16px; }
+.page.page-jeu .panneau-mc { background: rgba(10, 12, 18, 0.82); }

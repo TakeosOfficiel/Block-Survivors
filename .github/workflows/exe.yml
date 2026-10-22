@@ -1,9 +1,9 @@
-# Construit l'installateur Windows (BlockSurvivors-Setup-X.Y.Z.exe) à chaque push
-# et le publie deux fois :
+# Construit l'installateur Windows (BlockSurvivors-Setup-X.Y.Z.exe) et l'AppImage
+# Linux (BlockSurvivors-X.Y.Z.AppImage) à chaque push, puis les publie deux fois :
 #   - release « vX.Y.Z » (version de package.json), notes tirées de CHANGELOG.md ;
 #     tant que le numéro ne change pas, elle suit le dernier commit de la version ;
 #   - release « derniere-version » : lien fixe vers la plus récente.
-name: Application Windows
+name: Application Windows et Linux
 
 on:
   push:
@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  exe:
+  windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,15 +38,46 @@ jobs:
       - run: node scripts/socle.mjs --page release
       - uses: actions/upload-artifact@v4
         with:
-          name: BlockSurvivors
+          name: BlockSurvivors-windows
           path: |
             release/BlockSurvivors-Setup-*.exe
             release/BlockSurvivors-Setup-*.exe.blockmap
             release/latest.yml
             release/jeu-*.html
             release/jeu.json
+
+  # Même socle que sous Windows (fins de ligne normalisées) : la page du jeu et
+  # jeu.json publiés par le job Windows valent aussi pour l'AppImage.
+  # latest-linux.yml sert aux mises à jour automatiques de l'AppImage.
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: node scripts/socle.mjs --ecrire
+      - run: npx electron-builder --linux AppImage --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BlockSurvivors-linux
+          path: |
+            release/BlockSurvivors-*.AppImage
+            release/latest-linux.yml
+
+  publier:
+    needs: [windows, linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
       - name: Publier la release de la version et « derniere-version »
-        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -58,33 +89,33 @@ jobs:
           ' CHANGELOG.md > notes.md
           [ -s notes.md ] || echo "Version $VERSION." > notes.md
           printf '\n---\nConstruit depuis %s (%s).\n' "$GITHUB_REF_NAME" "${GITHUB_SHA::7}" >> notes.md
-          INSTALLATEUR="release/BlockSurvivors-Setup-$VERSION.exe"
+          INSTALLATEURS=("release/BlockSurvivors-Setup-$VERSION.exe" "release/BlockSurvivors-$VERSION.AppImage")
 
           gh release delete "v$VERSION" --yes --cleanup-tag || true
-          gh release create "v$VERSION" "$INSTALLATEUR" \
+          gh release create "v$VERSION" "${INSTALLATEURS[@]}" \
             --target "$GITHUB_SHA" \
             --title "Block Survivors $VERSION" \
             --notes-file notes.md \
             --latest
 
           gh release delete derniere-version --yes --cleanup-tag || true
-          gh release create derniere-version "$INSTALLATEUR" \
+          gh release create derniere-version "${INSTALLATEURS[@]}" \
             --prerelease \
             --target "$GITHUB_SHA" \
             --title "Block Survivors — dernière version ($VERSION)" \
             --notes-file notes.md
       # Dépôt public TakeosOfficiel/Block-Survivors-version : le code reste privé, mais
       # les joueurs doivent pouvoir télécharger le jeu. On y publie donc la release
-      # « vX.Y.Z » avec l'installateur, son .blockmap et latest.yml, plus la page du
-      # jeu seule et jeu.json : le jeu installé lit jeu.json de la dernière release et
-      # ne télécharge que la page quand Electron n'a pas changé, sinon latest.yml et
+      # « vX.Y.Z » avec l'installateur Windows, son .blockmap et latest.yml, l'AppImage
+      # Linux et latest-linux.yml, plus la page du jeu seule et jeu.json : le jeu
+      # installé lit jeu.json de la dernière release et ne télécharge que la page quand
+      # Electron n'a pas changé, sinon latest.yml (latest-linux.yml sous Linux) et
       # l'installateur complet.
       # Puis version.json, que lisent les anciens exe portables et la version
       # navigateur (l'installateur d'abord : on n'annonce pas une version qu'on ne
       # peut pas encore télécharger).
       # Sans le secret VERSION_TOKEN, l'étape ne fait rien.
-      - name: Publier l'exe et le numéro de version sur le dépôt public
-        shell: bash
+      - name: Publier les installateurs et le numéro de version sur le dépôt public
         env:
           VERSION_TOKEN: ${{ secrets.VERSION_TOKEN }}
         run: |
@@ -100,6 +131,8 @@ jobs:
             "release/BlockSurvivors-Setup-$VERSION.exe" \
             "release/BlockSurvivors-Setup-$VERSION.exe.blockmap" \
             release/latest.yml \
+            "release/BlockSurvivors-$VERSION.AppImage" \
+            release/latest-linux.yml \
             "release/jeu-$VERSION.html" \
             release/jeu.json \
             --repo "$DEPOT" \

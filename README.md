@@ -8,13 +8,22 @@ Le moteur utilisé (WebGPU ou WebGL2) s'affiche en bas du menu, à côté de la
 version. Si le navigateur annonce WebGPU mais ne le gère pas assez bien, ou si
 le GPU décroche en cours de partie, le jeu repasse tout seul en WebGL2.
 
-## Jouer sans rien installer (Windows)
+## Jouer sans rien installer (Windows et Linux)
 
-Chaque push construit l'application de bureau : télécharge
-**`BlockSurvivors.exe`** dans la release « derniere-version » (onglet *Releases*
-du dépôt) et double-clique dessus. C'est un exécutable portable : rien à
-installer, rien à construire. La fenêtre s'ouvre agrandie, l'interface
-s'adapte à sa taille (sans défilement) et `F11` bascule en plein écran.
+Chaque push construit l'application de bureau, dans la release
+« derniere-version » (onglet *Releases* du dépôt) :
+
+- **Windows** : télécharge **`BlockSurvivors-Setup-X.Y.Z.exe`** et
+  double-clique dessus ; le jeu s'installe et se lance.
+- **Linux** : télécharge **`BlockSurvivors-X.Y.Z.AppImage`**, rends-le
+  exécutable (`chmod +x BlockSurvivors-*.AppImage`, ou clic droit → Propriétés
+  → « Autoriser l'exécution ») puis lance-le. Rien à installer ; il se met à
+  jour tout seul comme sous Windows. S'il ne démarre pas, il manque sans doute
+  FUSE 2 : `sudo apt install libfuse2` (`libfuse2t64` sous Ubuntu 24.04 et
+  plus récent).
+
+La fenêtre s'ouvre agrandie, l'interface s'adapte à sa taille (sans
+défilement) et `F11` bascule en plein écran.
 
 ## Lancer depuis le code
 
@@ -26,7 +35,8 @@ npm run preview    # sert le build sur http://localhost:4173
 npm run typecheck  # vérification TypeScript seule
 npm run app        # construit puis ouvre le jeu dans une fenêtre Electron
 npm run app:dev    # fenêtre Electron sur le serveur de développement (rechargement à chaud)
-npm run exe        # produit release/BlockSurvivors.exe (Windows, portable)
+npm run exe        # produit release/BlockSurvivors-Setup-X.Y.Z.exe (installateur Windows)
+npm run linux      # produit release/BlockSurvivors-X.Y.Z.AppImage (Linux)
 ```
 
 Si les scripts npm échouent sous Windows avec « "node" n'est pas reconnu »,
@@ -39,13 +49,13 @@ charge tel quel dans Electron (`win.loadFile('dist/index.html')`).
 ## Versions
 
 Chaque version a son numéro (`0.x.0` nouveautés, `0.x.y` corrections), son
-tag git `vX.Y.Z` et sa release GitHub avec l'exe ; le lien « derniere-version »
+tag git `vX.Y.Z` et sa release GitHub avec l'exe et l'AppImage ; le lien « derniere-version »
 pointe toujours sur la plus récente. Le détail est dans `CHANGELOG.md`, affiché
 dans le jeu (bouton « Nouveautés » de l'accueil, avec une pastille « Nouveau ! »
 après une mise à jour). L'accueil prévient quand une version plus récente existe,
 d'après `version.json` du dépôt public `Block-Survivors-version`, et renvoie vers
-les releases de ce même dépôt, où l'exe est aussi publié (le code, lui, reste
-privé). Le workflow publie l'exe et `version.json` si le secret `VERSION_TOKEN`
+les releases de ce même dépôt, où l'exe et l'AppImage sont aussi publiés (le code, lui, reste
+privé). Le workflow publie l'exe, l'AppImage et `version.json` si le secret `VERSION_TOKEN`
 (droit « Contents : lecture et écriture » sur `Block-Survivors-version`) est configuré.
 
 ## Structure
@@ -55,7 +65,7 @@ electron/               application de bureau : fenêtre, pont vers la page (Qui
 scripts/app-dev.mjs     Vite + Electron avec rechargement à chaud
 scripts/icone.py        génère l'icône de l'application (electron/icone.png)
 cartes/                 maps construites dans Minecraft (.schem, .nbt) et leurs réglages (.json)
-.github/workflows/      construction automatique de l'exe Windows
+.github/workflows/      construction automatique de l'exe Windows et de l'AppImage Linux
 index.html              balisage de l'interface (chargement, menu, HUD, écrans, debug)
 src/
   main.ts               point d'entrée : interface, menu, puis génération et lancement

@@ -25,6 +25,16 @@ export type Amelioration =
 /** Famille de la carte, qui donne la couleur de son nom (comme la rareté des objets du jeu). */
 export type RareteCarte = 'nouvelle_arme' | 'arme' | 'eveil' | 'passif' | 'exclusif' | 'soin';
 
+/** Nom de la rareté, en bandeau en haut de la carte. */
+export const NOMS_RARETE: Readonly<Record<RareteCarte, string>> = {
+  arme: 'Amélioration',
+  passif: 'Bonus',
+  nouvelle_arme: 'Nouvelle arme',
+  exclusif: 'Exclusif',
+  eveil: 'Éveil',
+  soin: 'Soin',
+};
+
 /** Tout ce qu'une carte affiche. */
 export interface Carte {
   readonly amelioration: Amelioration;

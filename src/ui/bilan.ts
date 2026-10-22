@@ -1,8 +1,13 @@
 /**
  * Bilan d'une partie (pause et écran de fin) : chiffres clés, ennemis vaincus
  * par type avec leur visage, et compteur de dégâts détaillé de chaque arme.
+ * Aussi le résumé en tête de ces écrans : temps, ennemis, niveau, émeraudes
+ * (pastilles de la pause, tuiles de la fin).
  */
 import type { BibliothequeTextures } from '../assets/textures';
+import { CONFIG } from '../config';
+import { OBJETS } from '../donnees/objets';
+import type { CheminTexture } from '../donnees/types';
 import { rangMax } from '../combat/armeEquipee';
 import type { ArmeEquipee } from '../combat/armeEquipee';
 import { ENNEMIS, IDS_ENNEMIS } from '../donnees/ennemis';
@@ -94,6 +99,47 @@ export function remplirBilan(
     texte('h3', 'Dégâts par arme', 'titre-panneau'),
     listeArmes,
   );
+}
+
+/** Les quatre chiffres du résumé : icône, valeur, libellé. */
+function resume(etat: EtatPartie): { icone: CheminTexture; valeur: string; libelle: string }[] {
+  return [
+    { icone: CONFIG.hud.iconeTemps, valeur: formaterTemps(etat.tempsJeu), libelle: 'Survécu' },
+    { icone: CONFIG.hud.iconeTues, valeur: NOMBRE.format(etat.ennemisTues), libelle: 'Ennemis' },
+    { icone: CONFIG.hud.iconeNiveau, valeur: String(etat.joueur.niveau), libelle: 'Niveau' },
+    { icone: OBJETS.emeraude.icone, valeur: NOMBRE.format(etat.stats.emeraudesRamassees), libelle: 'Émeraudes' },
+  ];
+}
+
+/** Résumé en pastilles (pause) : icône et valeur. */
+export function remplirPastilles(conteneur: HTMLElement, etat: EtatPartie, textures: BibliothequeTextures): void {
+  conteneur.replaceChildren(...resume(etat).map((r) => {
+    const pastille = document.createElement('div');
+    pastille.className = 'pastille';
+    pastille.title = r.libelle;
+    pastille.append(icone(textures, r.icone), texte('span', r.valeur));
+    return pastille;
+  }));
+}
+
+/** Résumé en tuiles (fin de partie) : grande valeur, icône et libellé. */
+export function remplirTuiles(conteneur: HTMLElement, etat: EtatPartie, textures: BibliothequeTextures): void {
+  conteneur.replaceChildren(...resume(etat).map((r) => {
+    const tuile = document.createElement('div');
+    tuile.className = 'tuile';
+    const libelle = document.createElement('span');
+    libelle.className = 'tuile-libelle';
+    libelle.append(icone(textures, r.icone), r.libelle);
+    tuile.append(texte('span', r.valeur, 'tuile-valeur'), libelle);
+    return tuile;
+  }));
+}
+
+function icone(textures: BibliothequeTextures, chemin: CheminTexture): HTMLElement {
+  const image = document.createElement('img');
+  image.alt = '';
+  image.src = textures.url(chemin) ?? '';
+  return image;
 }
 
 function ligne(libelle: string, valeur: string): HTMLElement {

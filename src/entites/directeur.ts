@@ -7,8 +7,9 @@
 import { CONFIG } from '../config';
 import { APPARITIONS } from '../donnees/apparitions';
 import type { IdEnnemi } from '../donnees/ennemis';
+import { PROGRESSION } from '../donnees/progression';
 import type { ChoixEnnemi, Progression } from '../donnees/types';
-import type { EtatPartie } from '../etat';
+import { minutesSansFin, type EtatPartie } from '../etat';
 import type { Terrain } from '../monde/navigation';
 import { longueur } from '../utils/maths';
 import type { Ennemis } from './ennemis';
@@ -54,8 +55,12 @@ export class DirecteurApparitions {
     const type = this.choisirType(this.populationEn(this.pointX, this.pointZ));
     if (!type) return;
 
-    const taille = Math.min(Math.round(interpoler(a.tailleGroupe, t)), places);
-    const pv = interpoler(a.multiplicateurPv, t);
+    // Mode sans fin : groupes plus gros et ennemis plus robustes à chaque minute
+    const minutes = minutesSansFin(this.etat);
+    const s = PROGRESSION.sansFin;
+    const groupe = Math.min(Math.round(interpoler(a.tailleGroupe, t) + minutes * s.groupeParMinute), s.groupeMax);
+    const taille = Math.min(groupe, places);
+    const pv = interpoler(a.multiplicateurPv, t) * (1 + minutes * s.pvParMinute);
     const carte = this.terrain.carte;
     for (let i = 0; i < taille; i++) {
       const angle = Math.random() * Math.PI * 2;

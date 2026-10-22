@@ -1,13 +1,14 @@
 /**
  * Écran de montée de niveau (ou d'ouverture d'un coffre) : 3 cartes
- * d'amélioration en infobulles du jeu, nom coloré selon la famille, choisies
+ * d'amélioration debout, au liseré d'or et au losange émeraude (comme
+ * l'écran de chargement). La rareté se lit d'un coup d'œil : bandeau de sa
+ * couleur en haut, liseré intérieur, halo et fond teinté ; choisies
  * à la souris ou avec les touches 1, 2, 3
  * (rangée du haut ou pavé numérique). « Relancer » (ou R) tire d'autres
  * cartes, un nombre limité de fois par partie.
  */
 import type { BibliothequeTextures } from '../assets/textures';
-import type { Carte } from '../progression/ameliorations';
-import { caseImage } from './bilan';
+import { NOMS_RARETE, type Carte } from '../progression/ameliorations';
 import { element } from './dom';
 
 const TOUCHES: Readonly<Record<string, number>> = {
@@ -29,6 +30,8 @@ export class EcranCartes {
   private readonly titre = element('cartes-titre');
   private readonly liste = element('cartes-liste');
   private readonly boutonRelancer = element<HTMLButtonElement>('cartes-relancer');
+  private readonly texteRelancer = element('cartes-relancer-texte');
+  private readonly resteRelancer = element('cartes-relancer-reste');
   private relance: Relance | null = null;
   private readonly textures: BibliothequeTextures;
   private cartes: readonly Carte[] = [];
@@ -60,9 +63,8 @@ export class EcranCartes {
     this.liste.replaceChildren(...cartes.map((carte, i) => this.creerCarte(carte, i)));
     const restantes = this.relance?.restantes() ?? 0;
     this.boutonRelancer.disabled = restantes === 0;
-    this.boutonRelancer.textContent = restantes === 0
-      ? 'Plus de relance'
-      : `Relancer les cartes (R) · ${restantes} restante${restantes > 1 ? 's' : ''}`;
+    this.texteRelancer.textContent = restantes === 0 ? 'Plus de relance' : '⟳ Relancer';
+    this.resteRelancer.textContent = restantes === 0 ? '' : `· ${restantes} restante${restantes > 1 ? 's' : ''}`;
   }
 
   private relancer(): void {
@@ -101,18 +103,36 @@ export class EcranCartes {
 
   private creerCarte(carte: Carte, index: number): HTMLElement {
     const bouton = document.createElement('button');
-    bouton.className = 'carte infobulle';
+    bouton.className = `carte orne famille-${carte.rarete}`;
     bouton.addEventListener('click', () => this.choisir(index));
 
-    const touche = document.createElement('span');
+    const joyau = document.createElement('i');
+    joyau.className = 'joyau h';
+
+    // Rareté : bandeau de sa couleur en haut de la carte (liseré et halo de la même couleur)
+    const rarete = document.createElement('div');
+    rarete.className = 'carte-rarete';
+    rarete.textContent = NOMS_RARETE[carte.rarete];
+
+    const touche = document.createElement('kbd');
     touche.className = 'carte-touche';
-    touche.textContent = `[${index + 1}]`;
+    touche.textContent = String(index + 1);
+
+    const icone = document.createElement('div');
+    icone.className = 'carte-icone';
+    const url = this.textures.url(carte.icone);
+    if (url) {
+      const image = document.createElement('img');
+      image.src = url;
+      image.alt = '';
+      icone.append(image);
+    }
 
     const nom = document.createElement('div');
-    nom.className = `carte-nom rarete-${carte.rarete}`;
+    nom.className = 'carte-nom';
     nom.textContent = carte.nom;
 
-    const etiquette = document.createElement('div');
+    const etiquette = document.createElement('span');
     etiquette.className = 'carte-etiquette';
     etiquette.textContent = carte.etiquette;
 
@@ -120,15 +140,26 @@ export class EcranCartes {
     description.className = 'carte-description';
     description.textContent = carte.description;
 
+    // « Dégâts : 10 → 15 » : la nouvelle valeur ressort
     const lignes = document.createElement('ul');
     lignes.className = 'carte-stats';
     for (const ligne of carte.lignes) {
       const item = document.createElement('li');
-      item.textContent = ligne;
+      const fleche = ligne.lastIndexOf('→ ');
+      if (fleche < 0) {
+        item.textContent = ligne;
+      } else {
+        const valeur = document.createElement('b');
+        valeur.textContent = ligne.slice(fleche + 2);
+        item.append(ligne.slice(0, fleche + 2), valeur);
+      }
       lignes.append(item);
     }
 
-    bouton.append(touche, caseImage(this.textures.url(carte.icone), carte.nom, 'grande'), nom, etiquette, description, lignes);
+    bouton.append(joyau, rarete, touche, icone, nom);
+    if (carte.etiquette !== NOMS_RARETE[carte.rarete]) bouton.append(etiquette);
+    bouton.append(description);
+    if (carte.lignes.length > 0) bouton.append(lignes);
     return bouton;
   }
 }

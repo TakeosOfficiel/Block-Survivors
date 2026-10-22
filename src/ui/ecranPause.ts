@@ -1,7 +1,8 @@
 /**
  * Pause : Échap l'ouvre et la ferme ; la partie se met aussi en pause quand
- * la fenêtre perd le focus. Reprendre, options, recommencer, menu principal,
- * et le bilan de la partie en cours.
+ * la fenêtre perd le focus. Un bandeau en travers de l'écran (résumé de la
+ * partie, Options, Reprendre, Recommencer, Menu principal) ; « Statistiques »
+ * affiche à sa place le bilan complet de la partie en cours.
  */
 import { element } from './dom';
 import type { PanneauOptions } from './panneauOptions';
@@ -11,11 +12,13 @@ export interface ActionsPause {
   peutPauser(): boolean;
   recommencer(): void;
   menuPrincipal(): void;
+  remplirResume(conteneur: HTMLElement): void;
   remplirBilan(conteneur: HTMLElement): void;
 }
 
 export class EcranPause {
   private readonly racine = element('pause');
+  private readonly pastilles = element('pause-pastilles');
   private readonly bilan = element('pause-bilan');
   private readonly actions: ActionsPause;
   private readonly options: PanneauOptions;
@@ -32,6 +35,8 @@ export class EcranPause {
     });
     element<HTMLButtonElement>('pause-recommencer').addEventListener('click', () => this.actions.recommencer());
     element<HTMLButtonElement>('pause-menu').addEventListener('click', () => this.actions.menuPrincipal());
+    element<HTMLButtonElement>('pause-statistiques').addEventListener('click', () => this.statistiques(true));
+    element<HTMLButtonElement>('pause-retour').addEventListener('click', () => this.statistiques(false));
     window.addEventListener('keydown', this.surTouche);
   }
 
@@ -40,13 +45,25 @@ export class EcranPause {
     if (active && !this.actions.peutPauser()) return;
     this.active = active;
     if (!active) this.options.fermer();
-    if (active) this.actions.remplirBilan(this.bilan);
+    if (active) this.actions.remplirResume(this.pastilles);
+    this.statistiques(false);
     this.racine.classList.toggle('cache', !active);
+  }
+
+  /** Bilan complet à la place du bandeau, ou retour au bandeau. */
+  private statistiques(visibles: boolean): void {
+    if (visibles) this.actions.remplirBilan(this.bilan);
+    this.racine.classList.toggle('statistiques', visibles);
   }
 
   private readonly surTouche = (e: KeyboardEvent): void => {
     if (e.code !== 'Escape' || e.repeat) return;
     e.preventDefault();
+    // Échap quitte d'abord les statistiques
+    if (this.active && this.racine.classList.contains('statistiques')) {
+      this.statistiques(false);
+      return;
+    }
     this.definir(!this.active);
   };
 }

@@ -327,6 +327,8 @@ export class EcranMenu {
     const details: HTMLElement[] = [texte(a.description), texte(`Mobs : ${this.nomsMobs(a)}`, 'menu-arene-mobs'), boss];
     const record = this.sauvegarde.record(a.id);
     if (record > 0) details.push(texte(`Record : ${formaterTemps(record)}`, 'menu-arene-record'));
+    const recordSansFin = this.sauvegarde.recordSansFin(a.id);
+    if (recordSansFin > 0) details.push(texte(`Record sans fin : ${formaterTemps(recordSansFin)}`, 'menu-arene-record'));
     element('menu-arene-details').replaceChildren(...details);
   }
 

@@ -29,4 +29,11 @@ export const PROGRESSION: DefinitionProgression = {
     { valeurMin: 37, image: 4 },
     { valeurMin: 73, image: 5 },
   ],
+  // Après 15:00, chaque minute : +25 % de PV et +10 % de dégâts ennemis, groupes plus gros
+  sansFin: {
+    pvParMinute: 0.25,
+    degatsParMinute: 0.1,
+    groupeParMinute: 0.5,
+    groupeMax: 12,
+  },
 };

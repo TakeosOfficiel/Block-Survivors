@@ -38,6 +38,8 @@ interface Donnees {
   arbres: Record<string, number>;
   /** Meilleur temps survécu (s), par arène. */
   records: Record<string, number>;
+  /** Meilleur temps total (s) d'une partie continuée en mode sans fin, par arène. */
+  recordsSansFin: Record<string, number>;
   bossVaincus: number;
   parties: number;
   /** Talents remis à zéro au passage à la maîtrise, pas encore annoncé. */
@@ -64,6 +66,11 @@ export interface BilanPartie {
   /** XP ramassée pendant la partie : elle va à la maîtrise de la classe. */
   readonly xp: number;
   readonly boss: number;
+  /**
+   * Suite d'une partie gagnée (mode sans fin) : la victoire a déjà compté la partie, le record et
+   * l'XP d'avant ; `xp` et `boss` ne comptent que la suite, `temps` est le temps total.
+   */
+  readonly sansFin: boolean;
 }
 
 /** Où en est la maîtrise d'une classe. */
@@ -81,6 +88,8 @@ export interface Recompense {
   readonly avant: EtatMaitrise;
   readonly apres: EtatMaitrise;
   readonly deblocages: readonly DefinitionDeblocage[];
+  /** Mode sans fin : le temps bat le record sans fin de l'arène. */
+  readonly recordSansFin: boolean;
 }
 
 /** Pourquoi un rang ne peut pas être acheté. */
@@ -116,6 +125,7 @@ export class Sauvegarde {
       armesDepart: actuelle ? textes(lu.armesDepart) : {},
       arbres: table(lu.arbres),
       records: table(lu.records),
+      recordsSansFin: table(lu.recordsSansFin),
       bossVaincus: nombre(lu.bossVaincus),
       parties: nombre(lu.parties),
       // Une ancienne sauvegarde existait : ses talents sont remis à zéro, on le dira une fois
@@ -295,6 +305,11 @@ export class Sauvegarde {
     return this.donnees.records[arene] ?? 0;
   }
 
+  /** Meilleur temps total en mode sans fin dans l'arène (s), 0 si jamais tenté. */
+  recordSansFin(arene: string): number {
+    return this.donnees.recordsSansFin[arene] ?? 0;
+  }
+
   // --- Déblocages ----------------------------------------------------------
 
   /** Condition à remplir, ou null si c'est déjà disponible. */
@@ -325,9 +340,15 @@ export class Sauvegarde {
     const avant = this.maitrise(bilan.personnage);
     const xp = Math.max(0, Math.floor(bilan.xp));
     d.maitrise[bilan.personnage] = avant.xp + xp;
-    d.records[bilan.arene] = Math.max(d.records[bilan.arene] ?? 0, bilan.temps);
     d.bossVaincus += bilan.boss;
-    d.parties++;
+    let recordSansFin = false;
+    if (bilan.sansFin) {
+      recordSansFin = bilan.temps > (d.recordsSansFin[bilan.arene] ?? 0);
+      if (recordSansFin) d.recordsSansFin[bilan.arene] = bilan.temps;
+    } else {
+      d.records[bilan.arene] = Math.max(d.records[bilan.arene] ?? 0, bilan.temps);
+      d.parties++;
+    }
     this.enregistrer();
     return {
       personnage: bilan.personnage,
@@ -335,6 +356,7 @@ export class Sauvegarde {
       avant,
       apres: this.maitrise(bilan.personnage),
       deblocages: verrouillesAvant.filter((deblocage) => this.rempli(deblocage)),
+      recordSansFin,
     };
   }
 

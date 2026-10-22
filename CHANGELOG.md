@@ -5,6 +5,16 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.42.0] — 2026-10-22
+
+### Nouveautés
+- **Mode sans fin** : après une victoire, « Continuer sans fin » relance la partie là où elle en était. Chaque minute après 15:00, les ennemis ont +25 % de PV et frappent 10 % plus fort, les groupes grossissent ; boss et mini-boss reviennent (le premier boss 5 minutes après). La partie s'arrête à la mort : l'XP gagnée depuis la victoire va aussi à la maîtrise, et l'arène garde un **record sans fin** (affiché dans le menu).
+
+### Changements
+- **Nouvel écran des cartes** : trois grandes cartes debout, au liseré d'or et au losange émeraude de l'écran de chargement. **La rareté se voit d'un coup d'œil** : bandeau de sa couleur en haut (Amélioration, Bonus, Nouvelle arme, Exclusif, Éveil, Soin), liseré intérieur, halo et fond teinté ; les cartes Exclusif et Éveil pulsent. Les nouvelles valeurs ressortent en vert, touches 1, 2, 3 et R affichées.
+- **Pause en bandeau** : un bandeau en travers de l'écran, entre deux traits d'or ornés d'un losange : temps, ennemis vaincus, niveau et émeraudes, puis Options, Reprendre et Recommencer ; Menu principal et Statistiques en dessous. Statistiques montre le bilan complet dans un cadre doré (Échap pour revenir).
+- **Fin de partie** : grand titre, personnage et arène, quatre tuiles (temps, ennemis, niveau, émeraudes), la maîtrise gagnée, puis **toutes les statistiques** dans un cadre doré à losanges. Menu principal et Rejouer côte à côte.
+
 ## [0.41.1] — 2026-10-22
 
 ### Changements

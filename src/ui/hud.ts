@@ -143,7 +143,8 @@ export class Hud implements AfficheurAlerte {
     if (seconde === this.secondeAffichee) return;
     this.secondeAffichee = seconde;
     this.elementChrono.textContent = formaterTemps(seconde);
-    this.elementChrono.classList.toggle('final', PROGRESSION.dureePartie - seconde <= CONFIG.hud.dernierCompteARebours);
+    const reste = PROGRESSION.dureePartie - seconde;
+    this.elementChrono.classList.toggle('final', reste >= 0 && reste <= CONFIG.hud.dernierCompteARebours);
   }
 
   /** « Prochain boss dans 02:13 » sous le chrono ; rouge dans les 10 dernières secondes. */

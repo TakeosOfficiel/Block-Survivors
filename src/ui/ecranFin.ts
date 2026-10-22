@@ -1,27 +1,36 @@
 /**
- * Fin de partie : écran de mort du jeu (voile rouge, « Vous êtes mort ! »)
- * ou de victoire (voile doré), score, maîtrise de la classe gagnée avec l'XP
- * de la partie, bilan, Rejouer et Menu principal.
+ * Fin de partie : « Vous êtes mort ! » (voile rouge) ou « Victoire ! » (voile
+ * doré), le personnage et l'arène, quatre tuiles (temps, ennemis, niveau,
+ * émeraudes), la maîtrise de la classe gagnée avec l'XP de la partie, puis le
+ * bilan complet dans un cadre doré. Menu principal, Rejouer, et après une
+ * victoire « Continuer sans fin » (la partie reprend jusqu'à la mort).
  */
 import type { BibliothequeTextures } from '../assets/textures';
 import { PERSONNAGES } from '../donnees/personnages';
-import type { IssuePartie } from '../etat';
+import type { EtatPartie, IssuePartie } from '../etat';
 import type { Recompense } from '../progression/sauvegarde';
+import { formaterTemps } from '../utils/format';
+import { remplirTuiles } from './bilan';
 import { element } from './dom';
 import { bandeauMaitrise, partNiveau } from './maitrise';
 
 export interface ActionsFin {
   rejouer(): void;
+  continuer(): void;
   menuPrincipal(): void;
   remplirBilan(conteneur: HTMLElement): void;
 }
+
+const NOMBRE = new Intl.NumberFormat('fr-FR');
 
 export class EcranFin {
   private readonly racine = element('fin');
   private readonly titre = element('fin-titre');
   private readonly sousTitre = element('fin-sous-titre');
+  private readonly tuiles = element('fin-tuiles');
   private readonly bilan = element('fin-bilan');
   private readonly recompense = element('fin-recompense');
+  private readonly boutonContinuer = element<HTMLButtonElement>('fin-continuer');
   private readonly textures: BibliothequeTextures;
   private readonly hud = element('hud');
   private readonly actions: ActionsFin;
@@ -31,6 +40,7 @@ export class EcranFin {
     this.textures = textures;
     element<HTMLButtonElement>('fin-rejouer').addEventListener('click', () => this.actions.rejouer());
     element<HTMLButtonElement>('fin-menu').addEventListener('click', () => this.actions.menuPrincipal());
+    this.boutonContinuer.addEventListener('click', () => this.actions.continuer());
     window.addEventListener('keydown', this.surTouche);
   }
 
@@ -38,24 +48,30 @@ export class EcranFin {
     return !this.racine.classList.contains('cache');
   }
 
-  afficher(issue: Exclude<IssuePartie, null>, score: number, temps: string, recompense: Recompense | null): void {
+  afficher(issue: Exclude<IssuePartie, null>, etat: EtatPartie, recompense: Recompense | null): void {
     const victoire = issue === 'victoire';
     this.racine.classList.toggle('victoire', victoire);
     this.titre.textContent = victoire ? 'Victoire !' : 'Vous êtes mort !';
-
-    // « Score : 123 » comme sur l'écran de mort du jeu, valeur en jaune
-    const valeur = document.createElement('span');
-    valeur.className = 'valeur';
-    valeur.textContent = new Intl.NumberFormat('fr-FR').format(score);
-    this.sousTitre.replaceChildren(
-      victoire ? `Vous avez survécu ${temps}. Score : ` : `Survécu ${temps}. Score : `,
-      valeur,
-    );
+    const lieu = `${etat.personnage.nom} · ${etat.arene.nom}`;
+    this.sousTitre.textContent = etat.sansFin
+      ? `Mode sans fin · ${lieu}${recompense?.recordSansFin ? ` · nouveau record : ${formaterTemps(etat.tempsJeu)} !` : ''}`
+      : lieu;
+    this.sousTitre.classList.toggle('record', recompense?.recordSansFin === true);
+    remplirTuiles(this.tuiles, etat, this.textures);
     this.afficherRecompense(recompense);
     this.actions.remplirBilan(this.bilan);
+    this.bilan.scrollTop = 0;
+    // Une partie gagnée peut continuer (une seule fois : ensuite, seule la mort l'arrête)
+    this.boutonContinuer.classList.toggle('cache', !victoire || etat.sansFin);
     // Comme l'écran de mort du jeu : plus de HUD derrière
     this.hud.classList.add('cache');
     this.racine.classList.remove('cache');
+  }
+
+  /** Mode sans fin : la partie reprend, le HUD revient. */
+  masquer(): void {
+    this.racine.classList.add('cache');
+    this.hud.classList.remove('cache');
   }
 
   /** Maîtrise de la classe (la barre se remplit de l'XP de la partie) et ce que la partie a débloqué. */
@@ -75,8 +91,8 @@ export class EcranFin {
     gain.className = 'fin-maitrise';
     const niveaux = apres.niveau - avant.niveau;
     gain.textContent = niveaux > 0
-      ? `+${new Intl.NumberFormat('fr-FR').format(recompense.xp)} XP · niveau ${avant.niveau} → ${apres.niveau} : +${niveaux} point${niveaux > 1 ? 's' : ''} de talent !`
-      : `+${new Intl.NumberFormat('fr-FR').format(recompense.xp)} XP de maîtrise`;
+      ? `+${NOMBRE.format(recompense.xp)} XP · niveau ${avant.niveau} → ${apres.niveau} : +${niveaux} point${niveaux > 1 ? 's' : ''} de talent !`
+      : `+${NOMBRE.format(recompense.xp)} XP de maîtrise`;
     gain.classList.toggle('niveau', niveaux > 0);
     this.recompense.append(bandeau, gain);
     for (const deblocage of recompense.deblocages) {

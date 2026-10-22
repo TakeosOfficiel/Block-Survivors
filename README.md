@@ -127,7 +127,9 @@ retenu). Tenir jusqu'à **15:00** donne la victoire ; un boss arrive à 5:00
 puis à 10:00. L'écran de fin (mort ou victoire) affiche le bilan : temps,
 niveau, expérience, ennemis vaincus par type, boss, dégâts infligés par arme,
 dégâts subis, soins. « Rejouer » relance le même choix, « Menu principal »
-revient au menu.
+revient au menu. Après une victoire, « Continuer sans fin » poursuit la partie
+jusqu'à la mort (mode sans fin) : les ennemis se renforcent chaque minute, les
+boss reviennent, et l'arène garde un record sans fin.
 
 L'adresse peut aussi fixer le choix et sauter le menu :
 `index.html?personnage=archer&arene=mine&jouer=1`.

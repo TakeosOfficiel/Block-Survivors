@@ -177,36 +177,47 @@
   </div>
 
   <!-- Montée de niveau : choix d'une carte -->
-  <div id="cartes" class="ecran voile cache">
-    <h2 id="cartes-titre" class="ecran-titre">Niveau 2 !</h2>
-    <div class="ecran-sous-titre">Choisissez une amélioration (clic ou touches 1, 2, 3)</div>
+  <div id="cartes" class="ecran page page-jeu cache">
+    <h2 id="cartes-titre" class="titre-orne">Niveau 2 !</h2>
     <div id="cartes-liste"></div>
-    <button id="cartes-relancer" class="bouton-mc">Relancer les cartes (R)</button>
+    <button id="cartes-relancer" class="bouton-mc"><span id="cartes-relancer-texte">Relancer</span> <kbd>R</kbd> <span id="cartes-relancer-reste"></span></button>
   </div>
 
   <!-- Pause -->
   <div id="pause" class="ecran page page-jeu cache">
-    <h2 class="ecran-titre">Pause</h2>
-    <div class="pause-boutons">
-      <button id="pause-reprendre" class="bouton-mc page-fermer pause-reprendre">Reprendre</button>
-      <div class="rangee-boutons">
+    <div class="pause-bandeau">
+      <i class="joyau h"></i><i class="joyau b"></i>
+      <h2 class="titre-jeu">Pause</h2>
+      <div id="pause-pastilles" class="pastilles"></div>
+      <div class="pause-boutons">
         <button id="pause-options" class="bouton-mc">Options</button>
+        <button id="pause-reprendre" class="bouton-mc page-fermer">Reprendre</button>
         <button id="pause-recommencer" class="bouton-mc">Recommencer</button>
-        <button id="pause-menu" class="bouton-mc">Menu principal</button>
       </div>
+      <div class="pause-liens"><button id="pause-menu" class="lien-jeu">Menu principal</button> · <button id="pause-statistiques" class="lien-jeu">Statistiques</button></div>
     </div>
-    <div id="pause-bilan" class="panneau-mc bilan"></div>
+    <div class="pause-stats orne">
+      <i class="joyau hg"></i><i class="joyau hd"></i><i class="joyau bg"></i><i class="joyau bd"></i>
+      <h2 class="titre-jeu">Statistiques</h2>
+      <div id="pause-bilan" class="bilan"></div>
+      <button id="pause-retour" class="bouton-mc page-fermer">Retour</button>
+    </div>
   </div>
 
   <!-- Fin de partie -->
   <div id="fin" class="ecran page page-jeu cache">
-    <h2 id="fin-titre" class="ecran-titre grand">Vous êtes mort !</h2>
-    <div id="fin-sous-titre" class="ecran-sous-titre"></div>
+    <h2 id="fin-titre" class="titre-jeu">Vous êtes mort !</h2>
+    <div id="fin-sous-titre"></div>
+    <div id="fin-tuiles"></div>
     <div id="fin-recompense"></div>
-    <div id="fin-bilan" class="panneau-mc bilan"></div>
-    <div class="rangee-boutons">
-      <button id="fin-rejouer" class="bouton-mc page-fermer">Rejouer</button>
+    <div class="fin-panneau orne">
+      <i class="joyau hg"></i><i class="joyau hd"></i><i class="joyau bg"></i><i class="joyau bd"></i>
+      <div id="fin-bilan" class="bilan"></div>
+    </div>
+    <div class="fin-boutons">
       <button id="fin-menu" class="bouton-mc">Menu principal</button>
+      <button id="fin-rejouer" class="bouton-mc page-fermer">Rejouer</button>
+      <button id="fin-continuer" class="bouton-mc cache">Continuer sans fin</button>
     </div>
   </div>
 

@@ -10,7 +10,7 @@ import { PROGRESSION } from '../donnees/progression';
 import type { IdSon } from '../donnees/sons';
 import type { DefinitionArene, DefinitionCalendrierBoss } from '../donnees/types';
 import type { Retours } from '../effets/retours';
-import type { EtatPartie } from '../etat';
+import { minutesSansFin, type EtatPartie } from '../etat';
 import type { Terrain } from '../monde/navigation';
 import { longueur } from '../utils/maths';
 import type { DetecteurVisibilite } from './directeur';
@@ -67,7 +67,7 @@ export class DirecteurBoss {
 
   /** Secondes avant le prochain boss, ou −1 s'il n'en viendra plus avant la fin de la partie. */
   get tempsAvantProchain(): number {
-    if (this.moment >= PROGRESSION.dureePartie) return -1;
+    if (this.termine()) return -1;
     return Math.max(0, this.moment - this.etat.tempsJeu);
   }
 
@@ -77,9 +77,9 @@ export class DirecteurBoss {
   }
 
   maj(): void {
-    // Aucun boss au-delà de la fin de partie (la victoire arrive avant)
+    // Aucun boss au-delà de la fin de partie (la victoire arrive avant), sauf en mode sans fin
     const c = this.reglages.calendrier;
-    if (this.etat.joueur.mort || this.etat.issue !== null || this.moment >= PROGRESSION.dureePartie) return;
+    if (this.etat.joueur.mort || this.etat.issue !== null || this.termine()) return;
     if (this.reglages.liste(this.etat.arene).length === 0) return;
     const t = this.etat.tempsJeu;
     if (!this.annonce && t >= this.moment - c.avertissement) {
@@ -91,6 +91,16 @@ export class DirecteurBoss {
       this.moment += c.intervalle;
       this.annonce = false;
     }
+  }
+
+  /** Mode sans fin : le calendrier reprend, le prochain venant au plus tôt un intervalle après maintenant. */
+  reprendre(): void {
+    this.moment = Math.max(this.moment, this.etat.tempsJeu + this.reglages.calendrier.intervalle);
+    this.annonce = false;
+  }
+
+  private termine(): boolean {
+    return !this.etat.sansFin && this.moment >= PROGRESSION.dureePartie;
   }
 
   /** Fait apparaître le prochain boss tout de suite (debug), sans décaler le calendrier. */
@@ -125,7 +135,8 @@ export class DirecteurBoss {
     }
     const a = APPARITIONS;
     const montee = Math.min(this.etat.tempsJeu / a.dureeMontee, 1);
-    const pv = this.reglages.calendrier.pvSelonTemps ? a.multiplicateurPv.debut + (a.multiplicateurPv.fin - a.multiplicateurPv.debut) * montee : 1;
+    const selonTemps = this.reglages.calendrier.pvSelonTemps ? a.multiplicateurPv.debut + (a.multiplicateurPv.fin - a.multiplicateurPv.debut) * montee : 1;
+    const pv = selonTemps * (1 + minutesSansFin(this.etat) * PROGRESSION.sansFin.pvParMinute);
     this.ennemis.apparaitre(id, x, z, pv);
     if (this.reglages.son) this.retours.son(this.reglages.son);
     if (this.reglages.secousse > 0) this.retours.secousse(this.reglages.secousse);

@@ -753,6 +753,16 @@ export interface DefinitionProgression {
   readonly soin: { readonly nom: string; readonly description: string; readonly icone: CheminTexture; readonly pv: number };
   /** Image de l'orbe (0 à 15 dans la texture) selon sa valeur, de la plus petite à la plus grosse. */
   readonly orbes: readonly { readonly valeurMin: number; readonly image: number }[];
+  /** Mode sans fin (après une victoire) : renforcement des ennemis par minute au-delà de `dureePartie`. */
+  readonly sansFin: {
+    /** PV en plus (fraction) : ennemis, mini-boss et boss. */
+    readonly pvParMinute: number;
+    /** Dégâts infligés au joueur en plus (fraction). */
+    readonly degatsParMinute: number;
+    /** Ennemis en plus par groupe, jusqu'à `groupeMax`. */
+    readonly groupeParMinute: number;
+    readonly groupeMax: number;
+  };
 }
 
 // --------------------------------------------------------------------------

@@ -33,6 +33,7 @@ export function texturesInterface(): Set<CheminTexture> {
   for (const arene of ARENES) chemins.add(arene.icone);
   chemins.add(CONFIG.hud.coeurs.plein).add(CONFIG.hud.coeurs.dore);
   chemins.add(MAITRISE.icone);
+  chemins.add(CONFIG.hud.iconeTues).add(CONFIG.hud.iconeTemps).add(CONFIG.hud.iconeNiveau).add(OBJETS.emeraude.icone);
   for (const nom of SKINS_VANILLA) chemins.add(cheminSkinVanilla(nom, false)).add(cheminSkinVanilla(nom, true));
   for (const id of IDS_PERSONNAGES) {
     for (const arbre of ARBRES[id]) {

@@ -329,6 +329,9 @@ export const CONFIG = {
     periodeFps: 0.5,         // fenêtre de mesure des FPS (s)
     dureeMessage: 3,         // durée d'affichage d'un message central (s)
     iconeTues: 'item/bone',  // compteur d'ennemis vaincus
+    // Résumé de la partie (pause, fin) : temps et niveau, à côté des os et des émeraudes
+    iconeTemps: 'item/clock_00',
+    iconeNiveau: 'item/experience_bottle',
     dernierCompteARebours: 60,  // le chrono passe en or dans la dernière minute (s)
     delaiFin: 1.6,           // s entre la fin de partie et l'écran de bilan
     // Voile rouge : après un coup, et pulsant quand la santé est basse

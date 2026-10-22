@@ -68,6 +68,8 @@ export interface EtatPartie {
   /** Cartes de coffre pas encore choisies, et titre de leur écran. */
   readonly choixCoffre: { restants: number; titre: string };
   issue: IssuePartie;
+  /** Vrai une fois la partie gagnée puis continuée (mode sans fin). */
+  sansFin: boolean;
   readonly stats: StatistiquesPartie;
   /** Bonus cumulés des passifs. */
   readonly modificateurs: Modificateurs;
@@ -94,6 +96,7 @@ export function creerEtatPartie(arene: DefinitionArene, idPersonnage: IdPersonna
     emeraudes: 0,
     choixCoffre: { restants: 0, titre: '' },
     issue: null,
+    sansFin: false,
     stats: {
       tuesParType: new Int32Array(IDS_ENNEMIS.length),
       degatsParArme: new Float64Array(IDS_ARMES.length),
@@ -126,4 +129,9 @@ export function creerEtatPartie(arene: DefinitionArene, idPersonnage: IdPersonna
       xpNiveau: PROGRESSION.xpPremierNiveau,
     },
   };
+}
+
+/** Minutes jouées au-delà de la durée de la partie en mode sans fin (0 sinon) : elles renforcent les ennemis. */
+export function minutesSansFin(etat: EtatPartie): number {
+  return etat.sansFin ? Math.max(0, etat.tempsJeu - PROGRESSION.dureePartie) / 60 : 0;
 }

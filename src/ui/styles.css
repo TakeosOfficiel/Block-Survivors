@@ -621,28 +621,6 @@ img { image-rendering: pixelated; }
 .capacite.eveillee { box-shadow: 0 0 0 2px #7a3fd0, 0 0 10px 2px rgba(190, 110, 255, 0.75); }
 .capacite.eveillee img { filter: drop-shadow(0 0 3px rgba(200, 130, 255, 0.9)); }
 
-/* --- Cartes d'amélioration : infobulles violettes ------------------------- */
-#cartes-liste { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
-.carte {
-  position: relative;
-  width: 260px; min-height: 280px;
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  padding: 16px 14px;
-  font: inherit; text-align: center;
-  cursor: pointer;
-  transition: transform 0.08s;
-}
-.carte:hover, .carte:focus-visible {
-  outline: none;
-  transform: translateY(-4px);
-  border-image: linear-gradient(rgba(170, 120, 255, 0.95), rgba(90, 40, 200, 0.95)) 1;
-}
-.carte-touche { position: absolute; top: 6px; left: 8px; color: var(--mc-gris-fonce); }
-.carte-nom { margin-top: 4px; }
-.carte-etiquette { color: var(--mc-gris-fonce); }
-.carte-description { color: var(--mc-gris); }
-.carte-stats { list-style: none; color: var(--mc-bleu); margin-top: 4px; }
-.carte .case-mc { margin-top: 4px; }
 
 /* --- Panneau debug (inspiré de l'écran F3 du jeu), compact ---------------- */
 #debug {
@@ -950,18 +928,170 @@ img { image-rendering: pixelated; }
 .page .talents-porte-texte { background: #10131b; }
 .page .talents-fiche { border-radius: 12px; }
 
-/* Pause et fin de partie : même style, la partie reste visible derrière un voile */
+/* --- Écrans en jeu (cartes, pause, fin) -------------------------------------------------
+   Style des pages, la partie visible derrière un voile, et les ornements de l'écran de
+   chargement : liseré d'or bordé de sombre et losanges émeraude (ui/ornements.ts, --joyau).
+   Le losange (13 pixels de dessin × 3) a sa rangée du milieu [18, 21) sur le trait d'or : posé
+   à −21 px de l'intérieur d'une bordure de 3 px, ou à −18 px d'un trait d'or tracé au bord */
 .page.page-jeu { background: rgba(6, 8, 14, 0.74); }
-#fin.page { background: linear-gradient(rgba(70, 0, 0, 0.45), rgba(10, 6, 10, 0.88)); }
-#fin.page.victoire { background: linear-gradient(rgba(90, 70, 0, 0.42), rgba(14, 10, 4, 0.88)); }
-.page #fin-titre { font-size: 40px; line-height: 48px; color: #ff6a6a; text-shadow: 4px 4px 0 #3a0a0a; }
-.page#fin.victoire #fin-titre { color: var(--page-or-clair); text-shadow: 4px 4px 0 #3f2f05; }
-.page .ecran-sous-titre { color: #d0d0d0; }
-.page #fin-sous-titre .valeur { color: var(--page-or-clair); font-weight: 700; }
-.pause-boutons { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.page .bouton-mc.pause-reprendre { width: 420px; height: 56px; font-size: 22px; }
-.page .rangee-boutons .bouton-mc { width: auto; min-width: 136px; }
-.page #fin-rejouer { min-width: 200px; }
+.orne {
+  position: relative;
+  border: 3px solid var(--page-or);
+  box-shadow: 0 0 0 3px #1a1206, inset 0 0 0 3px #1a1206, 0 18px 50px rgba(0, 0, 0, 0.6);
+}
+.joyau {
+  position: absolute; z-index: 1; width: 39px; height: 39px; pointer-events: none;
+  background: var(--joyau) 0 0 / 39px 39px no-repeat; image-rendering: pixelated;
+}
+.orne > .joyau.hg { left: -21px; top: -21px; }
+.orne > .joyau.hd { right: -21px; top: -21px; }
+.orne > .joyau.bg { left: -21px; bottom: -21px; }
+.orne > .joyau.bd { right: -21px; bottom: -21px; }
+.orne > .joyau.h { left: calc(50% - 19.5px); top: -21px; }
+.titre-jeu, .titre-orne {
+  font-family: var(--police); font-weight: normal; font-size: 34px; line-height: 40px;
+  color: var(--page-or-clair); text-shadow: 3px 3px 0 #3f2f05;
+}
+/* Titre entre deux traits d'or */
+.titre-orne { display: flex; align-items: center; gap: 18px; }
+.titre-orne::before, .titre-orne::after {
+  content: ''; width: 120px; height: 3px; background: var(--page-or); box-shadow: 0 0 0 3px #1a1206;
+}
+.page kbd {
+  font-family: inherit; font-size: 12px; line-height: 16px; padding: 1px 6px;
+  color: #cfd3dc; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 4px;
+}
+.lien-jeu {
+  padding: 2px 4px; font: inherit; color: #9aa0ad; cursor: pointer;
+  background: none; border: none; text-decoration: underline; text-underline-offset: 3px;
+}
+.lien-jeu:hover, .lien-jeu:focus-visible { outline: none; color: var(--page-or-clair); }
+
+/* Cartes d'amélioration : debout, liseré d'or, losange en haut, teintées de leur famille */
+#cartes { gap: 26px; background: radial-gradient(ellipse at center, rgba(6, 8, 14, 0.55), rgba(6, 8, 14, 0.85)); }
+#cartes-liste { display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; padding-top: 12px; }
+.carte {
+  --famille: #fff; --famille-voile: rgba(255, 255, 255, 0.1);
+  width: 250px; min-height: 350px; padding: 50px 18px 18px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  font: inherit; color: #fff; text-align: center; cursor: pointer;
+  background: linear-gradient(var(--famille-voile), rgba(10, 12, 18, 0.94) 42%);
+  transition: transform 0.1s, filter 0.1s;
+}
+/* Liseré intérieur et halo de la couleur de la rareté (sous le liseré d'or) */
+.page .carte.orne {
+  box-shadow: 0 0 0 3px #1a1206, inset 0 0 0 3px #1a1206, inset 0 0 0 5px var(--famille),
+    0 0 26px var(--famille-voile), 0 18px 50px rgba(0, 0, 0, 0.6);
+}
+.carte:hover, .carte:focus-visible { outline: none; transform: translateY(-8px); filter: drop-shadow(0 0 18px var(--famille-voile)) brightness(1.12); }
+.carte-rarete {
+  position: absolute; top: 5px; left: 5px; right: 5px; height: 30px;
+  display: grid; place-items: center;
+  font-family: var(--police); font-size: 15px; letter-spacing: 1px;
+  color: #10131b; text-shadow: none; background: var(--famille);
+}
+.carte-touche { position: absolute; top: 42px; left: 10px; }
+.carte-icone {
+  width: 84px; height: 84px; display: grid; place-items: center;
+  border-radius: 14px; background: radial-gradient(var(--famille-voile), transparent 70%);
+}
+.carte-icone img { width: 56px; height: 56px; image-rendering: pixelated; }
+.carte-nom { font-family: var(--police); font-size: 19px; line-height: 24px; color: var(--famille); text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6); }
+.carte-etiquette {
+  padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--famille); background: var(--famille-voile);
+}
+.carte-description { color: #c8ccd6; font-size: 14px; line-height: 1.35; }
+.carte-stats {
+  list-style: none; margin-top: auto; align-self: stretch; padding-top: 10px; text-align: left;
+  display: flex; flex-direction: column; gap: 4px;
+  font-size: 13px; color: #cfe9c8; border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.carte-stats b { color: #7dff7d; }
+.famille-arme { --famille: #d8dde6; --famille-voile: rgba(216, 221, 230, 0.16); }
+.famille-passif { --famille: #55e055; --famille-voile: rgba(85, 224, 85, 0.22); }
+.famille-nouvelle_arme { --famille: #4fd8ff; --famille-voile: rgba(79, 216, 255, 0.26); }
+.famille-exclusif { --famille: #ff6ad5; --famille-voile: rgba(255, 106, 213, 0.3); }
+.famille-eveil { --famille: #b06cff; --famille-voile: rgba(176, 108, 255, 0.36); }
+.famille-eveil .carte-nom { text-shadow: 0 0 6px rgba(190, 110, 255, 0.7), 2px 2px 0 rgba(0, 0, 0, 0.6); }
+.famille-soin { --famille: #ffc83a; --famille-voile: rgba(255, 200, 58, 0.22); }
+/* Les plus rares pulsent */
+.famille-exclusif, .famille-eveil { animation: carte-rare 1.4s ease-in-out infinite alternate; }
+@keyframes carte-rare { to { filter: drop-shadow(0 0 16px var(--famille)); } }
+.famille-exclusif:hover, .famille-eveil:hover { animation: none; }
+.page #cartes-relancer { width: auto; min-width: 0; padding: 0 18px; display: flex; align-items: center; gap: 8px; }
+#cartes-relancer-reste { color: #9aa0ad; font-weight: 400; }
+
+/* Résumé de la partie : pastilles (pause) et tuiles (fin) */
+.pastilles { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.pastille {
+  display: flex; align-items: center; gap: 6px; padding: 6px 12px; font-weight: 600;
+  background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 999px;
+}
+.pastille img, .tuile-libelle img { width: 20px; height: 20px; image-rendering: pixelated; }
+
+/* Pause : bandeau en travers de l'écran, un trait d'or (bordé de sombre) dessus et dessous,
+   un losange au milieu de chacun ; « Statistiques » le remplace par le bilan dans un cadre doré */
+#pause { padding: 0; background: rgba(6, 8, 14, 0.45); }
+.pause-bandeau {
+  position: relative; width: 100%; padding: 32px 16px 28px;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  background: linear-gradient(90deg, rgba(6, 8, 14, 0.3), rgba(6, 8, 14, 0.92) 25%, rgba(6, 8, 14, 0.92) 75%, rgba(6, 8, 14, 0.3));
+}
+.pause-bandeau::before, .pause-bandeau::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 9px;
+  background: linear-gradient(#1a1206 0 3px, var(--page-or) 3px 6px, #1a1206 6px 9px);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+}
+.pause-bandeau::before { top: -3px; }
+.pause-bandeau::after { bottom: -3px; }
+.pause-bandeau > .joyau { left: calc(50% - 19.5px); }
+.pause-bandeau > .joyau.h { top: -18px; }
+.pause-bandeau > .joyau.b { bottom: -18px; }
+.pause-boutons { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+.page .pause-boutons .bouton-mc { width: 160px; min-width: 0; }
+.page .pause-boutons #pause-reprendre { width: 240px; height: 52px; font-size: 20px; }
+.pause-liens { color: #6f7480; }
+.pause-stats { display: none; }
+#pause.statistiques { background: rgba(6, 8, 14, 0.74); }
+#pause.statistiques .pause-bandeau { display: none; }
+#pause.statistiques .pause-stats {
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  width: min(780px, 92vw); max-height: calc(100% - 80px); padding: 20px 24px;
+  background: rgba(10, 12, 18, 0.92);
+}
+.pause-stats .bilan { width: 100%; min-height: 0; overflow-y: auto; }
+.page #pause-retour { width: 200px; }
+
+/* Fin de partie : gros titre, tuiles, maîtrise, bilan complet dans un cadre doré (défilant) */
+#fin.page {
+  justify-content: flex-start; gap: 12px; padding: 28px 16px 24px;
+  background: linear-gradient(rgba(70, 0, 0, 0.45), rgba(10, 6, 10, 0.9));
+}
+#fin.page.victoire { background: linear-gradient(rgba(90, 70, 0, 0.42), rgba(14, 10, 4, 0.9)); }
+#fin-titre { font-size: 48px; line-height: 56px; color: #ff6a6a; text-shadow: 4px 4px 0 #3a0a0a; }
+#fin.victoire #fin-titre { color: var(--page-or-clair); text-shadow: 4px 4px 0 #3f2f05; }
+#fin-sous-titre { margin-top: -6px; color: #c8ccd6; font-size: 16px; }
+#fin-sous-titre.record { color: var(--page-or-clair); font-weight: 600; }
+#fin-tuiles { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.tuile {
+  min-width: 130px; padding: 12px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: rgba(10, 12, 18, 0.6); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px;
+}
+.tuile-valeur { font-size: 28px; line-height: 32px; font-weight: 700; }
+.tuile-libelle { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #9aa0ad; text-transform: uppercase; letter-spacing: 1px; }
+.tuile-libelle img { width: 16px; height: 16px; }
+.fin-panneau {
+  flex: 1 1 auto; min-height: 120px; width: min(800px, 92vw); margin: 14px 0 10px; padding: 16px 20px;
+  display: flex; background: rgba(10, 12, 18, 0.9);
+}
+.fin-panneau .bilan { width: 100%; min-height: 0; overflow-y: auto; }
+.fin-boutons { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+.page .fin-boutons .bouton-mc { width: 180px; min-width: 0; }
+.page .fin-boutons #fin-rejouer { width: 240px; height: 52px; font-size: 20px; }
+.page #fin-continuer { color: #e8c8ff; border-color: #a060e0; background: rgba(40, 16, 60, 0.75); }
+.page #fin-continuer:hover { color: #fff; border-color: #d68cff; background: rgba(70, 30, 100, 0.8); }
 
 /* Bilan de partie dans un panneau sombre */
 .page .bilan { color: #d8d8d8; }

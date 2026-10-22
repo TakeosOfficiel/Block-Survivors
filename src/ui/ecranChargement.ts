@@ -28,7 +28,8 @@ export class EcranChargement {
   private areneVoulue = '';
 
   constructor() {
-    this.racine.style.setProperty('--joyau', `url("${dessinerPlaque()}")`);
+    // Sur la page entière : les écrans en jeu (cartes, pause, fin) portent les mêmes losanges
+    document.documentElement.style.setProperty('--joyau', `url("${dessinerPlaque()}")`);
   }
 
   /** L'arène de la partie qui se charge : sa photo en plein écran, son nom et une astuce. */

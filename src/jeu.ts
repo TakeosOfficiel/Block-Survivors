@@ -52,8 +52,8 @@ import { Joueur } from './entites/joueur';
 import { Objets } from './entites/objets';
 import { Orbes } from './entites/orbes';
 import { ProjectilesEnnemis } from './entites/projectilesEnnemis';
-import type { SourceEntites } from './entites/types';
-import { creerEtatPartie, type EtatPartie } from './etat';
+import type { CibleJoueur, SourceEntites } from './entites/types';
+import { creerEtatPartie, minutesSansFin, type EtatPartie } from './etat';
 import { lancerPartie, retournerAuMenu, type ChoixPartie } from './lancement';
 import { construireArene } from './monde/arene';
 import { Vegetation } from './monde/vegetation';
@@ -69,8 +69,7 @@ import { apparenceJoueur, type Profil } from './profil';
 import { cumulerModificateurs } from './progression/modificateurs';
 import { Passifs } from './progression/passifs';
 import type { Recompense, Sauvegarde } from './progression/sauvegarde';
-import { formaterTemps } from './utils/format';
-import { remplirBilan } from './ui/bilan';
+import { remplirBilan, remplirPastilles } from './ui/bilan';
 import { CompteurDegats } from './ui/compteurDegats';
 import { PanneauDebug, type EtatDebug } from './ui/debug';
 import { EcranCartes } from './ui/ecranCartes';
@@ -166,6 +165,9 @@ export class Jeu implements CallbacksBoucle, Retours {
   private minuterieFin = -1;
   /** 15:00 passé mais un boss vit encore : la victoire attend sa mort. */
   private prolongation = false;
+  /** XP et boss déjà comptés par la victoire, quand la partie continue en mode sans fin. */
+  private xpComptee = 0;
+  private bossComptes = 0;
 
   constructor(
     rendu: Rendu,
@@ -214,7 +216,11 @@ export class Jeu implements CallbacksBoucle, Retours {
     const apparence = apparenceJoueur(this.etat.personnage, services.profil);
     this.joueur = new Joueur(this.etat, carte, this.entrees, this, scene, textures, apparence);
     this.etiquette = new Etiquette(scene, services.profil.pseudo);
-    this.projectilesEnnemis = new ProjectilesEnnemis(this.etat, carte, this.joueur);
+    // Coups des ennemis : de plus en plus forts en mode sans fin
+    const cible: CibleJoueur = {
+      subirDegats: (degats, boss) => this.joueur.subirDegats(degats * (1 + minutesSansFin(this.etat) * PROGRESSION.sansFin.degatsParMinute), boss),
+    };
+    this.projectilesEnnemis = new ProjectilesEnnemis(this.etat, carte, cible);
     this.orbes = new Orbes(this.etat, this, scene, textures, rendu.camera);
     this.objets = new Objets(this.etat, this.particules, this, scene, textures);
     this.coffres = new Coffres(this.etat, this.terrain, this.particules, this, scene, textures);
@@ -223,7 +229,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.ennemis = new Ennemis(
       this.etat,
       this.terrain,
-      { cible: this.joueur, tireur: this.projectilesEnnemis },
+      { cible, tireur: this.projectilesEnnemis },
       this.particules,
       butin,
       this,
@@ -333,10 +339,12 @@ export class Jeu implements CallbacksBoucle, Retours {
       peutPauser: () => !this.ecranCartes.ouvert && this.etat.issue === null,
       recommencer: () => lancerPartie(this.choix),
       menuPrincipal: () => retournerAuMenu(this.choix),
+      remplirResume: (conteneur) => remplirPastilles(conteneur, this.etat, textures),
       remplirBilan: bilan,
     }, services.panneauOptions);
     this.ecranFin = new EcranFin({
       rejouer: () => lancerPartie(this.choix),
+      continuer: () => this.continuerSansFin(),
       menuPrincipal: () => retournerAuMenu(this.choix),
       remplirBilan: bilan,
     }, textures);
@@ -565,7 +573,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     const etat = this.etat;
     if (etat.joueur.mort) {
       etat.issue = 'defaite';
-    } else if (etat.tempsJeu >= PROGRESSION.dureePartie) {
+    } else if (!etat.sansFin && etat.tempsJeu >= PROGRESSION.dureePartie) {
       // Pas de victoire tant qu'un boss est en vie : il faut le vaincre
       if (this.ennemis.bossActif()) {
         if (!this.prolongation) {
@@ -587,10 +595,25 @@ export class Jeu implements CallbacksBoucle, Retours {
         personnage: this.choix.personnage,
         arene: etat.arene.id,
         temps: etat.tempsJeu,
-        xp: etat.stats.xpTotale,
-        boss: etat.stats.bossVaincus,
+        xp: etat.stats.xpTotale - this.xpComptee,
+        boss: etat.stats.bossVaincus - this.bossComptes,
+        sansFin: etat.sansFin,
       });
+      this.xpComptee = etat.stats.xpTotale;
+      this.bossComptes = etat.stats.bossVaincus;
     }
+  }
+
+  /** Mode sans fin : la partie gagnée reprend, les ennemis se renforcent chaque minute jusqu'à la mort. */
+  private continuerSansFin(): void {
+    const etat = this.etat;
+    if (etat.issue !== 'victoire') return;
+    etat.issue = null;
+    etat.sansFin = true;
+    this.directeurBoss.reprendre();
+    this.directeurMiniBoss.reprendre();
+    this.ecranFin.masquer();
+    this.hud.alerter('Mode sans fin : tenez le plus longtemps possible !', 4);
   }
 
   /** Laisse la chute ou la victoire se jouer, puis affiche le bilan. */
@@ -601,7 +624,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     if (this.minuterieFin < CONFIG.hud.delaiFin) return;
     this.minuterieFin = -1;
     this.ecranPause.definir(false);
-    this.ecranFin.afficher(issue, this.etat.stats.xpTotale, formaterTemps(this.etat.tempsJeu), this.recompense);
+    this.ecranFin.afficher(issue, this.etat, this.recompense);
   }
 
   // --- Progression -------------------------------------------------------

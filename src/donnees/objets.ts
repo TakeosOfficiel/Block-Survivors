@@ -18,13 +18,14 @@ const definitions = {
     taille: 0.8,
     couleurSecours: 0xffd23a,
   },
-  // Monnaie de la partie : un tas de 1 à 4 émeraudes, qui ouvrent les coffres (voir coffres.ts)
+  // Monnaie de la partie : un tas de 2 à 6 émeraudes, qui ouvrent les coffres (voir coffres.ts).
+  // Environ 450 émeraudes sur une partie complète (≈ 3 300 ennemis tués)
   emeraude: {
     nom: 'Émeraude',
     icone: 'item/emerald',
     soin: 0,
-    emeraudes: [1, 4],
-    chance: 0.02,
+    emeraudes: [2, 6],
+    chance: 0.035,
     taille: 0.6,
     couleurSecours: 0x17dd62,
   },

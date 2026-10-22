@@ -151,11 +151,11 @@ rang coûte un point ; les paliers s'ouvrent après 8 puis 18 rangs achetés au-
 
 ## Émeraudes, coffres, mini-boss
 
-En partie, les ennemis lâchent parfois un **tas d'émeraudes** (2 %, de 1 à 4
+En partie, les ennemis lâchent parfois un **tas d'émeraudes** (3,5 %, de 2 à 6
 émeraudes, plus gros quand il en vaut plus), aspiré vers le joueur comme les
 orbes d'XP ; elles ne servent que pendant la partie. Un **coffre** apparaît près du joueur tous
 les tant d'ennemis tués (100, puis +150, +200…) et à la mort de chaque
-mini-boss : marcher dessus l'ouvre si l'on a assez d'émeraudes (3, puis 5, 7…
+mini-boss : marcher dessus l'ouvre si l'on a assez d'émeraudes (8, puis 13, 18…
 à chaque coffre ouvert), et l'on choisit une carte d'amélioration. Les boss
 lâchent un **coffre de l'Ender** gratuit (deux cartes). Le prix flotte
 au-dessus des coffres.

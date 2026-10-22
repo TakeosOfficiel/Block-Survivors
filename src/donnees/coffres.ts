@@ -36,7 +36,8 @@ export const REGLES_COFFRES: ReglesCoffres = {
   capacite: 8,
   // Une dizaine de coffres par partie complète (≈ 3 300 ennemis tués), plus un par mini-boss
   tues: { premier: 100, intervalle: 150, croissance: 50 },
-  prix: { base: 3, increment: 2 },
+  // 8, 13, 18… : une douzaine de coffres ouverts sur une partie complète
+  prix: { base: 8, increment: 5 },
   distance: [7, 12],
   rayonOuverture: 1.1,
   dureeOuverture: 0.5,

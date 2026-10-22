@@ -5,6 +5,12 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.39.3] — 2026-10-22
+
+### Changements
+- **Plus d'émeraudes** : les ennemis lâchent un tas plus souvent (3,5 % au lieu de 2 %) et plus gros (2 à 6 émeraudes au lieu de 1 à 4), soit environ trois fois plus sur une partie.
+- **Coffres plus chers** : 8 émeraudes le premier, puis +5 à chaque coffre ouvert (13, 18, 23…).
+
 ## [0.39.2] — 2026-10-22
 
 ### Corrections

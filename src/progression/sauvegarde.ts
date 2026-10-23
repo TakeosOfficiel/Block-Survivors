@@ -17,11 +17,9 @@ import type { IdPersonnage } from '../donnees/personnages';
 import { ARBRES, DEBLOCAGES, niveauMaitrise, PALIERS, xpPourNiveau } from '../donnees/talents';
 import type { BonusArmeTalent, DefinitionDeblocage, EffetTalent, Modificateurs, NoeudTalent } from '../donnees/types';
 import { ecrireStockage, lireStockage } from '../options';
+import { cleProfil } from '../profils';
 import { cumulerModificateurs } from './modificateurs';
 
-const CLE = 'block-survivors.progression';
-/** Records des parties à plusieurs, à part de ceux du solo. */
-export const CLE_MULTIJOUEUR = 'block-survivors.progression.multi';
 const VERSION = 3;
 
 interface Donnees {
@@ -111,8 +109,8 @@ export class Sauvegarde {
     this.cle = cle;
   }
 
-  /** `cle` : CLE_MULTIJOUEUR pour la progression du multijoueur. */
-  static charger(cle = CLE): Sauvegarde {
+  /** Progression du profil actif ; `cle` : une autre (les records à plusieurs, voir reseau/records.ts). */
+  static charger(cle = cleProfil('progression')): Sauvegarde {
     const lu = lireStockage<Partial<Donnees> & { talents?: unknown }>(cle) ?? {};
     const nombre = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, v) : 0);
     const table = (v: unknown): Record<string, number> => {

@@ -17,6 +17,7 @@ import type { IdMonde, Modificateurs, PieceArmure } from '../donnees/types';
 import type { Amelioration } from '../progression/ameliorations';
 import type { ChoixEquipement } from '../progression/equipement';
 import type { BonusTalents } from '../progression/sauvegarde';
+import { SKINS_VANILLA, type NomSkin } from '../donnees/skins';
 import type { ChoixSkin } from '../profil';
 
 /** Ce que l'hôte sait d'un joueur du salon (index 0 : l'hôte). */
@@ -26,6 +27,8 @@ export interface InfoJoueur {
   readonly personnage: IdPersonnage;
   readonly skin: ChoixSkin;
   readonly brasFins: boolean;
+  /** Sa skin importée (PNG en data URL) quand `skin` vaut « importe », sinon null. */
+  readonly skinImporte: string | null;
   /** Talents de sa classe : chacun simule les armes des autres pour leurs effets. */
   readonly bonus: BonusTalents;
   /** Armure de sa Collection : ses bonus, et les pièces portées (son apparence). */
@@ -59,7 +62,10 @@ export interface StatistiquesReseau {
 
 export type MessageFiable =
   /** Joueur → hôte, dès la connexion : qui il est et ses bonus permanents (sauvegarde multi). */
-  | { type: 'bonjour'; version: string; pseudo: string; personnage: IdPersonnage; skin: ChoixSkin; brasFins: boolean; bonus: BonusTalents; armure: ArmureJoueur }
+  | {
+    type: 'bonjour'; version: string; pseudo: string; personnage: IdPersonnage; skin: ChoixSkin; brasFins: boolean; skinImporte: string | null;
+    bonus: BonusTalents; armure: ArmureJoueur;
+  }
   | { type: 'accueil'; index: number }
   | { type: 'refus'; raison: string }
   /** Hôte → tous : composition du salon. */
@@ -297,4 +303,20 @@ export function armureValide(a: ArmureJoueur | undefined): ArmureJoueur {
   }
   const bonus = Array.isArray(a?.bonus) ? a.bonus.filter((b) => typeof b === 'object' && b !== null) : [];
   return { bonus, portees };
+}
+
+/**
+ * Taille maximale (caractères) d'une skin importée reçue : une skin 64×64 en
+ * PNG, même sans compression, tient dedans ; le salon reste léger à 4 joueurs.
+ */
+const TAILLE_MAX_SKIN = 24 * 1024;
+
+/** Skin reçue d'un joueur : une skin du jeu, celle de sa classe, ou sa skin importée (PNG raisonnable). */
+export function skinValide(skin: unknown, skinImporte: unknown): { skin: ChoixSkin; skinImporte: string | null } {
+  const importee = typeof skinImporte === 'string' && skinImporte.startsWith('data:image/png;base64,') && skinImporte.length <= TAILLE_MAX_SKIN
+    ? skinImporte
+    : null;
+  if (skin === 'importe') return importee ? { skin, skinImporte: importee } : { skin: 'classe', skinImporte: null };
+  if (skin === 'classe' || SKINS_VANILLA.includes(skin as NomSkin)) return { skin: skin as ChoixSkin, skinImporte: null };
+  return { skin: 'classe', skinImporte: null };
 }

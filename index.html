@@ -56,6 +56,7 @@
         <button id="menu-profil-bouton" class="bouton-menu">Apparence</button>
         <button id="menu-talents" class="bouton-menu">Talents</button>
         <button id="menu-collection" class="bouton-menu">Collection</button>
+        <button id="menu-profils" class="bouton-menu">Profils</button>
       </div>
     </section>
 
@@ -115,6 +116,27 @@
     <button id="collection-fermer" class="bouton-mc large page-fermer">Terminé</button>
   </div>
 
+  <!-- Profils : plusieurs joueurs sur la même installation (profils.ts) -->
+  <div id="profils" class="ecran page cache">
+    <h2 class="ecran-titre">Profils</h2>
+    <div id="profils-liste" class="profils-liste"></div>
+    <div class="panneau-mc profils-actions">
+      <div class="titre-panneau">Nouveau profil</div>
+      <div class="rangee-boutons">
+        <input id="profils-pseudo" class="champ-mc" type="text" autocomplete="off" spellcheck="false" placeholder="Pseudo" />
+        <button id="profils-creer" class="bouton-mc">Créer</button>
+      </div>
+      <div class="titre-panneau espace-avant">Transférer un profil</div>
+      <div class="rangee-boutons">
+        <button id="profils-exporter" class="bouton-mc">Exporter ce profil</button>
+        <button id="profils-importer" class="bouton-mc">Importer un profil</button>
+      </div>
+      <input id="profils-fichier" type="file" accept=".bssave" hidden />
+      <div id="profils-texte" class="ecran-aide">Un profil exporté (fichier .bssave) se reprend dans une autre version du jeu (navigateur, Windows, Linux) ou sur un autre ordinateur.</div>
+    </div>
+    <button id="profils-fermer" class="bouton-mc large page-fermer">Terminé</button>
+  </div>
+
   <!-- Nouveautés : journal des versions -->
   <div id="nouveautes" class="ecran page cache">
     <h2 class="ecran-titre">Nouveautés</h2>
@@ -152,11 +174,11 @@
       <button id="option-vue" class="bouton-mc large">Vue</button>
       <div class="options-sauvegarde espace-avant">
         <div class="rangee-boutons">
-          <button id="option-exporter" class="bouton-mc">Exporter ma sauvegarde</button>
-          <button id="option-importer" class="bouton-mc">Importer</button>
+          <button id="option-exporter" class="bouton-mc">Exporter mon profil</button>
+          <button id="option-importer" class="bouton-mc">Importer un profil</button>
         </div>
         <input id="option-fichier" type="file" accept=".bssave" hidden />
-        <div id="option-sauvegarde-texte" class="ecran-aide">Pour garder sa progression d'une version du jeu à l'autre (navigateur, Windows, Linux).</div>
+        <div id="option-sauvegarde-texte" class="ecran-aide">Pour reprendre son profil dans une autre version du jeu (navigateur, Windows, Linux) ou sur un autre ordinateur.</div>
       </div>
       <button id="options-fermer" class="bouton-mc large espace-avant page-fermer">Terminé</button>
     </div>

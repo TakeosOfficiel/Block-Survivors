@@ -1,11 +1,12 @@
 /**
- * Profil du joueur, conservé dans le navigateur : pseudo (affiché au-dessus
- * de son personnage) et apparence. L'apparence ne change que le modèle et la
+ * Profil du joueur, conservé dans le navigateur (dans le profil actif, voir
+ * profils.ts) : pseudo (affiché au-dessus de son personnage) et apparence. L'apparence ne change que le modèle et la
  * skin ; la classe choisie garde ses statistiques, ses armes et son objet en main.
  */
 import { SKINS_VANILLA, type NomSkin } from './donnees/skins';
 import type { ApparenceEntite, CheminTexture } from './donnees/types';
 import { ecrireStockage, lireStockage } from './options';
+import { cleProfil } from './profils';
 
 /** Skin de la classe, skin importée, ou une des skins par défaut du jeu. */
 export type ChoixSkin = 'classe' | 'importe' | NomSkin;
@@ -24,11 +25,9 @@ export const LONGUEUR_PSEUDO = 16;
 /** Chemin sous lequel la skin importée est enregistrée dans la bibliothèque de textures. */
 export const CHEMIN_SKIN_IMPORTE: CheminTexture = 'profil/skin';
 
-const CLE = 'block-survivors.profil';
-
 export function chargerProfil(): Profil {
   const profil: Profil = { pseudo: 'Joueur', skin: 'classe', brasFins: false, skinImporte: null };
-  const lu = lireStockage<Partial<Profil>>(CLE);
+  const lu = lireStockage<Partial<Profil>>(cleProfil('profil'));
   if (!lu) return profil;
   if (typeof lu.pseudo === 'string') profil.pseudo = nettoyerPseudo(lu.pseudo);
   if (typeof lu.brasFins === 'boolean') profil.brasFins = lu.brasFins;
@@ -41,7 +40,7 @@ export function chargerProfil(): Profil {
 }
 
 export function enregistrerProfil(profil: Profil): void {
-  ecrireStockage(CLE, profil);
+  ecrireStockage(cleProfil('profil'), profil);
 }
 
 /** Pseudo sans espaces superflus, limité à LONGUEUR_PSEUDO caractères. */

@@ -1153,3 +1153,13 @@ img { image-rendering: pixelated; }
 /* Pièce d'armure gagnée à la fin d'une partie */
 .fin-piece { display: flex; align-items: center; gap: 8px; color: var(--page-or-clair, #ffd75e); font-weight: 600; margin-top: 4px; }
 .fin-piece img { width: 28px; height: 28px; image-rendering: pixelated; }
+
+/* --- Profils ------------------------------------------------------------ */
+#profils { z-index: 14; }
+.profils-liste { width: min(640px, 94vw); max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.profils-ligne { display: flex; align-items: center; gap: 10px; }
+.profils-ligne.actif { border-color: var(--page-or); }
+.profils-infos { flex: 1; min-width: 0; }
+.profils-ligne .bouton-mc { padding: 0 14px; }
+.profils-actions { width: min(640px, 94vw); display: flex; flex-direction: column; gap: 6px; }
+.profils-actions .champ-mc { flex: 1; }

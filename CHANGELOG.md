@@ -5,6 +5,14 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.47.0] — 2026-10-23
+
+### Nouveautés
+- **Profils** (bouton « Profils » du menu) : plusieurs joueurs sur le même ordinateur, chacun avec son pseudo, son apparence, sa progression (maîtrise, talents, records, déblocages) et sa Collection. Les options restent communes. Créez un profil, jouez avec un autre, supprimez-en un (avec confirmation) ; la liste montre la maîtrise de chaque classe jouée.
+  - Votre sauvegarde actuelle devient d'elle-même le premier profil : rien n'est perdu.
+  - **Exporter ce profil** crée un fichier `.bssave` ; **Importer un profil** l'ajoute comme nouveau profil, dans une autre version du jeu ou sur un autre ordinateur. Les fichiers exportés avant les profils s'importent aussi.
+- **Multijoueur : votre skin importée** est maintenant visible chez les autres joueurs.
+
 ## [0.46.0] — 2026-10-23
 
 ### Nouveautés

@@ -30,8 +30,9 @@ import { suivreEchelleInterface } from './ui/echelle';
 import { appliquerHabillage } from './ui/habillage';
 import { enregistrerArmures, enregistrerIconesObjets } from './ui/iconesObjets';
 import { PanneauOptions } from './ui/panneauOptions';
-import { apparenceDistante } from './reseau/apparence';
+import { apparenceDistante, cheminSkinJoueur } from './reseau/apparence';
 import { EcranSalon, type LancementMultijoueur } from './reseau/ecranSalon';
+import { EcranProfils } from './ui/ecranProfils';
 
 async function demarrer(): Promise<void> {
   suivreEchelleInterface();
@@ -91,6 +92,7 @@ async function demarrer(): Promise<void> {
     if (apercu) apercu.armure = () => collection.portees();
     ecran.masquer();
     // Le salon multijoueur s'ouvre depuis le menu ; la première partie lancée (solo ou à plusieurs) l'emporte
+    new EcranProfils();
     const salon = new EcranSalon(sauvegarde, profil, collection, choix);
     const menu = new EcranMenu(textures, choix, panneauOptions, sauvegarde, new EcranProfil(textures, profil, apercu, collection), apercu, collection);
     const choixSolo = menu.attendreChoix();
@@ -131,8 +133,12 @@ async function demarrer(): Promise<void> {
     texturesRequises(choix.arene, monde, apparenceJoueur(PERSONNAGES[choix.personnage], profil)),
     (faites, total) => ecran.progression(faites, total),
   );
-  // À plusieurs : les skins des autres joueurs aussi
+  // À plusieurs : les skins des autres joueurs aussi (leurs skins importées d'abord enregistrées)
   for (const info of multijoueur?.session.joueurs ?? []) {
+    if (info.skinImporte) {
+      const image = await chargerImageSkin(info.skinImporte);
+      if (image) textures.enregistrer(cheminSkinJoueur(info.index), image);
+    }
     await textures.charger(texturesRequises(choix.arene, monde, apparenceDistante(info)));
   }
 

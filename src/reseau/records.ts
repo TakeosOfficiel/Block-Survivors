@@ -1,6 +1,7 @@
 /** Records des parties à plusieurs (temps tenu par arène, parties, boss), à part de ceux du solo. */
-import { CLE_MULTIJOUEUR, Sauvegarde, type BilanPartie } from '../progression/sauvegarde';
+import { Sauvegarde, type BilanPartie } from '../progression/sauvegarde';
+import { cleProfil } from '../profils';
 
 export function enregistrerRecordsEquipe(bilan: BilanPartie): void {
-  Sauvegarde.charger(CLE_MULTIJOUEUR).terminerPartie({ ...bilan, xp: 0, enEquipe: false });
+  Sauvegarde.charger(cleProfil('progression.multi')).terminerPartie({ ...bilan, xp: 0, enEquipe: false });
 }

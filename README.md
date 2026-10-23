@@ -26,8 +26,9 @@ La fenêtre s'ouvre agrandie, l'interface s'adapte à sa taille (sans
 défilement) et `F11` bascule en plein écran.
 
 Chaque version (navigateur, Windows, Linux) garde sa progression de son côté.
-Pour la reprendre ailleurs : Options → « Exporter ma sauvegarde » (fichier
-`.bssave` chiffré), puis Options → « Importer » dans l'autre version.
+Pour reprendre un profil ailleurs : Profils → « Exporter ce profil » (fichier
+`.bssave` chiffré), puis Profils → « Importer un profil » dans l'autre version
+(ou sur un autre ordinateur).
 
 ## Lancer depuis le code
 
@@ -90,6 +91,7 @@ src/
                         objets de soin, butin, directeurs d'apparition (hordes et boss)
   combat/               armes du joueur : arsenal et une classe par mécanique
   reseau/               multijoueur (prototype) : transport WebRTC, protocole, salon, hôte, joueurs
+  profils.ts            profils (plusieurs joueurs sur la même installation) : clés de chaque profil, migration
   progression/          niveaux, bonus passifs, modificateurs, cartes d'amélioration, sauvegarde (maîtrise, talents)
   modeles/              modèles cubiques : compilation, animation, rendu instancié
   effets/               ombres, particules vanilla (sprites face caméra), rendu des projectiles (instanciés), retours (sons, secousses)
@@ -154,6 +156,18 @@ et dorés ; désactivable dans les options). Les armes peuvent porter des **coup
 dégâts ×1,5, étincelles du jeu) ; le bonus *Silex taillé* et certains talents
 les rendent plus fréquents ou plus forts.
 
+## Profils
+
+Plusieurs joueurs sur la même installation (ou plusieurs départs) : menu →
+**Profils**. Chaque profil a son pseudo, son apparence (skin importée comprise),
+sa progression (maîtrise, talents, records, déblocages), sa Collection et ses
+records à plusieurs ; les options restent communes. Changer de profil recharge
+le jeu. Un profil s'exporte en fichier `.bssave` et s'importe ailleurs comme un
+nouveau profil (les fichiers d'avant les profils s'importent aussi). La
+sauvegarde d'avant les profils devient d'elle-même le premier profil.
+
+Test automatique : `npm run dev`, puis `node scripts/test-profils.mjs`.
+
 ## Multijoueur (2 à 4 joueurs)
 
 Menu → **Multijoueur**. Sans serveur : un joueur **héberge** (il simule toute
@@ -163,7 +177,7 @@ lui renvoie un code de réponse (WebRTC, serveurs STUN publics seulement). Ça
 passe derrière la plupart des box ; deux NAT stricts (4G, réseau d'entreprise)
 ne se joignent pas : réseau local, Tailscale ou ZeroTier dans ce cas.
 
-Chacun joue avec sa classe, son pseudo, son skin et la progression de sa classe
+Chacun joue avec sa classe et son profil (pseudo, skin, skin importée comprise) et la progression de sa classe
 (maîtrise et talents, comme en solo) : l'XP de la partie fait monter sa
 maîtrise, mais les records d'une partie à plusieurs (et les déblocages qui en
 dépendent) restent à part de ceux du solo. XP et niveau

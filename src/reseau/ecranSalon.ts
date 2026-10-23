@@ -159,7 +159,7 @@ export class EcranSalon {
   private profilReseau(): ProfilReseau {
     const p = this.profil;
     return {
-      pseudo: p.pseudo, personnage: this.personnage, skin: p.skin === 'importe' ? 'classe' : p.skin, brasFins: p.brasFins,
+      pseudo: p.pseudo, personnage: this.personnage, skin: p.skin, brasFins: p.brasFins, skinImporte: p.skin === 'importe' ? p.skinImporte : null,
       bonus: this.solo.bonus(this.personnage),
       armure: { bonus: this.collection.bonus(), portees: this.collection.portees() },
     };

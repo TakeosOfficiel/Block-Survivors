@@ -9,18 +9,17 @@ import { ARENE_PAR_DEFAUT, ARENES } from './donnees/arenes';
 import { IDS_PERSONNAGES, PERSONNAGE_PAR_DEFAUT, type IdPersonnage } from './donnees/personnages';
 import type { DefinitionArene } from './donnees/types';
 import { ecrireStockage, lireStockage } from './options';
+import { cleProfil } from './profils';
 
 export interface ChoixPartie {
   readonly personnage: IdPersonnage;
   readonly arene: DefinitionArene;
 }
 
-const CLE = 'block-survivors.choix';
-
 /** Choix demandé dans l'adresse, sinon le dernier joué, sinon celui par défaut. */
 export function choixDemande(): ChoixPartie {
   const adresse = new URLSearchParams(window.location.search);
-  const memorise = lireStockage<{ personnage?: string; arene?: string }>(CLE);
+  const memorise = lireStockage<{ personnage?: string; arene?: string }>(cleProfil('choix'));
   const idPersonnage = adresse.get('personnage') ?? memorise?.personnage;
   const idArene = adresse.get('arene') ?? memorise?.arene ?? ARENE_PAR_DEFAUT;
   return {
@@ -36,7 +35,7 @@ export function partieDemandee(): boolean {
 
 /** Retient le choix pour le prochain passage au menu. */
 export function memoriserChoix(choix: ChoixPartie): void {
-  ecrireStockage(CLE, { personnage: choix.personnage, arene: choix.arene.id });
+  ecrireStockage(cleProfil('choix'), { personnage: choix.personnage, arene: choix.arene.id });
 }
 
 /** Relance une partie avec ce choix (Rejouer, Recommencer, debug). */

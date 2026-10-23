@@ -9,8 +9,8 @@ import { ARMURES, BUTIN_BOSS, MONDES, PIECES_ARMURE } from '../donnees/armures';
 import { IDS_OBJETS_EQUIPEMENT, OBJETS_EQUIPEMENT, type IdObjetEquipement } from '../donnees/equipement';
 import type { IdMonde, Modificateurs, PieceArmure } from '../donnees/types';
 import { ecrireStockage, lireStockage } from '../options';
+import { cleProfil } from '../profils';
 
-const CLE = 'block-survivors.collection';
 const VERSION = 1;
 
 interface Donnees {
@@ -41,7 +41,7 @@ export class Collection {
 
   /** Lecture tolérante : ce qui est illisible est ignoré, rien n'efface le reste. */
   static charger(): Collection {
-    const lu = lireStockage<Partial<Donnees>>(CLE) ?? {};
+    const lu = lireStockage<Partial<Donnees>>(cleProfil('collection')) ?? {};
     const textes = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
     const portees: Partial<Record<PieceArmure, IdMonde>> = {};
     if (lu.portees && typeof lu.portees === 'object') {
@@ -170,6 +170,6 @@ export class Collection {
   }
 
   private enregistrer(): void {
-    ecrireStockage(CLE, this.donnees);
+    ecrireStockage(cleProfil('collection'), this.donnees);
   }
 }

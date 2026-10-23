@@ -2,10 +2,11 @@
  * Écran des options (depuis le menu ou la pause) : volume général et volume
  * de chaque famille de sons, compteur de FPS,
  * secousses de l'écran, ombres et vent, chiffres des dégâts. Chaque changement est appliqué et enregistré aussitôt.
- * En bas, exporter ou importer la sauvegarde (progression/transfert.ts).
+ * En bas, exporter le profil actif ou en importer un (progression/transfert.ts).
  */
 import type { CategorieSon } from '../donnees/types';
-import { exporterSauvegarde, importerSauvegarde } from '../progression/transfert';
+import { exporterProfil, importerProfil } from '../progression/transfert';
+import { relancerSurLeMenu } from '../profils';
 import { CATEGORIES_SONS, enregistrerOptions, MODES_VUE, NIVEAUX_SHADERS, type ModeVue, type NiveauShaders, type Options } from '../options';
 
 const LIBELLES_CATEGORIES: Readonly<Record<CategorieSon, string>> = {
@@ -102,27 +103,26 @@ export class PanneauOptions {
     this.appliquer(this.options);
   }
 
-  /** Exporter : fichier chiffré (.bssave). Importer : choix du fichier, confirmation, puis le jeu redémarre sur le menu. */
+  /** Exporter : le profil actif en fichier chiffré (.bssave). Importer : un nouveau profil, puis le jeu redémarre dessus. */
   private brancherSauvegarde(): void {
     const fichier = element<HTMLInputElement>('option-fichier');
     const texte = element('option-sauvegarde-texte');
     element<HTMLButtonElement>('option-exporter').addEventListener('click', async () => {
-      await exporterSauvegarde();
-      texte.textContent = 'Sauvegarde exportée : ouvrez Options → « Importer » dans l\'autre version du jeu.';
+      await exporterProfil();
+      texte.textContent = 'Profil exporté : dans l\'autre version du jeu, « Importer un profil ».';
     });
     element<HTMLButtonElement>('option-importer').addEventListener('click', () => fichier.click());
     fichier.addEventListener('change', async () => {
       const choisi = fichier.files?.[0];
       fichier.value = '';
       if (!choisi) return;
-      if (!window.confirm('Remplacer la progression de ce jeu par celle du fichier ? Le jeu va redémarrer (une partie en cours sera perdue).')) return;
-      const erreur = await importerSauvegarde(choisi);
+      if (!window.confirm('Ajouter le profil de ce fichier et jouer avec ? Le jeu va redémarrer (une partie en cours sera perdue).')) return;
+      const erreur = await importerProfil(choisi);
       if (erreur) {
         texte.textContent = erreur;
         return;
       }
-      // Tout est relu au démarrage ; sans « ?jouer=1 », on revient au menu
-      window.location.replace(window.location.href.split('?')[0]);
+      relancerSurLeMenu();
     });
   }
 

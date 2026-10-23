@@ -9,12 +9,55 @@
  *
  * Variables : JOUEURS (2 à 4), URL, L et H (taille des fenêtres), VITESSE (temps
  * accéléré chez l'hôte), INVINCIBLES=1, DUREE (ms), DOSSIER (captures),
- * COFFRE=1, MINUTEUR=1, SANS_FIN=1, REANIMATION=1 (vérifications en plus),
+ * COFFRE=1, MINUTEUR=1, SANS_FIN=1, REANIMATION=1, SKIN=1 (vérifications en plus),
  * PLAYWRIGHT (chemin du module playwright s'il n'est pas installé dans le projet).
  */
 const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
 
 const URL = process.env.URL ?? 'http://localhost:5173/';
+const { deflateSync } = await import('node:zlib');
+
+/** Skin 64×64 de test (PNG en data URL) : damier rouge et jaune. */
+function skinDeTest() {
+  const ligne = 1 + 64 * 4;
+  const brut = Buffer.alloc(ligne * 64);
+  for (let y = 0; y < 64; y++) {
+    for (let x = 0; x < 64; x++) {
+      const o = y * ligne + 1 + x * 4;
+      const jaune = ((x >> 3) + (y >> 3)) % 2 === 0;
+      brut[o] = 255;
+      brut[o + 1] = jaune ? 220 : 30;
+      brut[o + 2] = 30;
+      brut[o + 3] = 255;
+    }
+  }
+  const crc = (octets) => {
+    let c = ~0;
+    for (const b of octets) {
+      c ^= b;
+      for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (0xedb88320 & -(c & 1));
+    }
+    return ~c >>> 0;
+  };
+  const morceau = (type, donnees) => {
+    const longueur = Buffer.alloc(4);
+    longueur.writeUInt32BE(donnees.length);
+    const corps = Buffer.concat([Buffer.from(type), donnees]);
+    const somme = Buffer.alloc(4);
+    somme.writeUInt32BE(crc(corps));
+    return Buffer.concat([longueur, corps, somme]);
+  };
+  const entete = Buffer.alloc(13);
+  entete.writeUInt32BE(64, 0);
+  entete.writeUInt32BE(64, 4);
+  entete[8] = 8;
+  entete[9] = 6;
+  const png = Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    morceau('IHDR', entete), morceau('IDAT', deflateSync(brut)), morceau('IEND', Buffer.alloc(0)),
+  ]);
+  return `data:image/png;base64,${png.toString('base64')}`;
+}
 const N = Number(process.env.JOUEURS ?? 2);
 const DOSSIER = process.env.DOSSIER ?? '.';
 const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -37,6 +80,14 @@ for (let i = 0; i < N; i++) {
     }, 700);
     window.imagesParSeconde = () => new Promise((r) => { const d = images; setTimeout(() => r(images - d), 1000); });
   });
+  // SKIN=1 : le joueur 1 joue avec une skin importée
+  if (process.env.SKIN && i === 1) {
+    await contexte.addInitScript((skin) => {
+      if (localStorage.getItem('block-survivors.profils')) return;
+      localStorage.setItem('block-survivors.profils', JSON.stringify({ version: 1, actif: '1', ids: ['1'] }));
+      localStorage.setItem('block-survivors.p.1.profil', JSON.stringify({ pseudo: 'Importé', skin: 'importe', brasFins: false, skinImporte: skin }));
+    }, skinDeTest());
+  }
   const page = await contexte.newPage();
   page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') console.log(`[${i}] ${m.type()}: ${m.text().slice(0, 300)}`); });
   page.on('pageerror', (e) => console.log(`[${i}] ERREUR: ${e.message}\n${e.stack}`));
@@ -132,6 +183,14 @@ for (const [k, invite] of invites.entries()) {
 }
 for (let i = 0; i < N; i++) await pages[i].screenshot({ path: `${DOSSIER}/joueur${i}.png` });
 
+if (process.env.SKIN) {
+  const skin = await hote.evaluate(() => {
+    const c = window.blockSurvivors.jeu.reseau.combattants[0];
+    return { pseudo: c.info.pseudo, skin: c.info.skin, taille: c.info.skinImporte?.length ?? 0, texture: window.blockSurvivors.jeu.textures.obtenir('profil/skin-1') !== null };
+  });
+  console.log('SKIN : joueur 1 vu par l\'hôte', JSON.stringify(skin));
+}
+
 // Coffre ouvert chez l'hôte : le joueur 1 reçoit aussi ses cartes (choisies d'office par le test)
 if (process.env.COFFRE) {
   await hote.evaluate(() => {
@@ -186,8 +245,9 @@ if (process.env.SANS_FIN) {
   // La maîtrise monte, les records du solo ne bougent pas, ceux à plusieurs sont à part
   const sauvegardes = await invites[0].evaluate(() => {
     const lire = (cle) => JSON.parse(localStorage.getItem(cle) ?? '{}');
-    const solo = lire('block-survivors.progression');
-    const equipe = lire('block-survivors.progression.multi');
+    const actif = lire('block-survivors.profils').actif;
+    const solo = lire(`block-survivors.p.${actif}.progression`);
+    const equipe = lire(`block-survivors.p.${actif}.progression.multi`);
     return { maitriseSolo: solo.maitrise, recordsSolo: solo.records, recordsEquipe: equipe.records };
   });
   console.log('SAUVEGARDES du joueur 1 :', JSON.stringify(sauvegardes));
@@ -209,7 +269,7 @@ if (process.env.REANIMATION) {
     j.mort = true;
     j.tempsMort = 0;
   });
-  await attendre(1500);
+  await invites[0].waitForFunction(() => window.blockSurvivors.jeu.etat.joueur.mort, null, { timeout: 15000 }).catch(() => {});
   const pendant = await invites[0].evaluate(() => ({ mort: window.blockSurvivors.jeu.etat.joueur.mort, bandeau: document.querySelector('.reseau-alerte:not(.cache)')?.textContent ?? '' }));
   console.log('RÉANIMATION pendant', JSON.stringify(pendant));
   await hote.waitForFunction(() => !window.blockSurvivors.jeu.reseau.combattants[0].etatJoueur.mort, null, { timeout: 120000 });

@@ -2,17 +2,26 @@
 import { REGLES_MULTIJOUEUR } from '../donnees/multijoueur';
 import { PERSONNAGES } from '../donnees/personnages';
 import type { EtatJoueur } from '../etat';
-import type { ApparenceEntite, DefinitionArene } from '../donnees/types';
+import type { ApparenceEntite, CheminTexture, DefinitionArene } from '../donnees/types';
 import { apparenceJoueur } from '../profil';
 import type { InfoJoueur } from './protocole';
 
 /** Écart (blocs) entre les joueurs au départ. */
 const ECART_DEPART = 1.6;
 
-/** Skin choisie par le joueur (une skin importée n'est pas transmise : celle de la classe la remplace). */
+/** Texture de la skin importée d'un joueur de la partie (enregistrée au chargement, voir main.ts). */
+export function cheminSkinJoueur(index: number): CheminTexture {
+  return `profil/skin-${index}`;
+}
+
+/** Skin choisie par le joueur, sa skin importée comprise. */
 export function apparenceDistante(info: InfoJoueur): ApparenceEntite {
+  const classe = PERSONNAGES[info.personnage];
+  if (info.skin === 'importe' && info.skinImporte) {
+    return { ...classe, modele: info.brasFins ? 'humanoide_fin' : 'humanoide', skin: cheminSkinJoueur(info.index) };
+  }
   const skin = info.skin === 'importe' ? 'classe' : info.skin;
-  return apparenceJoueur(PERSONNAGES[info.personnage], { pseudo: info.pseudo, skin, brasFins: info.brasFins, skinImporte: null });
+  return apparenceJoueur(classe, { pseudo: info.pseudo, skin, brasFins: info.brasFins, skinImporte: null });
 }
 
 /** Place de départ du joueur `index` : autour du départ de l'arène, l'hôte au centre. */

@@ -28,6 +28,8 @@ import { element } from './dom';
 import { EcranNouveautes } from './ecranNouveautes';
 import type { EcranProfil } from './ecranProfil';
 import { EcranTalents } from './ecranTalents';
+import { EcranCollection } from './ecranCollection';
+import type { Collection } from '../progression/collection';
 import { bandeauMaitrise } from './maitrise';
 import type { PanneauOptions } from './panneauOptions';
 
@@ -54,6 +56,7 @@ export class EcranMenu {
   private readonly textures: BibliothequeTextures;
   private readonly options: PanneauOptions;
   private readonly sauvegarde: Sauvegarde;
+  private readonly collection: EcranCollection;
   private readonly talents: EcranTalents;
   private readonly nouveautes = new EcranNouveautes();
   private readonly profil: EcranProfil;
@@ -69,11 +72,13 @@ export class EcranMenu {
     sauvegarde: Sauvegarde,
     profil: EcranProfil,
     apercu: ApercuHeros | null,
+    collection: Collection,
   ) {
     this.textures = textures;
     this.options = options;
     this.sauvegarde = sauvegarde;
     this.talents = new EcranTalents(textures, sauvegarde);
+    this.collection = new EcranCollection(textures, collection);
     this.profil = profil;
     this.apercu = apercu;
     this.personnage = choix.personnage;
@@ -125,6 +130,9 @@ export class EcranMenu {
     element<HTMLButtonElement>('menu-nouveautes').addEventListener('click', () => this.nouveautes.ouvrir());
     element<HTMLButtonElement>('menu-talents').addEventListener('click', () => {
       this.talents.ouvrir(this.personnage, () => this.rafraichir());
+    });
+    element<HTMLButtonElement>('menu-collection').addEventListener('click', () => {
+      this.collection.ouvrir(this.arene.monde, () => this.rafraichir());
     });
     element<HTMLButtonElement>('menu-profil-bouton').addEventListener('click', () => {
       this.profil.ouvrir(PERSONNAGES[this.personnage], () => this.rafraichir());

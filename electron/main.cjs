@@ -5,18 +5,20 @@
  *
  * Mise à jour façon Discord (application installée) : au lancement, une
  * petite fenêtre (lanceur.html) cherche une nouvelle version dans les releases
- * du dépôt public. Le plus souvent, seule la page du jeu a changé : elle est
- * téléchargée (quelques Mo) et le jeu s'ouvre aussitôt dessus (pageJeu.cjs).
- * Si Electron lui-même a changé, l'installateur complet est téléchargé,
- * installé sans rien demander, puis le jeu repart à jour. Sans nouvelle
- * version (ou hors ligne), le jeu s'ouvre aussitôt. Pendant la partie, une
- * version sortie entre-temps se télécharge en arrière-plan et sert au prochain
- * lancement (la page la signale discrètement).
+ * du dépôt public ; l'installateur est téléchargé, installé sans rien
+ * demander, puis le jeu repart à jour. Sans nouvelle version (ou hors ligne),
+ * le jeu s'ouvre aussitôt. Pendant la partie, une version sortie entre-temps
+ * se télécharge en arrière-plan et s'installe à la fermeture (la page la
+ * signale discrètement). La page du jeu n'est jamais publiée ni téléchargée
+ * seule : le jeu ouvre toujours celle de son installation (contre la triche).
  */
 const { app, BrowserWindow, Menu, ipcMain, shell } = require('electron');
+const fs = require('node:fs');
 const path = require('node:path');
 const { autoUpdater } = require('electron-updater');
-const pageJeu = require('./pageJeu.cjs');
+
+/** Page du jeu livrée avec l'installation. */
+const PAGE_JEU = path.join(__dirname, '..', 'dist', 'index.html');
 
 const VERIFICATION_MISES_A_JOUR = 30 * 60 * 1000;
 /** Sans réponse au bout de ce délai, le jeu s'ouvre sans attendre la recherche. */
@@ -25,8 +27,6 @@ const DELAI_RECHERCHE = 8000;
 const DELAI_PASSER = 15000;
 /** Version téléchargée et prête à installer (envoyée aussi aux fenêtres ouvertes après). */
 let versionPrete = null;
-/** La version prête n'est qu'une nouvelle page du jeu : il suffit de la recharger. */
-let pagePrete = false;
 let recherche = false;
 /** Fenêtre de lancement (null une fois le jeu ouvert). */
 let lanceur = null;
@@ -68,7 +68,7 @@ function creerFenetre() {
 
   const urlDev = process.env.BLOCK_SURVIVORS_URL;
   if (urlDev) fenetre.loadURL(urlDev);
-  else fenetre.loadFile(pageJeu.cheminPage());
+  else fenetre.loadFile(PAGE_JEU);
 
   // F11 : plein écran
   fenetre.webContents.on('before-input-event', (evenement, entree) => {
@@ -151,7 +151,6 @@ function brancherMisesAJour() {
       return;
     }
     // En pleine partie : rien n'interrompt le jeu, elle s'installera à la fermeture
-    pagePrete = false;
     annoncerVersionPrete();
   });
   // Hors ligne, release incomplète… : on joue quand même
@@ -164,9 +163,8 @@ function annoncerVersionPrete() {
 }
 
 /**
- * Cherche une nouvelle version : la page du jeu seule si elle suffit, sinon
- * l'installateur complet (electron-updater). Au lancement, le jeu s'ouvre
- * ensuite sur la version la plus récente ; en pleine partie, rien ne
+ * Cherche une nouvelle version (electron-updater) : au lancement, le jeu
+ * s'ouvre ensuite sur la version la plus récente ; en pleine partie, rien ne
  * l'interrompt.
  */
 async function chercherMiseAJour() {
@@ -174,59 +172,24 @@ async function chercherMiseAJour() {
   recherche = true;
   if (!jeuLance) etatLanceur('Recherche de mises à jour…');
   try {
-    let publiee;
-    try {
-      publiee = await pageJeu.chercher(DELAI_RECHERCHE);
-    } catch {
-      publiee = { legere: false };  // jeu.json introuvable : electron-updater décide
-    }
-    if (!publiee) {
-      lancerJeu();
-      return;
-    }
-    if (!publiee.legere) {
-      await autoUpdater.checkForUpdates().catch(() => lancerJeu());
-      return;
-    }
-    if (pagePrete && versionPrete === publiee.version) return;
-    if (!jeuLance) {
-      telechargement = true;
-      etatLanceur(`Téléchargement de la version ${publiee.version}…`, 0);
-      setTimeout(() => lanceur?.webContents.send('lanceur-passable'), DELAI_PASSER);
-    }
-    try {
-      await pageJeu.telecharger(publiee, (part) => {
-        if (!jeuLance) etatLanceur(`Téléchargement de la mise à jour… ${Math.max(0, Math.floor(part * 100))} %`, part);
-      });
-    } catch {
-      lancerJeu();
-      return;
-    }
-    if (!jeuLance) {
-      lancerJeu();  // s'ouvre directement sur la nouvelle page
-      return;
-    }
-    versionPrete = publiee.version;
-    pagePrete = true;
-    annoncerVersionPrete();
+    await autoUpdater.checkForUpdates();
+  } catch {
+    lancerJeu();
   } finally {
     recherche = false;
   }
+}
+
+/** Pages du jeu téléchargées seules par les anciennes versions : plus jamais ouvertes, effacées. */
+function effacerAnciennesPages() {
+  fs.rm(path.join(app.getPath('userData'), 'jeu'), { recursive: true, force: true }, () => {});
 }
 
 Menu.setApplicationMenu(null);
 ipcMain.on('quitter', () => app.quit());
 // Redémarre sur la nouvelle version, sans demander (installateur silencieux)
 ipcMain.on('installer-mise-a-jour', () => {
-  if (!versionPrete) return;
-  if (!pagePrete) {
-    autoUpdater.quitAndInstall(true, true);
-    return;
-  }
-  // Nouvelle page du jeu : rechargée sur place, sans réinstaller
-  versionPrete = null;
-  pagePrete = false;
-  for (const fenetre of BrowserWindow.getAllWindows()) fenetre.loadFile(pageJeu.cheminPage());
+  if (versionPrete) autoUpdater.quitAndInstall(true, true);
 });
 // Le téléchargement traîne : le joueur lance le jeu, la mise à jour finira en arrière-plan
 ipcMain.on('lanceur-passer', () => lancerJeu());
@@ -235,6 +198,7 @@ app.whenReady().then(() => {
     creerFenetre();
     return;
   }
+  effacerAnciennesPages();
   brancherMisesAJour();
   creerLanceur();
   void chercherMiseAJour();

@@ -55,6 +55,7 @@
       <div class="menu-heros-boutons">
         <button id="menu-profil-bouton" class="bouton-menu">Apparence</button>
         <button id="menu-talents" class="bouton-menu">Talents</button>
+        <button id="menu-collection" class="bouton-menu">Collection</button>
       </div>
     </section>
 
@@ -90,6 +91,9 @@
         </div>
         <div id="profil-erreur" class="profil-erreur"></div>
         <input id="profil-fichier" type="file" accept="image/png" class="cache" />
+        <div class="titre-panneau espace-avant">Armure</div>
+        <div id="profil-armure" class="profil-armure"></div>
+        <div id="profil-ensemble" class="option-description"></div>
       </div>
       <div class="panneau-mc profil-scene">
         <div id="profil-nom" class="menu-grand-nom titre-centre"></div>
@@ -100,6 +104,15 @@
     </div>
     <div class="ecran-aide">La skin ne change que l'apparence : la classe garde ses armes et ses statistiques</div>
     <button id="profil-fermer" class="bouton-mc large page-fermer">Terminé</button>
+  </div>
+
+  <!-- Collection : armures de monde et objets trouvés -->
+  <div id="collection" class="ecran page cache">
+    <h2 class="ecran-titre">Collection</h2>
+    <div id="collection-onglets" class="talents-onglets"></div>
+    <div id="collection-contenu" class="collection-contenu"></div>
+    <div class="ecran-aide">Les boss lâchent parfois des pièces d'armure de leur monde (jamais en double) · les bagues et amulettes se trouvent dans les coffres</div>
+    <button id="collection-fermer" class="bouton-mc large page-fermer">Terminé</button>
   </div>
 
   <!-- Nouveautés : journal des versions -->
@@ -181,6 +194,7 @@
     <img id="hud-totem-anim" class="cache" alt="" />
     <div id="hud-xp"><div id="hud-xp-remplissage"></div><span id="hud-niveau">1</span></div>
     <div id="hud-capacites">
+      <div id="hud-equipement"></div>
       <div id="hud-passifs"></div>
       <div id="hud-armes"></div>
     </div>
@@ -250,6 +264,7 @@
     <div class="ligne icones">Armes <span id="dbg-armes"></span></div>
     <div class="ligne icones">Bonus <span id="dbg-bonus"></span></div>
     <div class="ligne icones">Objets <span id="dbg-objets"></span></div>
+    <div class="ligne icones">Équipement <span id="dbg-equipement"></span> Armures <span id="dbg-armures"></span></div>
     <div class="ligne">États (ennemis proches) <span id="dbg-etats"></span></div>
     <div class="ligne icones">Perso <span id="dbg-personnages"></span> Arène <span id="dbg-arenes"></span></div>
   </div>

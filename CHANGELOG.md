@@ -5,6 +5,46 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.46.0] — 2026-10-23
+
+### Nouveautés
+- **Multijoueur, de 2 à 4 joueurs**, sans serveur : un joueur **héberge** la partie, les autres la **rejoignent** (bouton « Multijoueur » du menu). La mise en relation passe par deux codes à copier-coller (Discord, SMS…) : l'hôte envoie un code d'invitation, le joueur lui renvoie un code de réponse. Ça passe derrière la plupart des box ; sinon, essayez en réseau local, ou avec Tailscale ou ZeroTier. Navigateur, Windows et Linux jouent ensemble, avec la même version du jeu.
+  - Chacun joue sa **classe**, avec son pseudo, son skin, son armure de la Collection, sa maîtrise et ses talents. L'XP de la partie fait monter sa maîtrise ; les records d'une partie à plusieurs restent à part de ceux du solo.
+  - **XP et niveau communs**. À chaque niveau, et à chaque coffre ouvert par n'importe qui, **chacun choisit ses cartes sans attendre les autres** : celui qui choisit reste sur place, protégé par un bouclier, et les ennemis l'ignorent. 20 s pour choisir, ensuite une carte est prise au hasard.
+  - Chacun a son équipement (bagues, amulettes) et tire son propre butin d'armure sur les boss.
+  - Un joueur tombé reste **à terre 30 s** : un allié qui reste 3 s près de lui le relève. La partie est perdue quand toute l'équipe est tombée.
+  - Les ennemis visent le joueur le plus proche ; ils sont plus nombreux et plus robustes à plusieurs, les boss surtout.
+  - Chacun voit les effets des armes de tous (option « Effets des autres joueurs » pour les couper) et son compteur de dégâts. « Continuer sans fin » après la victoire reprend la partie pour tout le monde.
+
+### Changements
+- Mises à jour du jeu installé : toujours par l'installateur complet. La page du jeu n'est plus publiée ni téléchargée seule (elle était facile à modifier pour tricher) ; l'ancienne page téléchargée est effacée.
+
+## [0.45.1] — 2026-10-23
+
+### Changements
+- **Pièces d'armure plus rares** : un boss lâche une pièce 1 fois sur 4 environ (1er boss 25 %, 2e boss 30 %, boss du mode sans fin 35 %), et rarement une 2e (8 à 12 %). Compléter une armure demande maintenant de nombreuses parties.
+
+## [0.45.0] — 2026-10-23
+
+### Changements
+- **Les pièces d'armure tombent sur les boss** (et plus à la victoire) : chaque boss a des chances de lâcher une pièce de l'armure de son monde, parfois deux. Le 1er boss donne surtout le bas de l'armure (bottes, jambières, casque), le 2e surtout le plastron et les pièces rares, et les suivants (mode sans fin) un peu de tout, plus souvent. **Jamais de doublon** : une pièce déjà gagnée ne retombe plus. Le butin est annoncé tout de suite et gardé même si vous quittez la partie, puis rappelé sur l'écran de fin.
+- **Armures de 7 pièces** : en plus du casque, du plastron, des jambières et des bottes, chaque monde a son **bouclier** (sur le bras du héros), sa **cape** (dans le dos) et son **talisman** (un bonus, invisible), aux couleurs du monde. Le bonus d'ensemble demande les 7 pièces.
+- La Collection et l'Apparence indiquent quel boss lâche le plus souvent chaque pièce manquante.
+
+## [0.44.0] — 2026-10-23
+
+### Nouveautés
+- **Les coffres donnent de l'équipement** : des bagues et des amulettes, au lieu des cartes de montée de niveau (celles-ci ne changent pas). Vous portez **2 bagues et 1 amulette**, visibles en bas à gauche au-dessus des bonus.
+  - **4 raretés** : Commune, Rare, Épique, Légendaire, à leur couleur sur les cartes. Plus les coffres en bois sont chers, meilleures sont leurs chances ; le coffre de l'Ender du boss propose des objets rares au moins, dont la légendaire du monde.
+  - Emplacements pleins : choisissez l'objet à remplacer, ou revenez en arrière (« Garder mes objets »). Un objet que vous portez déjà peut être **renforcé** (niveaux 2 et 3).
+  - Chaque monde a ses objets, en plus de ceux de tous les mondes. Légendaires : **Amulette du héros du village** (Prairie, +1 totem), **Cœur du filon** (Mine, éclats de diamant qui explosent), **Cœur de magma** (Zone volcanique, nova de feu sur un gros coup), **Couronne du champignon géant** (Jardin des champignons, explosion de spores toutes les 25 s).
+  - Bagues et amulettes ont leurs propres icônes en pixel art. L'équipement apparaît dans les statistiques de la pause et de la fin.
+- **Collection** (nouveau bouton du menu) : une **armure par monde** (Villageois, Mineur, Seigneur du Nether, Mycélien), gardée d'une partie à l'autre.
+  - **Une pièce par partie gagnée** dans son monde, annoncée à la victoire : 4 victoires pour l'ensemble.
+  - Portez-les dans **Apparence**, même mélangées : votre héros les porte vraiment, dans le menu et en jeu. Chaque pièce donne un petit bonus, les 4 du même monde un bonus d'ensemble (ex. Nether : insensible au magma).
+  - La page Collection montre, monde par monde, les pièces gagnées et les objets déjà trouvés, avec la progression.
+- Nouveaux effets : dégâts contre les morts-vivants, les arthropodes et les créatures du Nether, dégâts reçus réduits, coups qui enflamment, émeraudes en plus.
+
 ## [0.43.1] — 2026-10-22
 
 ### Nouveautés

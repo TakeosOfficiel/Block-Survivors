@@ -3,6 +3,7 @@
  * passifs possédés, barre du boss, alertes, voile de blessure, FPS et
  * messages centraux.
  */
+import type { Equipement } from '../progression/equipement';
 import type { BibliothequeTextures } from '../assets/textures';
 import type { Arsenal } from '../combat/arsenal';
 import { CONFIG } from '../config';
@@ -25,6 +26,7 @@ export interface SourcesHud {
   readonly etat: EtatPartie;
   readonly arsenal: Arsenal;
   readonly passifs: Passifs;
+  readonly equipement: Equipement;
   readonly ennemis: Ennemis;
   /** Secondes avant le prochain boss (−1 = plus aucun avant la fin). */
   tempsAvantBoss(): number;
@@ -113,7 +115,7 @@ export class Hud implements AfficheurAlerte {
     this.mesurerFps(dtBrut);
     this.coeurs.afficher(j.pv, j.pvMax, j.bouclier, dtReel);
     this.xp.afficher(j);
-    this.capacites.afficher(arsenal, passifs);
+    this.capacites.afficher(arsenal, passifs, this.sources.equipement);
     this.boss.afficher(ennemis.bossActif());
     this.afficherChrono(etat.tempsJeu);
     this.afficherProchainBoss();

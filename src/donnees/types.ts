@@ -244,8 +244,12 @@ export interface ComportementExplosif {
 
 export type ComportementEnnemi = ComportementMelee | ComportementArcher | ComportementExplosif;
 
+/** Famille d'un ennemi, que visent certains objets (Bague du chasseur…). */
+export type FamilleEnnemi = 'mort_vivant' | 'arthropode' | 'nether';
+
 export interface DefinitionEnnemi extends ApparenceEntite {
   readonly nom: string;
+  readonly famille?: FamilleEnnemi;
   readonly pv: number;
   readonly vitesse: number;   // blocs / seconde
   readonly rayon: number;     // rayon de collision (blocs)
@@ -553,8 +557,12 @@ export interface ZoneEnnemis {
 /** Couleurs des barres de boss vanilla (gui/sprites/boss_bar). */
 export type CouleurBarreBoss = 'pink' | 'blue' | 'red' | 'green' | 'yellow' | 'purple' | 'white';
 
+/** Monde d'une arène : il fixe son équipement (coffres) et son armure de collection. */
+export type IdMonde = 'prairie' | 'mine' | 'nether' | 'champignons';
+
 export interface DefinitionArene {
   readonly id: string;
+  readonly monde: IdMonde;
   readonly nom: string;
   readonly description: string;
   /** Texture de bloc représentant l'arène dans le menu. */
@@ -713,6 +721,14 @@ export interface Modificateurs {
   degatsRalentis: number;   // dégâts en plus contre les ennemis ralentis
   regenerationPart: number; // part des PV max rendue par seconde
   soinsObjets: number;      // parts en plus des soins des pommes
+  // Équipement (bagues, amulettes, armures)
+  degatsMortsVivants: number;  // parts en plus contre la famille d'ennemis (voir FamilleEnnemi)
+  degatsArthropodes: number;
+  degatsNether: number;
+  degatsRecus: number;      // parts en plus des dégâts reçus (négatif : moins de dégâts)
+  emeraudes: number;        // parts en plus des émeraudes ramassées
+  chanceBrulure: number;    // chance qu'un coup d'arme enflamme (0 à 1)
+  degatsSol: number;        // parts en plus des dégâts du sol brûlant (−1 : insensible au magma)
 }
 
 export interface NiveauPassif {
@@ -927,4 +943,99 @@ export interface DefinitionDeblocage {
   readonly nom: string;
   readonly condition: ConditionDeblocage;
   readonly texte: string;
+}
+
+// ---------------------------------------------------------------------------
+// Équipement de partie (coffres) : bagues et amulettes
+// ---------------------------------------------------------------------------
+export type EmplacementObjet = 'bague' | 'amulette';
+export type RareteObjet = 'commune' | 'rare' | 'epique' | 'legendaire';
+
+/** Effet propre d'un objet (mécanique dans combat/talents/objets.ts), ses nombres au niveau 1. */
+export type EffetObjet =
+  /** Toutes les `intervalle` s, onde qui repousse et étourdit autour du joueur. */
+  | { readonly type: 'cloche'; readonly intervalle: number; readonly rayon: number; readonly force: number; readonly etourdi: number }
+  /** Un ennemi tué sur `chance` lâche un éclat qui explose (dégâts × dégâts des armes). */
+  | { readonly type: 'filon'; readonly chance: number; readonly rayon: number; readonly degats: number }
+  /** Un ennemi tué sur `chance` empoisonne les ennemis autour de lui. */
+  | { readonly type: 'spores'; readonly chance: number; readonly rayon: number; readonly poison: number; readonly duree: number }
+  /** Dégâts en plus tant que les PV sont sous `seuil` (part des PV max). */
+  | { readonly type: 'bastion'; readonly seuil: number; readonly bonus: number }
+  /** Perdre `seuil` des PV max d'un coup : nova de feu et protection (recharge). */
+  | { readonly type: 'magma'; readonly seuil: number; readonly rayon: number; readonly degats: number; readonly protection: number; readonly recharge: number }
+  /** Toutes les `intervalle` s, explosion de spores autour du joueur : dégâts et poison. */
+  | { readonly type: 'couronne'; readonly intervalle: number; readonly rayon: number; readonly degats: number; readonly poison: number; readonly duree: number };
+
+/** Dessin pixel art de l'icône (ui/iconesObjets.ts). */
+export interface IconeObjet {
+  readonly forme: 'bague' | 'pendentif';
+  readonly metal: 'fer' | 'or' | 'cuivre' | 'netherite';
+  /** Couleur de la gemme (0xRRGGBB). */
+  readonly gemme: number;
+}
+
+export interface DefinitionObjetEquipement {
+  readonly nom: string;
+  readonly emplacement: EmplacementObjet;
+  readonly rarete: RareteObjet;
+  /** Monde où il se trouve (null : tous les mondes). */
+  readonly monde: IdMonde | null;
+  /** Texte de l'effet ; `f` : facteur du niveau (1 ; 1,5 ; 2). */
+  readonly description: (f: number) => string;
+  /** Bonus au niveau 1, multipliés par le facteur du niveau. */
+  readonly modif?: Partial<Modificateurs>;
+  readonly effet?: EffetObjet;
+  readonly icone: IconeObjet;
+}
+
+/** Règles de tirage des objets dans les coffres. */
+export interface ReglesEquipement {
+  readonly bagues: number;
+  readonly amulettes: number;
+  /** Facteur des effets par niveau (le dernier est le maximum). */
+  readonly niveaux: readonly number[];
+  readonly propositions: number;
+  /** Poids de chaque rareté au premier coffre en bois, et leur évolution à chaque coffre ouvert. */
+  readonly bois: {
+    readonly poids: Readonly<Partial<Record<RareteObjet, number>>>;
+    readonly parCoffre: Readonly<Partial<Record<RareteObjet, number>>>;
+    readonly minimum: Readonly<Partial<Record<RareteObjet, number>>>;
+    readonly maximum: Readonly<Partial<Record<RareteObjet, number>>>;
+  };
+  readonly ender: { readonly poids: Readonly<Partial<Record<RareteObjet, number>>> };
+  /** Chance qu'une proposition soit le renforcement d'un objet porté (quand c'est possible). */
+  readonly chanceRenfort: number;
+  /** Émeraudes offertes quand il n'y a plus rien à proposer. */
+  readonly emeraudesConsolation: number;
+}
+
+// ---------------------------------------------------------------------------
+// Collection : armures de monde (permanentes)
+// ---------------------------------------------------------------------------
+export type PieceArmure = 'casque' | 'plastron' | 'jambieres' | 'bottes' | 'bouclier' | 'cape' | 'talisman';
+/** Pièces portées avec les textures d'armure du jeu (les autres sont dessinées au lancement). */
+export type PieceArmureJeu = 'casque' | 'plastron' | 'jambieres' | 'bottes';
+/** Matériau des textures du jeu (entity/equipment/humanoid/<matériau>). */
+export type MateriauArmure = 'leather' | 'chainmail' | 'iron' | 'gold' | 'diamond' | 'netherite';
+
+export interface DefinitionArmure {
+  readonly nom: string;
+  readonly monde: IdMonde;
+  readonly materiau: MateriauArmure;
+  /** Teinte multipliée sur la texture (cuir teint, 0xRRGGBB) ; sans : couleurs du jeu. */
+  readonly teinte?: number;
+  /** Couleurs du bouclier, de la cape et du talisman dessinés au lancement : champ, bordure, emblème (0xRRGGBB). */
+  readonly couleurs: { readonly champ: number; readonly bordure: number; readonly embleme: number };
+  readonly pieces: Readonly<Record<PieceArmure, { readonly nom: string; readonly description: string; readonly modif: Partial<Modificateurs> }>>;
+  /** Toutes les pièces de ce monde portées ensemble. */
+  readonly ensemble: { readonly description: string; readonly modif: Partial<Modificateurs> };
+}
+
+/** Butin d'armure d'un boss selon son rang dans la partie (1er, 2e, puis les suivants en mode sans fin). */
+export interface ButinBoss {
+  /** Chance de gagner une pièce, puis une 2e. */
+  readonly chance: number;
+  readonly chanceSeconde: number;
+  /** Poids de chaque pièce (absente : ce boss ne la donne pas). */
+  readonly poids: Readonly<Partial<Record<PieceArmure, number>>>;
 }

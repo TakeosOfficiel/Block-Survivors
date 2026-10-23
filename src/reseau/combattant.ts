@@ -30,6 +30,7 @@ import { Pluies } from '../combat/pluies';
 import { ProjectilesJoueur } from '../combat/projectilesJoueur';
 import { Ricochets } from '../combat/ricochets';
 import { mecaniquesClasse } from '../combat/talents/classes';
+import { MecaniquesObjets } from '../combat/talents/objets';
 import { Talents } from '../combat/talents/talents';
 import { Tornades } from '../combat/tornades';
 import { Tourbillons } from '../combat/tourbillons';
@@ -50,9 +51,10 @@ import { creerEtatPartie, type EtatJoueur, type EtatPartie, type StatistiquesPar
 import type { CarteMonde } from '../monde/carte';
 import { ChampDeFlux } from '../monde/navigation';
 import { Ameliorations } from '../progression/ameliorations';
+import { Equipement } from '../progression/equipement';
 import { creerModificateurs, cumulerModificateurs } from '../progression/modificateurs';
 import { Passifs } from '../progression/passifs';
-import { BITS_ACTIONS, type InfoJoueur } from './protocole';
+import { BITS_ACTIONS, type CarteJouee, type InfoJoueur } from './protocole';
 import { apparenceDistante, codeEtiquette, positionDepart, texteEtiquette } from './apparence';
 import { IDS_ARMES } from '../donnees/armes';
 import { REGLES_MULTIJOUEUR } from '../donnees/multijoueur';
@@ -196,6 +198,7 @@ export class Combattant {
   readonly arsenal: Arsenal;
   readonly passifs: Passifs;
   readonly ameliorations: Ameliorations;
+  readonly equipement: Equipement;
   /** Hôte : cartes (niveaux, coffres) qu'il n'a pas encore choisies. */
   cartesEnAttente = 0;
   /** Choisit ses cartes : protégé, ignoré des ennemis, ses armes au repos. */
@@ -244,6 +247,8 @@ export class Combattant {
     const modificateurs = creerModificateurs();
     const bonus = { ...personnage.bonus };
     cumulerModificateurs(bonus, bonusTalents.modif);
+    // Armure de sa Collection (pièces et ensemble)
+    for (const modif of info.armure.bonus) cumulerModificateurs(bonus, modif);
     this.passifs = new Passifs(bonus);
     this.passifs.calculer(modificateurs);
     joueur.pvMax += modificateurs.pvMax;
@@ -262,7 +267,7 @@ export class Combattant {
     commutateur.inscrire(this.profil);
     commutateur.vers(this.profil);
 
-    this.joueur = new Joueur(etat, carte, this.commandes, retours, scene, textures, apparenceDistante(info));
+    this.joueur = new Joueur(etat, carte, this.commandes, retours, scene, textures, apparenceDistante(info), info.armure.portees);
     this.joueur.talents = mecaniques;
     this.flux = new ChampDeFlux(carte);
     this.etiquette = new Etiquette(scene, info.pseudo);
@@ -314,6 +319,9 @@ export class Combattant {
     for (const id of bonusTalents.armes) this.arsenal.ameliorer(id);
     mecaniques.brancher(combat, this.arsenal, { scene, textures, orbes: partage.orbes }, mecaniquesClasse(info.personnage));
     this.ameliorations = new Ameliorations(etat, this.arsenal, this.passifs);
+    // Équipement des coffres : ses bonus passent par ses passifs, ses effets par ses talents (découvertes : chez lui)
+    this.equipement = new Equipement(etat, this.passifs, this.arsenal, () => {});
+    mecaniques.brancherObjets(new MecaniquesObjets(mecaniques, this.equipement));
     commutateur.vers(avant);
   }
 
@@ -359,9 +367,10 @@ export class Combattant {
   }
 
   /** Carte choisie par le joueur (montée de niveau ou coffre). */
-  appliquerCarte(amelioration: Parameters<Ameliorations['appliquer']>[0]): void {
+  appliquerCarte(carte: CarteJouee): void {
     const avant = this.partage.commutateur.vers(this.profil);
-    this.ameliorations.appliquer(amelioration);
+    if (carte.type === 'arme' || carte.type === 'eveil' || carte.type === 'passif' || carte.type === 'soin') this.ameliorations.appliquer(carte);
+    else this.equipement.appliquer(carte);
     this.partage.commutateur.vers(avant);
   }
 

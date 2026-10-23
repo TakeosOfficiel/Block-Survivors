@@ -24,18 +24,16 @@ import { effacerEtats, type Ennemi } from '../entites/ennemi';
 import { avancerAnimation, reinitialiserAnimation } from '../modeles/animation';
 import { compilerModele, type ModeleCompile } from '../modeles/compilation';
 import type { Options } from '../options';
-import type { Amelioration } from '../progression/ameliorations';
 import type { BilanPartie } from '../progression/sauvegarde';
 import { ecartAngle } from '../utils/maths';
 import { positionDepart } from './apparence';
 import { SuiviLocal } from './bandeau';
 import { Combattant, Commutateur, type PartageCombat } from './combattant';
-import { ameliorationValide } from './hote';
 import type { CrochetsReseau, ElementsPartie } from './partie';
 import { enregistrerRecordsEquipe } from './records';
 import {
   appliquerStatistiques, BITS_ACTIONS, ENNEMI_BLESSE, ENNEMI_BRULURE, ENNEMI_MORT, ENNEMI_POISON, ENNEMI_RALENTI, ENNEMI_SAIGNEMENT,
-  Ecrivain, JOUEUR_EN_CHOIX, JOUEUR_MORT, JOUEUR_PROTEGE, Lecteur, STYLES_CHIFFRES, TYPE_ENTREE, TYPE_INSTANTANE, type MessageFiable,
+  carteValide, Ecrivain, JOUEUR_EN_CHOIX, JOUEUR_MORT, JOUEUR_PROTEGE, Lecteur, STYLES_CHIFFRES, TYPE_ENTREE, TYPE_INSTANTANE, type CarteJouee, type MessageFiable,
 } from './protocole';
 import type { ObservateurPartie, SessionReseau } from './session';
 
@@ -188,7 +186,7 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
     return 1;
   }
 
-  surCarte(amelioration: Amelioration): void {
+  surCarte(amelioration: CarteJouee): void {
     this.session.envoyer({ type: 'carte', amelioration });
   }
 
@@ -233,13 +231,13 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
         }
         break;
       case 'coffre':
-        // Coffre ouvert par n'importe qui : nos cartes, tirées ici comme en solo
+        // Coffre ouvert par n'importe qui : nos objets, tirés ici comme en solo
         etat.choixCoffre.restants += message.nombre;
-        etat.choixCoffre.titre = message.titre;
+        etat.choixCoffre.ender += message.ender;
         break;
       case 'carteJouee': {
         const c = this.autres[message.index];
-        if (!c || !ameliorationValide(message.amelioration)) break;
+        if (!c || !carteValide(message.amelioration)) break;
         try {
           c.appliquerCarte(message.amelioration);
         } catch {

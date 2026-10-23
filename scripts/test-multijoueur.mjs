@@ -137,10 +137,11 @@ if (process.env.COFFRE) {
   await hote.evaluate(() => {
     const etat = window.blockSurvivors.jeu.etat;
     etat.choixCoffre.restants += 1;
-    etat.choixCoffre.titre = 'Coffre !';
   });
-  await hote.waitForFunction(() => window.blockSurvivors.jeu.reseau.combattants[0].cartesEnAttente === 0, null, { timeout: 60000 });
-  console.log('COFFRE : carte du joueur 1 reçue par l\'hôte');
+  await hote.waitForFunction(() => window.blockSurvivors.jeu.reseau.combattants[0].equipement.portes().length > 0, null, { timeout: 90000 });
+  const chezHote = await hote.evaluate(() => window.blockSurvivors.jeu.reseau.combattants[0].equipement.portes().map((o) => `${o.id}:${o.niveau}`).join(','));
+  const chezLui = await invites[0].evaluate(() => window.blockSurvivors.jeu.equipement.portes().map((o) => `${o.id}:${o.niveau}`).join(','));
+  console.log(`COFFRE : objets du joueur 1 chez lui [${chezLui}], chez l'hôte [${chezHote}]`);
 }
 
 // Minuteur des cartes : le joueur 1 ne choisit pas, une carte est prise d'office au bout du délai
@@ -168,11 +169,12 @@ if (process.env.MINUTEUR) {
   await hote.evaluate(() => {
     const etat = window.blockSurvivors.jeu.etat;
     etat.choixCoffre.restants += 1;
-    etat.choixCoffre.titre = 'Coffre !';
   });
   await invites[0].waitForFunction(() => !document.querySelector('#cartes').classList.contains('cache'), null, { timeout: 30000 });
+  await hote.waitForFunction(() => window.blockSurvivors.jeu.reseau.combattants[0].cartesEnAttente > 0, null, { timeout: 30000 });
+  const debut = Date.now();
   await hote.waitForFunction(() => window.blockSurvivors.jeu.reseau.combattants[0].cartesEnAttente === 0, null, { timeout: 120000 });
-  console.log('MINUTEUR :', JSON.stringify(await invites[0].evaluate(() => ({ durees: window.durees, bandeaux: window.bandeaux }))));
+  console.log(`MINUTEUR : choix fait d'office en ${((Date.now() - debut) / 1000).toFixed(1)} s`, JSON.stringify(await invites[0].evaluate(() => ({ bandeaux: window.bandeaux }))));
   await invites[0].evaluate(() => { window.sansChoixAuto = false; });
 }
 

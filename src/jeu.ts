@@ -63,6 +63,12 @@ import { Boucle, type CallbacksBoucle } from './moteur/boucle';
 import { CameraJeu } from './moteur/camera';
 import type { Rendu } from './moteur/rendu';
 import { Ameliorations, type Carte } from './progression/ameliorations';
+import type { Collection } from './progression/collection';
+import { Equipement } from './progression/equipement';
+import { MecaniquesObjets } from './combat/talents/objets';
+import type { PieceArmure } from './donnees/types';
+import { ARMURES } from './donnees/armures';
+import { COFFRES } from './donnees/coffres';
 import { gagnerXp } from './progression/niveaux';
 import type { Options } from './options';
 import { apparenceJoueur, type Profil } from './profil';
@@ -72,7 +78,7 @@ import type { BilanPartie, Recompense, Sauvegarde } from './progression/sauvegar
 import { remplirBilan, remplirPastilles } from './ui/bilan';
 import { CompteurDegats } from './ui/compteurDegats';
 import { PanneauDebug, type EtatDebug } from './ui/debug';
-import { EcranCartes } from './ui/ecranCartes';
+import { EcranCartes, type Relance } from './ui/ecranCartes';
 import { EcranFin } from './ui/ecranFin';
 import { EcranPause } from './ui/ecranPause';
 import { Hud } from './ui/hud';
@@ -88,6 +94,7 @@ export interface ServicesJeu {
   readonly panneauOptions: PanneauOptions;
   readonly sauvegarde: Sauvegarde;
   readonly profil: Profil;
+  readonly collection: Collection;
   /** Partie à plusieurs (src/reseau) ; absente en solo. */
   readonly reseau?: SessionReseau;
 }
@@ -100,6 +107,12 @@ export class Jeu implements CallbacksBoucle, Retours {
   private readonly sauvegarde: Sauvegarde;
   /** Émeraudes et déblocages gagnés (fin de partie). */
   private recompense: Recompense | null = null;
+  private readonly collection: Collection;
+  private readonly equipement: Equipement;
+  /** Pièces d'armure de la Collection lâchées par les boss de cette partie. */
+  private readonly piecesGagnees: PieceArmure[] = [];
+  /** Boss vaincus dont le butin a déjà été tiré. */
+  private bossRecompenses = 0;
   private readonly etat: EtatPartie;
   private readonly terrain: Terrain;
   /** Taille du décor à photographier (blocs) : l'arène, ou toute la construction d'une map Minecraft. */
@@ -195,6 +208,9 @@ export class Jeu implements CallbacksBoucle, Retours {
     const talents = this.sauvegarde.bonus(choix.personnage);
     const bonus = { ...this.etat.personnage.bonus };
     cumulerModificateurs(bonus, talents.modif);
+    // Armure de la Collection portée (pièces et ensemble)
+    this.collection = services.collection;
+    for (const modif of this.collection.bonus()) cumulerModificateurs(bonus, modif);
     this.passifs = new Passifs(bonus);
     this.passifs.calculer(this.etat.modificateurs);
     this.etat.joueur.pvMax += this.etat.modificateurs.pvMax;
@@ -220,7 +236,7 @@ export class Jeu implements CallbacksBoucle, Retours {
 
     // Entités
     const apparence = apparenceJoueur(this.etat.personnage, services.profil);
-    this.joueur = new Joueur(this.etat, carte, this.entrees, this, scene, textures, apparence);
+    this.joueur = new Joueur(this.etat, carte, this.entrees, this, scene, textures, apparence, services.collection.portees());
     this.etiquette = new Etiquette(scene, services.profil.pseudo);
     // Coups des ennemis : de plus en plus forts en mode sans fin
     const cible: CibleJoueur = {
@@ -294,6 +310,9 @@ export class Jeu implements CallbacksBoucle, Retours {
     for (const id of this.etat.personnage.armesDepart) this.arsenal.ameliorer(id);
     for (const id of talents.armes) this.arsenal.ameliorer(id);
     this.mecaniques.brancher(combat, this.arsenal, { scene, textures, orbes: this.orbes }, mecaniquesClasse(choix.personnage));
+    // Équipement des coffres : ses bonus passent par les passifs, ses effets par les talents
+    this.equipement = new Equipement(this.etat, this.passifs, this.arsenal, (id) => this.collection.decouvrir(id));
+    this.mecaniques.brancherObjets(new MecaniquesObjets(this.mecaniques, this.equipement));
     this.ennemis.definirTalents(this.mecaniques);
     this.joueur.talents = this.mecaniques;
 
@@ -302,6 +321,7 @@ export class Jeu implements CallbacksBoucle, Retours {
       etat: this.etat,
       arsenal: this.arsenal,
       passifs: this.passifs,
+      equipement: this.equipement,
       ennemis: this.ennemis,
       tempsAvantBoss: () => this.directeurBoss.tempsAvantProchain,
       bossAVaincre: () => this.prolongation,
@@ -344,7 +364,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     window.addEventListener('click', () => {
       if (this.camera.alaSouris && this.vueInteractive()) this.entrees.capturerSouris(this.toile);
     });
-    const bilan = (conteneur: HTMLElement) => remplirBilan(conteneur, this.etat, this.arsenal.armes, textures);
+    const bilan = (conteneur: HTMLElement) => remplirBilan(conteneur, this.etat, this.arsenal.armes, textures, this.equipement);
     this.ecranPause = new EcranPause({
       peutPauser: () => !this.ecranCartes.ouvert && this.etat.issue === null,
       recommencer: () => lancerPartie(this.choix),
@@ -377,6 +397,15 @@ export class Jeu implements CallbacksBoucle, Retours {
       ameliorerArme: (id) => { this.arsenal.ameliorer(id); },
       ajouterBonus: (id) => this.ameliorations.appliquer({ type: 'passif', id }),
       poserObjet: (id) => this.objets.poser(id, this.etat.joueur.x + 1.5, this.etat.joueur.z),
+      donnerEquipement: (id) => {
+        if (this.equipement.porte(id)) this.equipement.appliquer({ type: 'renfort', id });
+        else if (this.equipement.remplacementNecessaire(id)) this.equipement.appliquer({ type: 'remplacer', id, index: 0 });
+        else this.equipement.appliquer({ type: 'objet', id });
+      },
+      donnerPieceArmure: (monde) => {
+        const piece = this.collection.obtenirPiece(monde);
+        this.hud.afficherMessage(piece ? `Collection : ${ARMURES[monde].pieces[piece].nom} (à la prochaine partie)` : 'Armure déjà complète');
+      },
       infligerEtat: (etat) => this.infligerEtatAutour(etat),
       gagnerNiveau: () => gagnerXp(this.etat, this.etat.joueur.xpNiveau - this.etat.joueur.xp),
       apparaitreBoss: () => this.directeurBoss.forcer(),
@@ -478,6 +507,8 @@ export class Jeu implements CallbacksBoucle, Retours {
     // À plusieurs, un joueur qui a rejoint ne simule que sa marche et l'effet des armes : le reste vient de l'hôte
     if (this.reseau?.client) {
       this.reseau.simulerClient(dt);
+      // Butin d'armure : chacun tire le sien dans sa Collection, quand l'hôte annonce un boss vaincu
+      if (this.etat.stats.bossVaincus > this.bossRecompenses) this.recompenserBoss();
       if (!pauseLocale) {
         this.arsenal.maj(dt);
         this.mecaniques.maj(dt);
@@ -499,6 +530,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.directeurBoss.maj();
     this.directeurMiniBoss.maj();
     this.ennemis.maj(dt);           // reconstruit la grille utilisée par les armes
+    if (this.etat.stats.bossVaincus > this.bossRecompenses) this.recompenserBoss();
     if (!pauseLocale) {
       this.arsenal.maj(dt);
       this.mecaniques.maj(dt);
@@ -662,6 +694,19 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.bossComptes = etat.stats.bossVaincus;
   }
 
+  /** Butin d'armure du boss qui vient de tomber (selon son rang dans la partie), annoncé et gardé aussitôt. */
+  private recompenserBoss(): void {
+    const rang = this.bossRecompenses++;
+    const monde = this.etat.arene.monde;
+    const pieces = this.collection.butinBoss(monde, rang);
+    if (pieces.length === 0) return;
+    this.piecesGagnees.push(...pieces);
+    this.hud.afficherMessage(`Butin du boss : ${pieces.map((p) => ARMURES[monde].pieces[p].nom).join(' et ')} !`, 4);
+    this.son('totem');
+    const j = this.etat.joueur;
+    this.particules.emettre(j.x, 1.2, j.z, GERBES.totem);
+  }
+
   /** Mode sans fin : la partie gagnée reprend, les ennemis se renforcent chaque minute jusqu'à la mort. */
   private continuerSansFin(): void {
     const etat = this.etat;
@@ -683,7 +728,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     if (this.minuterieFin < CONFIG.hud.delaiFin) return;
     this.minuterieFin = -1;
     this.ecranPause.definir(false);
-    this.ecranFin.afficher(issue, this.etat, this.recompense);
+    this.ecranFin.afficher(issue, this.etat, this.recompense, this.piecesGagnees);
   }
 
   // --- Progression -------------------------------------------------------
@@ -697,27 +742,65 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.son('niveau');
   }
 
-  /** Ouvre les cartes d'un niveau en attente (un niveau à la fois), puis celles des coffres ouverts. */
+  /** Ouvre les cartes d'un niveau en attente (un niveau à la fois), puis les objets des coffres ouverts. */
   private proposerCartes(): void {
     const etat = this.etat;
     if (this.ecranCartes.ouvert || etat.issue !== null) return;
     if (etat.niveauxEnAttente === 0 && etat.choixCoffre.restants === 0) return;
     this.ecranPause.definir(false);
-    const coffre = etat.niveauxEnAttente === 0;
-    const titre = coffre ? etat.choixCoffre.titre : `Niveau ${etat.joueur.niveau - etat.niveauxEnAttente + 1} !`;
-    this.ecranCartes.ouvrir(titre, this.ameliorations.tirer(), (carte: Carte) => {
-      this.ameliorations.appliquer(carte.amelioration);
-      this.reseau?.surCarte(carte.amelioration);
-      if (coffre) etat.choixCoffre.restants--;
-      else etat.niveauxEnAttente--;
-    }, {
+    if (etat.niveauxEnAttente === 0) {
+      this.proposerObjets();
+      return;
+    }
+    this.ecranCartes.ouvrir(`Niveau ${etat.joueur.niveau - etat.niveauxEnAttente + 1} !`, this.ameliorations.tirer(), (carte: Carte) => {
+      if (carte.amelioration.type === 'arme' || carte.amelioration.type === 'eveil' || carte.amelioration.type === 'passif' || carte.amelioration.type === 'soin') {
+        this.ameliorations.appliquer(carte.amelioration);
+        this.reseau?.surCarte(carte.amelioration);
+      }
+      etat.niveauxEnAttente--;
+    }, this.relance(() => this.ameliorations.tirer()));
+  }
+
+  /**
+   * Coffre : bagues et amulettes (progression/equipement.ts). Emplacements pleins : 2e étape
+   * « Remplacer quel objet ? », d'où l'on peut revenir aux mêmes propositions.
+   */
+  private proposerObjets(cartes?: readonly Carte[], enderDemande?: boolean): void {
+    const choix = this.etat.choixCoffre;
+    const ender = enderDemande ?? choix.ender > 0;
+    const titre = ender ? COFFRES.coffre_ender.titre : COFFRES.coffre.titre;
+    const tirer = () => this.equipement.tirer(ender, this.coffres.payantsOuverts);
+    const propositions = cartes ?? tirer();
+    const prendre = (carte: Carte) => {
+      const a = carte.amelioration;
+      if (a.type === 'retour') {
+        this.proposerObjets(propositions, ender);
+        return;
+      }
+      if (a.type === 'objet' && this.equipement.remplacementNecessaire(a.id)) {
+        this.ecranCartes.ouvrir('Remplacer quel objet ?', this.equipement.cartesRemplacement(a.id), prendre, null);
+        return;
+      }
+      if (a.type === 'objet' || a.type === 'renfort' || a.type === 'remplacer' || a.type === 'emeraudes') {
+        this.equipement.appliquer(a);
+        this.reseau?.surCarte(a);
+      }
+      choix.restants--;
+      if (ender) choix.ender--;
+    };
+    this.ecranCartes.ouvrir(titre, propositions, prendre, this.relance(tirer));
+  }
+
+  /** Relances communes aux cartes de niveau et aux coffres. */
+  private relance(tirer: () => readonly Carte[]): Relance {
+    return {
       restantes: () => this.etat.relancesRestantes,
       relancer: () => {
         if (this.etat.relancesRestantes <= 0) return null;
         this.etat.relancesRestantes--;
-        return this.ameliorations.tirer();
+        return tirer();
       },
-    });
+    };
   }
 
   // --- Debug -------------------------------------------------------------

@@ -154,7 +154,7 @@ et dorés ; désactivable dans les options). Les armes peuvent porter des **coup
 dégâts ×1,5, étincelles du jeu) ; le bonus *Silex taillé* et certains talents
 les rendent plus fréquents ou plus forts.
 
-## Multijoueur (prototype, 2 à 4 joueurs)
+## Multijoueur (2 à 4 joueurs)
 
 Menu → **Multijoueur**. Sans serveur : un joueur **héberge** (il simule toute
 la partie), les autres **rejoignent**. La mise en relation passe par deux codes
@@ -200,10 +200,27 @@ En partie, les ennemis lâchent parfois un **tas d'émeraudes** (3,5 %, de 2 à 
 orbes d'XP ; elles ne servent que pendant la partie. Un **coffre** apparaît près du joueur tous
 les tant d'ennemis tués (100, puis +150, +200…) et à la mort de chaque
 mini-boss : marcher dessus l'ouvre si l'on a assez d'émeraudes (8, puis 13, 18…
-à chaque coffre ouvert), et l'on choisit une carte d'amélioration. Les boss
-lâchent un **coffre de l'Ender** gratuit (deux cartes). Le prix flotte
-au-dessus des coffres.
+à chaque coffre ouvert), et l'on choisit un **objet d'équipement**. Les boss
+lâchent un **coffre de l'Ender** gratuit (deux objets, rares au moins). Le prix
+flotte au-dessus des coffres.
 Données : donnees/coffres.ts, donnees/objets.ts.
+
+## Équipement et Collection
+
+Les coffres donnent des **bagues** (2 emplacements) et une **amulette** (1),
+perdues à la fin de la partie : 4 raretés (Commune, Rare, Épique,
+Légendaire), des objets propres à chaque monde (champ `monde` des arènes, et du
+JSON des maps importées) et une légendaire par monde. Un objet porté peut être
+renforcé (niveaux 2 et 3) ; emplacements pleins, on choisit lequel remplacer.
+Effets simples : `modif` (cumulés par Passifs), effets propres : `effet`
+(combat/talents/objets.ts). Données : donnees/equipement.ts.
+
+La **Collection** garde une armure de 7 pièces par monde (donnees/armures.ts :
+casque, plastron, jambières, bottes, bouclier, cape, talisman). Les boss en
+lâchent parfois (`BUTIN_BOSS`, selon le rang du boss dans la partie), jamais en
+double. Elles se portent dans Apparence (rendues sur le héros,
+modeles/armure.ts) : un bonus par pièce et un bonus d'ensemble. Elle a sa propre
+clé de stockage (`block-survivors.collection`, progression/collection.ts).
 
 Les **mini-boss** (Zombie colosse, Vagabond, Araignée géante, Brute piglin,
 Champion wither) arrivent sans prévenir toutes les 75 s dès 1:30

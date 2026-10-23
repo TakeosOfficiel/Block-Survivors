@@ -1,4 +1,6 @@
 /** Joueur : déplacement, collisions avec les bords, vie, modèle animé du personnage choisi. */
+import { ArmureHeros } from '../modeles/armure';
+import type { IdMonde, PieceArmure } from '../donnees/types';
 import type * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
 import { degatsApresDefense } from '../combat/defense';
@@ -39,6 +41,8 @@ export class Joueur implements SourceEntites, CibleJoueur {
   private readonly retours: Retours;
   private readonly modele: ModeleCompile;
   private readonly rendu: ModeleInstancie;
+  /** Armure de la Collection portée (aucune pièce : rien n'est dessiné). */
+  private readonly armure: ArmureHeros;
   private readonly pose: PoseModele;
   private readonly animation = creerEtatAnimation();
 
@@ -50,6 +54,7 @@ export class Joueur implements SourceEntites, CibleJoueur {
     scene: THREE.Scene,
     textures: BibliothequeTextures,
     apparence: ApparenceEntite,
+    armure: Partial<Record<PieceArmure, IdMonde>> = {},
   ) {
     this.etat = etat;
     this.carte = carte;
@@ -58,6 +63,7 @@ export class Joueur implements SourceEntites, CibleJoueur {
     this.modele = compilerModele(MODELES[apparence.modele]);
     this.rendu = new ModeleInstancie(this.modele, apparence, textures, 1, scene);
     this.pose = creerPoseModele(this.modele);
+    this.armure = new ArmureHeros(this.modele, armure, textures, scene);
   }
 
   /** Sommet de la tête (blocs), pour l'étiquette du pseudo. */
@@ -116,7 +122,7 @@ export class Joueur implements SourceEntites, CibleJoueur {
     j.z = corrige.z;
 
     // Sol brûlant (magma)
-    const degatsSol = this.carte.degatsSol(j.x, j.z);
+    const degatsSol = this.carte.degatsSol(j.x, j.z) * Math.max(0, 1 + this.etat.modificateurs.degatsSol);
     if (degatsSol > 0) this.subirDegats(degatsSol);
 
     // Orientation vers la direction de marche
@@ -137,6 +143,8 @@ export class Joueur implements SourceEntites, CibleJoueur {
     if (j.mort || this.invincible || j.invulnerabilite > 0 || j.protection > 0 || this.etat.issue !== null) return false;
     const talents = this.talents;
     if (talents) degats = talents.degatsRecus(degats, boss);
+    // Équipement : dégâts reçus réduits (au mieux −60 %)
+    degats *= Math.max(0.4, 1 + this.etat.modificateurs.degatsRecus);
     // Le bouclier absorbe d'abord ; s'il prend tout, le coup ne coûte aucun PV
     let reste = degatsApresDefense(degats, this.etat.modificateurs.armure + (talents?.armure() ?? 0));
     const bloque = degats - reste;
@@ -193,6 +201,7 @@ export class Joueur implements SourceEntites, CibleJoueur {
     this.rendu.commencer();
     this.rendu.ajouter(pose);
     this.rendu.terminer();
+    this.armure.poser(pose);
     ombres.ajouter(j.x, j.z, this.etat.personnage.rayonOmbre);
   }
 

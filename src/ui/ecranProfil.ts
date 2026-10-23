@@ -1,11 +1,15 @@
 /**
  * Apparence (depuis le menu) : skin (celle de la classe, une des skins par
- * défaut du jeu, ou un PNG importé) et gabarit des bras, avec le héros en 3D
- * qu'on fait tourner. Chaque changement est enregistré aussitôt.
+ * défaut du jeu, ou un PNG importé), gabarit des bras et pièces d'armure de la
+ * Collection portées, avec le héros en 3D qu'on fait tourner. Chaque
+ * changement est enregistré aussitôt.
  */
 import type { BibliothequeTextures } from '../assets/textures';
 import { NOMS_SKINS, SKINS_VANILLA } from '../donnees/skins';
-import type { ApparenceEntite } from '../donnees/types';
+import { ARMURES, MONDES, NOMS_PIECES, PIECES_ARMURE, provenancePiece } from '../donnees/armures';
+import type { ApparenceEntite, PieceArmure } from '../donnees/types';
+import type { Collection } from '../progression/collection';
+import { iconePiece } from './iconesObjets';
 import {
   apparenceJoueur, CHEMIN_SKIN_IMPORTE, cheminSkinVanilla, enregistrerProfil, type ChoixSkin, type Profil,
 } from '../profil';
@@ -26,14 +30,18 @@ export class EcranProfil {
   private readonly boutonBras = element<HTMLButtonElement>('profil-bras');
   private readonly fichier = element<HTMLInputElement>('profil-fichier');
   private readonly erreur = element('profil-erreur');
+  private readonly armure = element('profil-armure');
+  private readonly ensemble = element('profil-ensemble');
+  private readonly collection: Collection;
   private readonly textures: BibliothequeTextures;
   private readonly apercu: ApercuHeros | null;
   readonly profil: Profil;
   private classe: ClasseAffichee | null = null;
   private surFermeture: (() => void) | null = null;
 
-  constructor(textures: BibliothequeTextures, profil: Profil, apercu: ApercuHeros | null) {
+  constructor(textures: BibliothequeTextures, profil: Profil, apercu: ApercuHeros | null, collection: Collection) {
     this.textures = textures;
+    this.collection = collection;
     this.profil = profil;
     this.apercu = apercu;
     this.boutonBras.addEventListener('click', () => {
@@ -108,9 +116,49 @@ export class EcranProfil {
     this.boutonBras.textContent = `Bras : ${this.profil.brasFins ? 'fins' : 'larges'}`;
     this.boutonBras.disabled = this.profil.skin === 'classe';
 
+    this.dessinerArmure();
     element('profil-nom').textContent = this.profil.pseudo || 'Sans pseudo';
     element('profil-sous-titre').textContent = `${classe.nom} · ${this.nomSkin()}`;
     this.apercu?.afficher(apparenceJoueur(classe, this.profil));
+  }
+
+  /** Une rangée par emplacement : rien, ou la pièce d'un monde (grisée tant qu'elle n'est pas gagnée). */
+  private dessinerArmure(): void {
+    this.armure.replaceChildren(...PIECES_ARMURE.map((piece) => {
+      const rangee = document.createElement('div');
+      rangee.className = 'profil-piece';
+      const nom = document.createElement('span');
+      nom.className = 'profil-piece-nom';
+      nom.textContent = NOMS_PIECES[piece];
+      rangee.append(nom, this.boutonPiece(piece, null));
+      for (const monde of MONDES) rangee.append(this.boutonPiece(piece, monde));
+      return rangee;
+    }));
+    const complet = this.collection.ensembleComplet();
+    this.ensemble.textContent = complet
+      ? `${ARMURES[complet].nom} : ${ARMURES[complet].ensemble.description}`
+      : 'Portez les 7 pièces d\'un même monde pour son bonus d\'ensemble.';
+  }
+
+  private boutonPiece(piece: PieceArmure, monde: (typeof MONDES)[number] | null): HTMLButtonElement {
+    const bouton = document.createElement('button');
+    bouton.className = 'option-menu profil-piece-choix';
+    bouton.classList.toggle('choisie', this.collection.portee(piece) === monde);
+    if (!monde) {
+      bouton.textContent = '—';
+      bouton.title = 'Rien';
+    } else {
+      const possedee = this.collection.possede(monde, piece);
+      const def = ARMURES[monde].pieces[piece];
+      bouton.append(caseImage(this.textures.url(iconePiece(monde, piece)), def.nom));
+      bouton.disabled = !possedee;
+      bouton.title = possedee ? `${def.nom} : ${def.description}` : `${def.nom} : ${provenancePiece(monde, piece)}`;
+    }
+    bouton.addEventListener('click', () => {
+      this.collection.porter(piece, monde);
+      this.dessiner();
+    });
+    return bouton;
   }
 
   /** Lit un PNG de skin choisi par le joueur. */

@@ -12,6 +12,7 @@ import { REGLES_MULTIJOUEUR } from '../donnees/multijoueur';
 import { IDS_PERSONNAGES, PERSONNAGES, type IdPersonnage } from '../donnees/personnages';
 import type { DefinitionArene } from '../donnees/types';
 import type { ChoixPartie } from '../lancement';
+import type { Collection } from '../progression/collection';
 import type { Sauvegarde } from '../progression/sauvegarde';
 import type { Profil } from '../profil';
 import { element } from '../ui/dom';
@@ -42,6 +43,7 @@ export class EcranSalon {
   private readonly corps: HTMLDivElement;
   private readonly solo: Sauvegarde;
   private readonly profil: Profil;
+  private readonly collection: Collection;
   private personnage: IdPersonnage;
   private arene: DefinitionArene;
   private session: SessionReseau | null = null;
@@ -50,7 +52,8 @@ export class EcranSalon {
   private ouvert = false;
   private lance = false;
 
-  constructor(solo: Sauvegarde, profil: Profil, choix: ChoixPartie) {
+  constructor(solo: Sauvegarde, profil: Profil, collection: Collection, choix: ChoixPartie) {
+    this.collection = collection;
     this.solo = solo;
     this.profil = profil;
     this.personnage = solo.verrou('personnage', choix.personnage) ? IDS_PERSONNAGES[0] : choix.personnage;
@@ -158,6 +161,7 @@ export class EcranSalon {
     return {
       pseudo: p.pseudo, personnage: this.personnage, skin: p.skin === 'importe' ? 'classe' : p.skin, brasFins: p.brasFins,
       bonus: this.solo.bonus(this.personnage),
+      armure: { bonus: this.collection.bonus(), portees: this.collection.portees() },
     };
   }
 

@@ -285,6 +285,11 @@ export class Ennemis implements SourceEntites {
     const mods = this.etat.modificateurs;
     const talents = this.talents;
     if (e.ralenti > 0 && !periodique) degats *= 1 + mods.degatsRalentis;
+    // Équipement : bonus contre la famille de l'ennemi
+    const famille = e.definition.famille;
+    if (famille === 'mort_vivant') degats *= 1 + mods.degatsMortsVivants;
+    else if (famille === 'arthropode') degats *= 1 + mods.degatsArthropodes;
+    else if (famille === 'nether') degats *= 1 + mods.degatsNether;
     if (talents) degats *= talents.multiplicateur(e, arme, nature);
     // Coup critique (armes du joueur) : dégâts multipliés et étincelles du jeu
     const chance = mods.critique + (talents && arme >= 0 && !periodique ? talents.bonusCritique(e, arme, nature) : 0);

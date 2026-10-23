@@ -12,6 +12,7 @@ const CREEPER_SECOURS = { tete: 0x5fb04a, corps: 0x4f9a3e, patteArriereDroite: 0
 const definitions = {
   zombie: {
     nom: 'Zombie',
+    famille: 'mort_vivant',
     sons: { blessure: 'zombie_blesse', mort: 'zombie_mort' },
     modele: 'zombie',
     skin: 'entity/zombie/zombie',
@@ -25,6 +26,7 @@ const definitions = {
   },
   squelette: {
     nom: 'Squelette',
+    famille: 'mort_vivant',
     objetEnMain: 'item/bow',
     sons: { blessure: 'squelette_blesse', mort: 'squelette_mort' },
     modele: 'squelette',
@@ -39,6 +41,7 @@ const definitions = {
   },
   araignee: {
     nom: 'Araignée',
+    famille: 'arthropode',
     sons: { blessure: 'araignee_blesse', mort: 'araignee_mort' },
     modele: 'araignee',
     skin: 'entity/spider/spider',
@@ -69,6 +72,7 @@ const definitions = {
   // --- Mine ----------------------------------------------------------------
   araignee_venimeuse: {
     nom: 'Araignée venimeuse',
+    famille: 'arthropode',
     sons: { blessure: 'araignee_blesse', mort: 'araignee_mort' },
     hauteurSons: 1.3,
     modele: 'araignee',
@@ -86,6 +90,7 @@ const definitions = {
   },
   poisson_argent: {
     nom: "Poisson d'argent",
+    famille: 'arthropode',
     sons: { blessure: 'poisson_blesse', mort: 'poisson_mort' },
     modele: 'poisson_argent',
     skin: 'entity/silverfish/silverfish',
@@ -103,6 +108,7 @@ const definitions = {
   // --- Nether --------------------------------------------------------------
   piglin_zombifie: {
     nom: 'Piglin zombifié',
+    famille: 'nether',
     objetEnMain: 'item/golden_sword',
     sons: { blessure: 'piglin_blesse', mort: 'piglin_mort' },
     modele: 'piglin',
@@ -118,6 +124,7 @@ const definitions = {
   },
   squelette_wither: {
     nom: 'Squelette wither',
+    famille: 'nether',
     objetEnMain: 'item/stone_sword',
     sons: { blessure: 'wither_squelette_blesse', mort: 'wither_squelette_mort' },
     modele: 'squelette',
@@ -134,6 +141,7 @@ const definitions = {
   },
   blaze: {
     nom: 'Blaze',
+    famille: 'nether',
     sons: { blessure: 'blaze_blesse', mort: 'blaze_mort' },
     modele: 'blaze',
     skin: 'entity/blaze/blaze',
@@ -149,6 +157,7 @@ const definitions = {
   },
   cube_magma: {
     nom: 'Cube de magma',
+    famille: 'nether',
     sons: { blessure: 'magma_blesse', mort: 'magma_mort' },
     modele: 'cube_magma',
     skin: 'entity/slime/magmacube',
@@ -167,6 +176,7 @@ const definitions = {
   // --- Mini-boss (CALENDRIER_MINIBOSS) : géants des mobs de l'arène ---------
   zombie_colosse: {
     nom: 'Zombie colosse',
+    famille: 'mort_vivant',
     sons: { blessure: 'zombie_blesse', mort: 'zombie_mort' },
     hauteurSons: 0.8,
     modele: 'zombie',
@@ -184,6 +194,7 @@ const definitions = {
   },
   vagabond: {
     nom: 'Vagabond',
+    famille: 'mort_vivant',
     objetEnMain: 'item/bow',
     sons: { blessure: 'squelette_blesse', mort: 'squelette_mort' },
     hauteurSons: 0.8,
@@ -202,6 +213,7 @@ const definitions = {
   },
   araignee_geante: {
     nom: 'Araignée géante',
+    famille: 'arthropode',
     sons: { blessure: 'araignee_blesse', mort: 'araignee_mort' },
     hauteurSons: 0.75,
     modele: 'araignee',
@@ -221,6 +233,7 @@ const definitions = {
   },
   brute_piglin: {
     nom: 'Brute piglin',
+    famille: 'nether',
     objetEnMain: 'item/golden_axe',
     sons: { blessure: 'piglin_blesse', mort: 'piglin_mort' },
     hauteurSons: 0.8,
@@ -240,6 +253,7 @@ const definitions = {
   },
   champion_wither: {
     nom: 'Champion wither',
+    famille: 'nether',
     objetEnMain: 'item/stone_sword',
     sons: { blessure: 'wither_squelette_blesse', mort: 'wither_squelette_mort' },
     hauteurSons: 0.8,
@@ -261,6 +275,7 @@ const definitions = {
   // --- Boss ----------------------------------------------------------------
   geant: {
     nom: 'Géant',
+    famille: 'mort_vivant',
     sons: { blessure: 'zombie_blesse', mort: 'zombie_mort' },
     hauteurSons: 0.6,
     modele: 'zombie',
@@ -280,6 +295,7 @@ const definitions = {
   },
   seigneur_wither: {
     nom: 'Seigneur wither',
+    famille: 'nether',
     objetEnMain: 'item/bow',
     sons: { blessure: 'squelette_blesse', mort: 'squelette_mort' },
     hauteurSons: 0.6,
@@ -300,6 +316,7 @@ const definitions = {
   },
   reine_araignee: {
     nom: 'Reine araignée',
+    famille: 'arthropode',
     sons: { blessure: 'araignee_blesse', mort: 'araignee_mort' },
     hauteurSons: 0.6,
     modele: 'araignee',
@@ -320,6 +337,7 @@ const definitions = {
   },
   magma_geant: {
     nom: 'Cube de magma géant',
+    famille: 'nether',
     sons: { blessure: 'magma_blesse', mort: 'magma_mort' },
     hauteurSons: 0.6,
     modele: 'cube_magma',

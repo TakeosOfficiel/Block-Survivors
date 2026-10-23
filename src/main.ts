@@ -19,6 +19,7 @@ import { importerArene } from './minecraft/importation';
 import { genererMonde, type MondeGenere } from './monde/generation';
 import { Rendu } from './moteur/rendu';
 import { chargerOptions } from './options';
+import { Collection } from './progression/collection';
 import { Sauvegarde } from './progression/sauvegarde';
 import { apparenceJoueur, chargerProfil, CHEMIN_SKIN_IMPORTE } from './profil';
 import { ApercuHeros } from './ui/apercuHeros';
@@ -27,6 +28,7 @@ import { EcranChargement } from './ui/ecranChargement';
 import { EcranMenu } from './ui/ecranMenu';
 import { suivreEchelleInterface } from './ui/echelle';
 import { appliquerHabillage } from './ui/habillage';
+import { enregistrerArmures, enregistrerIconesObjets } from './ui/iconesObjets';
 import { PanneauOptions } from './ui/panneauOptions';
 import { apparenceDistante } from './reseau/apparence';
 import { EcranSalon, type LancementMultijoueur } from './reseau/ecranSalon';
@@ -51,6 +53,7 @@ async function demarrer(): Promise<void> {
   const options = chargerOptions();
   const sauvegarde = Sauvegarde.charger();
   const profil = chargerProfil();
+  const collection = Collection.charger();
   const sons = new Sons(options.volume, options.volumes);
   sons.precharger();
   // Une seule barre : l'interface seule avant le menu, ou l'interface et la partie (Rejouer)
@@ -61,6 +64,8 @@ async function demarrer(): Promise<void> {
     textures.charger(texturesInterface(), (faites, total) => ecran.progression(faites, total)),
   ]);
   appliquerHabillage(textures);
+  enregistrerIconesObjets(textures);
+  enregistrerArmures(textures);
   // Skin importée du joueur : enregistrée comme une texture du jeu
   if (profil.skinImporte) {
     const image = await chargerImageSkin(profil.skinImporte);
@@ -83,10 +88,11 @@ async function demarrer(): Promise<void> {
   if (!partieDemandee()) {
     // Héros en 3D du menu : même moteur que le jeu (repli WebGL2 compris)
     const apercu = await ApercuHeros.creer(textures, rendu.api !== 'WebGPU');
+    if (apercu) apercu.armure = () => collection.portees();
     ecran.masquer();
     // Le salon multijoueur s'ouvre depuis le menu ; la première partie lancée (solo ou à plusieurs) l'emporte
-    const salon = new EcranSalon(sauvegarde, profil, choix);
-    const menu = new EcranMenu(textures, choix, panneauOptions, sauvegarde, new EcranProfil(textures, profil, apercu), apercu);
+    const salon = new EcranSalon(sauvegarde, profil, collection, choix);
+    const menu = new EcranMenu(textures, choix, panneauOptions, sauvegarde, new EcranProfil(textures, profil, apercu, collection), apercu, collection);
     const choixSolo = menu.attendreChoix();
     multijoueur = await Promise.race([choixSolo.then(() => null), salon.attendreLancement()]);
     if (multijoueur) {
@@ -130,7 +136,7 @@ async function demarrer(): Promise<void> {
     await textures.charger(texturesRequises(choix.arene, monde, apparenceDistante(info)));
   }
 
-  jeu = new Jeu(rendu, textures, monde, choix, { sons, options, panneauOptions, sauvegarde, profil, reseau: multijoueur?.session });
+  jeu = new Jeu(rendu, textures, monde, choix, { sons, options, panneauOptions, sauvegarde, profil, collection, reseau: multijoueur?.session });
   jeu.appliquerOptions(options);
   ecran.etape('Préparation des modèles…');
   await jeu.prechauffer((faites, total) => ecran.progression(faites, total));

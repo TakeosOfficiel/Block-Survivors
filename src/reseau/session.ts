@@ -9,7 +9,7 @@ import type { BonusTalents } from '../progression/sauvegarde';
 import type { ChoixSkin } from '../profil';
 import { VERSION } from '../version';
 import { REGLES_MULTIJOUEUR } from '../donnees/multijoueur';
-import type { InfoJoueur, MessageFiable } from './protocole';
+import { armureValide, type ArmureJoueur, type InfoJoueur, type MessageFiable } from './protocole';
 import { ConnexionPair } from './transport';
 
 export type RoleReseau = 'hote' | 'client';
@@ -21,6 +21,7 @@ export interface ProfilReseau {
   readonly skin: ChoixSkin;
   readonly brasFins: boolean;
   readonly bonus: BonusTalents;
+  readonly armure: ArmureJoueur;
 }
 
 /** Ce qui reçoit les messages pendant la partie (côté hôte : `index` du joueur ; côté joueur : 0). */
@@ -70,7 +71,7 @@ export class SessionReseau {
   static heberger(profil: ProfilReseau, arene: string): SessionReseau {
     const session = new SessionReseau('hote', profil);
     session.arene = arene;
-    session.joueurs = [{ index: 0, pseudo: profil.pseudo, personnage: profil.personnage, skin: profil.skin, brasFins: profil.brasFins, bonus: profil.bonus }];
+    session.joueurs = [{ index: 0, pseudo: profil.pseudo, personnage: profil.personnage, skin: profil.skin, brasFins: profil.brasFins, bonus: profil.bonus, armure: profil.armure }];
     return session;
   }
 
@@ -89,7 +90,7 @@ export class SessionReseau {
     });
     void pair.attendre(120000).then(() => {
       const p = session.profil;
-      pair.envoyer({ type: 'bonjour', version: VERSION, pseudo: p.pseudo, personnage: p.personnage, skin: p.skin, brasFins: p.brasFins, bonus: p.bonus } satisfies MessageFiable);
+      pair.envoyer({ type: 'bonjour', version: VERSION, pseudo: p.pseudo, personnage: p.personnage, skin: p.skin, brasFins: p.brasFins, bonus: p.bonus, armure: p.armure } satisfies MessageFiable);
     }, () => session.surPerte('Connexion impossible : l\'hôte n\'a pas validé la réponse à temps'));
     return { session, code };
   }
@@ -214,7 +215,7 @@ export class SessionReseau {
     if (index >= REGLES_MULTIJOUEUR.joueursMax) return refuser('La partie est complète');
     this.pairs.set(index, pair);
     this.joueurs.push({
-      index, pseudo: String(m.pseudo).slice(0, 16), personnage: m.personnage, skin: m.skin, brasFins: m.brasFins === true, bonus: m.bonus,
+      index, pseudo: String(m.pseudo).slice(0, 16), personnage: m.personnage, skin: m.skin, brasFins: m.brasFins === true, bonus: m.bonus, armure: armureValide(m.armure),
     });
     this.joueurs.sort((a, b) => a.index - b.index);
     pair.envoyer({ type: 'accueil', index } satisfies MessageFiable);

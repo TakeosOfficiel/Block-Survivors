@@ -9,7 +9,13 @@
 import type { IdPersonnage } from '../donnees/personnages';
 import type { IssuePartie, StatistiquesPartie } from '../etat';
 import type { StyleChiffre } from '../effets/chiffresDegats';
+import { IDS_ARMES } from '../donnees/armes';
+import { IDS_OBJETS_EQUIPEMENT, REGLES_EQUIPEMENT } from '../donnees/equipement';
+import { IDS_PASSIFS } from '../donnees/passifs';
+import { MONDES } from '../donnees/armures';
+import type { IdMonde, Modificateurs, PieceArmure } from '../donnees/types';
 import type { Amelioration } from '../progression/ameliorations';
+import type { ChoixEquipement } from '../progression/equipement';
 import type { BonusTalents } from '../progression/sauvegarde';
 import type { ChoixSkin } from '../profil';
 
@@ -20,9 +26,19 @@ export interface InfoJoueur {
   readonly personnage: IdPersonnage;
   readonly skin: ChoixSkin;
   readonly brasFins: boolean;
-  /** Bonus permanents (sauvegarde multi du joueur) : chacun simule les armes des autres pour leurs effets. */
+  /** Talents de sa classe : chacun simule les armes des autres pour leurs effets. */
   readonly bonus: BonusTalents;
+  /** Armure de sa Collection : ses bonus, et les pièces portées (son apparence). */
+  readonly armure: ArmureJoueur;
 }
+
+export interface ArmureJoueur {
+  readonly bonus: Partial<Modificateurs>[];
+  readonly portees: Partial<Record<PieceArmure, IdMonde>>;
+}
+
+/** Carte choisie par un joueur : amélioration d'un niveau, ou objet d'un coffre (jamais « retour », qui reste chez lui). */
+export type CarteJouee = Amelioration | Exclude<ChoixEquipement, { type: 'retour' }>;
 
 /** Bilan commun envoyé à la fin de la partie (les tableaux typés en listes). */
 export interface StatistiquesReseau {
@@ -43,7 +59,7 @@ export interface StatistiquesReseau {
 
 export type MessageFiable =
   /** Joueur → hôte, dès la connexion : qui il est et ses bonus permanents (sauvegarde multi). */
-  | { type: 'bonjour'; version: string; pseudo: string; personnage: IdPersonnage; skin: ChoixSkin; brasFins: boolean; bonus: BonusTalents }
+  | { type: 'bonjour'; version: string; pseudo: string; personnage: IdPersonnage; skin: ChoixSkin; brasFins: boolean; bonus: BonusTalents; armure: ArmureJoueur }
   | { type: 'accueil'; index: number }
   | { type: 'refus'; raison: string }
   /** Hôte → tous : composition du salon. */
@@ -54,11 +70,11 @@ export type MessageFiable =
   /** Hôte → tous : tout le monde est prêt, la partie commence. */
   | { type: 'depart' }
   /** Joueur → hôte : carte choisie (montée de niveau ou coffre). */
-  | { type: 'carte'; amelioration: Amelioration }
+  | { type: 'carte'; amelioration: CarteJouee }
   /** Hôte → tous : la carte choisie par le joueur `index` (chacun garde l'arsenal des autres à jour). */
-  | { type: 'carteJouee'; index: number; amelioration: Amelioration }
-  /** Hôte → tous : un coffre ouvert, des cartes pour tout le monde. */
-  | { type: 'coffre'; nombre: number; titre: string }
+  | { type: 'carteJouee'; index: number; amelioration: CarteJouee }
+  /** Hôte → tous : coffres ouverts, des objets pour tout le monde (`ender` : dont ceux d'un coffre de l'Ender). */
+  | { type: 'coffre'; nombre: number; ender: number }
   /** Hôte → un joueur : son bilan (compteur de dégâts), régulièrement et à la fin. */
   | { type: 'stats'; stats: StatistiquesReseau }
   /** Hôte → un joueur : fin de partie, au temps de jeu `temps` (s), avec son bilan. */
@@ -252,4 +268,33 @@ export function appliquerStatistiques(s: StatistiquesPartie, r: StatistiquesRese
   s.emeraudesRamassees = r.emeraudesRamassees;
   s.coffresOuverts = r.coffresOuverts;
   s.bossVaincus = r.bossVaincus;
+}
+
+/** Une carte reçue d'un joueur ne vise que des armes, des bonus et des objets qui existent. */
+export function carteValide(c: CarteJouee): boolean {
+  if (!c || typeof c !== 'object') return false;
+  switch (c.type) {
+    case 'arme': return IDS_ARMES.includes(c.id);
+    case 'eveil': return IDS_ARMES.includes(c.id) && (c.variante === 0 || c.variante === 1);
+    case 'passif': return IDS_PASSIFS.includes(c.id);
+    case 'soin': return true;
+    case 'objet':
+    case 'renfort': return IDS_OBJETS_EQUIPEMENT.includes(c.id);
+    case 'remplacer': return IDS_OBJETS_EQUIPEMENT.includes(c.id) && Number.isInteger(c.index) && c.index >= 0 && c.index < REGLES_EQUIPEMENT.bagues;
+    // Les émeraudes sont communes : seul le sac de consolation, jamais un autre montant
+    case 'emeraudes': return c.nombre === REGLES_EQUIPEMENT.emeraudesConsolation;
+    default: return false;
+  }
+}
+
+/** Armure reçue d'un joueur, ramenée à des pièces et des bonus de forme valide (sinon : aucune). */
+export function armureValide(a: ArmureJoueur | undefined): ArmureJoueur {
+  const portees: Partial<Record<PieceArmure, IdMonde>> = {};
+  if (a && typeof a.portees === 'object' && a.portees !== null) {
+    for (const [piece, monde] of Object.entries(a.portees)) {
+      if ((MONDES as readonly string[]).includes(monde as string)) portees[piece as PieceArmure] = monde as IdMonde;
+    }
+  }
+  const bonus = Array.isArray(a?.bonus) ? a.bonus.filter((b) => typeof b === 'object' && b !== null) : [];
+  return { bonus, portees };
 }

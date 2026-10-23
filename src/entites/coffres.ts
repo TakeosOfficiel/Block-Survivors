@@ -3,9 +3,9 @@
  * ordinaire apparaît tous les tant d'ennemis tués (à quelques blocs du
  * joueur, sur une case qu'il peut atteindre) et à la mort de chaque mini-boss ;
  * le boss lâche un coffre de l'Ender. Marcher dessus l'ouvre si l'on a assez
- * d'émeraudes (gratuit pour l'Ender) : le couvercle se lève, puis les cartes
- * d'amélioration s'ouvrent (écran des cartes, voir jeu.ts). Leur prix flotte
- * au-dessus d'eux.
+ * d'émeraudes (gratuit pour l'Ender) : le couvercle se lève, puis les objets
+ * d'équipement proposés s'ouvrent (écran des cartes, voir jeu.ts et
+ * progression/equipement.ts). Leur prix flotte au-dessus d'eux.
  */
 import type * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
@@ -83,6 +83,11 @@ export class Coffres {
     return this.pool.nombre;
   }
 
+  /** Coffres payants déjà ouverts : ils améliorent la rareté des objets proposés. */
+  get payantsOuverts(): number {
+    return this.ouverts;
+  }
+
   /** Pose un coffre à cet endroit (ou sur la case accessible la plus proche). */
   poser(id: IdCoffre, x: number, z: number): void {
     const c = this.pool.acquerir();
@@ -122,7 +127,7 @@ export class Coffres {
         if (c.ouvert < r.dureeOuverture && c.ouvert + dt >= r.dureeOuverture) {
           const def = COFFRES[IDS_COFFRES[c.indexType]];
           etat.choixCoffre.restants += def.choix;
-          etat.choixCoffre.titre = def.titre;
+          if (!def.payant) etat.choixCoffre.ender += def.choix;
         }
         c.ouvert += dt;
         if (c.ouvert >= r.dureeOuverture + r.resteOuvert) {

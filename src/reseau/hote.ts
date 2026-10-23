@@ -11,10 +11,8 @@
  * un joueur tombé reste à terre un moment, un allié qui reste près de lui le
  * relève ; défaite quand toute l'équipe est tombée.
  */
-import { IDS_ARMES } from '../donnees/armes';
 import { facteurEquipe, REGLES_MULTIJOUEUR } from '../donnees/multijoueur';
 import { GERBES } from '../donnees/particules';
-import { IDS_PASSIFS } from '../donnees/passifs';
 import { PROGRESSION } from '../donnees/progression';
 import type { StyleChiffre } from '../effets/chiffresDegats';
 import type { Ombres } from '../effets/ombres';
@@ -25,7 +23,6 @@ import type { EquipeJoueurs } from '../entites/types';
 import { minutesSansFin, type EtatJoueur } from '../etat';
 import type { ChampDeFlux } from '../monde/navigation';
 import type { Options } from '../options';
-import type { Amelioration } from '../progression/ameliorations';
 import type { BilanPartie } from '../progression/sauvegarde';
 import { SuiviLocal } from './bandeau';
 import { Combattant, Commutateur, type PartageCombat } from './combattant';
@@ -34,7 +31,7 @@ import { enregistrerRecordsEquipe } from './records';
 import {
   BITS_ACTIONS, ENNEMI_BLESSE, ENNEMI_BRULURE, ENNEMI_MORT, ENNEMI_POISON, ENNEMI_RALENTI, ENNEMI_SAIGNEMENT, Ecrivain,
   JOUEUR_EN_CHOIX, JOUEUR_MORT, JOUEUR_PROTEGE, Lecteur, STYLES_CHIFFRES, TYPE_ENTREE, TYPE_INSTANTANE,
-  statistiquesReseau, type MessageFiable,
+  carteValide, statistiquesReseau, type CarteJouee, type MessageFiable,
 } from './protocole';
 import type { ObservateurPartie, SessionReseau } from './session';
 
@@ -70,6 +67,7 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
   private finEnvoyee = false;
   /** Cartes de coffre déjà distribuées (pour repérer un coffre qui vient de s'ouvrir). */
   private coffresVus = 0;
+  private enderVus = 0;
   private effetsAllies = true;
   private dtReel = 0;
   private minuterieBouclier = 0;
@@ -225,14 +223,16 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
       j.xp = local.xp;
       j.xpNiveau = local.xpNiveau;
     }
-    // Coffre ouvert (par n'importe qui) : des cartes pour tout le monde
+    // Coffre ouvert (par n'importe qui) : des objets pour tout le monde, chacun dans son tirage
     const coffre = etat.choixCoffre;
     if (coffre.restants > this.coffresVus) {
       const nombre = coffre.restants - this.coffresVus;
+      const ender = Math.max(0, coffre.ender - this.enderVus);
       for (let i = 0; i < this.combattants.length; i++) if (!this.combattants[i].parti) this.combattants[i].cartesEnAttente += nombre;
-      this.session.envoyer({ type: 'coffre', nombre, titre: coffre.titre });
+      this.session.envoyer({ type: 'coffre', nombre, ender });
     }
     this.coffresVus = coffre.restants;
+    this.enderVus = coffre.ender;
 
     this.reanimer(dt);
 
@@ -284,7 +284,7 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
     return 1;
   }
 
-  surCarte(amelioration: Amelioration): void {
+  surCarte(amelioration: CarteJouee): void {
     this.session.envoyer({ type: 'carteJouee', index: 0, amelioration });
   }
 
@@ -334,7 +334,7 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
       if (this.elements.etat.issue === 'victoire') this.elements.continuerSansFin();
       return;
     }
-    if (message.type !== 'carte' || c.cartesEnAttente <= 0 || !ameliorationValide(message.amelioration)) return;
+    if (message.type !== 'carte' || c.cartesEnAttente <= 0 || !carteValide(message.amelioration)) return;
     c.cartesEnAttente--;
     c.tempsChoix = 0;
     try {
@@ -551,17 +551,5 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
     const entrees = this.elements.entrees;
     return (entrees.action('haut') ? BITS_ACTIONS.haut : 0) | (entrees.action('bas') ? BITS_ACTIONS.bas : 0)
       | (entrees.action('gauche') ? BITS_ACTIONS.gauche : 0) | (entrees.action('droite') ? BITS_ACTIONS.droite : 0);
-  }
-}
-
-/** Une carte reçue d'un joueur ne vise que des armes et des bonus qui existent. */
-export function ameliorationValide(a: Amelioration): boolean {
-  if (!a || typeof a !== 'object') return false;
-  switch (a.type) {
-    case 'arme': return IDS_ARMES.includes(a.id);
-    case 'eveil': return IDS_ARMES.includes(a.id) && (a.variante === 0 || a.variante === 1);
-    case 'passif': return IDS_PASSIFS.includes(a.id);
-    case 'soin': return true;
-    default: return false;
   }
 }

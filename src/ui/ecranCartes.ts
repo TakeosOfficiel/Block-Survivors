@@ -48,8 +48,8 @@ export class EcranCartes {
     return this.surChoix !== null;
   }
 
-  /** `titre` : « Niveau 5 ! », « Coffre ! »… */
-  ouvrir(titre: string, cartes: readonly Carte[], surChoix: (carte: Carte) => void, relance: Relance): void {
+  /** `titre` : « Niveau 5 ! », « Coffre ! »… ; sans `relance`, pas de bouton Relancer (choix de remplacement). */
+  ouvrir(titre: string, cartes: readonly Carte[], surChoix: (carte: Carte) => void, relance: Relance | null): void {
     this.surChoix = surChoix;
     this.relance = relance;
     this.ouvertureMs = performance.now();
@@ -62,6 +62,7 @@ export class EcranCartes {
     this.cartes = cartes;
     this.liste.replaceChildren(...cartes.map((carte, i) => this.creerCarte(carte, i)));
     const restantes = this.relance?.restantes() ?? 0;
+    this.boutonRelancer.classList.toggle('cache', this.relance === null);
     this.boutonRelancer.disabled = restantes === 0;
     this.texteRelancer.textContent = restantes === 0 ? 'Plus de relance' : '⟳ Relancer';
     this.resteRelancer.textContent = restantes === 0 ? '' : `· ${restantes} restante${restantes > 1 ? 's' : ''}`;
@@ -75,11 +76,18 @@ export class EcranCartes {
     this.afficherCartes(cartes);
   }
 
-  /** Choisit une carte au hasard sans attendre (multijoueur : temps de choix écoulé). */
+  /**
+   * Choisit une carte au hasard sans attendre (multijoueur : temps de choix
+   * écoulé), jamais « Retour » ; une 2e étape ouverte par ce choix (« Remplacer
+   * quel objet ? ») est tranchée de même.
+   */
   choisirAuHasard(): void {
-    if (!this.ouvert || this.cartes.length === 0) return;
-    this.ouvertureMs = -Infinity;
-    this.choisir(Math.floor(Math.random() * this.cartes.length));
+    for (let etape = 0; etape < 2 && this.ouvert; etape++) {
+      const possibles = this.cartes.filter((c) => c.amelioration.type !== 'retour');
+      if (possibles.length === 0) return;
+      this.ouvertureMs = -Infinity;
+      this.choisir(this.cartes.indexOf(possibles[Math.floor(Math.random() * possibles.length)]));
+    }
   }
 
   private fermer(): void {

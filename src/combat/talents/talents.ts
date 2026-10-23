@@ -26,6 +26,7 @@ import type { Arsenal, SystemesCombat } from '../arsenal';
 import type { ContexteCombat } from '../contexte';
 import type { Allie } from '../invocations';
 import { ajouterBouclier } from '../defense';
+import type { MecaniquesObjets } from './objets';
 
 /** Famille de chaque arme, par index dans IDS_ARMES. */
 const FAMILLES: readonly (FamilleArme | undefined)[] = IDS_ARMES.map((id) => ARMES[id].famille);
@@ -129,6 +130,8 @@ export class Talents implements CrochetsTalents, CrochetsJoueur {
   readonly etat: EtatPartie;
   private readonly rangs: Readonly<Record<string, number>>;
   private classe: MecaniquesClasse;
+  /** Effets propres de l'équipement, après ceux de la classe (voir objets.ts). */
+  private objets: MecaniquesObjets | null = null;
   private contexteCombat: ContexteCombat | null = null;
   private ressourcesPartie: RessourcesTalents | null = null;
   private arsenalPartie: Arsenal | null = null;
@@ -183,6 +186,10 @@ export class Talents implements CrochetsTalents, CrochetsJoueur {
     this.arsenalPartie = arsenal;
     this.ressourcesPartie = ressources;
     this.classe = classe(this);
+  }
+
+  brancherObjets(objets: MecaniquesObjets): void {
+    this.objets = objets;
   }
 
   get contexte(): ContexteCombat {
@@ -287,7 +294,10 @@ export class Talents implements CrochetsTalents, CrochetsJoueur {
       this.minuterieSoins += 1;
       this.soinsSeconde = 0;
     }
-    if (!j.mort && this.etat.issue === null) this.classe.maj(dt);
+    if (!j.mort && this.etat.issue === null) {
+      this.classe.maj(dt);
+      this.objets?.maj(dt);
+    }
   }
 
   avantDeclenchement(arme: ArmeEquipee): void {
@@ -304,7 +314,8 @@ export class Talents implements CrochetsTalents, CrochetsJoueur {
   }
 
   multiplicateur(e: Ennemi, arme: number, nature: NatureCoup): number {
-    return this.classe.multiplicateur(e, arme, nature);
+    const m = this.classe.multiplicateur(e, arme, nature);
+    return this.objets ? m * this.objets.multiplicateur(e, arme, nature) : m;
   }
 
   bonusCritique(e: Ennemi, arme: number, nature: NatureCoup): number {
@@ -329,6 +340,7 @@ export class Talents implements CrochetsTalents, CrochetsJoueur {
       }
     }
     this.classe.apresCoup(e, degats, arme, critique, nature);
+    this.objets?.apresCoup(e, degats, arme, critique, nature);
   }
 
   /** L'arme d'index `arme` vient d'être éveillée. */
@@ -338,6 +350,7 @@ export class Talents implements CrochetsTalents, CrochetsJoueur {
 
   surMort(e: Ennemi, arme: number, nature: NatureCoup): void {
     this.classe.surMort(e, arme, nature);
+    this.objets?.surMort(e);
   }
 
   surImpactMur(e: Ennemi): void {
@@ -366,6 +379,7 @@ export class Talents implements CrochetsTalents, CrochetsJoueur {
 
   apresCoupRecu(subis: number, evites: number): void {
     this.classe.apresCoupRecu(subis, evites);
+    this.objets?.apresCoupRecu(subis);
   }
 
   eviterMort(): boolean {

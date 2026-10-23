@@ -6,12 +6,15 @@
  * victoire « Continuer sans fin » (la partie reprend jusqu'à la mort).
  */
 import type { BibliothequeTextures } from '../assets/textures';
+import { ARMURES } from '../donnees/armures';
 import { PERSONNAGES } from '../donnees/personnages';
+import type { IdMonde, PieceArmure } from '../donnees/types';
 import type { EtatPartie, IssuePartie } from '../etat';
 import type { Recompense } from '../progression/sauvegarde';
 import { formaterTemps } from '../utils/format';
 import { remplirTuiles } from './bilan';
 import { element } from './dom';
+import { iconePiece } from './iconesObjets';
 import { bandeauMaitrise, partNiveau } from './maitrise';
 
 export interface ActionsFin {
@@ -48,7 +51,8 @@ export class EcranFin {
     return !this.racine.classList.contains('cache');
   }
 
-  afficher(issue: Exclude<IssuePartie, null>, etat: EtatPartie, recompense: Recompense | null): void {
+  /** `piece` : pièce d'armure de la Collection gagnée avec la victoire. */
+  afficher(issue: Exclude<IssuePartie, null>, etat: EtatPartie, recompense: Recompense | null, piece: PieceArmure | null): void {
     const victoire = issue === 'victoire';
     this.racine.classList.toggle('victoire', victoire);
     this.titre.textContent = victoire ? 'Victoire !' : 'Vous êtes mort !';
@@ -59,6 +63,7 @@ export class EcranFin {
     this.sousTitre.classList.toggle('record', recompense?.recordSansFin === true);
     remplirTuiles(this.tuiles, etat, this.textures);
     this.afficherRecompense(recompense);
+    if (piece) this.afficherPiece(etat.arene.monde, piece);
     this.actions.remplirBilan(this.bilan);
     this.bilan.scrollTop = 0;
     // Une partie gagnée peut continuer (une seule fois : ensuite, seule la mort l'arrête)
@@ -101,6 +106,19 @@ export class EcranFin {
       ligne.textContent = `Débloqué : ${deblocage.nom} !`;
       this.recompense.append(ligne);
     }
+  }
+
+  /** Pièce d'armure gagnée : son icône, son nom et son monde, mis en avant sous la maîtrise. */
+  private afficherPiece(monde: IdMonde, piece: PieceArmure): void {
+    const ligne = document.createElement('div');
+    ligne.className = 'fin-piece';
+    const image = document.createElement('img');
+    image.src = this.textures.url(iconePiece(monde, piece)) ?? '';
+    image.alt = '';
+    const texte = document.createElement('span');
+    texte.textContent = `Nouvelle pièce pour la Collection : ${ARMURES[monde].pieces[piece].nom} !`;
+    ligne.append(image, texte);
+    this.recompense.append(ligne);
   }
 
   /** Entrée rejoue directement. */

@@ -479,6 +479,12 @@ img { image-rendering: pixelated; }
 .bilan-tues { display: flex; flex-wrap: wrap; gap: 6px; }
 .bilan-tue { display: flex; align-items: center; gap: 4px; }
 .bilan-vide { color: #6a6a6a; }
+.bilan-objets { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.bilan-objet { display: flex; align-items: center; gap: 6px; }
+.rarete-objet-commune { color: #c8ccd4; }
+.rarete-objet-rare { color: #6fa4ff; }
+.rarete-objet-epique { color: #c08aff; }
+.rarete-objet-legendaire { color: #ffaa3a; }
 
 /* --- HUD (non cliquable) ------------------------------------------------- */
 #hud { position: fixed; inset: 0; pointer-events: none; }
@@ -611,7 +617,13 @@ img { image-rendering: pixelated; }
   position: absolute; bottom: 12px; left: 12px;
   display: flex; flex-direction: column; gap: 4px;
 }
-#hud-armes, #hud-passifs { display: flex; gap: 2px; }
+#hud-armes, #hud-passifs, #hud-equipement { display: flex; gap: 2px; }
+/* Équipement : liseré de la couleur de sa rareté, emplacement vide en pointillés */
+.capacite.objet-vide { opacity: 0.45; border-style: dashed; }
+.capacite.objet-commune { box-shadow: 0 0 0 2px #9aa0aa; }
+.capacite.objet-rare { box-shadow: 0 0 0 2px #3f86ff; }
+.capacite.objet-epique { box-shadow: 0 0 0 2px #a35cff, 0 0 8px rgba(163, 92, 255, 0.6); }
+.capacite.objet-legendaire { box-shadow: 0 0 0 2px #ff9a1f, 0 0 10px rgba(255, 154, 31, 0.75); }
 .capacite { position: relative; width: 40px; height: 40px; }
 .capacite .rang {
   position: absolute; right: 0; bottom: -2px;
@@ -1016,10 +1028,16 @@ img { image-rendering: pixelated; }
 .famille-eveil { --famille: #b06cff; --famille-voile: rgba(176, 108, 255, 0.36); }
 .famille-eveil .carte-nom { text-shadow: 0 0 6px rgba(190, 110, 255, 0.7), 2px 2px 0 rgba(0, 0, 0, 0.6); }
 .famille-soin { --famille: #ffc83a; --famille-voile: rgba(255, 200, 58, 0.22); }
+/* Objets des coffres : couleurs de rareté (comme les objets des jeux) */
+.famille-commune { --famille: #c8ccd4; --famille-voile: rgba(200, 204, 212, 0.16); }
+.famille-rare { --famille: #4f8dff; --famille-voile: rgba(79, 141, 255, 0.28); }
+.famille-epique { --famille: #b06cff; --famille-voile: rgba(176, 108, 255, 0.34); }
+.famille-legendaire { --famille: #ff9a1f; --famille-voile: rgba(255, 154, 31, 0.36); }
+.famille-action { --famille: #8a93a3; --famille-voile: rgba(138, 147, 163, 0.14); }
 /* Les plus rares pulsent */
-.famille-exclusif, .famille-eveil { animation: carte-rare 1.4s ease-in-out infinite alternate; }
+.famille-exclusif, .famille-eveil, .famille-epique, .famille-legendaire { animation: carte-rare 1.4s ease-in-out infinite alternate; }
 @keyframes carte-rare { to { filter: drop-shadow(0 0 16px var(--famille)); } }
-.famille-exclusif:hover, .famille-eveil:hover { animation: none; }
+.famille-exclusif:hover, .famille-eveil:hover, .famille-epique:hover, .famille-legendaire:hover { animation: none; }
 .page #cartes-relancer { width: auto; min-width: 0; padding: 0 18px; display: flex; align-items: center; gap: 8px; }
 #cartes-relancer-reste { color: #9aa0ad; font-weight: 400; }
 
@@ -1104,3 +1122,34 @@ img { image-rendering: pixelated; }
 .page .bilan-degats .jauge > div { background: #3cb850; border-radius: 2px; }
 .page .bilan .titre-panneau { font-size: 16px; }
 .page.page-jeu .panneau-mc { background: rgba(10, 12, 18, 0.82); }
+
+/* --- Apparence : pièces d'armure portées --------------------------------------------------- */
+.profil-armure { display: flex; flex-direction: column; gap: 4px; }
+.profil-piece { display: grid; grid-template-columns: 84px repeat(5, 1fr); gap: 4px; align-items: center; }
+.profil-piece-nom { color: #c8ccd6; font-size: 13px; }
+.profil-piece-choix { justify-content: center; padding: 2px; min-height: 36px; }
+.profil-piece-choix:disabled { opacity: 0.35; cursor: not-allowed; }
+.profil-piece-choix .case-mc { width: 30px; height: 30px; }
+.profil-piece-choix .case-mc img { width: 24px; height: 24px; }
+#profil-ensemble { margin-top: 6px; }
+
+/* --- Collection ---------------------------------------------------------------------------- */
+#collection .talents-onglets { flex-wrap: wrap; justify-content: center; }
+.collection-onglet { width: auto; padding: 6px 12px; }
+.collection-contenu { width: min(1000px, 94vw); display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow-y: auto; }
+.collection-entete { display: flex; flex-direction: column; gap: 6px; }
+.collection-titre { color: #fff; font-weight: 700; }
+.collection-barre { height: 10px; border-radius: 5px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.collection-barre > div { height: 100%; background: linear-gradient(#ffe58a, #e0b040); }
+.collection-corps { display: grid; grid-template-columns: 1fr 1.3fr; gap: 12px; align-items: start; }
+.collection-panneau { display: flex; flex-direction: column; gap: 6px; }
+.collection-tuile { display: grid; grid-template-columns: 40px 1fr; gap: 10px; align-items: center; padding: 4px; border-radius: 8px; }
+.collection-tuile.verrouillee { opacity: 0.55; }
+.collection-tuile.verrouillee img { filter: grayscale(1) brightness(0.5); }
+.collection-nom { color: #fff; font-weight: 600; }
+.collection-description { color: #b0b4be; font-size: 13px; }
+.collection-ensemble { margin-top: 4px; color: #9aa0ad; font-size: 13px; }
+.collection-ensemble.obtenu { color: var(--page-or-clair); font-weight: 600; }
+/* Pièce d'armure gagnée à la fin d'une partie */
+.fin-piece { display: flex; align-items: center; gap: 8px; color: var(--page-or-clair, #ffd75e); font-weight: 600; margin-top: 4px; }
+.fin-piece img { width: 28px; height: 28px; image-rendering: pixelated; }

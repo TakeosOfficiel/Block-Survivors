@@ -9,6 +9,7 @@ import type { DefinitionArene } from './types';
 
 const prairie: DefinitionArene = {
   id: 'prairie',
+  monde: 'prairie',
   nom: 'Prairie du village abandonné',
   icone: 'block/grass_block_side',
   description: 'Un village en ruine au milieu des champs.',
@@ -68,6 +69,7 @@ const prairie: DefinitionArene = {
 
 const mine: DefinitionArene = {
   id: 'mine',
+  monde: 'mine',
   nom: 'Mine souterraine',
   icone: 'block/iron_ore',
   description: 'Galeries sombres, piliers de minerai et toiles d\'araignée.',
@@ -138,6 +140,7 @@ const mine: DefinitionArene = {
 
 const nether: DefinitionArene = {
   id: 'nether',
+  monde: 'nether',
   nom: 'Zone volcanique',
   icone: 'block/netherrack',
   description: 'Lacs de lave, sable des âmes et ruines de forteresse.',

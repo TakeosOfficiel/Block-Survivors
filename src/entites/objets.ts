@@ -111,8 +111,9 @@ export class Objets {
           o.z += (dz / d) * pas;
           continue;
         }
-        this.etat.emeraudes += o.valeur;
-        this.etat.stats.emeraudesRamassees += o.valeur;
+        const emeraudes = Math.round(o.valeur * (1 + this.etat.modificateurs.emeraudes));
+        this.etat.emeraudes += emeraudes;
+        this.etat.stats.emeraudesRamassees += emeraudes;
         this.retours.son('emeraude');
         this.pool.liberer(i);
         continue;

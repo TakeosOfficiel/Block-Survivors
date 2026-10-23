@@ -64,6 +64,12 @@ export class BibliothequeTextures {
     this.urls.set(chemin, image instanceof HTMLCanvasElement ? image.toDataURL() : image.src);
   }
 
+  /** Image source d'une texture chargée (pour en dessiner une variante), ou null. */
+  image(chemin: CheminTexture): HTMLImageElement | HTMLCanvasElement | null {
+    const image = this.textures.get(chemin)?.image as HTMLImageElement | HTMLCanvasElement | undefined;
+    return image ?? null;
+  }
+
   /** Texture prête à l'emploi, ou null si elle n'a pu être chargée. */
   obtenir(chemin: CheminTexture): THREE.Texture | null {
     return this.textures.get(chemin) ?? null;

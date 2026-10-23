@@ -11,6 +11,11 @@ import { ARENES } from '../donnees/arenes';
 import { ARMES, IDS_ARMES, type IdArme } from '../donnees/armes';
 import { ENNEMIS, IDS_ENNEMIS, type IdEnnemi } from '../donnees/ennemis';
 import { IDS_OBJETS, OBJETS, type IdObjet } from '../donnees/objets';
+import { ARMURES, MONDES } from '../donnees/armures';
+import { IDS_OBJETS_EQUIPEMENT, OBJETS_EQUIPEMENT, type IdObjetEquipement } from '../donnees/equipement';
+import type { IdMonde } from '../donnees/types';
+import { cheminIconeObjet } from '../progression/equipement';
+import { iconePiece } from './iconesObjets';
 import { IDS_PASSIFS, PASSIFS, type IdPassif } from '../donnees/passifs';
 import { IDS_PERSONNAGES, PERSONNAGES, type IdPersonnage } from '../donnees/personnages';
 import type { DefinitionArene } from '../donnees/types';
@@ -48,6 +53,10 @@ export interface SourcesDebug {
   ameliorerArme(id: IdArme): void;
   ajouterBonus(id: IdPassif): void;
   poserObjet(id: IdObjet): void;
+  /** Équipe l'objet (ou le renforce s'il est porté ; emplacements pleins : remplace le premier). */
+  donnerEquipement(id: IdObjetEquipement): void;
+  /** Une pièce d'armure manquante de ce monde pour la Collection (portée à la prochaine partie). */
+  donnerPieceArmure(monde: IdMonde): void;
   infligerEtat(etat: EtatDebug): void;
   gagnerNiveau(): void;
   apparaitreBoss(): void;
@@ -83,6 +92,8 @@ export class PanneauDebug {
     armes: element('dbg-armes'),
     bonus: element('dbg-bonus'),
     objets: element('dbg-objets'),
+    equipement: element('dbg-equipement'),
+    armures: element('dbg-armures'),
     etats: element('dbg-etats'),
     frappe: element<HTMLButtonElement>('dbg-frappe'),
     niveau: element<HTMLButtonElement>('dbg-niveau'),
@@ -132,6 +143,13 @@ export class PanneauDebug {
     for (const id of IDS_OBJETS) {
       const def = OBJETS[id];
       this.dom.objets.append(this.creerIcone(`${def.nom} : poser à côté`, textures.url(def.icone), () => this.sources.poserObjet(id)));
+    }
+    for (const id of IDS_OBJETS_EQUIPEMENT) {
+      const def = OBJETS_EQUIPEMENT[id];
+      this.dom.equipement.append(this.creerIcone(`${def.nom} (${def.rarete}) : équiper / renforcer`, textures.url(cheminIconeObjet(id)), () => this.sources.donnerEquipement(id)));
+    }
+    for (const monde of MONDES) {
+      this.dom.armures.append(this.creerIcone(`${ARMURES[monde].nom} : une pièce manquante`, textures.url(iconePiece(monde, 'plastron')), () => this.sources.donnerPieceArmure(monde)));
     }
     for (const etat of Object.keys(ETATS_DEBUG) as EtatDebug[]) {
       this.dom.etats.append(this.creerBouton(ETATS_DEBUG[etat], () => this.sources.infligerEtat(etat)));

@@ -4,6 +4,8 @@
  * souris le fait tourner. Un petit moteur séparé, sur son propre canvas,
  * déplacé d'un écran à l'autre ; il ne dessine que lorsqu'il est attaché.
  */
+import { ArmureHeros } from '../modeles/armure';
+import type { IdMonde, PieceArmure } from '../donnees/types';
 import * as THREE from 'three';
 import { WebGPURenderer } from 'three/webgpu';
 import type { BibliothequeTextures } from '../assets/textures';
@@ -23,6 +25,7 @@ interface Heros {
   readonly modele: ModeleCompile;
   readonly rendu: ModeleInstancie;
   readonly pose: PoseModele;
+  readonly armure: ArmureHeros;
 }
 
 export class ApercuHeros {
@@ -32,6 +35,8 @@ export class ApercuHeros {
   private readonly animation = creerEtatAnimation();
   private heros: Heros | null = null;
   private cle = '';
+  /** Armure de la Collection à faire porter au héros (branchée au lancement). */
+  armure: () => Partial<Record<PieceArmure, IdMonde>> = () => ({});
   private conteneur: HTMLElement | null = null;
   private angle = ANGLE_INITIAL;
   private glisse: number | null = null;
@@ -91,7 +96,8 @@ export class ApercuHeros {
 
   /** Change le personnage affiché (classe, skin, gabarit). */
   afficher(apparence: ApparenceEntite): void {
-    const cle = `${apparence.modele}|${apparence.skin}|${apparence.objetEnMain ?? ''}|${this.textures.url(apparence.skin) ?? ''}`;
+    const armure = this.armure();
+    const cle = `${apparence.modele}|${apparence.skin}|${apparence.objetEnMain ?? ''}|${this.textures.url(apparence.skin) ?? ''}|${JSON.stringify(armure)}`;
     if (cle === this.cle) return;
     this.cle = cle;
     if (this.heros) liberer(this.heros.scene);
@@ -104,7 +110,7 @@ export class ApercuHeros {
     scene.add(soleil);
     const modele = compilerModele(MODELES[apparence.modele]);
     const rendu = new ModeleInstancie(modele, apparence, this.textures, 1, scene);
-    this.heros = { scene, modele, rendu, pose: creerPoseModele(modele) };
+    this.heros = { scene, modele, rendu, pose: creerPoseModele(modele), armure: new ArmureHeros(modele, armure, this.textures, scene) };
     // Cadrage : tout le modèle, centré à mi-hauteur
     const h = modele.hauteur;
     this.camera.position.set(0, h * 0.55, h * 2.9);
@@ -138,6 +144,7 @@ export class ApercuHeros {
     h.rendu.commencer();
     h.rendu.ajouter(h.pose);
     h.rendu.terminer();
+    h.armure.poser(h.pose);
     this.renderer.render(h.scene, this.camera);
   };
 }

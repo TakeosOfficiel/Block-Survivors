@@ -10,7 +10,8 @@ import { ARMES, IDS_ARMES, type IdArme } from '../donnees/armes';
 import { IDS_PASSIFS, PASSIFS, type IdPassif } from '../donnees/passifs';
 import { armeProposable } from '../donnees/personnages';
 import { PROGRESSION } from '../donnees/progression';
-import type { CheminTexture, EtatEveil, MecaniqueArme, Modificateurs, StatsArme } from '../donnees/types';
+import type { CheminTexture, EtatEveil, MecaniqueArme, Modificateurs, RareteObjet, StatsArme } from '../donnees/types';
+import type { ChoixEquipement } from './equipement';
 import type { EtatPartie } from '../etat';
 import { creerModificateurs, cumulerModificateurs } from './modificateurs';
 import type { Passifs } from './passifs';
@@ -22,8 +23,8 @@ export type Amelioration =
   | { readonly type: 'passif'; readonly id: IdPassif }
   | { readonly type: 'soin' };
 
-/** Famille de la carte, qui donne la couleur de son nom (comme la rareté des objets du jeu). */
-export type RareteCarte = 'nouvelle_arme' | 'arme' | 'eveil' | 'passif' | 'exclusif' | 'soin';
+/** Famille de la carte, qui donne la couleur de son nom (comme la rareté des objets du jeu). Cartes de coffre : rareté de l'objet. */
+export type RareteCarte = 'nouvelle_arme' | 'arme' | 'eveil' | 'passif' | 'exclusif' | 'soin' | RareteObjet | 'action';
 
 /** Nom de la rareté, en bandeau en haut de la carte. */
 export const NOMS_RARETE: Readonly<Record<RareteCarte, string>> = {
@@ -33,11 +34,16 @@ export const NOMS_RARETE: Readonly<Record<RareteCarte, string>> = {
   exclusif: 'Exclusif',
   eveil: 'Éveil',
   soin: 'Soin',
+  commune: 'Commune',
+  rare: 'Rare',
+  epique: 'Épique',
+  legendaire: 'Légendaire',
+  action: 'Choix',
 };
 
 /** Tout ce qu'une carte affiche. */
 export interface Carte {
-  readonly amelioration: Amelioration;
+  readonly amelioration: Amelioration | ChoixEquipement;
   readonly rarete: RareteCarte;
   readonly nom: string;
   readonly icone: CheminTexture;
@@ -130,9 +136,23 @@ const LIBELLES_MODIFICATEURS: Record<keyof Modificateurs, { nom: string; pourcen
   degatsRalentis: { nom: 'Dégâts contre les ralentis', pourcentage: false, unite: '' },
   regenerationPart: { nom: 'Régénération', pourcentage: false, unite: '' },
   soinsObjets: { nom: 'Soins des pommes', pourcentage: false, unite: '' },
+  degatsMortsVivants: { nom: 'Dégâts contre les morts-vivants', pourcentage: false, unite: '' },
+  degatsArthropodes: { nom: 'Dégâts contre les arthropodes', pourcentage: false, unite: '' },
+  degatsNether: { nom: 'Dégâts contre le Nether', pourcentage: false, unite: '' },
+  degatsRecus: { nom: 'Dégâts reçus', pourcentage: false, unite: '' },
+  emeraudes: { nom: 'Émeraudes ramassées', pourcentage: false, unite: '' },
+  chanceBrulure: { nom: 'Coups qui enflamment', pourcentage: false, unite: '' },
+  degatsSol: { nom: 'Dégâts du magma', pourcentage: false, unite: '' },
 };
 
 const FORMAT = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 });
+
+/** Modificateurs exprimés en part (0,2 = +20 %) : affichés en pourcentage signé. */
+const PARTS: ReadonlySet<keyof Modificateurs> = new Set<keyof Modificateurs>([
+  'degatsMelee', 'zoneMelee', 'degatsProjectiles', 'vitesseProjectiles', 'degatsFeu', 'degatsAllies', 'vitesseAllies',
+  'pvAllies', 'degatsBrulure', 'dureeBrulure', 'degatsPoison', 'dureeRalenti', 'degatsRalentis', 'soinsObjets',
+  'degatsMortsVivants', 'degatsArthropodes', 'degatsNether', 'degatsRecus', 'emeraudes', 'chanceBrulure', 'degatsSol',
+]);
 
 // --------------------------------------------------------------------------
 // Tirage et application
@@ -321,11 +341,16 @@ export class Ameliorations {
       icone: def.icone,
       etiquette: rang === 0 ? (def.exclusif ? 'Nouveau bonus exclusif' : 'Nouveau bonus') : `Rang ${rang} → ${rang + 1}`,
       description: rang === 0 ? `${def.description} ${def.niveaux[0].description}.` : def.niveaux[rang].description,
-      lignes: (Object.keys(LIBELLES_MODIFICATEURS) as (keyof Modificateurs)[])
-        .filter((cle) => Math.abs(apres[cle] - avant[cle]) > 1e-6)
-        .map((cle) => `${LIBELLES_MODIFICATEURS[cle].nom} : ${formaterModificateur(cle, avant[cle])} → ${formaterModificateur(cle, apres[cle])}`),
+      lignes: lignesModificateurs(avant, apres),
     };
   }
+}
+
+/** Lignes « Nom : avant → après » de chaque modificateur qui change. */
+export function lignesModificateurs(avant: Modificateurs, apres: Modificateurs): string[] {
+  return (Object.keys(LIBELLES_MODIFICATEURS) as (keyof Modificateurs)[])
+    .filter((cle) => Math.abs(apres[cle] - avant[cle]) > 1e-6)
+    .map((cle) => `${LIBELLES_MODIFICATEURS[cle].nom} : ${formaterModificateur(cle, avant[cle])} → ${formaterModificateur(cle, apres[cle])}`);
 }
 
 /** Lignes décrivant des bonus permanents (personnages), ex. « Dégâts reçus : −1 par coup ». */
@@ -347,6 +372,10 @@ function formaterModificateur(cle: keyof Modificateurs, valeur: number): string 
   if (cle === 'armure') return valeur === 0 ? 'normaux' : `−${FORMAT.format(valeur)} par coup`;
   if (cle === 'critique') return `${Math.round(valeur * 100)} % de chance`;
   if (cle === 'degatsCritiques') return `×${FORMAT.format(valeur)}`;
+  if (PARTS.has(cle)) {
+    const pourcent = Math.round(valeur * 100);
+    return `${pourcent >= 0 ? '+' : '−'}${Math.abs(pourcent)} %`;
+  }
   if (libelle.pourcentage) {
     const pourcent = Math.round((valeur - 1) * 100);
     return `${pourcent >= 0 ? '+' : '−'}${Math.abs(pourcent)} %`;

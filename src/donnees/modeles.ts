@@ -208,10 +208,40 @@ function ondulationPoisson(): MembreMarche[] {
   ];
 }
 
+/**
+ * Armures du joueur (Collection), sur les planches 64×32 du jeu : mêmes parties que le
+ * joueur (elles suivent sa pose), gonflées comme en jeu (1 px, 0,5 px pour les jambières) ;
+ * membres gauches = droits en miroir.
+ */
+const BRAS_ARMURE = { taille: [4, 12, 4], centre: [-1, -4, 0], uv: [40, 16], gonflement: 1 } as const;
+const JAMBE_ARMURE = { taille: [4, 12, 4], centre: [0, -6, 0], uv: [0, 16] } as const;
+const ARMURE = {
+  casque: { tete: { ...TETE, gonflement: 1 } },
+  plastron: {
+    corps: { ...CORPS, gonflement: 1 },
+    brasDroit: { ...BRAS_ARMURE, pivot: [-5, 22, 0] },
+    brasGauche: { ...BRAS_ARMURE, pivot: [5, 22, 0], centre: [1, -4, 0], miroir: true },
+  },
+  jambieres: {
+    corps: { ...CORPS, gonflement: 0.5 },
+    jambeDroite: { ...JAMBE_ARMURE, pivot: [-1.9, 12, 0], gonflement: 0.5 },
+    jambeGauche: { ...JAMBE_ARMURE, pivot: [1.9, 12, 0], gonflement: 0.5, miroir: true },
+  },
+  bottes: {
+    jambeDroite: { ...JAMBE_ARMURE, pivot: [-1.9, 12, 0], gonflement: 1 },
+    jambeGauche: { ...JAMBE_ARMURE, pivot: [1.9, 12, 0], gonflement: 1, miroir: true },
+  },
+} satisfies Record<string, Record<string, CubeModele>>;
+
 // --------------------------------------------------------------------------
 // Table des modèles
 // --------------------------------------------------------------------------
 const definitions = {
+  armure_casque: { tailleTexture: [64, 32], parties: ARMURE.casque },
+  armure_plastron: { tailleTexture: [64, 32], parties: ARMURE.plastron },
+  armure_jambieres: { tailleTexture: [64, 32], parties: ARMURE.jambieres },
+  armure_bottes: { tailleTexture: [64, 32], parties: ARMURE.bottes },
+
   // Joueur : 6 boîtes (tête 8x8x8, corps 8x12x4, bras et jambes 4x12x4), skin 64x64
   humanoide: {
     main: mainDroite(-1),

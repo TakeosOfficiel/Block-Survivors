@@ -1,25 +1,34 @@
-/** Icônes des armes et des bonus passifs possédés, avec leur rang (en bas à gauche). */
+/** Icônes des armes, des bonus passifs possédés (avec leur rang) et de l'équipement porté (en bas à gauche). */
 import type { BibliothequeTextures } from '../assets/textures';
 import { eveilDe, rangMax } from '../combat/armeEquipee';
 import type { Arsenal } from '../combat/arsenal';
 import { PASSIFS } from '../donnees/passifs';
 import type { CheminTexture } from '../donnees/types';
+import { OBJETS_EQUIPEMENT } from '../donnees/equipement';
+import { cheminIconeObjet, niveauMaxObjet, type Equipement, type ObjetPorte } from '../progression/equipement';
 import type { Passifs } from '../progression/passifs';
 import { element } from './dom';
 
 export class BarreCapacites {
   private readonly armes = element('hud-armes');
   private readonly passifs = element('hud-passifs');
+  private readonly equipement = element('hud-equipement');
   private readonly textures: BibliothequeTextures;
   private versionArmes = -1;
   private versionPassifs = -1;
+  private versionEquipement = -1;
 
   constructor(textures: BibliothequeTextures) {
     this.textures = textures;
   }
 
   /** Reconstruit les icônes seulement quand l'arsenal ou les passifs ont changé. */
-  afficher(arsenal: Arsenal, passifs: Passifs): void {
+  afficher(arsenal: Arsenal, passifs: Passifs, equipement: Equipement): void {
+    if (equipement.version !== this.versionEquipement) {
+      this.versionEquipement = equipement.version;
+      // Bagues puis amulette ; emplacement vide en pointillés
+      this.equipement.replaceChildren(...[...equipement.bagues, ...equipement.amulettes].map((o) => this.creerCaseObjet(o)));
+    }
     if (arsenal.version !== this.versionArmes) {
       this.versionArmes = arsenal.version;
       this.armes.replaceChildren(...arsenal.armes.map((a) => {
@@ -39,6 +48,18 @@ export class BarreCapacites {
         return this.creerCase(def.nom, def.description, def.icone, p.rang, def.niveaux.length);
       }));
     }
+  }
+
+  private creerCaseObjet(o: ObjetPorte | null): HTMLElement {
+    if (!o) {
+      const vide = document.createElement('div');
+      vide.className = 'capacite case-mc objet-vide';
+      return vide;
+    }
+    const def = OBJETS_EQUIPEMENT[o.id];
+    const case_ = this.creerCase(def.nom, def.description([1, 1.5, 2][o.niveau - 1] ?? 1), cheminIconeObjet(o.id), o.niveau, niveauMaxObjet(o.id));
+    case_.classList.add('objet', `objet-${def.rarete}`);
+    return case_;
   }
 
   private creerCase(nom: string, description: string, icone: CheminTexture, rang: number, max: number): HTMLElement {

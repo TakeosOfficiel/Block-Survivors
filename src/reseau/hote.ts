@@ -11,6 +11,7 @@
  * un joueur tombé reste à terre un moment, un allié qui reste près de lui le
  * relève ; défaite quand toute l'équipe est tombée.
  */
+import { CONFIG } from '../config';
 import { facteurEquipe, REGLES_MULTIJOUEUR } from '../donnees/multijoueur';
 import { GERBES } from '../donnees/particules';
 import { PROGRESSION } from '../donnees/progression';
@@ -54,6 +55,8 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
   private readonly contextes: ContexteComportement[] = [];
   /** Réanimation en cours de chaque joueur de l'équipe (s), par k (0 : l'hôte). */
   private readonly reanimations = new Float32Array(REGLES_MULTIJOUEUR.joueursMax);
+  /** Totems déjà vus consommés par chaque joueur distant, par k (l'hôte : jeu.ts s'en charge). */
+  private readonly totemsVus = new Int32Array(REGLES_MULTIJOUEUR.joueursMax);
   private readonly suiviLocal = new SuiviLocal();
   private cartesOuvertes = false;
   private readonly ecrivain = new Ecrivain(96 * 1024);
@@ -201,6 +204,14 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
         c.commandes.bits = 0;
       }
       c.majJoueur(dt);
+      // Totem consommé (relevé à la mort) : comme pour l'hôte, les ennemis proches sont repoussés
+      const j = c.etatJoueur;
+      if (j.viesUtilisees !== this.totemsVus[i + 1]) {
+        this.totemsVus[i + 1] = j.viesUtilisees;
+        const t = CONFIG.joueur.totem;
+        this.elements.ennemis.repousser(j.x, j.z, t.rayonRecul, t.recul);
+        this.elements.particules.emettre(j.x, 1.2, j.z, GERBES.totem);
+      }
     }
   }
 
@@ -451,6 +462,7 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
       w.u8(distant ? distant.commandes.bits : this.bitsLocaux());
       w.f32(distant ? distant.joueur.lacetCommandes : this.elements.joueur.lacetCommandes);
       w.part(Math.min(1, this.reanimations[k] / dureeReanimation));
+      w.u8(Math.min(255, j.viesUtilisees));
     }
 
     // Ennemis

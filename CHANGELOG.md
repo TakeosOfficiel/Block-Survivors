@@ -5,6 +5,11 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.47.2] — 2026-10-23
+
+### Corrections
+- **Totem en multijoueur** : il vous relevait bien, mais seul l'hôte le savait. Chez les autres joueurs, le compteur de totems restait plein (on croyait en avoir encore un), sans animation ni son. Le totem consommé est maintenant transmis : compteur à jour, animation et son, gerbe de particules visible par toute l'équipe. Et comme pour l'hôte, un joueur relevé par son totem repousse les ennemis autour de lui.
+
 ## [0.47.1] — 2026-10-23
 
 ### Corrections

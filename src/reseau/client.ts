@@ -355,9 +355,18 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
       const bits = l.u8();
       const lacet = l.f32();
       const reanimation = l.part();
+      const totems = l.u8();
       const autre = this.autres[index];
       const j = index === this.session.index ? moi : autre?.etatJoueur;
       if (!j) continue;
+      // Totem consommé chez l'hôte : compteur et animation du HUD (jeu.ts) pour soi, gerbe pour les autres
+      if (totems !== j.viesUtilisees) {
+        if (totems > j.viesUtilisees) {
+          if (autre) this.elements.particules.emettre(x, 1.2, z, GERBES.totem);
+          else this.elements.retours.son('totem');
+        }
+        j.viesUtilisees = totems;
+      }
       j.pv = pv;
       j.pvMax = pvMax;
       j.bouclier = bouclier;

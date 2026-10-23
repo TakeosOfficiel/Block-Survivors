@@ -7,7 +7,7 @@
  *   npm run dev   (dans un autre terminal)
  *   node scripts/test-multijoueur.mjs
  *
- * Variables : JOUEURS (2 à 4), URL, L et H (taille des fenêtres), VITESSE (temps
+ * Variables : JOUEURS (2 à 4), URL, PROXY, L et H (taille des fenêtres), VITESSE (temps
  * accéléré chez l'hôte), INVINCIBLES=1, DUREE (ms), DOSSIER (captures),
  * COFFRE=1, MINUTEUR=1, SANS_FIN=1, REANIMATION=1, SKIN=1 et TAILLE_SKIN (vérifications en plus),
  * PLAYWRIGHT (chemin du module playwright s'il n'est pas installé dans le projet).
@@ -64,6 +64,8 @@ const DOSSIER = process.env.DOSSIER ?? '.';
 const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const navigateur = await chromium.launch({
+  // Relais de la salle derrière un proxy (PROXY=http://hôte:port)
+  proxy: process.env.PROXY ? { server: process.env.PROXY, bypass: 'localhost,127.0.0.1' } : undefined,
   args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--disable-features=WebRtcHideLocalIpsWithMdns', '--autoplay-policy=no-user-gesture-required'],
 });
 const pages = [];
@@ -106,22 +108,17 @@ for (let i = 0; i < N; i++) {
   await pages[i].click(`#salon button[data-id="${persos[i]}"]`);
 }
 await hote.click('#salon-heberger');
+await hote.waitForSelector('#salon-code', { timeout: 30000 });
+const code = await hote.textContent('#salon-code');
+console.log(`code du salon : ${code}`);
 for (const [k, invite] of invites.entries()) {
-  await hote.click('#salon-inviter');
-  await hote.waitForFunction(() => document.querySelector('#salon-code-invitation')?.value.startsWith('BS1.'), null, { timeout: 30000 });
-  const offre = await hote.inputValue('#salon-code-invitation');
-  console.log(`invitation ${k + 1} : ${offre.length} caractères`);
   await invite.click('#salon-rejoindre');
-  await invite.fill('#salon-code-offre', offre);
-  await invite.click('#salon-generer');
-  await invite.waitForSelector('#salon-code-retour', { timeout: 30000 });
-  const reponse = await invite.inputValue('#salon-code-retour');
-  console.log(`réponse ${k + 1} : ${reponse.length} caractères`);
-  await hote.fill('#salon-code-reponse', reponse);
-  await hote.click('#salon-valider');
-  await hote.waitForFunction((n) => document.querySelectorAll('#salon-joueurs > div').length === n, k + 2, { timeout: 30000 });
+  await invite.fill('#salon-code-saisie', code.toLowerCase().replace('-', ''));
+  await invite.click('#salon-entrer');
+  const debut = Date.now();
+  await hote.waitForFunction((n) => document.querySelectorAll('#salon-joueurs > div').length === n, k + 2, { timeout: 60000 });
   await invite.waitForSelector('#salon-joueurs', { timeout: 10000 });
-  console.log(`joueur ${k + 1} connecté`);
+  console.log(`joueur ${k + 1} connecté en ${((Date.now() - debut) / 1000).toFixed(1)} s`);
 }
 await hote.click('#salon-lancer');
 for (const p of pages) await p.waitForFunction(() => window.blockSurvivors?.jeu && document.querySelector('#chargement')?.classList.contains('cache') !== false, null, { timeout: 180000 });

@@ -3,12 +3,11 @@
  * puis Héberger ou Rejoindre. Chacun joue avec sa classe, son pseudo, son skin
  * et la progression de sa classe (maîtrise et talents, comme en solo) ; la
  * maîtrise progresse aussi à plusieurs, mais les records d'une partie à
- * plusieurs restent à part de ceux du solo. La mise en relation se fait par
- * deux codes à copier-coller : l'invitation de l'hôte, puis la réponse du
- * joueur. L'hôte lance la partie quand tout le monde est là.
+ * plusieurs restent à part de ceux du solo. L'hôte ouvre un salon et donne
+ * son code court ; ses amis le tapent dans Rejoindre et entrent d'eux-mêmes
+ * (signalisation.ts). L'hôte lance la partie quand tout le monde est là.
  */
 import { ARENES } from '../donnees/arenes';
-import { REGLES_MULTIJOUEUR } from '../donnees/multijoueur';
 import { IDS_PERSONNAGES, PERSONNAGES, type IdPersonnage } from '../donnees/personnages';
 import type { DefinitionArene } from '../donnees/types';
 import type { ChoixPartie } from '../lancement';
@@ -17,7 +16,8 @@ import type { Sauvegarde } from '../progression/sauvegarde';
 import type { Profil } from '../profil';
 import { element } from '../ui/dom';
 import { skinPourReseau } from './apparence';
-import { SessionReseau, type Invitation, type ProfilReseau } from './session';
+import { SessionReseau, type ProfilReseau } from './session';
+import { normaliserCode } from './signalisation';
 
 /** Ce que le salon renvoie au lancement. */
 export interface LancementMultijoueur {
@@ -30,7 +30,8 @@ const STYLE = `
 #salon .salon-corps { width: min(760px, 94vw); max-height: calc(100vh - 80px); overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 #salon .salon-rangee { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 #salon .salon-choix.choisie { border-color: var(--page-or); color: var(--page-or-clair); }
-#salon textarea { width: 100%; height: 76px; resize: none; font-family: monospace; font-size: 11px; word-break: break-all; }
+#salon .salon-code { font-size: 44px; letter-spacing: 8px; text-align: center; color: var(--page-or-clair); padding: 10px 0; user-select: all; }
+#salon .salon-saisie { width: 260px; font-size: 32px; letter-spacing: 6px; text-align: center; text-transform: uppercase; }
 #salon select { min-width: 220px; }
 #salon .salon-statut { min-height: 1.4em; color: #9aa0ad; }
 #salon .salon-statut.erreur { color: #ff7070; }
@@ -48,7 +49,6 @@ export class EcranSalon {
   private personnage: IdPersonnage;
   private arene: DefinitionArene;
   private session: SessionReseau | null = null;
-  private invitation: Invitation | null = null;
   private surLancer: ((l: LancementMultijoueur) => void) | null = null;
   private ouvert = false;
   private lance = false;
@@ -78,7 +78,10 @@ export class EcranSalon {
     element<HTMLButtonElement>('menu-multijoueur').addEventListener('click', () => this.ouvrir());
     // Entrée lancerait la partie solo du menu derrière : bloquée tant que le salon est ouvert ou lancé
     window.addEventListener('keydown', (e) => {
-      if ((this.ouvert || this.lance) && e.code === 'Enter') e.stopImmediatePropagation();
+      if (!(this.ouvert || this.lance) || (e.code !== 'Enter' && e.code !== 'NumpadEnter')) return;
+      e.stopImmediatePropagation();
+      // Entrée dans le champ du code : on rejoint
+      if (document.activeElement?.id === 'salon-code-saisie') document.getElementById('salon-entrer')?.click();
     }, true);
   }
 
@@ -102,8 +105,6 @@ export class EcranSalon {
     this.ouvert = false;
     this.session?.fermer();
     this.session = null;
-    this.invitation?.annuler();
-    this.invitation = null;
     this.racine.classList.add('cache');
   }
 
@@ -150,14 +151,19 @@ export class EcranSalon {
     c.append(choixArene);
 
     const actions = rangee();
-    const heberger = bouton('Héberger', () => this.heberger());
+    const heberger = bouton('Héberger', () => {
+      heberger.disabled = true;
+      void this.heberger().finally(() => { heberger.disabled = false; });
+    });
     heberger.id = 'salon-heberger';
     const rejoindre = bouton('Rejoindre', () => this.afficherRejoindre());
     rejoindre.id = 'salon-rejoindre';
     actions.append(heberger, rejoindre, bouton('Retour', () => this.fermer()));
     c.append(actions);
-    c.append(texte('Sans serveur : l\'hôte envoie un code d\'invitation (Discord, SMS…), le joueur renvoie un code de réponse. '
-      + 'Ça passe derrière la plupart des box ; sinon, essayez en réseau local ou avec Tailscale ou ZeroTier.', 'ecran-aide'));
+    c.append(texte('L\'hôte ouvre un salon et donne son code à ses amis, qui le tapent dans Rejoindre. Pas de serveur de jeu : '
+      + 'la partie passe directement d\'un joueur à l\'autre. Ça passe derrière la plupart des box ; sinon, essayez en réseau local '
+      + 'ou avec Tailscale ou ZeroTier.', 'ecran-aide'));
+    c.append(statutVide());
   }
 
   /** Ce que ce joueur apporte au salon : son pseudo, son skin, sa classe et ses talents. */
@@ -174,65 +180,43 @@ export class EcranSalon {
   // --- Hôte ----------------------------------------------------------------
 
   private async heberger(): Promise<void> {
-    const session = SessionReseau.heberger(await this.profilReseau(), this.arene.id);
-    this.session = session;
-    session.surChangement = () => this.afficherHote();
-    this.afficherHote();
+    this.afficherStatut('Ouverture du salon…');
+    try {
+      const session = await SessionReseau.heberger(await this.profilReseau(), this.arene.id);
+      if (!this.ouvert) {
+        session.fermer();
+        return;
+      }
+      this.session = session;
+      session.surChangement = () => this.afficherHote();
+      this.afficherHote();
+    } catch (erreur) {
+      this.afficherStatut((erreur as Error).message, true);
+    }
   }
 
-  private afficherHote(statut = '', erreur = false): void {
+  private afficherHote(): void {
     const session = this.session;
     if (!session) return;
     const c = this.corps;
     c.replaceChildren();
-    c.append(texte(`Vous hébergez : ${this.arene.nom}`, 'titre-panneau'), this.listeJoueurs(session));
-
-    const invitation = this.invitation;
-    if (invitation) {
-      c.append(texte('1. Envoyez ce code d\'invitation au joueur :', 'ecran-aide'));
-      c.append(zoneCode(invitation.code, 'salon-code-invitation'));
-      c.append(texte('2. Collez ici le code de réponse qu\'il vous renvoie :', 'ecran-aide'));
-      const reponse = zoneSaisie('salon-code-reponse');
-      c.append(reponse);
-      const valider = bouton('Valider la réponse', () => {
-        valider.disabled = true;
-        this.afficherStatut('Connexion…');
-        invitation.accepter(reponse.value).then(() => {
-          this.invitation = null;
-          this.afficherHote('Joueur connecté !');
-        }, (erreur: Error) => {
-          valider.disabled = false;
-          this.afficherStatut(erreur.message, true);
-        });
-      });
-      valider.id = 'salon-valider';
-      c.append(rangee(valider, bouton('Annuler l\'invitation', () => {
-        invitation.annuler();
-        this.invitation = null;
-        this.afficherHote();
-      })));
-    }
-
-    const actions = rangee();
-    const inviter = bouton('Inviter un joueur', () => {
-      inviter.disabled = true;
-      this.afficherStatut('Préparation du code (quelques secondes)…');
-      session.inviter().then((i) => {
-        this.invitation = i;
-        this.afficherHote();
-      }, (erreur: Error) => this.afficherStatut(erreur.message, true));
+    c.append(texte(`Vous hébergez : ${this.arene.nom}`, 'titre-panneau'));
+    const code = texte(session.code, 'salon-code panneau-mc');
+    code.id = 'salon-code';
+    const copier = bouton('Copier le code', () => {
+      void navigator.clipboard?.writeText(session.code).then(() => { copier.textContent = 'Copié !'; });
     });
-    inviter.id = 'salon-inviter';
-    inviter.disabled = invitation !== null || session.nombreJoueurs >= REGLES_MULTIJOUEUR.joueursMax;
+    c.append(code, rangee(copier));
+    c.append(texte('Donnez ce code à vos amis : ils cliquent sur Rejoindre et le tapent, puis apparaissent ici d\'eux-mêmes.', 'ecran-aide'));
+    c.append(this.listeJoueurs(session));
+
     const lancer = bouton('Lancer la partie', () => {
       session.lancer();
       this.terminer(session);
     });
     lancer.id = 'salon-lancer';
     lancer.classList.add('page-fermer');
-    actions.append(inviter, lancer, bouton('Quitter le salon', () => this.fermer()));
-    c.append(actions, statutVide());
-    if (statut) this.afficherStatut(statut, erreur);
+    c.append(rangee(lancer, bouton('Quitter le salon', () => this.fermer())), statutVide());
   }
 
   // --- Joueur --------------------------------------------------------------
@@ -240,39 +224,53 @@ export class EcranSalon {
   private afficherRejoindre(): void {
     const c = this.corps;
     c.replaceChildren();
-    c.append(texte('1. Collez le code d\'invitation de l\'hôte :', 'ecran-aide'));
-    const offre = zoneSaisie('salon-code-offre');
-    c.append(offre);
-    const generer = bouton('Générer ma réponse', () => {
-      generer.disabled = true;
-      this.afficherStatut('Préparation de la réponse (quelques secondes)…');
-      this.profilReseau().then((profil) => SessionReseau.rejoindre(profil, offre.value)).then(({ session, code }) => {
+    c.append(texte('Code du salon donné par l\'hôte :', 'titre-panneau'));
+    const saisie = document.createElement('input');
+    saisie.className = 'champ-mc salon-saisie';
+    saisie.id = 'salon-code-saisie';
+    saisie.maxLength = 7;
+    saisie.placeholder = 'ABC-DEF';
+    saisie.spellcheck = false;
+    saisie.autocomplete = 'off';
+    const entrer = bouton('Rejoindre', () => {
+      const code = normaliserCode(saisie.value);
+      if (!code) {
+        this.afficherStatut('Le code fait 6 lettres ou chiffres, comme K7F-3QX', true);
+        return;
+      }
+      saisie.value = code;
+      entrer.disabled = true;
+      this.afficherStatut('Recherche du salon…');
+      this.profilReseau().then((profil) => SessionReseau.rejoindre(profil, code)).then((session) => {
+        if (!this.ouvert) {
+          session.fermer();
+          return;
+        }
         this.session = session;
-        session.surChangement = () => this.afficherInvite(code);
+        session.surChangement = () => this.afficherInvite();
         session.surLancement = () => this.terminer(session);
         session.surPerte = (raison) => this.afficherStatut(raison, true);
-        this.afficherInvite(code);
+        this.afficherInvite();
       }, (erreur: Error) => {
-        generer.disabled = false;
+        entrer.disabled = false;
         this.afficherStatut(erreur.message, true);
       });
     });
-    generer.id = 'salon-generer';
-    c.append(rangee(generer, bouton('Retour', () => this.afficherAccueil())), statutVide());
+    entrer.id = 'salon-entrer';
+    c.append(rangee(saisie, entrer, bouton('Retour', () => this.afficherAccueil())), statutVide());
+    saisie.focus();
   }
 
-  private afficherInvite(code: string): void {
+  private afficherInvite(): void {
     const session = this.session;
     if (!session) return;
     const c = this.corps;
     c.replaceChildren();
     if (session.joueurs.length === 0) {
-      c.append(texte('2. Renvoyez ce code de réponse à l\'hôte :', 'ecran-aide'));
-      c.append(zoneCode(code, 'salon-code-retour'));
-      c.append(texte('En attente de l\'hôte…', 'ecran-aide'));
+      c.append(texte('Relié à l\'hôte, entrée dans le salon…', 'titre-panneau'));
     } else {
       const arene = ARENES.find((a) => a.id === session.arene);
-      c.append(texte(`Connecté ! Arène : ${arene?.nom ?? session.arene}`, 'titre-panneau'), this.listeJoueurs(session));
+      c.append(texte(`Dans le salon ! Arène : ${arene?.nom ?? session.arene}`, 'titre-panneau'), this.listeJoueurs(session));
       c.append(texte('En attente du lancement par l\'hôte…', 'ecran-aide'));
     }
     c.append(rangee(bouton('Quitter le salon', () => this.fermer())), statutVide());
@@ -333,27 +331,4 @@ function rangee(...enfants: HTMLElement[]): HTMLDivElement {
 
 function statutVide(): HTMLDivElement {
   return texte('', 'salon-statut');
-}
-
-function zoneSaisie(id: string): HTMLTextAreaElement {
-  const zone = document.createElement('textarea');
-  zone.className = 'champ-mc';
-  zone.id = id;
-  zone.spellcheck = false;
-  zone.placeholder = 'BS1.…';
-  return zone;
-}
-
-/** Code à copier : sélectionné au clic, avec un bouton « Copier ». */
-function zoneCode(code: string, id: string): HTMLElement {
-  const zone = zoneSaisie(id);
-  zone.readOnly = true;
-  zone.value = code;
-  zone.addEventListener('focus', () => zone.select());
-  const copier = bouton('Copier', () => {
-    void navigator.clipboard?.writeText(code).then(() => { copier.textContent = 'Copié !'; }, () => zone.select());
-  });
-  const div = document.createElement('div');
-  div.append(zone, rangee(copier));
-  return div;
 }

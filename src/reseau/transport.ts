@@ -1,10 +1,9 @@
 /**
  * Transport du multijoueur : une connexion WebRTC (DataChannel) entre l'hôte et
- * un joueur, sans serveur de signalisation. La mise en relation passe par deux
- * codes copiés-collés (Discord, SMS…) : l'offre de l'hôte, puis la réponse du
- * joueur. Chaque code contient la description de session et tous les candidats
- * ICE (collecte terminée avant de l'afficher : pas d'échange au fil de l'eau),
- * compressée puis encodée en base64url.
+ * un joueur. La mise en relation (offre de l'hôte, réponse du joueur) passe
+ * par la salle du code de salon (signalisation.ts) ; chaque description
+ * contient tous les candidats ICE (collecte terminée avant de l'envoyer : pas
+ * d'échange au fil de l'eau).
  *
  * Deux canaux négociés d'avance (mêmes identifiants des deux côtés) :
  * - `fiable` : ordonné, sans perte (salon, cartes, fin de partie), en JSON ;
@@ -20,8 +19,6 @@ const SERVEURS_ICE: RTCIceServer[] = [
 ];
 /** Collecte des candidats ICE au plus aussi longue (ms) : au-delà, le code part avec ceux trouvés. */
 const DELAI_COLLECTE = 4000;
-/** Préfixe des codes : version du format, pour refuser proprement un code d'une autre version. */
-const PREFIXE = 'BS1.';
 /** Au-delà de ce volume en attente d'envoi (octets), les messages `rapide` sont abandonnés. */
 const ENGORGEMENT = 256 * 1024;
 
@@ -71,28 +68,26 @@ export class ConnexionPair {
     };
   }
 
-  /** Hôte : prépare une connexion et le code d'offre à envoyer au joueur. */
-  static async offrir(): Promise<{ pair: ConnexionPair; code: string }> {
+  /** Hôte : prépare une connexion et l'offre à envoyer au joueur. */
+  static async offrir(): Promise<{ pair: ConnexionPair; sdp: string }> {
     const pair = new ConnexionPair();
     await pair.pc.setLocalDescription(await pair.pc.createOffer());
     await collecteTerminee(pair.pc);
-    return { pair, code: await encoderCode('offre', pair.pc.localDescription!.sdp) };
+    return { pair, sdp: pair.pc.localDescription!.sdp };
   }
 
-  /** Joueur : accepte le code d'offre de l'hôte et prépare le code de réponse à lui renvoyer. */
-  static async repondre(codeOffre: string): Promise<{ pair: ConnexionPair; code: string }> {
-    const sdp = await decoderCode(codeOffre, 'offre');
+  /** Joueur : accepte l'offre de l'hôte et prépare la réponse à lui renvoyer. */
+  static async repondre(offre: string): Promise<{ pair: ConnexionPair; sdp: string }> {
     const pair = new ConnexionPair();
-    await pair.pc.setRemoteDescription({ type: 'offer', sdp });
+    await pair.pc.setRemoteDescription({ type: 'offer', sdp: offre });
     await pair.pc.setLocalDescription(await pair.pc.createAnswer());
     await collecteTerminee(pair.pc);
-    return { pair, code: await encoderCode('reponse', pair.pc.localDescription!.sdp) };
+    return { pair, sdp: pair.pc.localDescription!.sdp };
   }
 
-  /** Hôte : termine la mise en relation avec le code de réponse du joueur. */
-  async accepter(codeReponse: string): Promise<void> {
-    const sdp = await decoderCode(codeReponse, 'reponse');
-    await this.pc.setRemoteDescription({ type: 'answer', sdp });
+  /** Hôte : termine la mise en relation avec la réponse du joueur. */
+  async accepter(reponse: string): Promise<void> {
+    await this.pc.setRemoteDescription({ type: 'answer', sdp: reponse });
   }
 
   /** Résolue quand les deux canaux sont ouverts ; rejetée après `delai` ms. */
@@ -152,49 +147,4 @@ function collecteTerminee(pc: RTCPeerConnection): Promise<void> {
     const minuterie = setTimeout(fin, DELAI_COLLECTE);
     pc.addEventListener('icegatheringstatechange', verifier);
   });
-}
-
-// --- Codes à copier-coller -----------------------------------------------
-
-type SorteCode = 'offre' | 'reponse';
-
-async function encoderCode(sorte: SorteCode, sdp: string): Promise<string> {
-  const texte = JSON.stringify({ s: sorte === 'offre' ? 'o' : 'r', d: sdp });
-  const compresse = await transformer(new TextEncoder().encode(texte), new CompressionStream('deflate-raw'));
-  return PREFIXE + versBase64Url(compresse);
-}
-
-async function decoderCode(code: string, attendu: SorteCode): Promise<string> {
-  const nettoye = code.replace(/\s+/g, '');
-  if (!nettoye.startsWith(PREFIXE)) throw new Error('Ce n\'est pas un code de Block Survivors (ou d\'une autre version)');
-  let contenu: { s?: unknown; d?: unknown };
-  try {
-    const octets = await transformer(depuisBase64Url(nettoye.slice(PREFIXE.length)), new DecompressionStream('deflate-raw'));
-    contenu = JSON.parse(new TextDecoder().decode(octets)) as { s?: unknown; d?: unknown };
-  } catch {
-    throw new Error('Code illisible : vérifiez qu\'il est copié en entier');
-  }
-  const sorte = contenu.s === 'o' ? 'offre' : contenu.s === 'r' ? 'reponse' : null;
-  if (sorte !== attendu || typeof contenu.d !== 'string') {
-    throw new Error(attendu === 'offre' ? 'Il faut le code d\'invitation de l\'hôte' : 'Il faut le code de réponse du joueur');
-  }
-  return contenu.d;
-}
-
-async function transformer(octets: Uint8Array<ArrayBuffer>, flux: CompressionStream | DecompressionStream): Promise<Uint8Array<ArrayBuffer>> {
-  const sortie = new Blob([octets]).stream().pipeThrough(flux);
-  return new Uint8Array(await new Response(sortie).arrayBuffer());
-}
-
-function versBase64Url(octets: Uint8Array): string {
-  let binaire = '';
-  for (let i = 0; i < octets.length; i++) binaire += String.fromCharCode(octets[i]);
-  return btoa(binaire).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-function depuisBase64Url(texte: string): Uint8Array<ArrayBuffer> {
-  const binaire = atob(texte.replace(/-/g, '+').replace(/_/g, '/'));
-  const octets = new Uint8Array(binaire.length);
-  for (let i = 0; i < binaire.length; i++) octets[i] = binaire.charCodeAt(i);
-  return octets;
 }

@@ -5,6 +5,12 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.49.0] — 2026-10-23
+
+### Nouveautés
+- **Invitations en un seul code** : fini l'échange de deux longs codes. L'hôte clique sur Héberger et obtient un code court (ex. `K7F-3QX`) à donner à ses amis. Eux cliquent sur Rejoindre, tapent le code (ou le collent) et entrent dans le salon d'eux-mêmes, en quelques secondes. L'hôte n'a plus rien à valider.
+- Toujours sans serveur de jeu : la poignée de main passe par des relais publics (Nostr), chiffrée avec le code du salon. Ensuite, la partie va directement d'un joueur à l'autre, comme avant.
+
 ## [0.48.0] — 2026-10-23
 
 ### Nouveautés

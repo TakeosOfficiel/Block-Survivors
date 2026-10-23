@@ -1,22 +1,18 @@
 /**
- * Écran du multijoueur (bouton « Multijoueur » du menu) : choix du personnage
- * et de sa progression (le sien, ou un personnage neuf), puis Héberger ou
- * Rejoindre. La mise en relation se fait par deux codes à copier-coller :
- * l'invitation de l'hôte, puis la réponse du joueur. L'hôte lance la partie
- * quand tout le monde est là.
- *
- * « Mon personnage » joue avec sa progression habituelle (celle du solo, qui
- * gagne aussi l'XP de la partie). « Nouveau personnage » part de zéro dans une
- * sauvegarde à part (CLE_MULTIJOUEUR), gardée d'une partie à plusieurs à
- * l'autre, sans toucher au solo. Les personnages et arènes débloqués sont
- * ceux du solo.
+ * Écran du multijoueur (bouton « Multijoueur » du menu) : choix de la classe,
+ * puis Héberger ou Rejoindre. Chacun joue avec sa classe, son pseudo, son skin
+ * et la progression de sa classe (maîtrise et talents, comme en solo) ; la
+ * maîtrise progresse aussi à plusieurs, mais les records d'une partie à
+ * plusieurs restent à part de ceux du solo. La mise en relation se fait par
+ * deux codes à copier-coller : l'invitation de l'hôte, puis la réponse du
+ * joueur. L'hôte lance la partie quand tout le monde est là.
  */
 import { ARENES } from '../donnees/arenes';
 import { REGLES_MULTIJOUEUR } from '../donnees/multijoueur';
 import { IDS_PERSONNAGES, PERSONNAGES, type IdPersonnage } from '../donnees/personnages';
 import type { DefinitionArene } from '../donnees/types';
 import type { ChoixPartie } from '../lancement';
-import { CLE_MULTIJOUEUR, Sauvegarde } from '../progression/sauvegarde';
+import type { Sauvegarde } from '../progression/sauvegarde';
 import type { Profil } from '../profil';
 import { element } from '../ui/dom';
 import { SessionReseau, type Invitation, type ProfilReseau } from './session';
@@ -25,12 +21,7 @@ import { SessionReseau, type Invitation, type ProfilReseau } from './session';
 export interface LancementMultijoueur {
   readonly choix: ChoixPartie;
   readonly session: SessionReseau;
-  /** Sauvegarde de la progression jouée (bonus permanents, récompenses) : solo ou multi. */
-  readonly sauvegarde: Sauvegarde;
 }
-
-/** Progression jouée : celle du personnage habituel, ou celle d'un personnage neuf (sauvegarde multi). */
-type Progression = 'mien' | 'nouveau';
 
 const STYLE = `
 #salon { z-index: 16; }
@@ -50,10 +41,8 @@ export class EcranSalon {
   private readonly racine: HTMLDivElement;
   private readonly corps: HTMLDivElement;
   private readonly solo: Sauvegarde;
-  private readonly multi = Sauvegarde.charger(CLE_MULTIJOUEUR);
   private readonly profil: Profil;
   private personnage: IdPersonnage;
-  private progression: Progression = 'mien';
   private arene: DefinitionArene;
   private session: SessionReseau | null = null;
   private invitation: Invitation | null = null;
@@ -110,13 +99,13 @@ export class EcranSalon {
     this.racine.classList.add('cache');
   }
 
-  // --- Accueil : personnage, progression, arène ----------------------------
+  // --- Accueil : classe et arène -------------------------------------------
 
   private afficherAccueil(): void {
     const c = this.corps;
     c.replaceChildren();
 
-    c.append(texte('Personnage', 'titre-panneau'));
+    c.append(texte('Classe', 'titre-panneau'));
     const personnages = rangee();
     for (const id of IDS_PERSONNAGES) {
       const verrou = this.solo.verrou('personnage', id);
@@ -132,35 +121,8 @@ export class EcranSalon {
     }
     c.append(personnages);
 
-    // Son personnage habituel, ou un personnage neuf à part (gardé d'une partie à plusieurs à l'autre)
-    c.append(texte('Progression', 'titre-panneau'));
-    const progressions = rangee();
-    const connu = this.multi.connait(this.personnage);
-    const choix: [Progression, string][] = [
-      ['mien', `Mon personnage (maîtrise ${this.solo.maitrise(this.personnage).niveau})`],
-      ['nouveau', connu ? `Nouveau personnage (maîtrise ${this.multi.maitrise(this.personnage).niveau})` : 'Nouveau personnage'],
-    ];
-    for (const [valeur, libelle] of choix) {
-      const b = bouton(libelle, () => {
-        this.progression = valeur;
-        this.afficherAccueil();
-      });
-      b.classList.add('salon-choix');
-      b.classList.toggle('choisie', valeur === this.progression);
-      b.id = `salon-progression-${valeur}`;
-      progressions.append(b);
-    }
-    if (this.progression === 'nouveau' && connu) {
-      progressions.append(bouton('Remettre à zéro', () => {
-        if (!window.confirm(`Remettre à zéro le nouveau personnage ${PERSONNAGES[this.personnage].nom} (maîtrise et talents) ?`)) return;
-        this.multi.nouveauPersonnage(this.personnage);
-        this.afficherAccueil();
-      }));
-    }
-    c.append(progressions);
-    c.append(texte(this.progression === 'mien'
-      ? 'Votre progression habituelle : l\'XP de la partie fait monter votre maîtrise, comme en solo.'
-      : 'Un personnage à part, qui démarre de zéro et progresse d\'une partie à plusieurs à l\'autre, sans toucher au solo.', 'ecran-aide'));
+    c.append(texte(`Maîtrise ${this.solo.maitrise(this.personnage).niveau} et talents de votre classe, comme en solo. `
+      + 'L\'XP de la partie fait monter votre maîtrise ; les records à plusieurs restent à part de ceux du solo.', 'ecran-aide'));
 
     c.append(texte('Arène (choisie par l\'hôte)', 'titre-panneau'));
     const choixArene = document.createElement('select');
@@ -190,18 +152,12 @@ export class EcranSalon {
       + 'Ça passe derrière la plupart des box ; sinon, essayez en réseau local ou avec Tailscale ou ZeroTier.', 'ecran-aide'));
   }
 
-  /** Sauvegarde de la progression jouée (bonus permanents, récompenses de la partie). */
-  private get sauvegarde(): Sauvegarde {
-    return this.progression === 'mien' ? this.solo : this.multi;
-  }
-
-  /** Ce que ce joueur apporte au salon (un nouveau personnage est créé à sa première partie). */
+  /** Ce que ce joueur apporte au salon : son pseudo, son skin, sa classe et ses talents. */
   private profilReseau(): ProfilReseau {
-    if (this.progression === 'nouveau' && !this.multi.connait(this.personnage)) this.multi.nouveauPersonnage(this.personnage);
     const p = this.profil;
     return {
       pseudo: p.pseudo, personnage: this.personnage, skin: p.skin === 'importe' ? 'classe' : p.skin, brasFins: p.brasFins,
-      bonus: this.sauvegarde.bonus(this.personnage),
+      bonus: this.solo.bonus(this.personnage),
     };
   }
 
@@ -320,7 +276,7 @@ export class EcranSalon {
     this.lance = true;
     this.racine.classList.add('cache');
     element('menu').classList.add('cache');
-    this.surLancer?.({ choix: { personnage: this.personnage, arene }, session, sauvegarde: this.sauvegarde });
+    this.surLancer?.({ choix: { personnage: this.personnage, arene }, session });
   }
 
   private listeJoueurs(session: SessionReseau): HTMLElement {

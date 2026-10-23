@@ -61,7 +61,8 @@ export type MessageFiable =
   | { type: 'coffre'; nombre: number; titre: string }
   /** Hôte → un joueur : son bilan (compteur de dégâts), régulièrement et à la fin. */
   | { type: 'stats'; stats: StatistiquesReseau }
-  | { type: 'fin'; issue: Exclude<IssuePartie, null>; stats: StatistiquesReseau }
+  /** Hôte → un joueur : fin de partie, au temps de jeu `temps` (s), avec son bilan. */
+  | { type: 'fin'; issue: Exclude<IssuePartie, null>; temps: number; stats: StatistiquesReseau }
   /** Joueur → hôte : « Continuer sans fin » après la victoire ; hôte → tous : la partie reprend. */
   | { type: 'continuer' }
   | { type: 'reprise' };

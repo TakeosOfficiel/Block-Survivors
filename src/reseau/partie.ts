@@ -24,6 +24,7 @@ import type { Terrain } from '../monde/navigation';
 import type { CameraJeu } from '../moteur/camera';
 import type { Options } from '../options';
 import type { Amelioration } from '../progression/ameliorations';
+import type { BilanPartie } from '../progression/sauvegarde';
 import { PartieClient } from './client';
 import { PartieHote } from './hote';
 import type { SessionReseau } from './session';
@@ -92,6 +93,8 @@ export interface CrochetsReseau {
   /** La partie gagnée continue en mode sans fin (pour tout le monde). */
   surContinuer(): void;
   appliquerOptions(options: Options): void;
+  /** Fin de partie : ses records vont dans ceux des parties à plusieurs. */
+  surFinPartie(bilan: BilanPartie): void;
 }
 
 export function brancherPartie(session: SessionReseau, elements: ElementsPartie): CrochetsReseau {

@@ -25,12 +25,14 @@ import { avancerAnimation, reinitialiserAnimation } from '../modeles/animation';
 import { compilerModele, type ModeleCompile } from '../modeles/compilation';
 import type { Options } from '../options';
 import type { Amelioration } from '../progression/ameliorations';
+import type { BilanPartie } from '../progression/sauvegarde';
 import { ecartAngle } from '../utils/maths';
 import { positionDepart } from './apparence';
 import { SuiviLocal } from './bandeau';
 import { Combattant, Commutateur, type PartageCombat } from './combattant';
 import { ameliorationValide } from './hote';
 import type { CrochetsReseau, ElementsPartie } from './partie';
+import { enregistrerRecordsEquipe } from './records';
 import {
   appliquerStatistiques, BITS_ACTIONS, ENNEMI_BLESSE, ENNEMI_BRULURE, ENNEMI_MORT, ENNEMI_POISON, ENNEMI_RALENTI, ENNEMI_SAIGNEMENT,
   Ecrivain, JOUEUR_EN_CHOIX, JOUEUR_MORT, JOUEUR_PROTEGE, Lecteur, STYLES_CHIFFRES, TYPE_ENTREE, TYPE_INSTANTANE, type MessageFiable,
@@ -199,6 +201,10 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
     this.effetsAllies = options.effetsAllies;
   }
 
+  surFinPartie(bilan: BilanPartie): void {
+    enregistrerRecordsEquipe(bilan);
+  }
+
   surDegats(): void {}
 
   // --- Messages de l'hôte ----------------------------------------------------
@@ -221,6 +227,7 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
       case 'fin':
         appliquerStatistiques(etat.stats, message.stats);
         if (etat.issue === null) {
+          etat.tempsJeu = message.temps;
           etat.issue = message.issue;
           this.elements.conclure();
         }

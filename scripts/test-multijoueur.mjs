@@ -181,6 +181,14 @@ if (process.env.SANS_FIN) {
   await hote.evaluate(() => { window.blockSurvivors.jeu.etat.tempsJeu = 15 * 60; });
   await invites[0].waitForFunction(() => window.blockSurvivors.jeu.etat.issue === 'victoire', null, { timeout: 120000 });
   console.log('SANS FIN : victoire reçue par le joueur 1');
+  // La maîtrise monte, les records du solo ne bougent pas, ceux à plusieurs sont à part
+  const sauvegardes = await invites[0].evaluate(() => {
+    const lire = (cle) => JSON.parse(localStorage.getItem(cle) ?? '{}');
+    const solo = lire('block-survivors.progression');
+    const equipe = lire('block-survivors.progression.multi');
+    return { maitriseSolo: solo.maitrise, recordsSolo: solo.records, recordsEquipe: equipe.records };
+  });
+  console.log('SAUVEGARDES du joueur 1 :', JSON.stringify(sauvegardes));
   await hote.evaluate(() => window.blockSurvivors.jeu.continuerSansFin());
   await invites[0].waitForFunction(() => window.blockSurvivors.jeu.etat.issue === null && window.blockSurvivors.jeu.etat.sansFin, null, { timeout: 60000 });
   console.log('SANS FIN : le joueur 1 continue avec l\'hôte');

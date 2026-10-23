@@ -26,9 +26,11 @@ import { minutesSansFin, type EtatJoueur } from '../etat';
 import type { ChampDeFlux } from '../monde/navigation';
 import type { Options } from '../options';
 import type { Amelioration } from '../progression/ameliorations';
+import type { BilanPartie } from '../progression/sauvegarde';
 import { SuiviLocal } from './bandeau';
 import { Combattant, Commutateur, type PartageCombat } from './combattant';
 import type { CrochetsReseau, ElementsPartie } from './partie';
+import { enregistrerRecordsEquipe } from './records';
 import {
   BITS_ACTIONS, ENNEMI_BLESSE, ENNEMI_BRULURE, ENNEMI_MORT, ENNEMI_POISON, ENNEMI_RALENTI, ENNEMI_SAIGNEMENT, Ecrivain,
   JOUEUR_EN_CHOIX, JOUEUR_MORT, JOUEUR_PROTEGE, Lecteur, STYLES_CHIFFRES, TYPE_ENTREE, TYPE_INSTANTANE,
@@ -238,7 +240,7 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
       this.finEnvoyee = true;
       for (let i = 0; i < this.combattants.length; i++) {
         const c = this.combattants[i];
-        this.session.envoyer({ type: 'fin', issue: etat.issue, stats: statistiquesReseau(c.profil.stats) }, c.info.index);
+        this.session.envoyer({ type: 'fin', issue: etat.issue, temps: etat.tempsJeu, stats: statistiquesReseau(c.profil.stats) }, c.info.index);
       }
     } else if (etat.issue === null) {
       this.finEnvoyee = false;
@@ -292,6 +294,10 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
 
   appliquerOptions(options: Options): void {
     this.effetsAllies = options.effetsAllies;
+  }
+
+  surFinPartie(bilan: BilanPartie): void {
+    enregistrerRecordsEquipe(bilan);
   }
 
   surDegats(x: number, y: number, z: number, valeur: number, style: StyleChiffre): void {

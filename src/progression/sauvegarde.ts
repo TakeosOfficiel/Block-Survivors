@@ -20,7 +20,7 @@ import { ecrireStockage, lireStockage } from '../options';
 import { cumulerModificateurs } from './modificateurs';
 
 const CLE = 'block-survivors.progression';
-/** Sauvegarde à part du multijoueur : une partie à plusieurs ne touche jamais au solo. */
+/** Records des parties à plusieurs, à part de ceux du solo. */
 export const CLE_MULTIJOUEUR = 'block-survivors.progression.multi';
 const VERSION = 3;
 
@@ -73,6 +73,11 @@ export interface BilanPartie {
    * l'XP d'avant ; `xp` et `boss` ne comptent que la suite, `temps` est le temps total.
    */
   readonly sansFin: boolean;
+  /**
+   * Partie à plusieurs : seule la maîtrise de la classe progresse ; records,
+   * parties et boss (donc les déblocages) restent ceux du solo.
+   */
+  readonly enEquipe?: boolean;
 }
 
 /** Où en est la maîtrise d'une classe. */
@@ -345,12 +350,15 @@ export class Sauvegarde {
     const avant = this.maitrise(bilan.personnage);
     const xp = Math.max(0, Math.floor(bilan.xp));
     d.maitrise[bilan.personnage] = avant.xp + xp;
-    d.bossVaincus += bilan.boss;
     let recordSansFin = false;
-    if (bilan.sansFin) {
+    if (bilan.enEquipe) {
+      // Rien d'autre : une partie à plusieurs ne compte pas pour les records du solo
+    } else if (bilan.sansFin) {
+      d.bossVaincus += bilan.boss;
       recordSansFin = bilan.temps > (d.recordsSansFin[bilan.arene] ?? 0);
       if (recordSansFin) d.recordsSansFin[bilan.arene] = bilan.temps;
     } else {
+      d.bossVaincus += bilan.boss;
       d.records[bilan.arene] = Math.max(d.records[bilan.arene] ?? 0, bilan.temps);
       d.parties++;
     }
@@ -371,25 +379,6 @@ export class Sauvegarde {
     this.donnees.maitrise[personnage] = m.finNiveau;
     this.enregistrer();
     return this.maitrise(personnage);
-  }
-
-  // --- Multijoueur --------------------------------------------------------
-
-  /** Vrai si la classe a déjà sa progression dans cette sauvegarde. */
-  connait(personnage: IdPersonnage): boolean {
-    return personnage in this.donnees.maitrise;
-  }
-
-  /** Repart de zéro pour la classe (maîtrise, talents, réglages des arbres) : un personnage neuf. */
-  nouveauPersonnage(personnage: IdPersonnage): void {
-    const d = this.donnees;
-    const prefixe = `${personnage}.`;
-    for (const table of [d.rangs, d.options, d.finals, d.armesDepart] as Record<string, unknown>[]) {
-      for (const cle of Object.keys(table)) if (cle.startsWith(prefixe)) delete table[cle];
-    }
-    d.maitrise[personnage] = 0;
-    delete d.arbres[personnage];
-    this.enregistrer();
   }
 
   private enregistrer(): void {

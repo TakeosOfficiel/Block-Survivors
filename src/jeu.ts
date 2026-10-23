@@ -68,7 +68,7 @@ import type { Options } from './options';
 import { apparenceJoueur, type Profil } from './profil';
 import { cumulerModificateurs } from './progression/modificateurs';
 import { Passifs } from './progression/passifs';
-import type { Recompense, Sauvegarde } from './progression/sauvegarde';
+import type { BilanPartie, Recompense, Sauvegarde } from './progression/sauvegarde';
 import { remplirBilan, remplirPastilles } from './ui/bilan';
 import { CompteurDegats } from './ui/compteurDegats';
 import { PanneauDebug, type EtatDebug } from './ui/debug';
@@ -647,14 +647,17 @@ export class Jeu implements CallbacksBoucle, Retours {
   private conclure(): void {
     const etat = this.etat;
     this.minuterieFin = 0;
-    this.recompense = this.sauvegarde.terminerPartie({
+    const bilan: BilanPartie = {
       personnage: this.choix.personnage,
       arene: etat.arene.id,
       temps: etat.tempsJeu,
       xp: etat.stats.xpTotale - this.xpComptee,
       boss: etat.stats.bossVaincus - this.bossComptes,
       sansFin: etat.sansFin,
-    });
+      enEquipe: this.reseau !== null,
+    };
+    this.recompense = this.sauvegarde.terminerPartie(bilan);
+    this.reseau?.surFinPartie(bilan);
     this.xpComptee = etat.stats.xpTotale;
     this.bossComptes = etat.stats.bossVaincus;
   }

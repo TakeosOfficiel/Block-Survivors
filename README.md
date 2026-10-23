@@ -163,9 +163,10 @@ lui renvoie un code de réponse (WebRTC, serveurs STUN publics seulement). Ça
 passe derrière la plupart des box ; deux NAT stricts (4G, réseau d'entreprise)
 ne se joignent pas : réseau local, Tailscale ou ZeroTier dans ce cas.
 
-Chacun choisit son personnage : **le sien** (sa progression habituelle, qui
-gagne l'XP de la partie comme en solo) ou un **nouveau personnage** (parti de
-zéro, sauvegarde à part gardée d'une partie à plusieurs à l'autre). XP et niveau
+Chacun joue avec sa classe, son pseudo, son skin et la progression de sa classe
+(maîtrise et talents, comme en solo) : l'XP de la partie fait monter sa
+maîtrise, mais les records d'une partie à plusieurs (et les déblocages qui en
+dépendent) restent à part de ceux du solo. XP et niveau
 communs ; à chaque niveau et à chaque coffre ouvert (par n'importe qui), tout le
 monde choisit ses cartes, sans attendre les autres : celui qui choisit reste sur
 place, protégé par un bouclier, et les ennemis l'ignorent (20 s pour choisir,

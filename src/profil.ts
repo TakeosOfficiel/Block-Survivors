@@ -39,8 +39,16 @@ export function chargerProfil(): Profil {
   return profil;
 }
 
-export function enregistrerProfil(profil: Profil): void {
-  ecrireStockage(cleProfil('profil'), profil);
+/** Enregistre le profil ; faux si le stockage l'a refusé (plein : une skin HD trop lourde). */
+export function enregistrerProfil(profil: Profil): boolean {
+  const cle = cleProfil('profil');
+  const texte = JSON.stringify(profil);
+  ecrireStockage(cle, profil);
+  try {
+    return window.localStorage.getItem(cle) === texte;
+  } catch {
+    return false;
+  }
 }
 
 /** Pseudo sans espaces superflus, limité à LONGUEUR_PSEUDO caractères. */

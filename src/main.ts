@@ -19,9 +19,10 @@ import { importerArene } from './minecraft/importation';
 import { genererMonde, type MondeGenere } from './monde/generation';
 import { Rendu } from './moteur/rendu';
 import { chargerOptions } from './options';
+import { normaliserSkin, SKIN_LEGERE } from './assets/skinsImportees';
 import { Collection } from './progression/collection';
 import { Sauvegarde } from './progression/sauvegarde';
-import { apparenceJoueur, chargerProfil, CHEMIN_SKIN_IMPORTE } from './profil';
+import { apparenceJoueur, chargerProfil, CHEMIN_SKIN_IMPORTE, enregistrerProfil } from './profil';
 import { ApercuHeros } from './ui/apercuHeros';
 import { chargerImageSkin, EcranProfil } from './ui/ecranProfil';
 import { EcranChargement } from './ui/ecranChargement';
@@ -69,7 +70,16 @@ async function demarrer(): Promise<void> {
   enregistrerArmures(textures);
   // Skin importée du joueur : enregistrée comme une texture du jeu
   if (profil.skinImporte) {
-    const image = await chargerImageSkin(profil.skinImporte);
+    let image = await chargerImageSkin(profil.skinImporte);
+    // Skin gardée avant l'allègement (HD brute, parfois plusieurs Mo) : ramenée à sa forme légère
+    if (image && profil.skinImporte.length > SKIN_LEGERE) {
+      const legere = normaliserSkin(image);
+      if ('adresse' in legere && legere.adresse.length < profil.skinImporte.length) {
+        profil.skinImporte = legere.adresse;
+        enregistrerProfil(profil);
+        image = await chargerImageSkin(legere.adresse);
+      }
+    }
     if (image) textures.enregistrer(CHEMIN_SKIN_IMPORTE, image);
     else if (profil.skin === 'importe') profil.skin = 'classe';
   }

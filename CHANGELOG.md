@@ -5,6 +5,16 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.47.1] — 2026-10-23
+
+### Corrections
+- **Skins HD acceptées** (128, 256, 512, 1024…) sans souci de place : une skin HD de plusieurs Mo ne tenait pas dans la sauvegarde et était perdue. Elle est maintenant gardée aussi légère que possible :
+  - une skin « HD » qui n'est qu'une skin agrandie est gardée à sa vraie taille, **sans aucune perte** (quelques Ko au lieu de plusieurs Mo) ;
+  - une skin vraiment détaillée garde sa résolution tant qu'elle tient (1,2 Mo au plus), sinon elle est réduite de moitié jusqu'à tenir, et le jeu le dit ;
+  - si elle ne peut vraiment pas être gardée, le jeu le dit au lieu de la perdre sans prévenir.
+- Les images carrées d'une autre taille (1000×1000…) sont remises à la taille HD la plus proche, et l'**ancien format** (64×32 et ses HD) est converti comme le fait le jeu.
+- Les skins déjà enregistrées trop lourdes sont allégées au démarrage. Les skins envoyées aux autres joueurs en multijoueur sont aussi plus légères.
+
 ## [0.47.0] — 2026-10-23
 
 ### Nouveautés

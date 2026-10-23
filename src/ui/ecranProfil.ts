@@ -4,6 +4,7 @@
  * Collection portées, avec le héros en 3D qu'on fait tourner. Chaque
  * changement est enregistré aussitôt.
  */
+import { lireImage, normaliserSkin } from '../assets/skinsImportees';
 import type { BibliothequeTextures } from '../assets/textures';
 import { NOMS_SKINS, SKINS_VANILLA } from '../donnees/skins';
 import { ARMURES, MONDES, NOMS_PIECES, PIECES_ARMURE, provenancePiece } from '../donnees/armures';
@@ -172,17 +173,33 @@ export class EcranProfil {
       lecteur.onerror = () => resoudre(null);
       lecteur.readAsDataURL(fichier);
     });
-    const image = adresse ? await chargerImageSkin(adresse) : null;
-    if (!adresse || !image) {
-      this.erreur.textContent = 'Skin refusée : il faut un PNG carré de 64×64 pixels (format du jeu).';
+    const brute = adresse ? await lireImage(adresse) : null;
+    if (!brute) {
+      this.erreur.textContent = 'Skin refusée : ce fichier n\'est pas une image lisible (il faut un PNG).';
       return;
     }
-    this.erreur.textContent = '';
+    // Ramenée au format du jeu (HD gardée, ancien format converti, réduite si trop lourde)
+    const skin = normaliserSkin(brute);
+    const image = 'adresse' in skin ? await chargerImageSkin(skin.adresse) : null;
+    if (!('adresse' in skin) || !image) {
+      this.erreur.textContent = 'erreur' in skin ? skin.erreur : 'Skin refusée : image illisible.';
+      return;
+    }
+    const ancienne = this.profil.skinImporte;
+    this.profil.skinImporte = skin.adresse;
+    this.profil.skin = 'importe';
+    // Le stockage local est limité : on vérifie que la skin a bien été gardée
+    if (!enregistrerProfil(this.profil)) {
+      this.profil.skinImporte = ancienne;
+      if (!ancienne) this.profil.skin = 'classe';
+      enregistrerProfil(this.profil);
+      this.erreur.textContent = 'Skin refusée : plus assez de place pour la garder (supprimez un profil inutile, ou prenez une skin moins lourde).';
+      return;
+    }
+    this.erreur.textContent = skin.reduite ? `Skin réduite à ${skin.taille}×${skin.taille} pour tenir dans la sauvegarde.` : '';
     this.textures.enregistrer(CHEMIN_SKIN_IMPORTE, image);
     oublierPortraits(CHEMIN_SKIN_IMPORTE);
-    this.profil.skinImporte = adresse;
-    this.profil.skin = 'importe';
-    this.changer();
+    this.dessiner();
   }
 }
 

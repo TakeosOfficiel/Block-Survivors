@@ -1,9 +1,12 @@
 # Construit l'installateur Windows (BlockSurvivors-Setup-X.Y.Z.exe) et l'AppImage
 # Linux (BlockSurvivors-X.Y.Z.AppImage) à chaque push. Seul main publie (les autres
-# branches gardent les installateurs en artefacts, pour essai), deux fois :
+# branches construisent seulement, pour vérifier), deux fois :
 #   - release « vX.Y.Z » (version de package.json), notes tirées de CHANGELOG.md ;
 #     tant que le numéro ne change pas, elle suit le dernier commit de la version ;
 #   - release « derniere-version » : lien fixe vers la plus récente.
+# Aucun artefact d'Actions (leur stockage est plafonné) : sur main, le job Linux
+# dépose l'AppImage dans une release brouillon « transit-<n° de run> », que le job
+# Windows reprend pour tout publier, puis supprime.
 name: Application Windows et Linux
 
 on:
@@ -20,7 +23,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Même socle que sous Windows (fins de ligne normalisées) : la page du jeu et
+  # jeu.json construits par le job Windows valent aussi pour l'AppImage.
+  # latest-linux.yml sert aux mises à jour automatiques de l'AppImage.
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: node scripts/socle.mjs --ecrire
+      - run: npx electron-builder --linux AppImage --publish never
+      - name: Déposer l'AppImage pour le job Windows (brouillon de transit)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          # Brouillons laissés par des constructions annulées
+          gh release list --limit 50 --json tagName,isDraft --jq '.[] | select(.isDraft and (.tagName | startswith("transit-"))) | .tagName' \
+            | while read -r ancien; do gh release delete "$ancien" --yes || true; done
+          gh release create "transit-$GITHUB_RUN_ID" --draft --title "Transit $GITHUB_RUN_ID" --notes "Fichiers Linux en attente de publication." \
+            "release/BlockSurvivors-$VERSION.AppImage" release/latest-linux.yml
+
   windows:
+    needs: linux
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,49 +69,15 @@ jobs:
       - run: npx electron-builder --win nsis --publish never --config.win.signAndEditExecutable=true
         shell: bash
       - run: node scripts/socle.mjs --page release
-      - uses: actions/upload-artifact@v4
-        with:
-          name: BlockSurvivors-windows
-          path: |
-            release/BlockSurvivors-Setup-*.exe
-            release/BlockSurvivors-Setup-*.exe.blockmap
-            release/latest.yml
-            release/jeu-*.html
-            release/jeu.json
-
-  # Même socle que sous Windows (fins de ligne normalisées) : la page du jeu et
-  # jeu.json publiés par le job Windows valent aussi pour l'AppImage.
-  # latest-linux.yml sert aux mises à jour automatiques de l'AppImage.
-  linux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-      - run: node scripts/socle.mjs --ecrire
-      - run: npx electron-builder --linux AppImage --publish never
-      - uses: actions/upload-artifact@v4
-        with:
-          name: BlockSurvivors-linux
-          path: |
-            release/BlockSurvivors-*.AppImage
-            release/latest-linux.yml
-
-  publier:
-    if: github.ref == 'refs/heads/main'
-    needs: [windows, linux]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          path: release
-          merge-multiple: true
+      - name: Reprendre l'AppImage du brouillon de transit
+        if: github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "transit-$GITHUB_RUN_ID" --dir release --clobber
       - name: Publier la release de la version et « derniere-version »
+        if: github.ref == 'refs/heads/main'
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -119,6 +116,8 @@ jobs:
       # peut pas encore télécharger).
       # Sans le secret VERSION_TOKEN, l'étape ne fait rien.
       - name: Publier les installateurs et le numéro de version sur le dépôt public
+        if: github.ref == 'refs/heads/main'
+        shell: bash
         env:
           VERSION_TOKEN: ${{ secrets.VERSION_TOKEN }}
         run: |
@@ -149,3 +148,9 @@ jobs:
           node -e "const fs=require('fs');const corps={message:'Version '+process.argv[1],content:fs.readFileSync('version.json').toString('base64')};if(process.argv[2])corps.sha=process.argv[2];fs.writeFileSync('corps.json',JSON.stringify(corps))" "$VERSION" "$SHA"
           curl -sf -X PUT -H "Authorization: Bearer $VERSION_TOKEN" -H "Accept: application/vnd.github+json" "$API" --data @corps.json > /dev/null
           echo "version.json → $VERSION"
+      - name: Supprimer le brouillon de transit
+        if: always() && github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release delete "transit-$GITHUB_RUN_ID" --yes || true

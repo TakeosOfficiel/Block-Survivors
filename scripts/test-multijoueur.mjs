@@ -104,19 +104,18 @@ console.log('menus chargés');
 // Personnages différents pour les reconnaître
 const persos = ['guerrier', 'archer', 'mage', 'invocateur'];
 for (let i = 0; i < N; i++) {
+  await pages[i].click(`#menu-personnages [data-id="${persos[i]}"]`);
   await pages[i].click('#menu-multijoueur');
-  await pages[i].click(`#salon button[data-id="${persos[i]}"]`);
 }
 await hote.click('#salon-heberger');
 await hote.waitForSelector('#salon-code', { timeout: 30000 });
 const code = await hote.textContent('#salon-code');
 console.log(`code du salon : ${code}`);
 for (const [k, invite] of invites.entries()) {
-  await invite.click('#salon-rejoindre');
   await invite.fill('#salon-code-saisie', code.toLowerCase().replace('-', ''));
   await invite.click('#salon-entrer');
   const debut = Date.now();
-  await hote.waitForFunction((n) => document.querySelectorAll('#salon-joueurs > div').length === n, k + 2, { timeout: 60000 });
+  await hote.waitForFunction((n) => document.querySelectorAll('#salon-joueurs > .salon-place:not(.libre)').length === n, k + 2, { timeout: 60000 });
   await invite.waitForSelector('#salon-joueurs', { timeout: 10000 });
   console.log(`joueur ${k + 1} connecté en ${((Date.now() - debut) / 1000).toFixed(1)} s`);
 }

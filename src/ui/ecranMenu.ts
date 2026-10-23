@@ -146,6 +146,11 @@ export class EcranMenu {
     this.rafraichir();
   }
 
+  /** Classe et arène choisies en ce moment. */
+  get choix(): ChoixPartie {
+    return { personnage: this.personnage, arene: this.arene };
+  }
+
   /** Affiche le menu et attend que le joueur lance une partie. */
   attendreChoix(): Promise<ChoixPartie> {
     this.racine.classList.remove('cache');

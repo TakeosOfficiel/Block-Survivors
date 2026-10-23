@@ -15,7 +15,7 @@ import type { ChoixSkin } from '../profil';
 import { VERSION } from '../version';
 import { REGLES_MULTIJOUEUR } from '../donnees/multijoueur';
 import { armureValide, skinValide, type ArmureJoueur, type InfoJoueur, type MessageFiable } from './protocole';
-import { nouveauCode, Salle, type MessageSalle } from './signalisation';
+import { codeAuHasard, LONGUEUR_CODE_SALON, Salle, type MessageSalle } from './signalisation';
 import { ConnexionPair } from './transport';
 
 /** ms entre deux répétitions d'un message de la salle, et avant d'abandonner la recherche du salon. */
@@ -90,7 +90,7 @@ export class SessionReseau {
     session.arene = arene;
     session.joueurs = [{ index: 0, pseudo: profil.pseudo, personnage: profil.personnage, skin: profil.skin, brasFins: profil.brasFins, skinImporte: profil.skinImporte, bonus: profil.bonus, armure: profil.armure,
     }];
-    session.code = nouveauCode();
+    session.code = codeAuHasard(LONGUEUR_CODE_SALON);
     session.salle = await Salle.ouvrir(session.code);
     session.salle.surMessage = (m) => session.surSalle(m);
     return session;

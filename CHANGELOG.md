@@ -5,6 +5,18 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.50.0] — 2026-10-23
+
+### Nouveautés
+- **Amis** : chaque profil a un code ami (ex. `WNF-5Y9-NCF`), à échanger une seule fois.
+  - Vos amis apparaissent ensuite avec leur état : en ligne, dans un salon, en partie ou hors ligne.
+  - Un ami qui héberge se rejoint d'un clic (**Rejoindre**). Quand vous hébergez, vous invitez vos amis d'un clic (**Inviter**).
+  - À un ami resté au menu, vous pouvez **proposer de jouer** : s'il accepte, il ouvre un salon et vous y entrez tout seul.
+  - Invitations et propositions arrivent en notifications sur le menu ; quand quelqu'un vous ajoute, un clic suffit pour l'ajouter aussi.
+  - Les amis partent avec le profil quand on l'exporte.
+- **Page Multijoueur refaite**, au style des autres pages : la partie à plusieurs à gauche (code du salon en grand, 4 places avec le portrait de chaque classe), les amis à droite.
+- **Plus de choix de classe dans le salon** : chacun joue la classe choisie au menu, et l'hôte l'arène choisie au sien.
+
 ## [0.49.0] — 2026-10-23
 
 ### Nouveautés

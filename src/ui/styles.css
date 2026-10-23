@@ -941,6 +941,67 @@ img { image-rendering: pixelated; }
 .page .talents-porte-texte { background: #10131b; }
 .page .talents-fiche { border-radius: 12px; }
 
+/* Multijoueur : salon (code court, places) et amis */
+#salon { z-index: 16; }
+.salon-corps { width: min(1000px, 94vw); display: grid; grid-template-columns: 1.15fr 1fr; gap: 12px; align-items: start; min-height: 0; }
+.salon-panneau { display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 210px); overflow-y: auto; }
+.salon-moi { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.04); }
+.salon-moi img, .salon-place img { width: 40px; height: 40px; image-rendering: pixelated; border-radius: 6px; }
+.salon-moi strong, .salon-place strong { display: block; color: #fff; }
+.salon-moi span, .salon-place span { color: #b0b4be; font-size: 13px; }
+.salon-contenu { display: flex; flex-direction: column; gap: 10px; }
+.salon-tuile {
+  display: flex; flex-direction: column; gap: 4px; padding: 12px; text-align: left; font: inherit; color: #e8e8e8;
+  border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 10px; background: rgba(255, 255, 255, 0.04);
+}
+button.salon-tuile { cursor: pointer; }
+button.salon-tuile:hover, button.salon-tuile:focus-visible { outline: none; border-color: var(--page-or); background: rgba(255, 215, 94, 0.1); }
+.salon-tuile strong { color: #fff; font-size: 16px; }
+button.salon-tuile:hover strong { color: var(--page-or-clair); }
+.salon-tuile span { color: #b0b4be; font-size: 13px; }
+.salon-ligne { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.salon-saisie { width: 170px; height: 40px; font-size: 22px; letter-spacing: 4px; text-align: center; text-transform: uppercase; }
+.salon-code-bloc { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(224, 176, 64, 0.5); background: rgba(255, 215, 94, 0.07); }
+.salon-code-bloc > div { display: flex; flex-direction: column; }
+.salon-code-bloc span { color: #b0b4be; font-size: 13px; }
+.salon-code { font-family: var(--police); font-size: 34px; line-height: 40px; letter-spacing: 6px; white-space: nowrap; color: var(--page-or-clair); text-shadow: 3px 3px 0 #3f2f05; user-select: all; }
+/* Boutons du salon et des amis à la largeur de leur texte (les boutons du jeu font 196 px au moins) */
+#salon .bouton-mc, .amis-notifications .bouton-mc { min-width: 0; padding: 0 16px; }
+.salon-places { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.salon-place { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.06); }
+.salon-place.libre { justify-content: center; color: #6f7480; font-size: 13px; background: none; border: 1px dashed rgba(255, 255, 255, 0.15); }
+.salon-actions { display: flex; gap: 8px; }
+.page .salon-actions .bouton-mc { flex: 1; }
+.salon-attente { color: #9aa0ad; font-size: 13px; text-align: center; }
+.salon-statut { min-height: 1.3em; color: #9aa0ad; font-size: 13px; }
+.salon-statut.erreur { color: #ff8a8a; }
+.amis-mon-code { display: flex; align-items: center; gap: 10px; color: #b0b4be; font-size: 13px; }
+.amis-code { font-family: var(--police); font-size: 18px; letter-spacing: 2px; white-space: nowrap; color: var(--page-or-clair); user-select: all; flex: 1; }
+.amis-ajout { display: flex; gap: 8px; }
+.amis-ajout .champ-mc { flex: 1; height: 40px; text-transform: uppercase; }
+.amis-liste { display: flex; flex-direction: column; gap: 6px; }
+.amis-vide { color: #9aa0ad; font-size: 13px; }
+.ami { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.04); }
+.ami-pastille { width: 10px; height: 10px; border-radius: 50%; flex: none; background: #555a66; }
+.ami-pastille.menu { background: #4cd964; box-shadow: 0 0 6px #4cd964; }
+.ami-pastille.salon { background: var(--page-or-clair); box-shadow: 0 0 6px var(--page-or); }
+.ami-pastille.partie { background: #6aa8ff; box-shadow: 0 0 6px #6aa8ff; }
+.ami-texte { flex: 1; min-width: 0; }
+.ami-texte strong { display: block; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ami-texte span { color: #9aa0ad; font-size: 12px; }
+.page .ami .bouton-mc { height: 32px; padding: 0 12px; font-size: 13px; }
+.page .ami .ami-retirer { width: 32px; padding: 0; color: #9aa0ad; }
+.page .ami .ami-retirer:hover { color: #ff8a8a; border-color: #ff8a8a; background: rgba(80, 20, 20, 0.5); }
+/* Notifications des amis (invitations, demandes), en haut à droite du menu */
+.amis-notifications.page { position: fixed; top: 72px; right: 24px; z-index: 30; display: flex; flex-direction: column; gap: 8px; width: 330px; background: none; }
+.amis-notif {
+  display: flex; flex-direction: column; gap: 8px; padding: 12px; color: #e8e8e8; font-size: 14px;
+  border: 1px solid var(--page-or); border-radius: 10px; background: rgba(12, 14, 22, 0.94); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+.amis-notif strong { color: var(--page-or-clair); }
+.page .amis-notif .salon-actions .bouton-mc { height: 34px; flex: 1; }
+.reseau-alerte { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 20; padding: 8px 16px; color: #ff8080; background: rgba(0, 0, 0, 0.75); border: 2px solid #ff8080; }
+
 /* --- Écrans en jeu (cartes, pause, fin) -------------------------------------------------
    Style des pages, la partie visible derrière un voile, et les ornements de l'écran de
    chargement : liseré d'or bordé de sombre et losanges émeraude (ui/ornements.ts, --joyau).

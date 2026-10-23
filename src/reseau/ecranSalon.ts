@@ -1,23 +1,30 @@
 /**
- * Écran du multijoueur (bouton « Multijoueur » du menu) : choix de la classe,
- * puis Héberger ou Rejoindre. Chacun joue avec sa classe, son pseudo, son skin
- * et la progression de sa classe (maîtrise et talents, comme en solo) ; la
- * maîtrise progresse aussi à plusieurs, mais les records d'une partie à
- * plusieurs restent à part de ceux du solo. L'hôte ouvre un salon et donne
- * son code court ; ses amis le tapent dans Rejoindre et entrent d'eux-mêmes
- * (signalisation.ts). L'hôte lance la partie quand tout le monde est là.
+ * Page Multijoueur (bouton « Multijoueur » du menu), au style des autres pages :
+ * à gauche la partie à plusieurs, à droite les amis.
+ *
+ * Chacun joue avec la classe choisie au menu, son pseudo, son skin et la
+ * progression de sa classe (maîtrise et talents, comme en solo) ; l'arène est
+ * celle de l'hôte (choisie à son menu). L'hôte ouvre un salon et donne son code
+ * court, ou invite ses amis d'un clic ; un ami en ligne qui héberge se rejoint
+ * d'un clic, un ami au menu peut être sollicité (« Proposer de jouer » : s'il
+ * accepte, il héberge et l'invitation qui revient est acceptée d'office).
+ * Invitations et demandes arrivent en notifications sur le menu.
  */
+import type { BibliothequeTextures } from '../assets/textures';
 import { ARENES } from '../donnees/arenes';
-import { IDS_PERSONNAGES, PERSONNAGES, type IdPersonnage } from '../donnees/personnages';
-import type { DefinitionArene } from '../donnees/types';
+import { REGLES_MULTIJOUEUR } from '../donnees/multijoueur';
+import { PERSONNAGES, type IdPersonnage } from '../donnees/personnages';
 import type { ChoixPartie } from '../lancement';
 import type { Collection } from '../progression/collection';
 import type { Sauvegarde } from '../progression/sauvegarde';
 import type { Profil } from '../profil';
 import { element } from '../ui/dom';
+import { portrait } from '../ui/portraits';
 import { skinPourReseau } from './apparence';
+import type { Ami, ServiceAmis } from './amis';
+import type { InfoJoueur } from './protocole';
 import { SessionReseau, type ProfilReseau } from './session';
-import { normaliserCode } from './signalisation';
+import { LONGUEUR_CODE_SALON, normaliserCode } from './signalisation';
 
 /** Ce que le salon renvoie au lancement. */
 export interface LancementMultijoueur {
@@ -25,67 +32,74 @@ export interface LancementMultijoueur {
   readonly session: SessionReseau;
 }
 
-const STYLE = `
-#salon { z-index: 16; }
-#salon .salon-corps { width: min(760px, 94vw); max-height: calc(100vh - 80px); overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-#salon .salon-rangee { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-#salon .salon-choix.choisie { border-color: var(--page-or); color: var(--page-or-clair); }
-#salon .salon-code { font-size: 44px; letter-spacing: 8px; text-align: center; color: var(--page-or-clair); padding: 10px 0; user-select: all; }
-#salon .salon-saisie { width: 260px; font-size: 32px; letter-spacing: 6px; text-align: center; text-transform: uppercase; }
-#salon select { min-width: 220px; }
-#salon .salon-statut { min-height: 1.4em; color: #9aa0ad; }
-#salon .salon-statut.erreur { color: #ff7070; }
-#salon .salon-joueurs { display: flex; flex-direction: column; gap: 4px; }
-#salon .bouton-mc { padding: 0 14px; }
-.reseau-alerte { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 20; padding: 8px 16px; color: #ff8080; background: rgba(0, 0, 0, 0.75); border: 2px solid #ff8080; }
-`;
+/** s avant qu'une notification sans réponse ne s'efface. */
+const DUREE_NOTIFICATION = 60;
 
 export class EcranSalon {
-  private readonly racine: HTMLDivElement;
-  private readonly corps: HTMLDivElement;
+  /** Classe et arène choisies au menu (branché par main.ts une fois le menu créé). */
+  choixMenu: () => ChoixPartie;
+
+  private readonly racine = element('salon');
+  private readonly contenu = element('salon-contenu');
+  private readonly statut = element('salon-statut');
+  private readonly listeAmis = element('amis-liste');
+  private readonly notifications = element('amis-notifications');
+  private readonly textures: BibliothequeTextures;
   private readonly solo: Sauvegarde;
   private readonly profil: Profil;
   private readonly collection: Collection;
-  private personnage: IdPersonnage;
-  private arene: DefinitionArene;
+  private readonly amis: ServiceAmis;
   private session: SessionReseau | null = null;
+  /** Une connexion est en cours (héberger ou rejoindre) : les autres actions attendent. */
+  private occupe = false;
   private surLancer: ((l: LancementMultijoueur) => void) | null = null;
   private ouvert = false;
   private lance = false;
   private skinReseau: Promise<string | null> = Promise.resolve(null);
+  /** Amis à qui l'on a proposé de jouer : leur invitation sera acceptée d'office. */
+  private readonly propositions = new Set<string>();
+  /** Amis déjà invités dans le salon ouvert. */
+  private readonly invites = new Set<string>();
 
-  constructor(solo: Sauvegarde, profil: Profil, collection: Collection, choix: ChoixPartie) {
-    this.collection = collection;
+  constructor(textures: BibliothequeTextures, solo: Sauvegarde, profil: Profil, collection: Collection, amis: ServiceAmis, choix: ChoixPartie) {
+    this.textures = textures;
     this.solo = solo;
     this.profil = profil;
-    this.personnage = solo.verrou('personnage', choix.personnage) ? IDS_PERSONNAGES[0] : choix.personnage;
-    this.arene = solo.verrou('arene', choix.arene.id) ? ARENES[0] : choix.arene;
-
-    const style = document.createElement('style');
-    style.textContent = STYLE;
-    document.head.append(style);
-    this.racine = document.createElement('div');
-    this.racine.id = 'salon';
-    this.racine.className = 'ecran page cache';
-    this.corps = document.createElement('div');
-    this.corps.className = 'salon-corps';
-    const titre = document.createElement('h2');
-    titre.className = 'ecran-titre';
-    titre.textContent = 'Multijoueur';
-    this.racine.append(titre, this.corps);
-    document.body.append(this.racine);
+    this.collection = collection;
+    this.amis = amis;
+    this.choixMenu = () => choix;
 
     element<HTMLButtonElement>('menu-multijoueur').addEventListener('click', () => this.ouvrir());
-    // Entrée lancerait la partie solo du menu derrière : bloquée tant que le salon est ouvert ou lancé
+    element<HTMLButtonElement>('salon-fermer').addEventListener('click', () => this.fermer());
+    element('amis-code').textContent = amis.code;
+    const copier = element<HTMLButtonElement>('amis-copier');
+    copier.addEventListener('click', () => copierTexte(amis.code, copier));
+    const saisie = element<HTMLInputElement>('amis-saisie');
+    const ajouter = () => {
+      const erreur = amis.ajouter(saisie.value);
+      afficherStatut(element('amis-statut'), erreur ?? 'Ami ajouté : vous le verrez ici dès qu\'il sera en ligne.', erreur !== null);
+      if (!erreur) saisie.value = '';
+    };
+    element<HTMLButtonElement>('amis-ajouter').addEventListener('click', ajouter);
+
+    amis.surChangement = () => this.afficherAmis();
+    amis.surInvitation = (ami, salon) => this.recevoirInvitation(ami, salon);
+    amis.surDemande = (ami) => this.notifier(`<strong>${echapper(ami.pseudo)}</strong> voudrait jouer avec vous.`, 'Héberger', () => this.hebergerPour(ami));
+    amis.surAjout = (code, pseudo) => this.notifier(`<strong>${echapper(pseudo)}</strong> vous a ajouté en ami.`, 'Ajouter aussi', () => {
+      amis.ajouter(code, pseudo);
+    });
+
+    // Entrée lancerait la partie solo du menu derrière : bloquée tant que la page est ouverte ou la partie lancée
     window.addEventListener('keydown', (e) => {
       if (!(this.ouvert || this.lance) || (e.code !== 'Enter' && e.code !== 'NumpadEnter')) return;
       e.stopImmediatePropagation();
-      // Entrée dans le champ du code : on rejoint
-      if (document.activeElement?.id === 'salon-code-saisie') document.getElementById('salon-entrer')?.click();
+      const actif = document.activeElement?.id;
+      if (actif === 'salon-code-saisie') document.getElementById('salon-entrer')?.click();
+      else if (actif === 'amis-saisie') ajouter();
     }, true);
   }
 
-  /** Résolue quand l'hôte lance la partie (jamais si le joueur reste en solo). */
+  /** Résolue quand la partie à plusieurs est lancée (jamais si le joueur reste en solo). */
   attendreLancement(): Promise<LancementMultijoueur> {
     return new Promise((resoudre) => {
       this.surLancer = resoudre;
@@ -98,220 +112,358 @@ export class EcranSalon {
     this.skinReseau = p.skin === 'importe' && p.skinImporte ? skinPourReseau(p.skinImporte) : Promise.resolve(null);
     this.ouvert = true;
     this.racine.classList.remove('cache');
-    this.afficherAccueil();
+    void this.amis.demarrer().then(() => this.afficherAmis());
+    this.afficherMoi();
+    this.afficher();
+    this.afficherAmis();
   }
 
   private fermer(): void {
+    this.quitterSalon();
     this.ouvert = false;
-    this.session?.fermer();
-    this.session = null;
     this.racine.classList.add('cache');
   }
 
-  // --- Accueil : classe et arène -------------------------------------------
+  private quitterSalon(): void {
+    this.session?.fermer();
+    this.session = null;
+    this.invites.clear();
+    this.amis.definirEtat('menu');
+  }
+
+  // --- Partie à plusieurs ----------------------------------------------------
+
+  /** Qui l'on est : classe et arène du menu. */
+  private afficherMoi(): void {
+    const { personnage, arene } = this.choixMenu();
+    const texte = document.createElement('div');
+    texte.append(fort(`Vous : ${this.profil.pseudo}`), ligne(`${PERSONNAGES[personnage].nom} · ${arene.nom} (choisies dans le menu)`));
+    element('salon-moi').replaceChildren(this.image(personnage), texte);
+  }
+
+  /** Le contenu selon où l'on en est : accueil, salon hébergé, salon rejoint. */
+  private afficher(): void {
+    const s = this.session;
+    if (!s) this.afficherAccueil();
+    else if (s.role === 'hote') this.afficherHote(s);
+    else this.afficherInvite(s);
+  }
 
   private afficherAccueil(): void {
-    const c = this.corps;
-    c.replaceChildren();
-
-    c.append(texte('Classe', 'titre-panneau'));
-    const personnages = rangee();
-    for (const id of IDS_PERSONNAGES) {
-      const verrou = this.solo.verrou('personnage', id);
-      const b = bouton(PERSONNAGES[id].nom, () => {
-        this.personnage = id;
-        this.afficherAccueil();
-      });
-      b.classList.add('salon-choix');
-      b.classList.toggle('choisie', id === this.personnage);
-      b.disabled = verrou !== null;
-      b.dataset['id'] = id;
-      personnages.append(b);
-    }
-    c.append(personnages);
-
-    c.append(texte(`Maîtrise ${this.solo.maitrise(this.personnage).niveau} et talents de votre classe, comme en solo. `
-      + 'L\'XP de la partie fait monter votre maîtrise ; les records à plusieurs restent à part de ceux du solo.', 'ecran-aide'));
-
-    c.append(texte('Arène (choisie par l\'hôte)', 'titre-panneau'));
-    const choixArene = document.createElement('select');
-    choixArene.className = 'champ-mc';
-    choixArene.id = 'salon-arene';
-    for (const a of ARENES) {
-      if (this.solo.verrou('arene', a.id)) continue;
-      const option = document.createElement('option');
-      option.value = a.id;
-      option.textContent = a.nom;
-      option.selected = a.id === this.arene.id;
-      choixArene.append(option);
-    }
-    choixArene.addEventListener('change', () => {
-      this.arene = ARENES.find((a) => a.id === choixArene.value) ?? this.arene;
-    });
-    c.append(choixArene);
-
-    const actions = rangee();
-    const heberger = bouton('Héberger', () => {
-      heberger.disabled = true;
-      void this.heberger().finally(() => { heberger.disabled = false; });
-    });
+    const heberger = document.createElement('button');
     heberger.id = 'salon-heberger';
-    const rejoindre = bouton('Rejoindre', () => this.afficherRejoindre());
-    rejoindre.id = 'salon-rejoindre';
-    actions.append(heberger, rejoindre, bouton('Retour', () => this.fermer()));
-    c.append(actions);
-    c.append(texte('L\'hôte ouvre un salon et donne son code à ses amis, qui le tapent dans Rejoindre. Pas de serveur de jeu : '
-      + 'la partie passe directement d\'un joueur à l\'autre. Ça passe derrière la plupart des box ; sinon, essayez en réseau local '
-      + 'ou avec Tailscale ou ZeroTier.', 'ecran-aide'));
-    c.append(statutVide());
-  }
+    heberger.className = 'salon-tuile';
+    heberger.append(fort('Héberger un salon'), ligne('Vos amis entrent avec le code du salon, ou d\'un clic depuis leur liste d\'amis.'));
+    heberger.addEventListener('click', () => void this.heberger());
 
-  /** Ce que ce joueur apporte au salon : son pseudo, son skin, sa classe et ses talents. */
-  private async profilReseau(): Promise<ProfilReseau> {
-    const p = this.profil;
-    const skinImporte = await this.skinReseau;
-    return {
-      pseudo: p.pseudo, personnage: this.personnage, skin: skinImporte ? 'importe' : p.skin === 'importe' ? 'classe' : p.skin, brasFins: p.brasFins, skinImporte,
-      bonus: this.solo.bonus(this.personnage),
-      armure: { bonus: this.collection.bonus(), portees: this.collection.portees() },
-    };
-  }
-
-  // --- Hôte ----------------------------------------------------------------
-
-  private async heberger(): Promise<void> {
-    this.afficherStatut('Ouverture du salon…');
-    try {
-      const session = await SessionReseau.heberger(await this.profilReseau(), this.arene.id);
-      if (!this.ouvert) {
-        session.fermer();
-        return;
-      }
-      this.session = session;
-      session.surChangement = () => this.afficherHote();
-      this.afficherHote();
-    } catch (erreur) {
-      this.afficherStatut((erreur as Error).message, true);
-    }
-  }
-
-  private afficherHote(): void {
-    const session = this.session;
-    if (!session) return;
-    const c = this.corps;
-    c.replaceChildren();
-    c.append(texte(`Vous hébergez : ${this.arene.nom}`, 'titre-panneau'));
-    const code = texte(session.code, 'salon-code panneau-mc');
-    code.id = 'salon-code';
-    const copier = bouton('Copier le code', () => {
-      void navigator.clipboard?.writeText(session.code).then(() => { copier.textContent = 'Copié !'; });
-    });
-    c.append(code, rangee(copier));
-    c.append(texte('Donnez ce code à vos amis : ils cliquent sur Rejoindre et le tapent, puis apparaissent ici d\'eux-mêmes.', 'ecran-aide'));
-    c.append(this.listeJoueurs(session));
-
-    const lancer = bouton('Lancer la partie', () => {
-      session.lancer();
-      this.terminer(session);
-    });
-    lancer.id = 'salon-lancer';
-    lancer.classList.add('page-fermer');
-    c.append(rangee(lancer, bouton('Quitter le salon', () => this.fermer())), statutVide());
-  }
-
-  // --- Joueur --------------------------------------------------------------
-
-  private afficherRejoindre(): void {
-    const c = this.corps;
-    c.replaceChildren();
-    c.append(texte('Code du salon donné par l\'hôte :', 'titre-panneau'));
+    const rejoindre = document.createElement('div');
+    rejoindre.className = 'salon-tuile';
     const saisie = document.createElement('input');
-    saisie.className = 'champ-mc salon-saisie';
     saisie.id = 'salon-code-saisie';
+    saisie.className = 'champ-mc salon-saisie';
     saisie.maxLength = 7;
     saisie.placeholder = 'ABC-DEF';
     saisie.spellcheck = false;
     saisie.autocomplete = 'off';
     const entrer = bouton('Rejoindre', () => {
-      const code = normaliserCode(saisie.value);
+      const code = normaliserCode(saisie.value, LONGUEUR_CODE_SALON);
       if (!code) {
-        this.afficherStatut('Le code fait 6 lettres ou chiffres, comme K7F-3QX', true);
+        this.afficherStatut('Le code d\'un salon a 6 lettres ou chiffres, comme K7F-3QX', true);
         return;
       }
       saisie.value = code;
-      entrer.disabled = true;
-      this.afficherStatut('Recherche du salon…');
-      this.profilReseau().then((profil) => SessionReseau.rejoindre(profil, code)).then((session) => {
-        if (!this.ouvert) {
-          session.fermer();
-          return;
-        }
-        this.session = session;
-        session.surChangement = () => this.afficherInvite();
-        session.surLancement = () => this.terminer(session);
-        session.surPerte = (raison) => this.afficherStatut(raison, true);
-        this.afficherInvite();
-      }, (erreur: Error) => {
-        entrer.disabled = false;
-        this.afficherStatut(erreur.message, true);
-      });
+      void this.rejoindre(code);
     });
     entrer.id = 'salon-entrer';
-    c.append(rangee(saisie, entrer, bouton('Retour', () => this.afficherAccueil())), statutVide());
-    saisie.focus();
+    const rangee = document.createElement('div');
+    rangee.className = 'salon-ligne';
+    rangee.append(saisie, entrer);
+    rejoindre.append(fort('Rejoindre un salon'), ligne('Tapez le code donné par l\'hôte.'), rangee);
+
+    this.contenu.replaceChildren(heberger, rejoindre);
   }
 
-  private afficherInvite(): void {
-    const session = this.session;
-    if (!session) return;
-    const c = this.corps;
-    c.replaceChildren();
-    if (session.joueurs.length === 0) {
-      c.append(texte('Relié à l\'hôte, entrée dans le salon…', 'titre-panneau'));
-    } else {
-      const arene = ARENES.find((a) => a.id === session.arene);
-      c.append(texte(`Dans le salon ! Arène : ${arene?.nom ?? session.arene}`, 'titre-panneau'), this.listeJoueurs(session));
-      c.append(texte('En attente du lancement par l\'hôte…', 'ecran-aide'));
+  private afficherHote(s: SessionReseau): void {
+    const bloc = document.createElement('div');
+    bloc.className = 'salon-code-bloc';
+    const code = fort(s.code);
+    code.id = 'salon-code';
+    code.className = 'salon-code';
+    const copier = bouton('Copier', () => copierTexte(s.code, copier));
+    const titre = document.createElement('div');
+    titre.append(ligne('Code du salon'), code);
+    bloc.append(titre, copier);
+
+    const lancer = bouton('Lancer la partie', () => {
+      s.lancer();
+      this.terminer(s);
+    });
+    lancer.id = 'salon-lancer';
+    lancer.classList.add('page-fermer');
+    const actions = document.createElement('div');
+    actions.className = 'salon-actions';
+    actions.append(lancer, bouton('Fermer le salon', () => {
+      this.quitterSalon();
+      this.afficher();
+      this.afficherAmis();
+    }));
+    this.contenu.replaceChildren(bloc, this.places(s), actions);
+  }
+
+  private afficherInvite(s: SessionReseau): void {
+    const hote = s.joueurs.find((j) => j.index === 0);
+    const arene = ARENES.find((a) => a.id === s.arene);
+    const titre = document.createElement('div');
+    titre.className = 'salon-tuile';
+    titre.append(fort(hote ? `Salon de ${hote.pseudo}` : 'Entrée dans le salon…'), ligne(arene ? `Arène : ${arene.nom}` : ''));
+    const attente = ligne('En attente du lancement par l\'hôte…');
+    attente.className = 'salon-attente';
+    const actions = document.createElement('div');
+    actions.className = 'salon-actions';
+    actions.append(bouton('Quitter le salon', () => {
+      this.quitterSalon();
+      this.afficher();
+    }));
+    this.contenu.replaceChildren(titre, this.places(s), attente, actions);
+  }
+
+  /** Les places du salon : les joueurs présents, puis les places libres. */
+  private places(s: SessionReseau): HTMLElement {
+    const grille = document.createElement('div');
+    grille.id = 'salon-joueurs';
+    grille.className = 'salon-places';
+    for (const j of s.joueurs) grille.append(this.place(j, s));
+    for (let i = s.joueurs.length; i < REGLES_MULTIJOUEUR.joueursMax; i++) {
+      const libre = document.createElement('div');
+      libre.className = 'salon-place libre';
+      libre.textContent = 'Place libre';
+      grille.append(libre);
     }
-    c.append(rangee(bouton('Quitter le salon', () => this.fermer())), statutVide());
+    return grille;
   }
 
-  // --- Commun --------------------------------------------------------------
+  private place(j: InfoJoueur, s: SessionReseau): HTMLElement {
+    const div = document.createElement('div');
+    div.className = 'salon-place';
+    const role = j.index === 0 ? ' · hôte' : '';
+    const moi = j.index === s.index ? ' · vous' : '';
+    const texte = document.createElement('div');
+    texte.append(fort(j.pseudo), ligne(`${PERSONNAGES[j.personnage].nom}${role}${moi}`));
+    div.append(this.image(j.personnage), texte);
+    return div;
+  }
 
-  private terminer(session: SessionReseau): void {
-    const arene = ARENES.find((a) => a.id === session.arene) ?? this.arene;
+  private async heberger(): Promise<SessionReseau | null> {
+    if (this.occupe || this.session) return this.session;
+    this.occupe = true;
+    this.afficherStatut('Ouverture du salon…');
+    try {
+      const s = await SessionReseau.heberger(await this.profilReseau(), this.choixMenu().arene.id);
+      if (!this.ouvert) {
+        s.fermer();
+        return null;
+      }
+      this.session = s;
+      s.surChangement = () => this.surChangementSalon(s);
+      this.surChangementSalon(s);
+      this.afficherStatut('');
+      return s;
+    } catch (erreur) {
+      this.afficherStatut((erreur as Error).message, true);
+      return null;
+    } finally {
+      this.occupe = false;
+    }
+  }
+
+  private async rejoindre(code: string): Promise<void> {
+    if (this.occupe) return;
+    if (this.session) this.quitterSalon();
+    this.occupe = true;
+    this.afficher();
+    this.afficherStatut('Recherche du salon…');
+    try {
+      const s = await SessionReseau.rejoindre(await this.profilReseau(), code);
+      if (!this.ouvert) {
+        s.fermer();
+        return;
+      }
+      this.session = s;
+      s.surChangement = () => this.surChangementSalon(s);
+      s.surLancement = () => this.terminer(s);
+      s.surPerte = (raison) => {
+        if (this.session !== s) return;
+        this.quitterSalon();
+        this.afficher();
+        this.afficherStatut(raison, true);
+      };
+      this.surChangementSalon(s);
+      this.afficherStatut('');
+    } catch (erreur) {
+      this.afficherStatut((erreur as Error).message, true);
+    } finally {
+      this.occupe = false;
+    }
+  }
+
+  private surChangementSalon(s: SessionReseau): void {
+    if (this.session !== s) return;
+    const place = s.role === 'hote' && s.joueurs.length < REGLES_MULTIJOUEUR.joueursMax;
+    this.amis.definirEtat('salon', place ? s.code : null, Math.max(1, s.joueurs.length));
+    this.afficher();
+    this.afficherAmis();
+  }
+
+  /** Ce que ce joueur apporte au salon : son pseudo, son skin, la classe du menu et ses talents. */
+  private async profilReseau(): Promise<ProfilReseau> {
+    const p = this.profil;
+    const personnage = this.choixMenu().personnage;
+    const skinImporte = await this.skinReseau;
+    return {
+      pseudo: p.pseudo, personnage, skin: skinImporte ? 'importe' : p.skin === 'importe' ? 'classe' : p.skin, brasFins: p.brasFins, skinImporte,
+      bonus: this.solo.bonus(personnage),
+      armure: { bonus: this.collection.bonus(), portees: this.collection.portees() },
+    };
+  }
+
+  private terminer(s: SessionReseau): void {
+    const arene = ARENES.find((a) => a.id === s.arene) ?? this.choixMenu().arene;
     this.ouvert = false;
     this.lance = true;
     this.racine.classList.add('cache');
+    this.notifications.replaceChildren();
     element('menu').classList.add('cache');
-    this.surLancer?.({ choix: { personnage: this.personnage, arene }, session });
-  }
-
-  private listeJoueurs(session: SessionReseau): HTMLElement {
-    const liste = document.createElement('div');
-    liste.className = 'salon-joueurs panneau-mc';
-    liste.id = 'salon-joueurs';
-    for (const j of session.joueurs) {
-      const role = j.index === 0 ? ' (hôte)' : '';
-      const moi = j.index === session.index ? ' — vous' : '';
-      liste.append(texte(`${j.pseudo} : ${PERSONNAGES[j.personnage].nom}${role}${moi}`));
-    }
-    return liste;
+    this.amis.definirEtat('partie', null, s.joueurs.length);
+    this.surLancer?.({ choix: { personnage: this.choixMenu().personnage, arene }, session: s });
   }
 
   private afficherStatut(message: string, erreur = false): void {
-    const statut = this.corps.querySelector('.salon-statut');
-    if (!statut) return;
-    statut.textContent = message;
-    statut.classList.toggle('erreur', erreur);
+    afficherStatut(this.statut, message, erreur);
+  }
+
+  private image(personnage: IdPersonnage): HTMLElement {
+    const adresse = portrait(this.textures, PERSONNAGES[personnage]);
+    const img = document.createElement('img');
+    img.alt = '';
+    if (adresse) img.src = adresse;
+    return img;
+  }
+
+  // --- Amis ------------------------------------------------------------------
+
+  private afficherAmis(): void {
+    if (!this.ouvert) return;
+    const amis = this.amis;
+    if (amis.amis.length === 0) {
+      this.listeAmis.replaceChildren(ligne('Aucun ami pour l\'instant : échangez une fois vos codes amis, puis vous verrez ici quand vos amis sont en ligne, et vous les rejoindrez d\'un clic.'));
+      this.listeAmis.firstElementChild?.classList.add('amis-vide');
+      return;
+    }
+    // En ligne d'abord
+    const tries = [...amis.amis].sort((a, b) => Number(amis.enLigne(b.code) !== null) - Number(amis.enLigne(a.code) !== null));
+    this.listeAmis.replaceChildren(...tries.map((a) => this.ligneAmi(a)));
+  }
+
+  private ligneAmi(ami: Ami): HTMLElement {
+    const presence = this.amis.enLigne(ami.code);
+    const div = document.createElement('div');
+    div.className = 'ami';
+    div.dataset['code'] = ami.code;
+    const pastille = document.createElement('span');
+    pastille.className = `ami-pastille ${presence?.etat ?? ''}`;
+    const texte = document.createElement('div');
+    texte.className = 'ami-texte';
+    const etat = !presence ? 'Hors ligne'
+      : presence.etat === 'salon' ? `Dans un salon (${presence.joueurs}/${REGLES_MULTIJOUEUR.joueursMax})`
+      : presence.etat === 'partie' ? 'En partie' : 'En ligne';
+    texte.append(fort(ami.pseudo), ligne(etat));
+    div.append(pastille, texte);
+
+    const s = this.session;
+    if (presence?.salon && !s) {
+      div.append(bouton('Rejoindre', () => void this.rejoindre(presence.salon!)));
+    } else if (presence && presence.etat !== 'partie' && s?.role === 'hote' && !s.joueurs.some((j) => j.pseudo === ami.pseudo)) {
+      const invite = this.invites.has(ami.code);
+      const b = bouton(invite ? 'Invité' : 'Inviter', () => {
+        this.invites.add(ami.code);
+        void this.amis.inviter(ami.code, s.code);
+        this.afficherAmis();
+      });
+      b.disabled = invite;
+      div.append(b);
+    } else if (presence?.etat === 'menu' && !s) {
+      const propose = this.propositions.has(ami.code);
+      const b = bouton(propose ? 'Proposé' : 'Proposer de jouer', () => {
+        this.propositions.add(ami.code);
+        void this.amis.demanderAJouer(ami.code);
+        this.afficherStatut(`Proposition envoyée à ${ami.pseudo} : s'il accepte, vous rejoindrez son salon tout seul.`);
+        this.afficherAmis();
+      });
+      b.disabled = propose;
+      div.append(b);
+    }
+    const retirer = bouton('✕', () => this.amis.retirer(ami.code));
+    retirer.classList.add('ami-retirer');
+    retirer.title = 'Retirer de mes amis';
+    div.append(retirer);
+    return div;
+  }
+
+  /** Invitation d'un ami : acceptée d'office si on lui avait proposé de jouer, sinon une notification. */
+  private recevoirInvitation(ami: Ami, salon: string): void {
+    if (this.lance) return;
+    if (this.propositions.delete(ami.code) && !this.session) {
+      if (!this.ouvert) this.ouvrir();
+      void this.rejoindre(salon);
+      return;
+    }
+    this.notifier(`<strong>${echapper(ami.pseudo)}</strong> vous invite dans son salon.`, 'Rejoindre', () => {
+      if (!this.ouvert) this.ouvrir();
+      void this.rejoindre(salon);
+    });
+  }
+
+  /** Un ami voudrait jouer : on héberge et on l'invite (il entrera de lui-même). */
+  private hebergerPour(ami: Ami): void {
+    if (!this.ouvert) this.ouvrir();
+    void (this.session?.role === 'hote' ? Promise.resolve(this.session) : this.heberger()).then((s) => {
+      if (!s || s.role !== 'hote') return;
+      this.invites.add(ami.code);
+      void this.amis.inviter(ami.code, s.code);
+      this.afficherAmis();
+    });
+  }
+
+  /** Notification sur le menu (jamais en partie), avec une action et « Plus tard ». */
+  private notifier(html: string, action: string, faire: () => void): void {
+    if (this.lance) return;
+    const notif = document.createElement('div');
+    notif.className = 'amis-notif';
+    const texte = document.createElement('div');
+    texte.innerHTML = html;
+    const fermer = () => notif.remove();
+    const actions = document.createElement('div');
+    actions.className = 'salon-actions';
+    actions.append(bouton(action, () => {
+      fermer();
+      faire();
+    }), bouton('Plus tard', fermer));
+    notif.append(texte, actions);
+    this.notifications.append(notif);
+    setTimeout(fermer, DUREE_NOTIFICATION * 1000);
   }
 }
 
-function texte(contenu: string, classe = ''): HTMLDivElement {
-  const div = document.createElement('div');
-  div.textContent = contenu;
-  if (classe) div.className = classe;
-  return div;
+function fort(contenu: string): HTMLElement {
+  const b = document.createElement('strong');
+  b.textContent = contenu;
+  return b;
+}
+
+function ligne(contenu: string): HTMLElement {
+  const span = document.createElement('span');
+  span.textContent = contenu;
+  return span;
 }
 
 function bouton(libelle: string, action: () => void): HTMLButtonElement {
@@ -322,13 +474,18 @@ function bouton(libelle: string, action: () => void): HTMLButtonElement {
   return b;
 }
 
-function rangee(...enfants: HTMLElement[]): HTMLDivElement {
-  const div = document.createElement('div');
-  div.className = 'salon-rangee';
-  div.append(...enfants);
-  return div;
+function afficherStatut(cible: HTMLElement, message: string, erreur: boolean): void {
+  cible.textContent = message;
+  cible.classList.toggle('erreur', erreur);
 }
 
-function statutVide(): HTMLDivElement {
-  return texte('', 'salon-statut');
+function copierTexte(texte: string, b: HTMLButtonElement): void {
+  void navigator.clipboard?.writeText(texte).then(() => {
+    b.textContent = 'Copié !';
+    setTimeout(() => { b.textContent = 'Copier'; }, 1500);
+  });
+}
+
+function echapper(texte: string): string {
+  return texte.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }

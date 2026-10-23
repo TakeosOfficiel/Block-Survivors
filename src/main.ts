@@ -32,6 +32,7 @@ import { appliquerHabillage } from './ui/habillage';
 import { enregistrerArmures, enregistrerIconesObjets } from './ui/iconesObjets';
 import { PanneauOptions } from './ui/panneauOptions';
 import { apparenceDistante, cheminSkinJoueur } from './reseau/apparence';
+import { ServiceAmis } from './reseau/amis';
 import { EcranSalon, type LancementMultijoueur } from './reseau/ecranSalon';
 import { EcranProfils } from './ui/ecranProfils';
 
@@ -56,6 +57,8 @@ async function demarrer(): Promise<void> {
   const sauvegarde = Sauvegarde.charger();
   const profil = chargerProfil();
   const collection = Collection.charger();
+  // Amis : présence et invitations (relais joints seulement s'il y a des amis ou à l'ouverture du Multijoueur)
+  const amis = new ServiceAmis(() => profil.pseudo);
   const sons = new Sons(options.volume, options.volumes);
   sons.precharger();
   // Une seule barre : l'interface seule avant le menu, ou l'interface et la partie (Rejouer)
@@ -103,8 +106,9 @@ async function demarrer(): Promise<void> {
     ecran.masquer();
     // Le salon multijoueur s'ouvre depuis le menu ; la première partie lancée (solo ou à plusieurs) l'emporte
     new EcranProfils();
-    const salon = new EcranSalon(sauvegarde, profil, collection, choix);
+    const salon = new EcranSalon(textures, sauvegarde, profil, collection, amis, choix);
     const menu = new EcranMenu(textures, choix, panneauOptions, sauvegarde, new EcranProfil(textures, profil, apercu, collection), apercu, collection);
+    salon.choixMenu = () => menu.choix;
     const choixSolo = menu.attendreChoix();
     multijoueur = await Promise.race([choixSolo.then(() => null), salon.attendreLancement()]);
     if (multijoueur) {
@@ -163,6 +167,7 @@ async function demarrer(): Promise<void> {
     await multijoueur.session.synchroniserDepart();
   }
   ecran.masquer();
+  amis.definirEtat('partie', null, multijoueur?.session.joueurs.length ?? 1);
   jeu.demarrer();
   if (photo) memoriserPhoto(choix.arene.id, photo);
 

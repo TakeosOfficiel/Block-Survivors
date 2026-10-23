@@ -107,6 +107,36 @@
     <button id="profil-fermer" class="bouton-mc large page-fermer">Terminé</button>
   </div>
 
+  <!-- Multijoueur : salon à code court et amis (reseau/ecranSalon.ts) -->
+  <div id="salon" class="ecran page cache">
+    <h2 class="ecran-titre">Multijoueur</h2>
+    <div class="salon-corps">
+      <div class="panneau-mc salon-panneau">
+        <div class="titre-panneau">Partie à plusieurs</div>
+        <div id="salon-moi" class="salon-moi"></div>
+        <div id="salon-contenu" class="salon-contenu"></div>
+        <div id="salon-statut" class="salon-statut"></div>
+      </div>
+      <div class="panneau-mc salon-panneau">
+        <div class="titre-panneau">Amis</div>
+        <div class="amis-mon-code">
+          <span>Votre code ami</span>
+          <strong id="amis-code" class="amis-code"></strong>
+          <button id="amis-copier" class="bouton-mc">Copier</button>
+        </div>
+        <div class="amis-ajout">
+          <input id="amis-saisie" class="champ-mc" type="text" autocomplete="off" spellcheck="false" maxlength="11" placeholder="Code ami d'un joueur" />
+          <button id="amis-ajouter" class="bouton-mc">Ajouter</button>
+        </div>
+        <div id="amis-statut" class="salon-statut"></div>
+        <div id="amis-liste" class="amis-liste"></div>
+      </div>
+    </div>
+    <div class="ecran-aide">Classe et arène se choisissent dans le menu · pas de serveur de jeu : la partie va directement d'un joueur à l'autre</div>
+    <button id="salon-fermer" class="bouton-mc large page-fermer">Terminé</button>
+  </div>
+  <div id="amis-notifications" class="amis-notifications page"></div>
+
   <!-- Collection : armures de monde et objets trouvés -->
   <div id="collection" class="ecran page cache">
     <h2 class="ecran-titre">Collection</h2>

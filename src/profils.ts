@@ -2,7 +2,8 @@
  * Profils : plusieurs joueurs (ou plusieurs départs) sur la même installation.
  * Chaque profil a son pseudo et son apparence (profil.ts), sa progression
  * (maîtrise, talents, records, déblocages), sa Collection, ses records à
- * plusieurs et son dernier choix de partie, rangés sous ses propres clés :
+ * plusieurs, ses amis (son code ami compris) et son dernier choix de partie,
+ * rangés sous ses propres clés :
  * « block-survivors.p.<id>.<nom> ». Les options (volume, vue…) restent
  * communes à l'installation.
  *
@@ -13,7 +14,7 @@
 import { ecrireStockage, lireStockage } from './options';
 
 /** Données propres à un profil (nom de leur clé dans le profil). */
-export const DONNEES_PROFIL = ['profil', 'progression', 'progression.multi', 'collection', 'choix'] as const;
+export const DONNEES_PROFIL = ['profil', 'progression', 'progression.multi', 'collection', 'choix', 'amis'] as const;
 export type DonneeProfil = (typeof DONNEES_PROFIL)[number];
 
 const CLE_REGISTRE = 'block-survivors.profils';

@@ -5,6 +5,11 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.45.1] — 2026-10-23
+
+### Changements
+- **Pièces d'armure plus rares** : un boss lâche une pièce 1 fois sur 4 environ (1er boss 25 %, 2e boss 30 %, boss du mode sans fin 35 %), et rarement une 2e (8 à 12 %). Compléter une armure demande maintenant de nombreuses parties.
+
 ## [0.45.0] — 2026-10-23
 
 ### Changements

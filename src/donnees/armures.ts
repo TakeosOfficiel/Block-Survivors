@@ -22,9 +22,9 @@ export function estPieceJeu(piece: PieceArmure): piece is PieceArmureJeu {
  * rares, les suivants (mode sans fin) de tout, plus souvent. Une pièce déjà gagnée n'est jamais redonnée.
  */
 export const BUTIN_BOSS: readonly ButinBoss[] = [
-  { chance: 0.6, chanceSeconde: 0.2, poids: { bottes: 30, jambieres: 30, casque: 25, bouclier: 10, cape: 5 } },
-  { chance: 0.65, chanceSeconde: 0.25, poids: { plastron: 30, bouclier: 20, cape: 20, casque: 10, talisman: 10, jambieres: 5, bottes: 5 } },
-  { chance: 0.75, chanceSeconde: 0.35, poids: { plastron: 15, casque: 10, jambieres: 10, bottes: 10, bouclier: 15, cape: 20, talisman: 20 } },
+  { chance: 0.25, chanceSeconde: 0.08, poids: { bottes: 30, jambieres: 30, casque: 25, bouclier: 10, cape: 5 } },
+  { chance: 0.3, chanceSeconde: 0.1, poids: { plastron: 30, bouclier: 20, cape: 20, casque: 10, talisman: 10, jambieres: 5, bottes: 5 } },
+  { chance: 0.35, chanceSeconde: 0.12, poids: { plastron: 15, casque: 10, jambieres: 10, bottes: 10, bouclier: 15, cape: 20, talisman: 20 } },
 ];
 export const MONDES: readonly IdMonde[] = ['prairie', 'mine', 'nether', 'champignons'];
 

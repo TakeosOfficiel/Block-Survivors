@@ -1,0 +1,128 @@
+/**
+ * Test du multijoueur : un hôte et N joueurs (contextes Chromium séparés, donc
+ * sauvegardes séparées) sur le serveur de développement. Échange des codes,
+ * lancement, déplacement des joueurs, puis comparaison de ce que voient l'hôte
+ * et chaque joueur (mêmes ennemis, mêmes positions).
+ *
+ *   npm run dev   (dans un autre terminal)
+ *   node scripts/test-multijoueur.mjs
+ *
+ * Variables : JOUEURS (2 à 4), URL, L et H (taille des fenêtres), VITESSE (temps
+ * accéléré chez l'hôte), INVINCIBLES=1, DUREE (ms), DOSSIER (captures),
+ * PLAYWRIGHT (chemin du module playwright s'il n'est pas installé dans le projet).
+ */
+const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
+
+const URL = process.env.URL ?? 'http://localhost:5173/';
+const N = Number(process.env.JOUEURS ?? 2);
+const DOSSIER = process.env.DOSSIER ?? '.';
+const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
+
+const navigateur = await chromium.launch({
+  args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--disable-features=WebRtcHideLocalIpsWithMdns', '--autoplay-policy=no-user-gesture-required'],
+});
+const pages = [];
+for (let i = 0; i < N; i++) {
+  const contexte = await navigateur.newContext({ viewport: { width: Number(process.env.L ?? 1100), height: Number(process.env.H ?? 700) } });
+  await contexte.addInitScript(() => {
+    if (!localStorage.getItem('block-survivors.options')) localStorage.setItem('block-survivors.options', JSON.stringify({ version: 2, shaders: 'aucun', volume: 0 }));
+    let images = 0;
+    const compter = () => { images++; requestAnimationFrame(compter); };
+    requestAnimationFrame(compter);
+    // Cartes : la première, choisie d'office
+    setInterval(() => {
+      const cartes = document.querySelector('#cartes');
+      if (cartes && !cartes.classList.contains('cache')) document.querySelector('#cartes-liste > *')?.click();
+    }, 700);
+    window.imagesParSeconde = () => new Promise((r) => { const d = images; setTimeout(() => r(images - d), 1000); });
+  });
+  const page = await contexte.newPage();
+  page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') console.log(`[${i}] ${m.type()}: ${m.text().slice(0, 300)}`); });
+  page.on('pageerror', (e) => console.log(`[${i}] ERREUR: ${e.message}\n${e.stack}`));
+  await page.goto(URL);
+  pages.push(page);
+}
+const [hote, ...invites] = pages;
+for (const p of pages) await p.waitForSelector('#menu:not(.cache)', { timeout: 120000 });
+console.log('menus chargés');
+
+// Personnages différents pour les reconnaître
+const persos = ['guerrier', 'archer', 'mage', 'invocateur'];
+for (let i = 0; i < N; i++) {
+  await pages[i].click('#menu-multijoueur');
+  await pages[i].click(`#salon button[data-id="${persos[i]}"]`);
+}
+await hote.click('#salon-heberger');
+for (const [k, invite] of invites.entries()) {
+  await hote.click('#salon-inviter');
+  await hote.waitForFunction(() => document.querySelector('#salon-code-invitation')?.value.startsWith('BS1.'), null, { timeout: 30000 });
+  const offre = await hote.inputValue('#salon-code-invitation');
+  console.log(`invitation ${k + 1} : ${offre.length} caractères`);
+  await invite.click('#salon-rejoindre');
+  await invite.fill('#salon-code-offre', offre);
+  await invite.click('#salon-generer');
+  await invite.waitForSelector('#salon-code-retour', { timeout: 30000 });
+  const reponse = await invite.inputValue('#salon-code-retour');
+  console.log(`réponse ${k + 1} : ${reponse.length} caractères`);
+  await hote.fill('#salon-code-reponse', reponse);
+  await hote.click('#salon-valider');
+  await hote.waitForFunction((n) => document.querySelectorAll('#salon-joueurs > div').length === n, k + 2, { timeout: 30000 });
+  await invite.waitForSelector('#salon-joueurs', { timeout: 10000 });
+  console.log(`joueur ${k + 1} connecté`);
+}
+await hote.click('#salon-lancer');
+for (const p of pages) await p.waitForFunction(() => window.blockSurvivors?.jeu && document.querySelector('#chargement')?.classList.contains('cache') !== false, null, { timeout: 180000 });
+console.log('parties lancées, images/s :', await hote.evaluate(() => window.imagesParSeconde()), await invites[0]?.evaluate(() => window.imagesParSeconde()));
+await attendre(4000);
+if (process.env.VITESSE) await hote.evaluate((v) => { window.blockSurvivors.jeu.debug.vitesseTemps = v; }, Number(process.env.VITESSE));
+if (process.env.INVINCIBLES) await hote.evaluate(() => {
+  const jeu = window.blockSurvivors.jeu;
+  jeu.joueur.invincible = true;
+  for (const c of jeu.reseau.combattants) c.joueur.invincible = true;
+});
+
+// Les joueurs invités avancent (chacun dans une direction)
+const touches = ['KeyD', 'KeyS', 'KeyA'];
+for (const [k, invite] of invites.entries()) await invite.keyboard.down(touches[k]);
+await attendre(2500);
+for (const [k, invite] of invites.entries()) await invite.keyboard.up(touches[k]);
+await attendre(1000);
+
+// Coups portés par les armes des joueurs distants, chez l'hôte
+await hote.evaluate(() => {
+  const jeu = window.blockSurvivors.jeu;
+  window.coupsDistants = 0;
+  const blesser = jeu.ennemis.blesser.bind(jeu.ennemis);
+  jeu.ennemis.blesser = (...args) => {
+    if (jeu.etat.joueur !== jeu.etat.joueurs[0]) window.coupsDistants++;
+    return blesser(...args);
+  };
+});
+await attendre(Number(process.env.DUREE ?? 12000));
+
+const etatHote = await hote.evaluate(() => {
+  const jeu = window.blockSurvivors.jeu;
+  const e = jeu.etat;
+  const ids = [];
+  for (let i = 0; i < jeu.ennemis.pool.nombre; i++) ids.push(jeu.ennemis.pool.elements[i].id);
+  return {
+    temps: e.tempsJeu.toFixed(1), tues: e.ennemisTues, niveau: e.joueur.niveau, coupsDistants: window.coupsDistants,
+    joueurs: e.joueurs.map((j) => ({ x: j.x.toFixed(2), z: j.z.toFixed(2), pv: j.pv.toFixed(1), mort: j.mort, niveau: j.niveau })),
+    arsenaux: [jeu.arsenal, ...jeu.reseau.combattants.map((c) => c.arsenal)].map((a) => a.armes.map((x) => `${x.id}:${x.rang}`).join(',')),
+    ennemis: ids.length, ids,
+  };
+});
+console.log('HÔTE', JSON.stringify({ ...etatHote, ids: undefined }));
+for (const [k, invite] of invites.entries()) {
+  const etat = await invite.evaluate(() => {
+    const jeu = window.blockSurvivors.jeu;
+    const e = jeu.etat;
+    const ids = [];
+    for (let i = 0; i < jeu.ennemis.pool.nombre; i++) ids.push(jeu.ennemis.pool.elements[i].id);
+    return { arsenal: jeu.arsenal.armes.map((x) => `${x.id}:${x.rang}`).join(','), temps: e.tempsJeu.toFixed(1), tues: e.ennemisTues, niveau: e.joueur.niveau, x: e.joueur.x.toFixed(2), z: e.joueur.z.toFixed(2), pv: e.joueur.pv.toFixed(1), ennemis: ids.length, ids };
+  });
+  const communs = etat.ids.filter((id) => etatHote.ids.includes(id)).length;
+  console.log(`INVITÉ ${k + 1}`, JSON.stringify({ ...etat, ids: undefined, communsAvecHote: communs }));
+}
+for (let i = 0; i < N; i++) await pages[i].screenshot({ path: `${DOSSIER}/joueur${i}.png` });
+await navigateur.close();

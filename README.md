@@ -89,6 +89,7 @@ src/
   entites/              joueur, ennemis et comportements, projectiles ennemis, orbes d'XP,
                         objets de soin, butin, directeurs d'apparition (hordes et boss)
   combat/               armes du joueur : arsenal et une classe par mécanique
+  reseau/               multijoueur (prototype) : transport WebRTC, protocole, salon, hôte, joueurs
   progression/          niveaux, bonus passifs, modificateurs, cartes d'amélioration, sauvegarde (maîtrise, talents)
   modeles/              modèles cubiques : compilation, animation, rendu instancié
   effets/               ombres, particules vanilla (sprites face caméra), rendu des projectiles (instanciés), retours (sons, secousses)
@@ -152,6 +153,24 @@ Chaque coup affiche ses **dégâts** au-dessus de l'ennemi (critiques plus gros
 et dorés ; désactivable dans les options). Les armes peuvent porter des **coups critiques** (5 % de chance au départ,
 dégâts ×1,5, étincelles du jeu) ; le bonus *Silex taillé* et certains talents
 les rendent plus fréquents ou plus forts.
+
+## Multijoueur (prototype, 2 à 4 joueurs)
+
+Menu → **Multijoueur**. Sans serveur : un joueur **héberge** (il simule toute
+la partie), les autres **rejoignent**. La mise en relation passe par deux codes
+à copier-coller (Discord, SMS…) : l'hôte envoie un code d'invitation, le joueur
+lui renvoie un code de réponse (WebRTC, serveurs STUN publics seulement). Ça
+passe derrière la plupart des box ; deux NAT stricts (4G, réseau d'entreprise)
+ne se joignent pas : réseau local, Tailscale ou ZeroTier dans ce cas.
+
+Chacun choisit son personnage ; la progression multi est **séparée du solo**
+(sauvegarde à part) : copie du personnage solo ou personnage neuf. XP et niveau
+communs, chacun choisit ses cartes (la partie attend tout le monde), les ennemis
+visent le joueur le plus proche et sont plus nombreux et plus robustes à
+plusieurs. Hôte et joueurs doivent avoir la même version du jeu.
+
+Test automatique (deux fenêtres Chromium) : `npm run dev`, puis
+`node scripts/test-multijoueur.mjs`.
 
 ## Progression entre les parties
 

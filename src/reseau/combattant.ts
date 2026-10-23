@@ -1,0 +1,333 @@
+/**
+ * Hôte : un joueur distant et tout ce qui lui appartient (état, bonus, modèle,
+ * arsenal, systèmes d'armes, talents, tirage des cartes), construit comme le
+ * joueur local dans jeu.ts.
+ *
+ * Commutation (prototype) : les systèmes d'armes, les talents et le joueur
+ * lisent `etat.joueur`, `etat.modificateurs`, `etat.talents` et
+ * `etat.personnage`. Avant de mettre à jour un combattant, on fait pointer
+ * ces champs sur les siens (`Commutateur.vers`), puis on remet ceux du joueur
+ * local : aucun système de combat n'a besoin de savoir qu'il y a plusieurs
+ * joueurs. Ce ne sont que des affectations de références (rien n'est alloué).
+ */
+import type * as THREE from 'three';
+import type { BibliothequeTextures } from '../assets/textures';
+import { cumulerBonusArmes } from '../combat/armeEquipee';
+import { Arsenal } from '../combat/arsenal';
+import { Balayages } from '../combat/balayages';
+import { Chutes } from '../combat/chutes';
+import type { ContexteCombat } from '../combat/contexte';
+import { Fissures } from '../combat/fissures';
+import { Foudre } from '../combat/foudre';
+import { Heurts } from '../combat/heurts';
+import { Invocations } from '../combat/invocations';
+import { Meteores } from '../combat/meteores';
+import { Novas } from '../combat/novas';
+import { OrbesArcaniques } from '../combat/orbesArcaniques';
+import { Orbites } from '../combat/orbites';
+import { Pieges } from '../combat/pieges';
+import { Pluies } from '../combat/pluies';
+import { ProjectilesJoueur } from '../combat/projectilesJoueur';
+import { Ricochets } from '../combat/ricochets';
+import { mecaniquesClasse } from '../combat/talents/classes';
+import { Talents } from '../combat/talents/talents';
+import { Tornades } from '../combat/tornades';
+import { Tourbillons } from '../combat/tourbillons';
+import { CONFIG, type ActionDeplacement } from '../config';
+import { PERSONNAGES, type IdPersonnage } from '../donnees/personnages';
+import type { DefinitionPersonnage, Modificateurs } from '../donnees/types';
+import { BarresVie } from '../effets/barresVie';
+import { Etiquette } from '../effets/etiquette';
+import type { Ombres } from '../effets/ombres';
+import type { Particules } from '../effets/particules';
+import type { RenduProjectiles } from '../effets/renduProjectiles';
+import type { Retours } from '../effets/retours';
+import type { Ennemis } from '../entites/ennemis';
+import { Joueur, type CommandesJoueur } from '../entites/joueur';
+import type { Orbes } from '../entites/orbes';
+import type { ProjectilesEnnemis } from '../entites/projectilesEnnemis';
+import { creerEtatPartie, type EtatJoueur, type EtatPartie, type TalentsPartie } from '../etat';
+import type { CarteMonde } from '../monde/carte';
+import { ChampDeFlux } from '../monde/navigation';
+import { Ameliorations } from '../progression/ameliorations';
+import { creerModificateurs, cumulerModificateurs } from '../progression/modificateurs';
+import { Passifs } from '../progression/passifs';
+import type { BonusTalents } from '../progression/sauvegarde';
+import { BITS_ACTIONS, type InfoJoueur } from './protocole';
+import { apparenceDistante, positionDepart } from './apparence';
+
+/** Ce qui change d'un joueur à l'autre dans l'état de la partie. */
+export interface ProfilCombat {
+  joueur: EtatJoueur;
+  modificateurs: Modificateurs;
+  talents: TalentsPartie;
+  personnage: DefinitionPersonnage;
+  idPersonnage: IdPersonnage;
+  /** Talents branchés sur les coups portés aux ennemis. */
+  mecaniques: Talents;
+}
+
+/** L'état de la partie, champs en lecture seule compris modifiables (commutation). */
+type EtatCommutable = { -readonly [K in keyof EtatPartie]: EtatPartie[K] };
+
+/** Fait pointer l'état de la partie sur un joueur (`vers`), puis le remet (`restaurer`). */
+export class Commutateur {
+  private readonly etat: EtatCommutable;
+  private readonly ennemis: Ennemis;
+  /** Joueur local (celui de jeu.ts). */
+  readonly local: ProfilCombat;
+  private actuel: ProfilCombat;
+
+  constructor(etat: EtatPartie, ennemis: Ennemis, mecaniquesLocales: Talents) {
+    this.etat = etat as EtatCommutable;
+    this.ennemis = ennemis;
+    this.local = {
+      joueur: etat.joueur, modificateurs: etat.modificateurs, talents: etat.talents,
+      personnage: etat.personnage, idPersonnage: etat.idPersonnage, mecaniques: mecaniquesLocales,
+    };
+    this.actuel = this.local;
+  }
+
+  /** Bascule sur `profil` ; renvoie celui d'avant (à redonner à `vers` ensuite). */
+  vers(profil: ProfilCombat): ProfilCombat {
+    const avant = this.actuel;
+    if (profil === avant) return avant;
+    const e = this.etat;
+    e.joueur = profil.joueur;
+    e.modificateurs = profil.modificateurs;
+    e.talents = profil.talents;
+    e.personnage = profil.personnage;
+    e.idPersonnage = profil.idPersonnage;
+    this.ennemis.definirTalents(profil.mecaniques);
+    this.actuel = profil;
+    return avant;
+  }
+
+  restaurer(): void {
+    this.vers(this.local);
+  }
+}
+
+/** Touches d'un joueur distant, d'après sa dernière entrée reçue. */
+export class CommandesDistantes implements CommandesJoueur {
+  bits = 0;
+  action(nom: ActionDeplacement): boolean {
+    return (this.bits & BITS_ACTIONS[nom]) !== 0;
+  }
+}
+
+/** Ce que la partie partage avec les combattants. */
+export interface PartageCombat {
+  readonly etat: EtatPartie;
+  readonly carte: CarteMonde;
+  readonly ennemis: Ennemis;
+  readonly projectilesEnnemis: ProjectilesEnnemis;
+  readonly orbes: Orbes;
+  readonly particules: Particules;
+  readonly scene: THREE.Scene;
+  readonly camera: THREE.Camera;
+  readonly textures: BibliothequeTextures;
+  readonly commutateur: Commutateur;
+}
+
+export class Combattant {
+  readonly info: InfoJoueur;
+  readonly profil: ProfilCombat;
+  readonly commandes = new CommandesDistantes();
+  readonly joueur: Joueur;
+  readonly flux: ChampDeFlux;
+  readonly etiquette: Etiquette;
+  readonly arsenal: Arsenal;
+  readonly passifs: Passifs;
+  readonly ameliorations: Ameliorations;
+  /** Montées de niveau dont il n'a pas encore choisi la carte. */
+  cartesEnAttente = 0;
+  /** Numéro de sa dernière entrée reçue, et quand (temps réel, s). */
+  derniereEntree = 0;
+  instantEntree = 0;
+  /** Parti en cours de partie : il ne compte plus. */
+  parti = false;
+
+  private readonly partage: PartageCombat;
+  private readonly balayages: Balayages;
+  private readonly projectiles: ProjectilesJoueur;
+  private readonly orbites: Orbites;
+  private readonly foudre: Foudre;
+  private readonly invocations: Invocations;
+  private readonly fissures: Fissures;
+  private readonly chutes: Chutes;
+  private readonly tourbillons: Tourbillons;
+  private readonly heurts: Heurts;
+  private readonly tornades: Tornades;
+  private readonly novas: Novas;
+  private readonly meteores: Meteores;
+  private readonly orbesArcaniques: OrbesArcaniques;
+  private readonly ricochets: Ricochets;
+  private readonly pluies: Pluies;
+  private readonly pieges: Pieges;
+
+  constructor(info: InfoJoueur, bonusTalents: BonusTalents, partage: PartageCombat, retours: Retours) {
+    this.info = info;
+    this.partage = partage;
+    const { etat, carte, ennemis, scene, textures } = partage;
+    const personnage = PERSONNAGES[info.personnage];
+
+    // Son état, ses bonus permanents (sauvegarde multi du joueur) et ses talents, comme dans jeu.ts
+    const joueur = creerEtatPartie(etat.arene, info.personnage).joueur;
+    positionDepart(etat.arene, info.index, joueur);
+    const modificateurs = creerModificateurs();
+    const bonus = { ...personnage.bonus };
+    cumulerModificateurs(bonus, bonusTalents.modif);
+    this.passifs = new Passifs(bonus);
+    this.passifs.calculer(modificateurs);
+    joueur.pvMax += modificateurs.pvMax;
+    joueur.pv = joueur.pvMax;
+    const talents: TalentsPartie = { armes: cumulerBonusArmes(bonusTalents.bonusArmes), mecaniques: bonusTalents.mecaniques };
+    const commutateur = partage.commutateur;
+    // Les mécaniques sont créées une fois l'état commuté (leur constructeur le lit)
+    const provisoire: ProfilCombat = { joueur, modificateurs, talents, personnage, idPersonnage: info.personnage, mecaniques: commutateur.local.mecaniques };
+    const avant = commutateur.vers(provisoire);
+    const mecaniques = new Talents(etat);
+    this.profil = { ...provisoire, mecaniques };
+    commutateur.vers(this.profil);
+
+    this.joueur = new Joueur(etat, carte, this.commandes, retours, scene, textures, apparenceDistante(info));
+    this.joueur.talents = mecaniques;
+    this.flux = new ChampDeFlux(carte);
+    this.etiquette = new Etiquette(scene, info.pseudo);
+
+    const combat: ContexteCombat = {
+      etat,
+      carte,
+      ennemis,
+      particules: partage.particules,
+      retours,
+      talents: mecaniques,
+      declencherGesteJoueur: (angle) => this.joueur.declencherGeste(angle),
+    };
+    this.balayages = new Balayages(combat, textures, scene);
+    this.projectiles = new ProjectilesJoueur(combat);
+    this.orbites = new Orbites(combat);
+    this.foudre = new Foudre(combat, scene);
+    this.invocations = new Invocations(combat, scene, textures, new BarresVie(scene, partage.camera, CONFIG.armes.golems.capacite), this.projectiles);
+    this.fissures = new Fissures(combat, textures, scene);
+    this.chutes = new Chutes(combat, textures, scene);
+    this.tourbillons = new Tourbillons(combat, textures, scene);
+    this.heurts = new Heurts(combat, partage.projectilesEnnemis);
+    this.tornades = new Tornades(combat, textures, scene);
+    this.novas = new Novas(combat, textures, scene);
+    this.meteores = new Meteores(combat, textures, scene);
+    this.orbesArcaniques = new OrbesArcaniques(combat, textures, scene);
+    this.ricochets = new Ricochets(combat);
+    this.pluies = new Pluies(combat, textures, scene);
+    this.pieges = new Pieges(combat, textures, scene);
+    this.arsenal = new Arsenal(combat, {
+      balayages: this.balayages,
+      projectiles: this.projectiles,
+      orbites: this.orbites,
+      foudre: this.foudre,
+      invocations: this.invocations,
+      fissures: this.fissures,
+      chutes: this.chutes,
+      tourbillons: this.tourbillons,
+      heurts: this.heurts,
+      tornades: this.tornades,
+      novas: this.novas,
+      meteores: this.meteores,
+      orbesArcaniques: this.orbesArcaniques,
+      ricochets: this.ricochets,
+      pluies: this.pluies,
+      pieges: this.pieges,
+    });
+    for (const id of personnage.armesDepart) this.arsenal.ameliorer(id);
+    for (const id of bonusTalents.armes) this.arsenal.ameliorer(id);
+    mecaniques.brancher(combat, this.arsenal, { scene, textures, orbes: partage.orbes }, mecaniquesClasse(info.personnage));
+    this.ameliorations = new Ameliorations(etat, this.arsenal, this.passifs);
+    commutateur.vers(avant);
+  }
+
+  get etatJoueur(): EtatJoueur {
+    return this.profil.joueur;
+  }
+
+  /** Marche (avant les ennemis). */
+  majJoueur(dt: number): void {
+    const avant = this.partage.commutateur.vers(this.profil);
+    this.joueur.maj(dt);
+    this.partage.commutateur.vers(avant);
+    this.flux.maj(this.etatJoueur.x, this.etatJoueur.z);
+  }
+
+  /** Armes et talents (après les ennemis, qui ont reconstruit leur grille). */
+  majArmes(dt: number): void {
+    const avant = this.partage.commutateur.vers(this.profil);
+    this.arsenal.maj(dt);
+    this.profil.mecaniques.maj(dt);
+    this.projectiles.maj(dt);
+    this.invocations.maj(dt);
+    this.foudre.maj(dt);
+    this.fissures.maj(dt);
+    this.chutes.maj(dt);
+    this.tourbillons.maj(dt);
+    this.tornades.maj(dt);
+    this.novas.maj(dt);
+    this.meteores.maj(dt);
+    this.orbesArcaniques.maj(dt);
+    this.ricochets.maj(dt);
+    this.pluies.maj(dt);
+    this.pieges.maj(dt);
+    this.partage.commutateur.vers(avant);
+  }
+
+  /** Un coup reçu (ennemi, flèche, explosion), au nom de ce joueur. */
+  subirDegats(degats: number, boss?: boolean): boolean {
+    const avant = this.partage.commutateur.vers(this.profil);
+    const porte = this.joueur.subirDegats(degats, boss);
+    this.partage.commutateur.vers(avant);
+    return porte;
+  }
+
+  /** Carte choisie par le joueur à une montée de niveau. */
+  appliquerCarte(amelioration: Parameters<Ameliorations['appliquer']>[0]): void {
+    const avant = this.partage.commutateur.vers(this.profil);
+    this.ameliorations.appliquer(amelioration);
+    this.partage.commutateur.vers(avant);
+  }
+
+  // --- Affichage (chez l'hôte) --------------------------------------------
+
+  majVisuelOmbres(ombres: Ombres): void {
+    const avant = this.partage.commutateur.vers(this.profil);
+    this.joueur.majVisuel(ombres);
+    const j = this.etatJoueur;
+    this.etiquette.placer(j.x, this.joueur.hauteur, j.z, !j.mort);
+    this.invocations.majVisuel(ombres);
+    this.profil.mecaniques.majVisuel(ombres);
+    this.chutes.majVisuel(ombres);
+    this.meteores.majVisuel(ombres);
+    this.partage.commutateur.vers(avant);
+  }
+
+  majVisuelProjectiles(rendu: RenduProjectiles): void {
+    const avant = this.partage.commutateur.vers(this.profil);
+    const temps = this.partage.etat.tempsJeu;
+    this.projectiles.majVisuel(rendu, temps);
+    this.ricochets.majVisuel(rendu);
+    this.orbites.majVisuel(this.arsenal.armes, rendu, temps);
+    this.partage.commutateur.vers(avant);
+  }
+
+  majVisuelEffets(dtJeu: number): void {
+    const avant = this.partage.commutateur.vers(this.profil);
+    this.balayages.majVisuel(dtJeu);
+    this.foudre.majVisuel();
+    this.fissures.majVisuel();
+    this.tourbillons.majVisuel();
+    this.tornades.majVisuel();
+    this.novas.majVisuel();
+    this.orbesArcaniques.majVisuel();
+    this.pluies.majVisuel();
+    this.pieges.majVisuel();
+    this.partage.commutateur.vers(avant);
+  }
+}

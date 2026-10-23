@@ -28,6 +28,8 @@ import { EcranMenu } from './ui/ecranMenu';
 import { suivreEchelleInterface } from './ui/echelle';
 import { appliquerHabillage } from './ui/habillage';
 import { PanneauOptions } from './ui/panneauOptions';
+import { apparenceDistante } from './reseau/apparence';
+import { EcranSalon, type LancementMultijoueur } from './reseau/ecranSalon';
 
 async function demarrer(): Promise<void> {
   suivreEchelleInterface();
@@ -77,12 +79,23 @@ async function demarrer(): Promise<void> {
   });
 
   // Menu, sauf si l'adresse demande de jouer tout de suite (Rejouer)
+  let multijoueur: LancementMultijoueur | null = null;
   if (!partieDemandee()) {
     // Héros en 3D du menu : même moteur que le jeu (repli WebGL2 compris)
     const apercu = await ApercuHeros.creer(textures, rendu.api !== 'WebGPU');
     ecran.masquer();
-    choix = await new EcranMenu(textures, choix, panneauOptions, sauvegarde, new EcranProfil(textures, profil, apercu), apercu).attendreChoix();
-    memoriserChoix(choix);
+    // Le salon multijoueur s'ouvre depuis le menu ; la première partie lancée (solo ou à plusieurs) l'emporte
+    const salon = new EcranSalon(sauvegarde, profil, choix);
+    const menu = new EcranMenu(textures, choix, panneauOptions, sauvegarde, new EcranProfil(textures, profil, apercu), apercu);
+    const choixSolo = menu.attendreChoix();
+    multijoueur = await Promise.race([choixSolo.then(() => null), salon.attendreLancement()]);
+    if (multijoueur) {
+      apercu?.detacher();
+      choix = multijoueur.choix;
+    } else {
+      choix = await choixSolo;
+      memoriserChoix(choix);
+    }
     ecran.planifier(etapesPartie(choix));
   }
   ecran.decor(choix.arene);
@@ -112,13 +125,24 @@ async function demarrer(): Promise<void> {
     texturesRequises(choix.arene, monde, apparenceJoueur(PERSONNAGES[choix.personnage], profil)),
     (faites, total) => ecran.progression(faites, total),
   );
+  // À plusieurs : les skins des autres joueurs aussi
+  for (const info of multijoueur?.session.joueurs ?? []) {
+    await textures.charger(texturesRequises(choix.arene, monde, apparenceDistante(info)));
+  }
 
-  jeu = new Jeu(rendu, textures, monde, choix, { sons, options, panneauOptions, sauvegarde, profil });
+  // À plusieurs, la progression (bonus permanents, récompenses) est celle de la sauvegarde multi
+  jeu = new Jeu(rendu, textures, monde, choix, {
+    sons, options, panneauOptions, sauvegarde: multijoueur?.sauvegarde ?? sauvegarde, profil, reseau: multijoueur?.session,
+  });
   jeu.appliquerOptions(options);
   ecran.etape('Préparation des modèles…');
   await jeu.prechauffer((faites, total) => ecran.progression(faites, total));
   // Photo de l'arène pour le prochain chargement, prise juste avant que la partie ne commence
   const photo = jeu.photographier();
+  if (multijoueur) {
+    ecran.etape('En attente des autres joueurs…');
+    await multijoueur.session.synchroniserDepart();
+  }
   ecran.masquer();
   jeu.demarrer();
   if (photo) memoriserPhoto(choix.arene.id, photo);

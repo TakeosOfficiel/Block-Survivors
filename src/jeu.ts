@@ -53,7 +53,7 @@ import { Objets } from './entites/objets';
 import { Orbes } from './entites/orbes';
 import { ProjectilesEnnemis } from './entites/projectilesEnnemis';
 import type { CibleJoueur, SourceEntites } from './entites/types';
-import { creerEtatPartie, minutesSansFin, type EtatPartie } from './etat';
+import { creerEtatPartie, equipeVaincue, minutesSansFin, type EtatPartie } from './etat';
 import { lancerPartie, retournerAuMenu, type ChoixPartie } from './lancement';
 import { construireArene } from './monde/arene';
 import { Vegetation } from './monde/vegetation';
@@ -78,6 +78,8 @@ import { EcranPause } from './ui/ecranPause';
 import { Hud } from './ui/hud';
 import { vueSuivante, type PanneauOptions } from './ui/panneauOptions';
 import { element } from './ui/dom';
+import { brancherPartie, type CrochetsReseau } from './reseau/partie';
+import type { SessionReseau } from './reseau/session';
 
 /** Services créés avant la partie (dès le menu) et partagés avec elle. */
 export interface ServicesJeu {
@@ -86,6 +88,8 @@ export interface ServicesJeu {
   readonly panneauOptions: PanneauOptions;
   readonly sauvegarde: Sauvegarde;
   readonly profil: Profil;
+  /** Partie à plusieurs (src/reseau) ; absente en solo. */
+  readonly reseau?: SessionReseau;
 }
 
 export class Jeu implements CallbacksBoucle, Retours {
@@ -168,6 +172,8 @@ export class Jeu implements CallbacksBoucle, Retours {
   /** XP et boss déjà comptés par la victoire, quand la partie continue en mode sans fin. */
   private xpComptee = 0;
   private bossComptes = 0;
+  /** Partie à plusieurs : points d'accroche du réseau (null en solo). */
+  private readonly reseau: CrochetsReseau | null;
 
   constructor(
     rendu: Rendu,
@@ -343,7 +349,8 @@ export class Jeu implements CallbacksBoucle, Retours {
       remplirBilan: bilan,
     }, services.panneauOptions);
     this.ecranFin = new EcranFin({
-      rejouer: () => lancerPartie(this.choix),
+      // À plusieurs, une nouvelle partie se refait depuis le salon
+      rejouer: () => (this.reseau ? retournerAuMenu(this.choix) : lancerPartie(this.choix)),
       continuer: () => this.continuerSansFin(),
       menuPrincipal: () => retournerAuMenu(this.choix),
       remplirBilan: bilan,
@@ -378,6 +385,12 @@ export class Jeu implements CallbacksBoucle, Retours {
         this.hud.afficherMessage(`Maîtrise ${m.niveau}`);
       },
     });
+    this.reseau = services.reseau ? brancherPartie(services.reseau, {
+      etat: this.etat, terrain: this.terrain, scene, camera: rendu.camera, cameraJeu: this.camera, textures, entrees: this.entrees,
+      joueur: this.joueur, cible, mecaniques: this.mecaniques, ennemis: this.ennemis, projectilesEnnemis: this.projectilesEnnemis,
+      orbes: this.orbes, objets: this.objets, particules: this.particules, chiffres: this.chiffres, retours: this,
+      conclure: () => this.conclure(),
+    }) : null;
     this.rendu.preparerOmbres();
     this.boucle = new Boucle(this);
   }
@@ -448,18 +461,27 @@ export class Jeu implements CallbacksBoucle, Retours {
 
   degats(x: number, y: number, z: number, valeur: number, style: StyleChiffre): void {
     this.chiffres.ajouter(x, y, z, valeur, style);
+    this.reseau?.surDegats(x, y, z, valeur, style);
   }
 
   // --- CallbacksBoucle ---------------------------------------------------
 
   simuler(dt: number): void {
+    // À plusieurs, un joueur qui a rejoint ne simule que sa marche : le reste vient de l'hôte
+    if (this.reseau?.client) {
+      this.reseau.simulerClient(dt);
+      this.particules.maj(dt);
+      this.chiffres.maj(dt);
+      return;
+    }
     if (this.etat.issue === null) {
       this.etat.tempsJeu += dt;
       this.verifierFin();
     }
     this.joueur.maj(dt);
+    this.reseau?.majJoueurs(dt);
     this.terrain.flux.maj(this.etat.joueur.x, this.etat.joueur.z);
-    this.directeur.maj(dt);
+    this.directeur.maj(dt * (this.reseau?.facteurApparitions ?? 1));
     this.directeurBoss.maj();
     this.directeurMiniBoss.maj();
     this.ennemis.maj(dt);           // reconstruit la grille utilisée par les armes
@@ -481,10 +503,12 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.ricochets.maj(dt);
     this.pluies.maj(dt);
     this.pieges.maj(dt);
+    this.reseau?.majArmes(dt);
     this.projectilesEnnemis.maj(dt);
     this.particules.maj(dt);
     this.chiffres.maj(dt);
     this.traiterResurrection();
+    this.reseau?.finPas();
   }
 
   /** Après une résurrection (totem) : les ennemis proches sont repoussés, gerbe de particules. */
@@ -499,6 +523,7 @@ export class Jeu implements CallbacksBoucle, Retours {
 
   afficher(dtJeu: number, dtReel: number, dtBrut: number): void {
     this.textures.majAnimations(performance.now() / 1000);
+    this.reseau?.avantImage(dtReel);
     // Caméra d'abord : les objets tournés vers elle utilisent son orientation de cette image
     this.majVueSouris();
     this.camera.majVisuel(dtJeu, dtReel);
@@ -512,6 +537,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.mecaniques.majVisuel(this.ombres);
     this.chutes.majVisuel(this.ombres);
     this.meteores.majVisuel(this.ombres);
+    this.reseau?.majVisuelOmbres(this.ombres);
     this.ombres.terminer();
 
     this.renduProjectiles.commencer();
@@ -519,6 +545,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.projectilesJoueur.majVisuel(this.renduProjectiles, this.etat.tempsJeu);
     this.ricochets.majVisuel(this.renduProjectiles);
     this.orbites.majVisuel(this.arsenal.armes, this.renduProjectiles, this.etat.tempsJeu);
+    this.reseau?.majVisuelProjectiles(this.renduProjectiles);
     this.renduProjectiles.terminer();
 
     this.orbes.majVisuel(this.etat.tempsJeu);
@@ -533,6 +560,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.orbesArcaniques.majVisuel();
     this.pluies.majVisuel();
     this.pieges.majVisuel();
+    this.reseau?.majVisuelEffets(dtJeu);
     this.particules.majVisuel();
     this.chiffres.majVisuel();
     this.rendu.dessiner();
@@ -563,6 +591,8 @@ export class Jeu implements CallbacksBoucle, Retours {
 
   /** Partie figée pendant le choix des cartes et la pause. */
   vitesseTemps(): number {
+    // À plusieurs, la pause ne fige rien : seules les cartes (de n'importe qui) arrêtent la partie ; le debug reste à l'hôte
+    if (this.reseau) return this.reseau.vitesseTemps(this.ecranCartes.ouvert) * (this.reseau.client ? 1 : this.debug.vitesseTemps);
     return this.ecranCartes.ouvert || this.ecranPause.active ? 0 : this.debug.vitesseTemps;
   }
 
@@ -571,7 +601,7 @@ export class Jeu implements CallbacksBoucle, Retours {
   /** Défaite à la mort du joueur ; victoire s'il tient jusqu'au bout du chrono. */
   private verifierFin(): void {
     const etat = this.etat;
-    if (etat.joueur.mort) {
+    if (equipeVaincue(etat)) {
       etat.issue = 'defaite';
     } else if (!etat.sansFin && etat.tempsJeu >= PROGRESSION.dureePartie) {
       // Pas de victoire tant qu'un boss est en vie : il faut le vaincre
@@ -589,19 +619,23 @@ export class Jeu implements CallbacksBoucle, Retours {
       this.son('victoire');
       this.secousse(0.5);
     }
-    if (etat.issue !== null) {
-      this.minuterieFin = 0;
-      this.recompense = this.sauvegarde.terminerPartie({
-        personnage: this.choix.personnage,
-        arene: etat.arene.id,
-        temps: etat.tempsJeu,
-        xp: etat.stats.xpTotale - this.xpComptee,
-        boss: etat.stats.bossVaincus - this.bossComptes,
-        sansFin: etat.sansFin,
-      });
-      this.xpComptee = etat.stats.xpTotale;
-      this.bossComptes = etat.stats.bossVaincus;
-    }
+    if (etat.issue !== null) this.conclure();
+  }
+
+  /** Fin de partie décidée : récompenses (sauvegarde), puis écran de fin après la chute ou la victoire. */
+  private conclure(): void {
+    const etat = this.etat;
+    this.minuterieFin = 0;
+    this.recompense = this.sauvegarde.terminerPartie({
+      personnage: this.choix.personnage,
+      arene: etat.arene.id,
+      temps: etat.tempsJeu,
+      xp: etat.stats.xpTotale - this.xpComptee,
+      boss: etat.stats.bossVaincus - this.bossComptes,
+      sansFin: etat.sansFin,
+    });
+    this.xpComptee = etat.stats.xpTotale;
+    this.bossComptes = etat.stats.bossVaincus;
   }
 
   /** Mode sans fin : la partie gagnée reprend, les ennemis se renforcent chaque minute jusqu'à la mort. */
@@ -648,6 +682,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     const titre = coffre ? etat.choixCoffre.titre : `Niveau ${etat.joueur.niveau - etat.niveauxEnAttente + 1} !`;
     this.ecranCartes.ouvrir(titre, this.ameliorations.tirer(), (carte: Carte) => {
       this.ameliorations.appliquer(carte.amelioration);
+      if (!coffre) this.reseau?.surCarte(carte.amelioration);
       if (coffre) etat.choixCoffre.restants--;
       else etat.niveauxEnAttente--;
     }, {

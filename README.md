@@ -187,9 +187,11 @@ renforcé (niveaux 2 et 3) ; emplacements pleins, on choisit lequel remplacer.
 Effets simples : `modif` (cumulés par Passifs), effets propres : `effet`
 (combat/talents/objets.ts). Données : donnees/equipement.ts.
 
-La **Collection** garde une armure par monde (donnees/armures.ts) : une pièce
-par partie gagnée dans le monde, portée dans Apparence (rendue sur le héros,
-modeles/armure.ts), un bonus par pièce et un bonus d'ensemble. Elle a sa propre
+La **Collection** garde une armure de 7 pièces par monde (donnees/armures.ts :
+casque, plastron, jambières, bottes, bouclier, cape, talisman). Les boss en
+lâchent parfois (`BUTIN_BOSS`, selon le rang du boss dans la partie), jamais en
+double. Elles se portent dans Apparence (rendues sur le héros,
+modeles/armure.ts) : un bonus par pièce et un bonus d'ensemble. Elle a sa propre
 clé de stockage (`block-survivors.collection`, progression/collection.ts).
 
 Les **mini-boss** (Zombie colosse, Vagabond, Araignée géante, Brute piglin,

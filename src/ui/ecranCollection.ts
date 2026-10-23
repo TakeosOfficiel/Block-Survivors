@@ -5,7 +5,7 @@
  * trouvées) ; puis les objets de tous les mondes.
  */
 import type { BibliothequeTextures } from '../assets/textures';
-import { ARMURES, MONDES, NOMS_MONDES, NOMS_PIECES, PIECES_ARMURE } from '../donnees/armures';
+import { ARMURES, MONDES, NOMS_MONDES, NOMS_PIECES, PIECES_ARMURE, provenancePiece } from '../donnees/armures';
 import { IDS_OBJETS_EQUIPEMENT, OBJETS_EQUIPEMENT, RARETES_OBJETS, type IdObjetEquipement } from '../donnees/equipement';
 import type { IdMonde } from '../donnees/types';
 import type { Collection } from '../progression/collection';
@@ -90,7 +90,7 @@ export class EcranCollection {
       panneauArmure.append(this.tuile(
         this.textures.url(iconePiece(monde, piece)),
         possedee ? def.nom : `${NOMS_PIECES[piece]} : à gagner`,
-        possedee ? def.description : `Gagnez une partie dans « ${NOMS_MONDES[monde]} ».`,
+        possedee ? def.description : provenancePiece(monde, piece),
         possedee,
         null,
       ));

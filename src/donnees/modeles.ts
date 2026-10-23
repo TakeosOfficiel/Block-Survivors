@@ -231,6 +231,13 @@ const ARMURE = {
     jambeDroite: { ...JAMBE_ARMURE, pivot: [-1.9, 12, 0], gonflement: 1 },
     jambeGauche: { ...JAMBE_ARMURE, pivot: [1.9, 12, 0], gonflement: 1, miroir: true },
   },
+  // Bouclier sanglé sur l'extérieur de l'avant-bras gauche ; cape dans le dos, un peu écartée
+  bouclier: {
+    brasGauche: { taille: [1, 12, 10], pivot: [5, 22, 0], centre: [3.6, -6, 0], uv: [0, 0] },
+  },
+  cape: {
+    corps: { taille: [10, 16, 1], pivot: [0, 24, 0], centre: [0, -8, -2.6], uv: [0, 0], rotation: [0.1, 0, 0] },
+  },
 } satisfies Record<string, Record<string, CubeModele>>;
 
 // --------------------------------------------------------------------------
@@ -241,6 +248,8 @@ const definitions = {
   armure_plastron: { tailleTexture: [64, 32], parties: ARMURE.plastron },
   armure_jambieres: { tailleTexture: [64, 32], parties: ARMURE.jambieres },
   armure_bottes: { tailleTexture: [64, 32], parties: ARMURE.bottes },
+  armure_bouclier: { tailleTexture: [64, 32], parties: ARMURE.bouclier },
+  armure_cape: { tailleTexture: [64, 32], parties: ARMURE.cape },
 
   // Joueur : 6 boîtes (tête 8x8x8, corps 8x12x4, bras et jambes 4x12x4), skin 64x64
   humanoide: {

@@ -5,6 +5,13 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.45.0] — 2026-10-23
+
+### Changements
+- **Les pièces d'armure tombent sur les boss** (et plus à la victoire) : chaque boss a des chances de lâcher une pièce de l'armure de son monde, parfois deux. Le 1er boss donne surtout le bas de l'armure (bottes, jambières, casque), le 2e surtout le plastron et les pièces rares, et les suivants (mode sans fin) un peu de tout, plus souvent. **Jamais de doublon** : une pièce déjà gagnée ne retombe plus. Le butin est annoncé tout de suite et gardé même si vous quittez la partie, puis rappelé sur l'écran de fin.
+- **Armures de 7 pièces** : en plus du casque, du plastron, des jambières et des bottes, chaque monde a son **bouclier** (sur le bras du héros), sa **cape** (dans le dos) et son **talisman** (un bonus, invisible), aux couleurs du monde. Le bonus d'ensemble demande les 7 pièces.
+- La Collection et l'Apparence indiquent quel boss lâche le plus souvent chaque pièce manquante.
+
 ## [0.44.0] — 2026-10-23
 
 ### Nouveautés

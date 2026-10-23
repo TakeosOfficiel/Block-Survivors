@@ -28,7 +28,7 @@ import { EcranChargement } from './ui/ecranChargement';
 import { EcranMenu } from './ui/ecranMenu';
 import { suivreEchelleInterface } from './ui/echelle';
 import { appliquerHabillage } from './ui/habillage';
-import { enregistrerArmuresTeintes, enregistrerIconesObjets } from './ui/iconesObjets';
+import { enregistrerArmures, enregistrerIconesObjets } from './ui/iconesObjets';
 import { PanneauOptions } from './ui/panneauOptions';
 
 async function demarrer(): Promise<void> {
@@ -63,7 +63,7 @@ async function demarrer(): Promise<void> {
   ]);
   appliquerHabillage(textures);
   enregistrerIconesObjets(textures);
-  enregistrerArmuresTeintes(textures);
+  enregistrerArmures(textures);
   // Skin importée du joueur : enregistrée comme une texture du jeu
   if (profil.skinImporte) {
     const image = await chargerImageSkin(profil.skinImporte);

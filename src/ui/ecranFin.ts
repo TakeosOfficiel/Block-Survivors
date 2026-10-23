@@ -51,8 +51,8 @@ export class EcranFin {
     return !this.racine.classList.contains('cache');
   }
 
-  /** `piece` : pièce d'armure de la Collection gagnée avec la victoire. */
-  afficher(issue: Exclude<IssuePartie, null>, etat: EtatPartie, recompense: Recompense | null, piece: PieceArmure | null): void {
+  /** `pieces` : pièces d'armure de la Collection lâchées par les boss de la partie. */
+  afficher(issue: Exclude<IssuePartie, null>, etat: EtatPartie, recompense: Recompense | null, pieces: readonly PieceArmure[]): void {
     const victoire = issue === 'victoire';
     this.racine.classList.toggle('victoire', victoire);
     this.titre.textContent = victoire ? 'Victoire !' : 'Vous êtes mort !';
@@ -63,7 +63,7 @@ export class EcranFin {
     this.sousTitre.classList.toggle('record', recompense?.recordSansFin === true);
     remplirTuiles(this.tuiles, etat, this.textures);
     this.afficherRecompense(recompense);
-    if (piece) this.afficherPiece(etat.arene.monde, piece);
+    for (const piece of pieces) this.afficherPiece(etat.arene.monde, piece);
     this.actions.remplirBilan(this.bilan);
     this.bilan.scrollTop = 0;
     // Une partie gagnée peut continuer (une seule fois : ensuite, seule la mort l'arrête)
@@ -108,7 +108,7 @@ export class EcranFin {
     }
   }
 
-  /** Pièce d'armure gagnée : son icône, son nom et son monde, mis en avant sous la maîtrise. */
+  /** Pièce d'armure gagnée : son icône et son nom, mis en avant sous la maîtrise. */
   private afficherPiece(monde: IdMonde, piece: PieceArmure): void {
     const ligne = document.createElement('div');
     ligne.className = 'fin-piece';

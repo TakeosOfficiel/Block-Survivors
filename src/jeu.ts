@@ -105,8 +105,10 @@ export class Jeu implements CallbacksBoucle, Retours {
   private recompense: Recompense | null = null;
   private readonly collection: Collection;
   private readonly equipement: Equipement;
-  /** Pièce d'armure gagnée avec la victoire (null : aucune, ou ensemble déjà complet). */
-  private pieceGagnee: PieceArmure | null = null;
+  /** Pièces d'armure de la Collection lâchées par les boss de cette partie. */
+  private readonly piecesGagnees: PieceArmure[] = [];
+  /** Boss vaincus dont le butin a déjà été tiré. */
+  private bossRecompenses = 0;
   private readonly etat: EtatPartie;
   private readonly terrain: Terrain;
   /** Taille du décor à photographier (blocs) : l'arène, ou toute la construction d'une map Minecraft. */
@@ -490,6 +492,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.directeurBoss.maj();
     this.directeurMiniBoss.maj();
     this.ennemis.maj(dt);           // reconstruit la grille utilisée par les armes
+    if (this.etat.stats.bossVaincus > this.bossRecompenses) this.recompenserBoss();
     this.arsenal.maj(dt);
     this.mecaniques.maj(dt);
     this.orbes.maj(dt);
@@ -628,9 +631,20 @@ export class Jeu implements CallbacksBoucle, Retours {
       });
       this.xpComptee = etat.stats.xpTotale;
       this.bossComptes = etat.stats.bossVaincus;
-      // Une partie gagnée donne une pièce d'armure de son monde (une seule fois, pas à la mort en mode sans fin)
-      if (etat.issue === 'victoire') this.pieceGagnee = this.collection.obtenirPiece(etat.arene.monde);
     }
+  }
+
+  /** Butin d'armure du boss qui vient de tomber (selon son rang dans la partie), annoncé et gardé aussitôt. */
+  private recompenserBoss(): void {
+    const rang = this.bossRecompenses++;
+    const monde = this.etat.arene.monde;
+    const pieces = this.collection.butinBoss(monde, rang);
+    if (pieces.length === 0) return;
+    this.piecesGagnees.push(...pieces);
+    this.hud.afficherMessage(`Butin du boss : ${pieces.map((p) => ARMURES[monde].pieces[p].nom).join(' et ')} !`, 4);
+    this.son('totem');
+    const j = this.etat.joueur;
+    this.particules.emettre(j.x, 1.2, j.z, GERBES.totem);
   }
 
   /** Mode sans fin : la partie gagnée reprend, les ennemis se renforcent chaque minute jusqu'à la mort. */
@@ -653,7 +667,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     if (this.minuterieFin < CONFIG.hud.delaiFin) return;
     this.minuterieFin = -1;
     this.ecranPause.definir(false);
-    this.ecranFin.afficher(issue, this.etat, this.recompense, this.etat.sansFin ? null : this.pieceGagnee);
+    this.ecranFin.afficher(issue, this.etat, this.recompense, this.piecesGagnees);
   }
 
   // --- Progression -------------------------------------------------------

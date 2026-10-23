@@ -6,7 +6,7 @@
  */
 import type { BibliothequeTextures } from '../assets/textures';
 import { NOMS_SKINS, SKINS_VANILLA } from '../donnees/skins';
-import { ARMURES, MONDES, NOMS_MONDES, NOMS_PIECES, PIECES_ARMURE } from '../donnees/armures';
+import { ARMURES, MONDES, NOMS_PIECES, PIECES_ARMURE, provenancePiece } from '../donnees/armures';
 import type { ApparenceEntite, PieceArmure } from '../donnees/types';
 import type { Collection } from '../progression/collection';
 import { iconePiece } from './iconesObjets';
@@ -137,7 +137,7 @@ export class EcranProfil {
     const complet = this.collection.ensembleComplet();
     this.ensemble.textContent = complet
       ? `${ARMURES[complet].nom} : ${ARMURES[complet].ensemble.description}`
-      : 'Portez les 4 pièces d\'un même monde pour son bonus d\'ensemble.';
+      : 'Portez les 7 pièces d\'un même monde pour son bonus d\'ensemble.';
   }
 
   private boutonPiece(piece: PieceArmure, monde: (typeof MONDES)[number] | null): HTMLButtonElement {
@@ -152,7 +152,7 @@ export class EcranProfil {
       const def = ARMURES[monde].pieces[piece];
       bouton.append(caseImage(this.textures.url(iconePiece(monde, piece)), def.nom));
       bouton.disabled = !possedee;
-      bouton.title = possedee ? `${def.nom} : ${def.description}` : `${def.nom} : gagnez une partie dans « ${NOMS_MONDES[monde]} »`;
+      bouton.title = possedee ? `${def.nom} : ${def.description}` : `${def.nom} : ${provenancePiece(monde, piece)}`;
     }
     bouton.addEventListener('click', () => {
       this.collection.porter(piece, monde);

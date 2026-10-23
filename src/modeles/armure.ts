@@ -20,12 +20,16 @@ interface PieceRendue {
   readonly correspondance: Int32Array;
 }
 
+/** Modèle de chaque pièce visible (le talisman ne se voit pas). */
 const MODELES_PIECES = {
   casque: 'armure_casque',
   plastron: 'armure_plastron',
   jambieres: 'armure_jambieres',
   bottes: 'armure_bottes',
-} as const satisfies Record<PieceArmure, keyof typeof MODELES>;
+  bouclier: 'armure_bouclier',
+  cape: 'armure_cape',
+  talisman: null,
+} as const satisfies Record<PieceArmure, keyof typeof MODELES | null>;
 
 export class ArmureHeros {
   private readonly pieces: PieceRendue[] = [];
@@ -36,6 +40,7 @@ export class ArmureHeros {
       const monde = portees[piece];
       if (!monde) continue;
       const id = MODELES_PIECES[piece];
+      if (!id) continue;
       const modele = compilerModele(MODELES[id]);
       const rendu = new ModeleInstancie(modele, { modele: id, skin: texturePiece(monde, piece), couleursSecours: {}, couleurSecoursParDefaut: 0x9a9aa0, rayonOmbre: 0 }, textures, 1, scene);
       const correspondance = Int32Array.from(modele.parties, (p) => joueur.parties.findIndex((q) => q.nom === p.nom));

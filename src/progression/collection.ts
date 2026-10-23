@@ -5,7 +5,7 @@
  * sauvegarde de progression n'est pas touchée, et l'export/import chiffré la
  * prend avec le reste. Chaque changement est enregistré aussitôt.
  */
-import { ARMURES, MONDES, PIECES_ARMURE } from '../donnees/armures';
+import { ARMURES, BUTIN_BOSS, MONDES, PIECES_ARMURE } from '../donnees/armures';
 import { IDS_OBJETS_EQUIPEMENT, OBJETS_EQUIPEMENT, type IdObjetEquipement } from '../donnees/equipement';
 import type { IdMonde, Modificateurs, PieceArmure } from '../donnees/types';
 import { ecrireStockage, lireStockage } from '../options';
@@ -81,15 +81,48 @@ export class Collection {
     this.enregistrer();
   }
 
-  /** Une pièce manquante de ce monde, au hasard, obtenue et portée si l'emplacement est libre ; null si tout est déjà là. */
+  /**
+   * Butin d'un boss vaincu (`rang` : 0 pour le 1er de la partie, 1 pour le 2e…) : 0, 1 ou 2 pièces
+   * manquantes de ce monde, tirées selon BUTIN_BOSS ; gagnées et enregistrées aussitôt, portées si
+   * leur emplacement est libre.
+   */
+  butinBoss(monde: IdMonde, rang: number): PieceArmure[] {
+    const butin = BUTIN_BOSS[Math.min(rang, BUTIN_BOSS.length - 1)];
+    const gagnees: PieceArmure[] = [];
+    // Une pièce, puis peut-être une 2e ; jamais une pièce déjà gagnée
+    if (Math.random() >= butin.chance) return gagnees;
+    for (let k = 0; k < 2; k++) {
+      if (k === 1 && Math.random() >= butin.chanceSeconde) break;
+      const piece = this.tirerPiece(monde, butin.poids);
+      if (!piece) break;
+      this.ajouter(monde, piece);
+      gagnees.push(piece);
+    }
+    return gagnees;
+  }
+
+  /** Debug : une pièce manquante de ce monde (null si l'armure est complète). */
   obtenirPiece(monde: IdMonde): PieceArmure | null {
-    const manquantes = PIECES_ARMURE.filter((p) => !this.possede(monde, p));
-    if (manquantes.length === 0) return null;
-    const piece = manquantes[Math.floor(Math.random() * manquantes.length)];
+    const piece = this.tirerPiece(monde, Object.fromEntries(PIECES_ARMURE.map((p) => [p, 1])));
+    if (piece) this.ajouter(monde, piece);
+    return piece;
+  }
+
+  /** Pièce manquante tirée selon les poids (une pièce sans poids n'est pas tirée). */
+  private tirerPiece(monde: IdMonde, poids: Partial<Record<PieceArmure, number>>): PieceArmure | null {
+    const manquantes = PIECES_ARMURE.filter((p) => !this.possede(monde, p) && (poids[p] ?? 0) > 0);
+    let seuil = Math.random() * manquantes.reduce((t, p) => t + (poids[p] ?? 0), 0);
+    for (const p of manquantes) {
+      seuil -= poids[p] ?? 0;
+      if (seuil < 0) return p;
+    }
+    return manquantes[0] ?? null;
+  }
+
+  private ajouter(monde: IdMonde, piece: PieceArmure): void {
     this.donnees.pieces.push(`${monde}:${piece}`);
     if (!this.donnees.portees[piece]) this.donnees.portees[piece] = monde;
     this.enregistrer();
-    return piece;
   }
 
   /** Debug : donne une pièce précise. */
@@ -110,7 +143,7 @@ export class Collection {
     this.enregistrer();
   }
 
-  /** Bonus des pièces portées, plus celui de l'ensemble si les 4 sont du même monde. */
+  /** Bonus des pièces portées, plus celui de l'ensemble si les 7 sont du même monde. */
   bonus(): Partial<Modificateurs>[] {
     const liste: Partial<Modificateurs>[] = [];
     for (const piece of PIECES_ARMURE) {
@@ -122,7 +155,7 @@ export class Collection {
     return liste;
   }
 
-  /** Monde dont les 4 pièces sont portées, ou null. */
+  /** Monde dont toutes les pièces sont portées, ou null. */
   ensembleComplet(): IdMonde | null {
     const premier = this.portee(PIECES_ARMURE[0]);
     return premier && PIECES_ARMURE.every((p) => this.portee(p) === premier) ? premier : null;

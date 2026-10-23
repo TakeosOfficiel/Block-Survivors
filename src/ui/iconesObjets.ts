@@ -4,13 +4,14 @@
  * pendentif, contour sombre. Enregistrées comme textures (`bs/objets/<id>`),
  * elles s'affichent partout comme les autres icônes.
  *
- * Aussi les armures teintes (cuir du mycélien) : texture du jeu multipliée par
- * la teinte, puis son calque non teint par-dessus (`bs/armures/…`).
+ * Aussi les armures de la Collection (`bs/armures/…`) : cuir teint (texture du
+ * jeu multipliée par la teinte, puis son calque non teint), et bouclier, cape
+ * et talisman dessinés aux couleurs de leur monde.
  */
 import type { BibliothequeTextures } from '../assets/textures';
-import { ARMURES, iconeArmure, MONDES, PIECES_ARMURE, textureArmure } from '../donnees/armures';
+import { ARMURES, estPieceJeu, iconeArmure, MONDES, PIECES_JEU, textureArmure } from '../donnees/armures';
 import { IDS_OBJETS_EQUIPEMENT, OBJETS_EQUIPEMENT } from '../donnees/equipement';
-import type { CheminTexture, IconeObjet, IdMonde, PieceArmure } from '../donnees/types';
+import type { CheminTexture, DefinitionArmure, IconeObjet, IdMonde, PieceArmure } from '../donnees/types';
 import { cheminIconeObjet } from '../progression/equipement';
 
 const TAILLE = 16;
@@ -120,16 +121,17 @@ export function enregistrerIconesObjets(textures: BibliothequeTextures): void {
 // Armures de la Collection
 // ---------------------------------------------------------------------------
 
-/** Texture à poser sur le héros pour cette pièce (teinte : copie teinte enregistrée au lancement). */
+/** Texture à poser sur le héros pour cette pièce (teinte ou pièce dessinée : copie enregistrée au lancement). */
 export function texturePiece(monde: IdMonde, piece: PieceArmure): CheminTexture {
   const a = ARMURES[monde];
+  if (!estPieceJeu(piece)) return `bs/armures/${monde}/${piece}`;
   return a.teinte !== undefined ? `bs/armures/${monde}/${piece === 'jambieres' ? 'jambieres' : 'corps'}` : textureArmure(a.materiau, piece);
 }
 
 /** Icône d'inventaire de la pièce (teinte comprise). */
 export function iconePiece(monde: IdMonde, piece: PieceArmure): CheminTexture {
   const a = ARMURES[monde];
-  return a.teinte !== undefined ? `bs/armures/${monde}/icone-${piece}` : iconeArmure(a.materiau, piece);
+  return a.teinte !== undefined || !estPieceJeu(piece) ? `bs/armures/${monde}/icone-${piece}` : iconeArmure(a.materiau, piece);
 }
 
 /** Textures du jeu dont les armures ont besoin (préchargement). */
@@ -137,7 +139,7 @@ export function texturesArmures(): CheminTexture[] {
   const chemins: CheminTexture[] = [];
   for (const monde of MONDES) {
     const a = ARMURES[monde];
-    for (const piece of PIECES_ARMURE) {
+    for (const piece of PIECES_JEU) {
       chemins.push(textureArmure(a.materiau, piece), iconeArmure(a.materiau, piece));
       if (a.teinte !== undefined) chemins.push(`${textureArmure(a.materiau, piece)}_overlay`, `${iconeArmure(a.materiau, piece)}_overlay`);
     }
@@ -145,9 +147,119 @@ export function texturesArmures(): CheminTexture[] {
   return [...new Set(chemins)];
 }
 
-/** Copies teintes des armures en cuir (texture × teinte, puis calque non teint), une fois les textures chargées. */
-export function enregistrerArmuresTeintes(textures: BibliothequeTextures): void {
+/** Toutes les pièces à enregistrer au lancement : cuir teint, puis bouclier, cape et talisman de chaque monde. */
+export function enregistrerArmures(textures: BibliothequeTextures): void {
+  enregistrerArmuresTeintes(textures);
   for (const monde of MONDES) {
+    const c = ARMURES[monde].couleurs;
+    textures.enregistrer(`bs/armures/${monde}/bouclier`, textureBouclier(c));
+    textures.enregistrer(`bs/armures/${monde}/cape`, textureCape(c));
+    textures.enregistrer(`bs/armures/${monde}/icone-bouclier`, iconeBouclier(c));
+    textures.enregistrer(`bs/armures/${monde}/icone-cape`, iconeCape(c));
+    textures.enregistrer(`bs/armures/${monde}/icone-talisman`, dessiner({ forme: 'pendentif', metal: 'or', gemme: c.embleme }));
+  }
+}
+
+type Couleurs = DefinitionArmure['couleurs'];
+const hex = (c: number) => `#${c.toString(16).padStart(6, '0')}`;
+
+function toile(largeur: number, hauteur: number): [HTMLCanvasElement, CanvasRenderingContext2D | null] {
+  const t = document.createElement('canvas');
+  t.width = largeur;
+  t.height = hauteur;
+  return [t, t.getContext('2d')];
+}
+
+/** Une face de blason : bordure, champ, emblème en losange (+ reflet), dans le rectangle donné. */
+function blason(ctx: CanvasRenderingContext2D, x: number, y: number, l: number, h: number, c: Couleurs): void {
+  ctx.fillStyle = hex(c.bordure);
+  ctx.fillRect(x, y, l, h);
+  ctx.fillStyle = hex(c.champ);
+  ctx.fillRect(x + 1, y + 1, l - 2, h - 2);
+  ctx.fillStyle = hex(c.embleme);
+  const cx = x + l / 2;
+  const cy = y + h / 2;
+  const r = Math.max(1, Math.floor(Math.min(l, h) / 4));
+  for (let dy = -r; dy <= r; dy++) {
+    const demi = r - Math.abs(dy);
+    ctx.fillRect(Math.floor(cx - demi - 0.5), Math.floor(cy + dy - 0.5), demi * 2 + 1, 1);
+  }
+}
+
+/**
+ * Bouclier : boîte de 1 × 12 × 10 px sur le côté du bras gauche (modèle armure_bouclier), planche
+ * 64×32 dépliée comme le jeu (faces de 10 × 12 en (0, 10) et (11, 10)).
+ */
+function textureBouclier(c: Couleurs): HTMLCanvasElement {
+  const [t, ctx] = toile(64, 32);
+  if (!ctx) return t;
+  ctx.fillStyle = hex(c.bordure);
+  ctx.fillRect(0, 0, 32, 32);
+  blason(ctx, 0, 10, 10, 12, c);
+  blason(ctx, 11, 10, 10, 12, c);
+  return t;
+}
+
+/** Cape : boîte de 10 × 16 × 1 px dans le dos (modèle armure_cape), faces en (1, 1) et (12, 1). */
+function textureCape(c: Couleurs): HTMLCanvasElement {
+  const [t, ctx] = toile(64, 32);
+  if (!ctx) return t;
+  ctx.fillStyle = hex(c.champ);
+  ctx.fillRect(0, 0, 32, 32);
+  for (const x of [1, 12]) {
+    blason(ctx, x, 1, 10, 16, c);
+    // Col et ourlet de la couleur de bordure
+    ctx.fillStyle = hex(c.bordure);
+    ctx.fillRect(x, 1, 10, 2);
+    ctx.fillRect(x, 15, 10, 2);
+  }
+  return t;
+}
+
+function iconeBouclier(c: Couleurs): HTMLCanvasElement {
+  const [t, ctx] = toile(16, 16);
+  if (!ctx) return t;
+  // Écu : rectangle à pointe arrondie, contour sombre
+  for (let y = 1; y < 15; y++) {
+    const retrait = y > 10 ? (y - 10) * 1.2 : 0;
+    const x0 = Math.round(2 + retrait);
+    const x1 = Math.round(14 - retrait);
+    ctx.fillStyle = CONTOUR;
+    ctx.fillRect(x0 - 1, y, x1 - x0 + 2, 1);
+    ctx.fillStyle = hex(c.bordure);
+    ctx.fillRect(x0, y, x1 - x0, 1);
+    if (y > 1 && y < 13) {
+      ctx.fillStyle = hex(c.champ);
+      ctx.fillRect(x0 + 1, y, Math.max(0, x1 - x0 - 2), 1);
+    }
+  }
+  ctx.fillStyle = CONTOUR;
+  ctx.fillRect(2, 0, 12, 1);
+  ctx.fillStyle = hex(c.embleme);
+  for (let dy = -2; dy <= 2; dy++) ctx.fillRect(8 - (2 - Math.abs(dy)), 6 + dy, (2 - Math.abs(dy)) * 2, 1);
+  return t;
+}
+
+function iconeCape(c: Couleurs): HTMLCanvasElement {
+  const [t, ctx] = toile(16, 16);
+  if (!ctx) return t;
+  // Cape qui s'évase, col en haut
+  for (let y = 2; y < 15; y++) {
+    const demi = 3 + Math.round((y - 2) * 0.35);
+    ctx.fillStyle = CONTOUR;
+    ctx.fillRect(8 - demi - 1, y, demi * 2 + 2, 1);
+    ctx.fillStyle = y < 4 || y > 12 ? hex(c.bordure) : hex(c.champ);
+    ctx.fillRect(8 - demi, y, demi * 2, 1);
+  }
+  ctx.fillStyle = CONTOUR;
+  ctx.fillRect(4, 1, 8, 1);
+  ctx.fillStyle = hex(c.embleme);
+  for (let dy = -2; dy <= 2; dy++) ctx.fillRect(8 - (2 - Math.abs(dy)), 8 + dy, (2 - Math.abs(dy)) * 2, 1);
+  return t;
+}
+
+/** Copies teintes des armures en cuir (texture × teinte, puis calque non teint), une fois les textures chargées. */
+function enregistrerArmuresTeintes(textures: BibliothequeTextures): void {  for (const monde of MONDES) {
     const a = ARMURES[monde];
     if (a.teinte === undefined) continue;
     const teinter = (base: CheminTexture, cible: CheminTexture) => {
@@ -172,6 +284,6 @@ export function enregistrerArmuresTeintes(textures: BibliothequeTextures): void 
     };
     teinter(textureArmure(a.materiau, 'casque'), `bs/armures/${monde}/corps`);
     teinter(textureArmure(a.materiau, 'jambieres'), `bs/armures/${monde}/jambieres`);
-    for (const piece of PIECES_ARMURE) teinter(iconeArmure(a.materiau, piece), `bs/armures/${monde}/icone-${piece}`);
+    for (const piece of PIECES_JEU) teinter(iconeArmure(a.materiau, piece), `bs/armures/${monde}/icone-${piece}`);
   }
 }

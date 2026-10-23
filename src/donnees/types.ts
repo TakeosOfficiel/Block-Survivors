@@ -1012,7 +1012,9 @@ export interface ReglesEquipement {
 // ---------------------------------------------------------------------------
 // Collection : armures de monde (permanentes)
 // ---------------------------------------------------------------------------
-export type PieceArmure = 'casque' | 'plastron' | 'jambieres' | 'bottes';
+export type PieceArmure = 'casque' | 'plastron' | 'jambieres' | 'bottes' | 'bouclier' | 'cape' | 'talisman';
+/** Pièces portées avec les textures d'armure du jeu (les autres sont dessinées au lancement). */
+export type PieceArmureJeu = 'casque' | 'plastron' | 'jambieres' | 'bottes';
 /** Matériau des textures du jeu (entity/equipment/humanoid/<matériau>). */
 export type MateriauArmure = 'leather' | 'chainmail' | 'iron' | 'gold' | 'diamond' | 'netherite';
 
@@ -1022,7 +1024,18 @@ export interface DefinitionArmure {
   readonly materiau: MateriauArmure;
   /** Teinte multipliée sur la texture (cuir teint, 0xRRGGBB) ; sans : couleurs du jeu. */
   readonly teinte?: number;
+  /** Couleurs du bouclier, de la cape et du talisman dessinés au lancement : champ, bordure, emblème (0xRRGGBB). */
+  readonly couleurs: { readonly champ: number; readonly bordure: number; readonly embleme: number };
   readonly pieces: Readonly<Record<PieceArmure, { readonly nom: string; readonly description: string; readonly modif: Partial<Modificateurs> }>>;
-  /** Les 4 pièces de ce monde portées ensemble. */
+  /** Toutes les pièces de ce monde portées ensemble. */
   readonly ensemble: { readonly description: string; readonly modif: Partial<Modificateurs> };
+}
+
+/** Butin d'armure d'un boss selon son rang dans la partie (1er, 2e, puis les suivants en mode sans fin). */
+export interface ButinBoss {
+  /** Chance de gagner une pièce, puis une 2e. */
+  readonly chance: number;
+  readonly chanceSeconde: number;
+  /** Poids de chaque pièce (absente : ce boss ne la donne pas). */
+  readonly poids: Readonly<Partial<Record<PieceArmure, number>>>;
 }

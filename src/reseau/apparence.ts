@@ -4,6 +4,7 @@ import { PERSONNAGES } from '../donnees/personnages';
 import type { EtatJoueur } from '../etat';
 import type { ApparenceEntite, CheminTexture, DefinitionArene } from '../donnees/types';
 import { apparenceJoueur } from '../profil';
+import { lireImage } from '../assets/skinsImportees';
 import type { InfoJoueur } from './protocole';
 
 /** Écart (blocs) entre les joueurs au départ. */
@@ -57,4 +58,25 @@ export function texteEtiquette(pseudo: string, code: number): string {
     case 4: return `${pseudo} (choisit ses cartes)`;
     default: return pseudo;
   }
+}
+
+/** Taille des skins envoyées aux autres joueurs (le patron du jeu) : une skin HD y est réduite. */
+const TAILLE_SKIN_RESEAU = 64;
+
+/**
+ * Skin importée à envoyer aux autres joueurs : ramenée au patron 64×64 (pixels
+ * nets) pour rester légère, quelle que soit sa taille gardée ; null si illisible.
+ */
+export async function skinPourReseau(adresse: string): Promise<string | null> {
+  const image = await lireImage(adresse);
+  if (!image) return null;
+  if (image.width === TAILLE_SKIN_RESEAU && image.height === TAILLE_SKIN_RESEAU) return adresse;
+  const toile = document.createElement('canvas');
+  toile.width = TAILLE_SKIN_RESEAU;
+  toile.height = TAILLE_SKIN_RESEAU;
+  const ctx = toile.getContext('2d');
+  if (!ctx) return null;
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(image, 0, 0, TAILLE_SKIN_RESEAU, TAILLE_SKIN_RESEAU);
+  return toile.toDataURL('image/png');
 }

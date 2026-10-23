@@ -5,6 +5,11 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.47.3] — 2026-10-23
+
+### Corrections
+- **Skins HD en multijoueur** : un joueur avec une skin importée en HD apparaissait chez les autres avec la skin de sa classe (trop lourde pour être envoyée). Les autres reçoivent maintenant une copie au format du jeu (64×64), légère ; votre skin HD reste intacte chez vous.
+
 ## [0.47.2] — 2026-10-23
 
 ### Corrections

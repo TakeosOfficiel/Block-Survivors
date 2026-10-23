@@ -16,6 +16,7 @@ import type { Collection } from '../progression/collection';
 import type { Sauvegarde } from '../progression/sauvegarde';
 import type { Profil } from '../profil';
 import { element } from '../ui/dom';
+import { skinPourReseau } from './apparence';
 import { SessionReseau, type Invitation, type ProfilReseau } from './session';
 
 /** Ce que le salon renvoie au lancement. */
@@ -51,6 +52,7 @@ export class EcranSalon {
   private surLancer: ((l: LancementMultijoueur) => void) | null = null;
   private ouvert = false;
   private lance = false;
+  private skinReseau: Promise<string | null> = Promise.resolve(null);
 
   constructor(solo: Sauvegarde, profil: Profil, collection: Collection, choix: ChoixPartie) {
     this.collection = collection;
@@ -88,6 +90,9 @@ export class EcranSalon {
   }
 
   private ouvrir(): void {
+    // Skin importée (HD comprise) : une copie au format du jeu, assez légère pour partir sur le réseau
+    const p = this.profil;
+    this.skinReseau = p.skin === 'importe' && p.skinImporte ? skinPourReseau(p.skinImporte) : Promise.resolve(null);
     this.ouvert = true;
     this.racine.classList.remove('cache');
     this.afficherAccueil();
@@ -156,10 +161,11 @@ export class EcranSalon {
   }
 
   /** Ce que ce joueur apporte au salon : son pseudo, son skin, sa classe et ses talents. */
-  private profilReseau(): ProfilReseau {
+  private async profilReseau(): Promise<ProfilReseau> {
     const p = this.profil;
+    const skinImporte = await this.skinReseau;
     return {
-      pseudo: p.pseudo, personnage: this.personnage, skin: p.skin, brasFins: p.brasFins, skinImporte: p.skin === 'importe' ? p.skinImporte : null,
+      pseudo: p.pseudo, personnage: this.personnage, skin: skinImporte ? 'importe' : p.skin === 'importe' ? 'classe' : p.skin, brasFins: p.brasFins, skinImporte,
       bonus: this.solo.bonus(this.personnage),
       armure: { bonus: this.collection.bonus(), portees: this.collection.portees() },
     };
@@ -167,8 +173,8 @@ export class EcranSalon {
 
   // --- Hôte ----------------------------------------------------------------
 
-  private heberger(): void {
-    const session = SessionReseau.heberger(this.profilReseau(), this.arene.id);
+  private async heberger(): Promise<void> {
+    const session = SessionReseau.heberger(await this.profilReseau(), this.arene.id);
     this.session = session;
     session.surChangement = () => this.afficherHote();
     this.afficherHote();
@@ -240,7 +246,7 @@ export class EcranSalon {
     const generer = bouton('Générer ma réponse', () => {
       generer.disabled = true;
       this.afficherStatut('Préparation de la réponse (quelques secondes)…');
-      SessionReseau.rejoindre(this.profilReseau(), offre.value).then(({ session, code }) => {
+      this.profilReseau().then((profil) => SessionReseau.rejoindre(profil, offre.value)).then(({ session, code }) => {
         this.session = session;
         session.surChangement = () => this.afficherInvite(code);
         session.surLancement = () => this.terminer(session);

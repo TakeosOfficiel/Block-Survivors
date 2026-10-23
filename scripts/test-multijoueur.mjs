@@ -9,7 +9,7 @@
  *
  * Variables : JOUEURS (2 à 4), URL, L et H (taille des fenêtres), VITESSE (temps
  * accéléré chez l'hôte), INVINCIBLES=1, DUREE (ms), DOSSIER (captures),
- * COFFRE=1, MINUTEUR=1, SANS_FIN=1, REANIMATION=1, SKIN=1 (vérifications en plus),
+ * COFFRE=1, MINUTEUR=1, SANS_FIN=1, REANIMATION=1, SKIN=1 et TAILLE_SKIN (vérifications en plus),
  * PLAYWRIGHT (chemin du module playwright s'il n'est pas installé dans le projet).
  */
 const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
@@ -17,14 +17,15 @@ const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
 const URL = process.env.URL ?? 'http://localhost:5173/';
 const { deflateSync } = await import('node:zlib');
 
-/** Skin 64×64 de test (PNG en data URL) : damier rouge et jaune. */
-function skinDeTest() {
-  const ligne = 1 + 64 * 4;
-  const brut = Buffer.alloc(ligne * 64);
-  for (let y = 0; y < 64; y++) {
-    for (let x = 0; x < 64; x++) {
+/** Skin de test (PNG en data URL, `taille` × `taille`) : damier rouge et jaune. */
+function skinDeTest(taille) {
+  const ligne = 1 + taille * 4;
+  const brut = Buffer.alloc(ligne * taille);
+  const case_ = taille / 8;
+  for (let y = 0; y < taille; y++) {
+    for (let x = 0; x < taille; x++) {
       const o = y * ligne + 1 + x * 4;
-      const jaune = ((x >> 3) + (y >> 3)) % 2 === 0;
+      const jaune = (Math.floor(x / case_) + Math.floor(y / case_)) % 2 === 0;
       brut[o] = 255;
       brut[o + 1] = jaune ? 220 : 30;
       brut[o + 2] = 30;
@@ -48,8 +49,8 @@ function skinDeTest() {
     return Buffer.concat([longueur, corps, somme]);
   };
   const entete = Buffer.alloc(13);
-  entete.writeUInt32BE(64, 0);
-  entete.writeUInt32BE(64, 4);
+  entete.writeUInt32BE(taille, 0);
+  entete.writeUInt32BE(taille, 4);
   entete[8] = 8;
   entete[9] = 6;
   const png = Buffer.concat([
@@ -86,7 +87,7 @@ for (let i = 0; i < N; i++) {
       if (localStorage.getItem('block-survivors.profils')) return;
       localStorage.setItem('block-survivors.profils', JSON.stringify({ version: 1, actif: '1', ids: ['1'] }));
       localStorage.setItem('block-survivors.p.1.profil', JSON.stringify({ pseudo: 'Importé', skin: 'importe', brasFins: false, skinImporte: skin }));
-    }, skinDeTest());
+    }, skinDeTest(Number(process.env.TAILLE_SKIN ?? 64)));
   }
   const page = await contexte.newPage();
   page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') console.log(`[${i}] ${m.type()}: ${m.text().slice(0, 300)}`); });

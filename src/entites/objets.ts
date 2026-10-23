@@ -17,6 +17,7 @@ import type { EtatPartie } from '../etat';
 import { CONFIG } from '../config';
 import { longueur } from '../utils/maths';
 import { Pool } from '../utils/pool';
+import type { EquipeJoueurs } from './types';
 
 interface Objet {
   indexType: number;
@@ -42,9 +43,12 @@ export class Objets {
   private readonly etat: EtatPartie;
   private readonly particules: Particules;
   private readonly retours: Retours;
-  private readonly pool = new Pool<Objet>(CAPACITE, () => ({ indexType: 0, x: 0, z: 0, phase: 0, valeur: 0, aimante: false, vitesse: 0 }));
+  /** Public pour le multijoueur : l'hôte le lit, le client le remplit d'après l'hôte. */
+  readonly pool = new Pool<Objet>(CAPACITE, () => ({ indexType: 0, x: 0, z: 0, phase: 0, valeur: 0, aimante: false, vitesse: 0 }));
   private readonly maillages: THREE.InstancedMesh[];
   private readonly comptes: Int32Array;
+  /** Multijoueur (hôte) : chaque objet va au joueur vivant le plus proche. */
+  equipe: EquipeJoueurs | null = null;
 
   constructor(etat: EtatPartie, particules: Particules, retours: Retours, scene: THREE.Scene, textures: BibliothequeTextures) {
     this.etat = etat;
@@ -89,13 +93,19 @@ export class Objets {
   }
 
   maj(dt: number): void {
-    const j = this.etat.joueur;
-    if (j.mort) return;
+    let j = this.etat.joueur;
+    const equipe = this.equipe;
+    if (!equipe && j.mort) return;
     const portee = JOUEUR_BASE.rayonRamassage;
     const c = CONFIG.orbes;
     const collecte = JOUEUR_BASE.collecte * this.etat.modificateurs.collecte;
     for (let i = this.pool.nombre - 1; i >= 0; i--) {
       const o = this.pool.elements[i];
+      if (equipe) {
+        const k = equipe.plusProche(o.x, o.z);
+        if (k < 0) return;
+        j = equipe.joueur(k);
+      }
       const def = OBJETS[IDS_OBJETS[o.indexType]];
       const dx = j.x - o.x;
       const dz = j.z - o.z;

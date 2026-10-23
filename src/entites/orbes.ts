@@ -13,7 +13,7 @@ import type { EtatPartie } from '../etat';
 import { gagnerXp } from '../progression/niveaux';
 import { longueur } from '../utils/maths';
 import { Pool } from '../utils/pool';
-import type { SourceEntites } from './types';
+import type { EquipeJoueurs, SourceEntites } from './types';
 
 interface Orbe {
   x: number;
@@ -40,12 +40,15 @@ const couleur = new THREE.Color();
 export class Orbes implements SourceEntites, DepotXp {
   private readonly etat: EtatPartie;
   private readonly retours: Retours;
-  private readonly pool = new Pool<Orbe>(CONFIG.orbes.capacite, () => ({ x: 0, z: 0, vitesse: 0, aimantee: false, valeur: 0, phase: 0 }));
+  /** Public pour le multijoueur : l'hôte le lit, le client le remplit d'après l'hôte. */
+  readonly pool = new Pool<Orbe>(CONFIG.orbes.capacite, () => ({ x: 0, z: 0, vitesse: 0, aimantee: false, valeur: 0, phase: 0 }));
   /** Un maillage par palier de taille (PROGRESSION.orbes). */
   private readonly maillages: THREE.InstancedMesh[];
   private readonly comptes: Int32Array;
   /** Les orbes sont toujours de face : chaque instance prend l'orientation de la caméra. */
   private readonly camera: THREE.Camera;
+  /** Multijoueur (hôte) : chaque orbe va au joueur vivant le plus proche (l'XP reste commune). */
+  equipe: EquipeJoueurs | null = null;
 
   constructor(etat: EtatPartie, retours: Retours, scene: THREE.Scene, textures: BibliothequeTextures, camera: THREE.Camera) {
     this.etat = etat;
@@ -100,13 +103,19 @@ export class Orbes implements SourceEntites, DepotXp {
   }
 
   maj(dt: number): void {
-    const j = this.etat.joueur;
-    if (j.mort) return;
+    let j = this.etat.joueur;
+    const equipe = this.equipe;
+    if (!equipe && j.mort) return;
     const c = CONFIG.orbes;
     const rayon = JOUEUR_BASE.collecte * this.etat.modificateurs.collecte;
 
     for (let i = this.pool.nombre - 1; i >= 0; i--) {
       const o = this.pool.elements[i];
+      if (equipe) {
+        const k = equipe.plusProche(o.x, o.z);
+        if (k < 0) return;
+        j = equipe.joueur(k);
+      }
       const dx = j.x - o.x;
       const dz = j.z - o.z;
       const d = longueur(dx, dz);

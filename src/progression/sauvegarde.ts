@@ -20,6 +20,8 @@ import { ecrireStockage, lireStockage } from '../options';
 import { cumulerModificateurs } from './modificateurs';
 
 const CLE = 'block-survivors.progression';
+/** Sauvegarde à part du multijoueur : une partie à plusieurs ne touche jamais au solo. */
+export const CLE_MULTIJOUEUR = 'block-survivors.progression.multi';
 const VERSION = 3;
 
 interface Donnees {
@@ -97,13 +99,16 @@ export type RefusAchat = 'max' | 'verrou' | 'points' | null;
 
 export class Sauvegarde {
   private readonly donnees: Donnees;
+  private readonly cle: string;
 
-  private constructor(donnees: Donnees) {
+  private constructor(donnees: Donnees, cle: string) {
     this.donnees = donnees;
+    this.cle = cle;
   }
 
-  static charger(): Sauvegarde {
-    const lu = lireStockage<Partial<Donnees> & { talents?: unknown }>(CLE) ?? {};
+  /** `cle` : CLE_MULTIJOUEUR pour la progression du multijoueur. */
+  static charger(cle = CLE): Sauvegarde {
+    const lu = lireStockage<Partial<Donnees> & { talents?: unknown }>(cle) ?? {};
     const nombre = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, v) : 0);
     const table = (v: unknown): Record<string, number> => {
       const sortie: Record<string, number> = {};
@@ -129,10 +134,10 @@ export class Sauvegarde {
       bossVaincus: nombre(lu.bossVaincus),
       parties: nombre(lu.parties),
       // Une ancienne sauvegarde existait : ses talents sont remis à zéro, on le dira une fois
-      reinitialise: actuelle ? lu.reinitialise === true : lireStockage(CLE) !== null,
+      reinitialise: actuelle ? lu.reinitialise === true : lireStockage(cle) !== null,
     };
-    const sauvegarde = new Sauvegarde(donnees);
-    if (!actuelle && lireStockage(CLE) !== null) sauvegarde.enregistrer();
+    const sauvegarde = new Sauvegarde(donnees, cle);
+    if (!actuelle && lireStockage(cle) !== null) sauvegarde.enregistrer();
     return sauvegarde;
   }
 
@@ -368,8 +373,38 @@ export class Sauvegarde {
     return this.maitrise(personnage);
   }
 
+  // --- Multijoueur --------------------------------------------------------
+
+  /** Vrai si la classe a déjà sa progression dans cette sauvegarde (copiée ou neuve). */
+  connait(personnage: IdPersonnage): boolean {
+    return personnage in this.donnees.maitrise;
+  }
+
+  /**
+   * Remplace la progression de la classe (maîtrise, talents, réglages des
+   * arbres) par celle de `source`, ou la remet à zéro sans source.
+   */
+  reprendrePersonnage(personnage: IdPersonnage, source: Sauvegarde | null): void {
+    const d = this.donnees;
+    const prefixe = `${personnage}.`;
+    for (const table of [d.rangs, d.options, d.finals, d.armesDepart] as Record<string, unknown>[]) {
+      for (const cle of Object.keys(table)) if (cle.startsWith(prefixe)) delete table[cle];
+    }
+    d.maitrise[personnage] = source?.donnees.maitrise[personnage] ?? 0;
+    delete d.arbres[personnage];
+    if (source) {
+      const s = source.donnees;
+      for (const [cle, val] of Object.entries(s.rangs)) if (cle.startsWith(prefixe)) d.rangs[cle] = val;
+      for (const [cle, val] of Object.entries(s.options)) if (cle.startsWith(prefixe)) d.options[cle] = val;
+      for (const [cle, val] of Object.entries(s.finals)) if (cle.startsWith(prefixe)) d.finals[cle] = val;
+      for (const [cle, val] of Object.entries(s.armesDepart)) if (cle.startsWith(prefixe)) d.armesDepart[cle] = val;
+      if (personnage in s.arbres) d.arbres[personnage] = s.arbres[personnage];
+    }
+    this.enregistrer();
+  }
+
   private enregistrer(): void {
-    ecrireStockage(CLE, this.donnees);
+    ecrireStockage(this.cle, this.donnees);
   }
 }
 

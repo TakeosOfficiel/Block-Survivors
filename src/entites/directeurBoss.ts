@@ -10,7 +10,7 @@ import { PROGRESSION } from '../donnees/progression';
 import type { IdSon } from '../donnees/sons';
 import type { DefinitionArene, DefinitionCalendrierBoss } from '../donnees/types';
 import type { Retours } from '../effets/retours';
-import { minutesSansFin, type EtatPartie } from '../etat';
+import { equipeVaincue, minutesSansFin, type EtatPartie } from '../etat';
 import type { Terrain } from '../monde/navigation';
 import { longueur } from '../utils/maths';
 import type { DetecteurVisibilite } from './directeur';
@@ -79,7 +79,7 @@ export class DirecteurBoss {
   maj(): void {
     // Aucun boss au-delà de la fin de partie (la victoire arrive avant), sauf en mode sans fin
     const c = this.reglages.calendrier;
-    if (this.etat.joueur.mort || this.etat.issue !== null || this.termine()) return;
+    if (equipeVaincue(this.etat) || this.etat.issue !== null || this.termine()) return;
     if (this.reglages.liste(this.etat.arene).length === 0) return;
     const t = this.etat.tempsJeu;
     if (!this.annonce && t >= this.moment - c.avertissement) {

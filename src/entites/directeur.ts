@@ -9,7 +9,7 @@ import { APPARITIONS } from '../donnees/apparitions';
 import type { IdEnnemi } from '../donnees/ennemis';
 import { PROGRESSION } from '../donnees/progression';
 import type { ChoixEnnemi, Progression } from '../donnees/types';
-import { minutesSansFin, type EtatPartie } from '../etat';
+import { equipeVaincue, minutesSansFin, type EtatPartie } from '../etat';
 import type { Terrain } from '../monde/navigation';
 import { longueur } from '../utils/maths';
 import type { Ennemis } from './ennemis';
@@ -42,7 +42,7 @@ export class DirecteurApparitions {
 
   maj(dt: number): void {
     if (this.etat.issue !== null) return;
-    if (this.etat.joueur.mort) return;
+    if (equipeVaincue(this.etat)) return;
     const a = APPARITIONS;
     const t = Math.min(this.etat.tempsJeu / a.dureeMontee, 1);
 

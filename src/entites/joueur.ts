@@ -2,8 +2,7 @@
 import type * as THREE from 'three';
 import type { BibliothequeTextures } from '../assets/textures';
 import { degatsApresDefense } from '../combat/defense';
-import { CONFIG } from '../config';
-import type { Entrees } from '../controles/entrees';
+import { CONFIG, type ActionDeplacement } from '../config';
 import { JOUEUR_BASE } from '../donnees/joueur';
 import { MODELES } from '../donnees/modeles';
 import { PLAFONDS } from '../donnees/plafonds';
@@ -20,6 +19,11 @@ import type { CibleJoueur, CrochetsJoueur, SourceEntites } from './types';
 
 const corrige: Point = { x: 0, z: 0 };
 
+/** Ce qui commande la marche : le clavier, ou les entrées reçues d'un joueur distant (multijoueur). */
+export interface CommandesJoueur {
+  action(nom: ActionDeplacement): boolean;
+}
+
 export class Joueur implements SourceEntites, CibleJoueur {
   readonly actifs = 1;
   /** Ignore tous les dégâts (debug). */
@@ -31,7 +35,7 @@ export class Joueur implements SourceEntites, CibleJoueur {
 
   private readonly etat: EtatPartie;
   private readonly carte: CarteMonde;
-  private readonly entrees: Entrees;
+  private readonly entrees: CommandesJoueur;
   private readonly retours: Retours;
   private readonly modele: ModeleCompile;
   private readonly rendu: ModeleInstancie;
@@ -41,7 +45,7 @@ export class Joueur implements SourceEntites, CibleJoueur {
   constructor(
     etat: EtatPartie,
     carte: CarteMonde,
-    entrees: Entrees,
+    entrees: CommandesJoueur,
     retours: Retours,
     scene: THREE.Scene,
     textures: BibliothequeTextures,

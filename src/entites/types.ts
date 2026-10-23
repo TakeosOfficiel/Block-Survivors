@@ -1,4 +1,7 @@
 /** Contrats communs aux entités. */
+import type { EtatJoueur } from '../etat';
+import type { ChampDeFlux } from '../monde/navigation';
+import type { ContexteComportement } from './comportements';
 import type { Allie } from '../combat/invocations';
 import type { IdProjectile } from '../donnees/projectiles';
 
@@ -34,4 +37,20 @@ export interface CrochetsJoueur {
 /** Ce qui permet aux ennemis de tirer. */
 export interface Tireur {
   tirer(type: IdProjectile, x: number, z: number, dirX: number, dirZ: number, degats: number, boss?: boolean): void;
+}
+
+/**
+ * Multijoueur (src/reseau, hôte) : les joueurs de l'équipe. Les ennemis, leurs
+ * projectiles, les orbes et les objets s'en servent à la place du seul joueur ;
+ * absente en solo.
+ */
+export interface EquipeJoueurs {
+  /** Index du joueur vivant le plus proche de (x, z), −1 si tous sont morts. */
+  plusProche(x: number, z: number): number;
+  joueur(k: number): EtatJoueur;
+  /** Contexte des ennemis qui visent ce joueur (ses dégâts, les tirs). */
+  contexte(k: number): ContexteComportement;
+  /** Champ de flux vers ce joueur. */
+  flux(k: number): ChampDeFlux;
+  readonly nombre: number;
 }

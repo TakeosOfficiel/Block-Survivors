@@ -13,7 +13,7 @@ import type { CarteMonde } from '../monde/carte';
 import { ecartAngle, longueur } from '../utils/maths';
 import type { Ennemis } from './ennemis';
 import { Pool } from '../utils/pool';
-import type { CibleJoueur, SourceEntites, Tireur } from './types';
+import type { CibleJoueur, EquipeJoueurs, SourceEntites, Tireur } from './types';
 
 interface ProjectileEnnemi {
   indexRendu: number;
@@ -40,6 +40,8 @@ export class ProjectilesEnnemis implements SourceEntites, Tireur {
   }));
   private ennemis: Ennemis | null = null;
   private readonly touches = new Int32Array(4);
+  /** Multijoueur (hôte) : les flèches touchent n'importe quel joueur de l'équipe. */
+  equipe: EquipeJoueurs | null = null;
 
   constructor(etat: EtatPartie, carte: CarteMonde, cible: CibleJoueur) {
     this.etat = etat;
@@ -126,11 +128,15 @@ export class ProjectilesEnnemis implements SourceEntites, Tireur {
             fini = true;
           }
         } else {
-          const dx = p.x - j.x;
-          const dz = p.z - j.z;
-          if (!j.mort && dx * dx + dz * dz < portee * portee) {
-            this.cible.subirDegats(p.degats, p.boss);
-            fini = true;
+          const equipe = this.equipe;
+          for (let m = 0; m < (equipe ? equipe.nombre : 1) && !fini; m++) {
+            const cible = equipe ? equipe.joueur(m) : j;
+            const dx = p.x - cible.x;
+            const dz = p.z - cible.z;
+            if (!cible.mort && dx * dx + dz * dz < portee * portee) {
+              (equipe ? equipe.contexte(m).cible : this.cible).subirDegats(p.degats, p.boss);
+              fini = true;
+            }
           }
         }
       }

@@ -76,6 +76,11 @@ export interface EtatPartie {
   /** Talents de l'arbre actif : bonus d'armes précises et mécaniques propres (avec leur rang). */
   talents: TalentsPartie;
   readonly joueur: EtatJoueur;
+  /**
+   * Toute l'équipe : `[joueur]` en solo. En multijoueur, l'hôte y ajoute les
+   * joueurs distants (src/reseau) ; `joueur` reste le joueur local.
+   */
+  readonly joueurs: EtatJoueur[];
 }
 
 export interface TalentsPartie {
@@ -85,6 +90,20 @@ export interface TalentsPartie {
 
 export function creerEtatPartie(arene: DefinitionArene, idPersonnage: IdPersonnage): EtatPartie {
   const personnage = PERSONNAGES[idPersonnage];
+  const joueur: EtatJoueur = {
+    x: arene.depart?.x ?? 0, z: arene.depart?.z ?? 0, vx: 0, vz: 0, angle: 0,
+    pv: personnage.pv,
+    pvMax: personnage.pv,
+    invulnerabilite: 0,
+    protection: 0,
+    bouclier: 0,
+    viesUtilisees: 0,
+    mort: false,
+    tempsMort: 0,
+    niveau: 1,
+    xp: 0,
+    xpNiveau: PROGRESSION.xpPremierNiveau,
+  };
   return {
     arene,
     idPersonnage,
@@ -114,24 +133,18 @@ export function creerEtatPartie(arene: DefinitionArene, idPersonnage: IdPersonna
     },
     modificateurs: creerModificateurs(),
     talents: { armes: {}, mecaniques: {} },
-    joueur: {
-      x: arene.depart?.x ?? 0, z: arene.depart?.z ?? 0, vx: 0, vz: 0, angle: 0,
-      pv: personnage.pv,
-      pvMax: personnage.pv,
-      invulnerabilite: 0,
-      protection: 0,
-      bouclier: 0,
-      viesUtilisees: 0,
-      mort: false,
-      tempsMort: 0,
-      niveau: 1,
-      xp: 0,
-      xpNiveau: PROGRESSION.xpPremierNiveau,
-    },
+    joueur,
+    joueurs: [joueur],
   };
 }
 
 /** Minutes jouées au-delà de la durée de la partie en mode sans fin (0 sinon) : elles renforcent les ennemis. */
 export function minutesSansFin(etat: EtatPartie): number {
   return etat.sansFin ? Math.max(0, etat.tempsJeu - PROGRESSION.dureePartie) / 60 : 0;
+}
+
+/** Vrai quand toute l'équipe est morte (le joueur seul, en solo). */
+export function equipeVaincue(etat: EtatPartie): boolean {
+  for (let i = 0; i < etat.joueurs.length; i++) if (!etat.joueurs[i].mort) return false;
+  return true;
 }

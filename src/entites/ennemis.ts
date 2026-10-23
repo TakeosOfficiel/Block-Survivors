@@ -27,7 +27,7 @@ import type { Terrain } from '../monde/navigation';
 import { appliquerComportement, type ContexteComportement, type Vers } from './comportements';
 import { creerEnnemi, effacerEtats, type DegatsPeriodiques, type Ennemi } from './ennemi';
 import type { Butin } from './butin';
-import type { CiblesAllies, SourceEntites } from './types';
+import type { CiblesAllies, EquipeJoueurs, SourceEntites } from './types';
 import type { ArmeEquipee } from '../combat/armeEquipee';
 import type { Allie } from '../combat/invocations';
 import { PLAFONDS } from '../donnees/plafonds';
@@ -77,7 +77,8 @@ export class Ennemis implements SourceEntites {
   private readonly particules: Particules;
   private readonly butin: Butin;
   private readonly retours: Retours;
-  private readonly pool = new Pool<Ennemi>(CONFIG.ennemis.capacite, creerEnnemi);
+  /** Public pour le multijoueur : l'hôte le lit, le client le remplit d'après l'hôte. */
+  readonly pool = new Pool<Ennemi>(CONFIG.ennemis.capacite, creerEnnemi);
   private readonly grille: GrilleSpatiale;
   private readonly voisins = new Int32Array(64);
   private readonly groupe = new Int32Array(64);
@@ -94,6 +95,8 @@ export class Ennemis implements SourceEntites {
   private allieVise: Allie | null = null;
   private contexteAllie: ContexteComportement | null = null;
   private talents: CrochetsTalents | null = null;
+  /** Multijoueur (hôte) : chaque ennemi vise le joueur vivant le plus proche. */
+  equipe: EquipeJoueurs | null = null;
 
   constructor(
     etat: EtatPartie,
@@ -623,13 +626,22 @@ export class Ennemis implements SourceEntites {
 
   private deplacer(e: Ennemi, index: number, dt: number): void {
     const g = CONFIG.ennemis;
-    const j = this.etat.joueur;
+    let j = this.etat.joueur;
+    let contexteJoueur = this.contexte;
+    let flux = this.terrain.flux;
+    const equipe = this.equipe;
+    const k = equipe ? equipe.plusProche(e.x, e.z) : -1;
+    if (equipe && k >= 0) {
+      j = equipe.joueur(k);
+      contexteJoueur = equipe.contexte(k);
+      flux = equipe.flux(k);
+    }
     const def = e.definition;
     if (e.minuterie > 0) e.minuterie -= dt;
     if (e.blessure > 0) e.blessure -= dt;
 
     // Vers le joueur : en ligne droite s'il est en vue, sinon par le champ de flux
-    const { carte, flux } = this.terrain;
+    const carte = this.terrain.carte;
     const versX = j.x - e.x;
     const versZ = j.z - e.z;
     const distance = longueur(versX, versZ) || 1e-6;
@@ -662,7 +674,7 @@ export class Ennemis implements SourceEntites {
     }
 
     // Cible : l'allié qui l'a attiré s'il vit encore, sinon le joueur
-    let contexte = this.contexte;
+    let contexte = contexteJoueur;
     const a = e.cibleAllie;
     if (a && this.allies && this.contexteAllie && this.allies.vivant(a, e.cibleAllieId)) {
       const ax = a.x - e.x;
@@ -768,10 +780,13 @@ export class Ennemis implements SourceEntites {
     this.retours.son('explosion');
     this.retours.secousse(0.45);
 
-    const j = this.etat.joueur;
-    const distance = longueur(j.x - e.x, j.z - e.z);
-    if (distance < c.rayon) {
-      this.contexte.cible.subirDegats(Math.ceil(c.degats * (1 - distance / c.rayon)), e.definition.boss !== undefined);
+    const equipe = this.equipe;
+    for (let k = 0; k < (equipe ? equipe.nombre : 1); k++) {
+      const j = equipe ? equipe.joueur(k) : this.etat.joueur;
+      const distance = longueur(j.x - e.x, j.z - e.z);
+      if (distance < c.rayon) {
+        (equipe ? equipe.contexte(k) : this.contexte).cible.subirDegats(Math.ceil(c.degats * (1 - distance / c.rayon)), e.definition.boss !== undefined);
+      }
     }
     this.allies?.blesserZone(e.x, e.z, c.rayon, c.degats);
   }

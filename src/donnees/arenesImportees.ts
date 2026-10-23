@@ -8,6 +8,7 @@
  *     "description": "…",
  *     "icone": "block/red_mushroom_block",
  *     "base": "prairie",              // ennemis, boss et ambiance repris de cette arène
+ *     "monde": "champignons",         // équipement et armure de collection (sinon : ceux de la base)
  *     "ciel": "#78a7ff",
  *     "brouillard": { "debut": 45, "fin": 120 },
  *     "lumiere": { "ambiante": 0.35, "soleil": 0.75 },
@@ -17,7 +18,7 @@
  *
  * La taille, le sol et le décor viennent de la schématique, lue au lancement.
  */
-import type { ChoixEnnemi, DefinitionArene, ZoneEnnemis } from './types';
+import type { ChoixEnnemi, DefinitionArene, IdMonde, ZoneEnnemis } from './types';
 import type { IdEnnemi } from './ennemis';
 
 interface ReglagesCarte {
@@ -25,6 +26,7 @@ interface ReglagesCarte {
   readonly description?: string;
   readonly icone?: string;
   readonly base?: string;
+  readonly monde?: IdMonde;
   readonly ciel?: string | number;
   readonly brouillard?: { readonly debut: number; readonly fin: number };
   readonly lumiere?: Partial<{
@@ -83,6 +85,7 @@ export function arenesImportees(bases: readonly DefinitionArene[]): DefinitionAr
         couleurAmbiante: couleur(r.lumiere?.couleurAmbiante, base.lumiere.couleurAmbiante),
         couleurSoleil: couleur(r.lumiere?.couleurSoleil, base.lumiere.couleurSoleil),
       },
+      monde: r.monde ?? base.monde,
       boss: r.boss ?? base.boss,
       miniBoss: r.miniBoss ?? base.miniBoss,
       ennemis: r.ennemis ?? base.ennemis,

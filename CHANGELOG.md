@@ -5,6 +5,20 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.44.0] — 2026-10-23
+
+### Nouveautés
+- **Les coffres donnent de l'équipement** : des bagues et des amulettes, au lieu des cartes de montée de niveau (celles-ci ne changent pas). Vous portez **2 bagues et 1 amulette**, visibles en bas à gauche au-dessus des bonus.
+  - **4 raretés** : Commune, Rare, Épique, Légendaire, à leur couleur sur les cartes. Plus les coffres en bois sont chers, meilleures sont leurs chances ; le coffre de l'Ender du boss propose des objets rares au moins, dont la légendaire du monde.
+  - Emplacements pleins : choisissez l'objet à remplacer, ou revenez en arrière (« Garder mes objets »). Un objet que vous portez déjà peut être **renforcé** (niveaux 2 et 3).
+  - Chaque monde a ses objets, en plus de ceux de tous les mondes. Légendaires : **Amulette du héros du village** (Prairie, +1 totem), **Cœur du filon** (Mine, éclats de diamant qui explosent), **Cœur de magma** (Zone volcanique, nova de feu sur un gros coup), **Couronne du champignon géant** (Jardin des champignons, explosion de spores toutes les 25 s).
+  - Bagues et amulettes ont leurs propres icônes en pixel art. L'équipement apparaît dans les statistiques de la pause et de la fin.
+- **Collection** (nouveau bouton du menu) : une **armure par monde** (Villageois, Mineur, Seigneur du Nether, Mycélien), gardée d'une partie à l'autre.
+  - **Une pièce par partie gagnée** dans son monde, annoncée à la victoire : 4 victoires pour l'ensemble.
+  - Portez-les dans **Apparence**, même mélangées : votre héros les porte vraiment, dans le menu et en jeu. Chaque pièce donne un petit bonus, les 4 du même monde un bonus d'ensemble (ex. Nether : insensible au magma).
+  - La page Collection montre, monde par monde, les pièces gagnées et les objets déjà trouvés, avec la progression.
+- Nouveaux effets : dégâts contre les morts-vivants, les arthropodes et les créatures du Nether, dégâts reçus réduits, coups qui enflamment, émeraudes en plus.
+
 ## [0.43.1] — 2026-10-22
 
 ### Nouveautés

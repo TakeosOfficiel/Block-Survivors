@@ -10,6 +10,7 @@ export function creerModificateurs(): Modificateurs {
     degatsAllies: 0, vitesseAllies: 0, pvAllies: 0, dureeAllies: 0, recul: 1,
     degatsBrulure: 0, dureeBrulure: 0, cumulsBrulure: 0, degatsPoison: 0, dureeRalenti: 0, degatsRalentis: 0,
     regenerationPart: 0, soinsObjets: 0,
+    degatsMortsVivants: 0, degatsArthropodes: 0, degatsNether: 0, degatsRecus: 0, emeraudes: 0, chanceBrulure: 0, degatsSol: 0,
   };
 }
 

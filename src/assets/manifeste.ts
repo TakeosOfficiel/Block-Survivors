@@ -19,6 +19,7 @@ import { cheminSkinVanilla } from '../profil';
 import type { MondeGenere } from '../monde/generation';
 import { BarreBoss } from '../ui/barreBoss';
 import { SPRITES_INTERFACE } from '../ui/habillage';
+import { texturesArmures } from '../ui/iconesObjets';
 
 /** Textures du menu et des écrans : sprites d'interface, visages, icônes. */
 export function texturesInterface(): Set<CheminTexture> {
@@ -34,6 +35,8 @@ export function texturesInterface(): Set<CheminTexture> {
   chemins.add(CONFIG.hud.coeurs.plein).add(CONFIG.hud.coeurs.dore);
   chemins.add(MAITRISE.icone);
   chemins.add(CONFIG.hud.iconeTues).add(CONFIG.hud.iconeTemps).add(CONFIG.hud.iconeNiveau).add(OBJETS.emeraude.icone);
+  // Armures de la Collection : héros du menu, Apparence, Collection et partie
+  for (const chemin of texturesArmures()) chemins.add(chemin);
   for (const nom of SKINS_VANILLA) chemins.add(cheminSkinVanilla(nom, false)).add(cheminSkinVanilla(nom, true));
   for (const id of IDS_PERSONNAGES) {
     for (const arbre of ARBRES[id]) {

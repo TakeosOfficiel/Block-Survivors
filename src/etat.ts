@@ -66,7 +66,8 @@ export interface EtatPartie {
   /** Émeraudes ramassées dans la partie (elles ouvrent les coffres). */
   emeraudes: number;
   /** Cartes de coffre pas encore choisies, et titre de leur écran. */
-  readonly choixCoffre: { restants: number; titre: string };
+  /** Choix d'objets en attente ; `ender` : ceux d'un coffre de l'Ender (meilleurs objets), proposés d'abord. */
+  readonly choixCoffre: { restants: number; ender: number };
   issue: IssuePartie;
   /** Vrai une fois la partie gagnée puis continuée (mode sans fin). */
   sansFin: boolean;
@@ -94,7 +95,7 @@ export function creerEtatPartie(arene: DefinitionArene, idPersonnage: IdPersonna
     niveauxEnAttente: 0,
     relancesRestantes: PROGRESSION.relances,
     emeraudes: 0,
-    choixCoffre: { restants: 0, titre: '' },
+    choixCoffre: { restants: 0, ender: 0 },
     issue: null,
     sansFin: false,
     stats: {

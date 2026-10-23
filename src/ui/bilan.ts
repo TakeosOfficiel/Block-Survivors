@@ -7,6 +7,8 @@
 import type { BibliothequeTextures } from '../assets/textures';
 import { CONFIG } from '../config';
 import { OBJETS } from '../donnees/objets';
+import { OBJETS_EQUIPEMENT } from '../donnees/equipement';
+import { cheminIconeObjet, niveauMaxObjet, type Equipement } from '../progression/equipement';
 import type { CheminTexture } from '../donnees/types';
 import { rangMax } from '../combat/armeEquipee';
 import type { ArmeEquipee } from '../combat/armeEquipee';
@@ -25,6 +27,7 @@ export function remplirBilan(
   etat: EtatPartie,
   armes: readonly ArmeEquipee[],
   textures: BibliothequeTextures,
+  equipement: Equipement,
 ): void {
   const s = etat.stats;
   const degatsTotaux = s.degatsParArme.reduce((total, d) => total + d, 0);
@@ -92,8 +95,26 @@ export function remplirBilan(
     listeArmes.append(texte('span', ''), jauge);
   }
 
+  // Équipement porté : icône, nom coloré de sa rareté, niveau
+  const objets = document.createElement('div');
+  objets.className = 'bilan-objets';
+  for (const o of equipement.portes()) {
+    const def = OBJETS_EQUIPEMENT[o.id];
+    const element = document.createElement('div');
+    element.className = 'bilan-objet';
+    element.title = def.description(equipement.facteur(o));
+    element.append(
+      caseImage(textures.url(cheminIconeObjet(o.id)), def.nom),
+      texte('span', niveauMaxObjet(o.id) > 1 ? `${def.nom} (niv. ${o.niveau})` : def.nom, `rarete-objet-${def.rarete}`),
+    );
+    objets.append(element);
+  }
+  if (objets.childElementCount === 0) objets.append(texte('span', 'Aucun objet : ouvrez des coffres avec vos émeraudes.', 'bilan-vide'));
+
   conteneur.replaceChildren(
     chiffres,
+    texte('h3', 'Équipement', 'titre-panneau'),
+    objets,
     texte('h3', 'Ennemis vaincus', 'titre-panneau'),
     tues,
     texte('h3', 'Dégâts par arme', 'titre-panneau'),

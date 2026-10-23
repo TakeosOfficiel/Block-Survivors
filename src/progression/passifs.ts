@@ -14,9 +14,16 @@ export class Passifs {
   version = 0;
   /** Bonus permanents du personnage, toujours comptés. */
   private readonly bonus: Partial<Modificateurs>;
+  /** Bonus de l'équipement porté (bagues, amulette), remplacés à chaque changement d'équipement. */
+  private equipement: readonly Partial<Modificateurs>[] = [];
 
   constructor(bonus: Partial<Modificateurs>) {
     this.bonus = bonus;
+  }
+
+  /** Remplace les bonus de l'équipement (pris en compte au prochain `calculer`). */
+  definirEquipement(bonus: readonly Partial<Modificateurs>[]): void {
+    this.equipement = bonus;
   }
 
   /** Rang possédé (0 = absent). */
@@ -38,12 +45,13 @@ export class Passifs {
   }
 
   /**
-   * Recalcule `sortie` depuis zéro (bonus du personnage + passifs) ;
+   * Recalcule `sortie` depuis zéro (bonus du personnage + équipement + passifs) ;
    * `ajout` permet de simuler un passif monté d'un rang.
    */
   calculer(sortie: Modificateurs, ajout?: IdPassif): Modificateurs {
     Object.assign(sortie, creerModificateurs());
     cumulerModificateurs(sortie, this.bonus);
+    for (const bonus of this.equipement) cumulerModificateurs(sortie, bonus);
     const ids = new Set<IdPassif>(this.possedes.map((p) => p.id));
     if (ajout) ids.add(ajout);
     for (const id of ids) {

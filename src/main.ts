@@ -19,6 +19,7 @@ import { importerArene } from './minecraft/importation';
 import { genererMonde, type MondeGenere } from './monde/generation';
 import { Rendu } from './moteur/rendu';
 import { chargerOptions } from './options';
+import { Collection } from './progression/collection';
 import { Sauvegarde } from './progression/sauvegarde';
 import { apparenceJoueur, chargerProfil, CHEMIN_SKIN_IMPORTE } from './profil';
 import { ApercuHeros } from './ui/apercuHeros';
@@ -27,6 +28,7 @@ import { EcranChargement } from './ui/ecranChargement';
 import { EcranMenu } from './ui/ecranMenu';
 import { suivreEchelleInterface } from './ui/echelle';
 import { appliquerHabillage } from './ui/habillage';
+import { enregistrerArmuresTeintes, enregistrerIconesObjets } from './ui/iconesObjets';
 import { PanneauOptions } from './ui/panneauOptions';
 
 async function demarrer(): Promise<void> {
@@ -49,6 +51,7 @@ async function demarrer(): Promise<void> {
   const options = chargerOptions();
   const sauvegarde = Sauvegarde.charger();
   const profil = chargerProfil();
+  const collection = Collection.charger();
   const sons = new Sons(options.volume, options.volumes);
   sons.precharger();
   // Une seule barre : l'interface seule avant le menu, ou l'interface et la partie (Rejouer)
@@ -59,6 +62,8 @@ async function demarrer(): Promise<void> {
     textures.charger(texturesInterface(), (faites, total) => ecran.progression(faites, total)),
   ]);
   appliquerHabillage(textures);
+  enregistrerIconesObjets(textures);
+  enregistrerArmuresTeintes(textures);
   // Skin importée du joueur : enregistrée comme une texture du jeu
   if (profil.skinImporte) {
     const image = await chargerImageSkin(profil.skinImporte);
@@ -80,8 +85,9 @@ async function demarrer(): Promise<void> {
   if (!partieDemandee()) {
     // Héros en 3D du menu : même moteur que le jeu (repli WebGL2 compris)
     const apercu = await ApercuHeros.creer(textures, rendu.api !== 'WebGPU');
+    if (apercu) apercu.armure = () => collection.portees();
     ecran.masquer();
-    choix = await new EcranMenu(textures, choix, panneauOptions, sauvegarde, new EcranProfil(textures, profil, apercu), apercu).attendreChoix();
+    choix = await new EcranMenu(textures, choix, panneauOptions, sauvegarde, new EcranProfil(textures, profil, apercu, collection), apercu, collection).attendreChoix();
     memoriserChoix(choix);
     ecran.planifier(etapesPartie(choix));
   }
@@ -113,7 +119,7 @@ async function demarrer(): Promise<void> {
     (faites, total) => ecran.progression(faites, total),
   );
 
-  jeu = new Jeu(rendu, textures, monde, choix, { sons, options, panneauOptions, sauvegarde, profil });
+  jeu = new Jeu(rendu, textures, monde, choix, { sons, options, panneauOptions, sauvegarde, profil, collection });
   jeu.appliquerOptions(options);
   ecran.etape('Préparation des modèles…');
   await jeu.prechauffer((faites, total) => ecran.progression(faites, total));

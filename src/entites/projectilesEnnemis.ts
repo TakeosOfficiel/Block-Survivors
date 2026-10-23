@@ -35,7 +35,8 @@ export class ProjectilesEnnemis implements SourceEntites, Tireur {
   private readonly etat: EtatPartie;
   private readonly carte: CarteMonde;
   private readonly cible: CibleJoueur;
-  private readonly pool = new Pool<ProjectileEnnemi>(CONFIG.projectiles.capacite, () => ({
+  /** Public pour le multijoueur : l'hôte le lit pour les instantanés. */
+  readonly pool = new Pool<ProjectileEnnemi>(CONFIG.projectiles.capacite, () => ({
     indexRendu: 0, definition: PROJECTILES[IDS_PROJECTILES[0]], x: 0, z: 0, vx: 0, vz: 0, vie: 0, degats: 0, boss: false, renvoye: false, arme: -1,
   }));
   private ennemis: Ennemis | null = null;

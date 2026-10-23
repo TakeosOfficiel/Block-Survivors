@@ -24,13 +24,28 @@ export function positionDepart(arene: DefinitionArene, index: number, sortie: { 
   sortie.z = index === 0 ? z : z + Math.sin(angle) * ECART_DEPART;
 }
 
-/** Étiquette d'un joueur : son pseudo, et ce qui lui arrive (cartes, à terre, réanimation). */
-export function texteEtiquette(pseudo: string, j: EtatJoueur, enChoix: boolean, reanimation: number): string {
+/**
+ * Ce que dit l'étiquette d'un joueur, codé en un nombre (situation × 1000 +
+ * valeur) : le texte n'est reconstruit que quand ce code change.
+ */
+export function codeEtiquette(j: EtatJoueur, enChoix: boolean, reanimation: number): number {
   const r = REGLES_MULTIJOUEUR.reanimation;
   if (j.mort) {
-    if (j.tempsMort >= r.aTerre) return `${pseudo} (mort)`;
-    if (reanimation > 0) return `${pseudo} : réanimation ${Math.floor(reanimation * 10) * 10} %`;
-    return `${pseudo} : à terre (${Math.ceil(r.aTerre - j.tempsMort)} s)`;
+    if (j.tempsMort >= r.aTerre) return 1000;
+    if (reanimation > 0) return 2000 + Math.floor(reanimation * 10) * 10;
+    return 3000 + Math.ceil(r.aTerre - j.tempsMort);
   }
-  return enChoix ? `${pseudo} (choisit ses cartes)` : pseudo;
+  return enChoix ? 4000 : 0;
+}
+
+/** Étiquette d'un joueur : son pseudo, et ce qui lui arrive (cartes, à terre, réanimation). */
+export function texteEtiquette(pseudo: string, code: number): string {
+  const valeur = code % 1000;
+  switch (Math.floor(code / 1000)) {
+    case 1: return `${pseudo} (mort)`;
+    case 2: return `${pseudo} : réanimation ${valeur} %`;
+    case 3: return `${pseudo} : à terre (${valeur} s)`;
+    case 4: return `${pseudo} (choisit ses cartes)`;
+    default: return pseudo;
+  }
 }

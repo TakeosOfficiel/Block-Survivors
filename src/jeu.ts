@@ -45,7 +45,7 @@ import { RenduProjectiles } from './effets/renduProjectiles';
 import type { Retours } from './effets/retours';
 import { Butin } from './entites/butin';
 import { Coffres } from './entites/coffres';
-import { DirecteurApparitions } from './entites/directeur';
+import { DirecteurApparitions, type DetecteurVisibilite } from './entites/directeur';
 import { DirecteurBoss } from './entites/directeurBoss';
 import { Ennemis } from './entites/ennemis';
 import { Joueur } from './entites/joueur';
@@ -306,14 +306,18 @@ export class Jeu implements CallbacksBoucle, Retours {
       tempsAvantBoss: () => this.directeurBoss.tempsAvantProchain,
       bossAVaincre: () => this.prolongation,
     });
-    this.directeur = new DirecteurApparitions(this.etat, this.terrain, this.ennemis, this.camera);
+    // Les ennemis apparaissent hors de la vue du joueur (et, à plusieurs, de celle des autres)
+    const vueApparitions: DetecteurVisibilite = {
+      estVisible: (x, z, rayon) => this.camera.estVisible(x, z, rayon) || this.reseau?.voit(x, z, rayon) === true,
+    };
+    this.directeur = new DirecteurApparitions(this.etat, this.terrain, this.ennemis, vueApparitions);
     this.directeurBoss = new DirecteurBoss({
       calendrier: CALENDRIER_BOSS, liste: (a) => a.boss, annonce: (nom) => `Un boss approche : ${nom} !`, distance: 12, son: 'boss', secousse: 0.6,
-    }, this.etat, this.terrain, this.ennemis, this.camera, this.hud, this);
+    }, this.etat, this.terrain, this.ennemis, vueApparitions, this.hud, this);
     this.directeurMiniBoss = new DirecteurBoss({
       // Les mini-boss arrivent sans prévenir, comme les autres ennemis
       calendrier: CALENDRIER_MINIBOSS, liste: (a) => a.miniBoss, annonce: null, distance: 10, son: null, secousse: 0,
-    }, this.etat, this.terrain, this.ennemis, this.camera, this.hud, this);
+    }, this.etat, this.terrain, this.ennemis, vueApparitions, this.hud, this);
 
     // Progression et écrans
     this.ameliorations = new Ameliorations(this.etat, this.arsenal, this.passifs);
@@ -390,6 +394,7 @@ export class Jeu implements CallbacksBoucle, Retours {
       joueur: this.joueur, cible, mecaniques: this.mecaniques, ennemis: this.ennemis, projectilesEnnemis: this.projectilesEnnemis,
       orbes: this.orbes, objets: this.objets, particules: this.particules, chiffres: this.chiffres, retours: this,
       coffres: this.coffres, conclure: () => this.conclure(), continuerSansFin: () => this.continuerSansFin(),
+      choisirCarte: () => this.ecranCartes.choisirAuHasard(),
     }) : null;
     this.rendu.preparerOmbres();
     this.boucle = new Boucle(this);

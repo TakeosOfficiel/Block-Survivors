@@ -27,7 +27,7 @@ import type { Options } from '../options';
 import type { Amelioration } from '../progression/ameliorations';
 import { ecartAngle } from '../utils/maths';
 import { positionDepart } from './apparence';
-import { Bandeau, texteATerre } from './bandeau';
+import { SuiviLocal } from './bandeau';
 import { Combattant, Commutateur, type PartageCombat } from './combattant';
 import { ameliorationValide } from './hote';
 import type { CrochetsReseau, ElementsPartie } from './partie';
@@ -51,7 +51,7 @@ interface Trajet {
 
 /** Un ennemi affiché, d'après son identifiant chez l'hôte. */
 interface SuiviEnnemi extends Trajet {
-  e: Ennemi;
+  readonly e: Ennemi;
   /** Numéro du dernier instantané qui le contenait. */
   vu: number;
 }
@@ -66,10 +66,11 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
   /** Les autres joueurs : leur modèle et (pour l'effet) leurs armes, par index et en liste. */
   private readonly autres: (Combattant | null)[] = [];
   private readonly listeAutres: Combattant[] = [];
+  /** Trajet de chaque autre joueur, par index de joueur. */
   private readonly trajets: Trajet[] = [];
+  /** Suivi de chaque ennemi affiché, à la même place que lui dans le pool des ennemis (échangés ensemble). */
+  private readonly suivisPool: SuiviEnnemi[] = [];
   private readonly suivis = new Map<number, SuiviEnnemi>();
-  private readonly actifs: SuiviEnnemi[] = [];
-  private readonly libres: SuiviEnnemi[] = [];
   private readonly modeles: (ModeleCompile | null)[] = IDS_ENNEMIS.map(() => null);
   private readonly ecrivain = new Ecrivain(16);
   private readonly lecteur = new Lecteur();
@@ -82,8 +83,8 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
   private arrivee = 0;
   private readonly projectiles = new Float32Array(CAPACITE_PROJECTILES * 5);
   private nbProjectiles = 0;
-  private readonly bandeau = new Bandeau();
-  private connexionPerdue = false;
+  private readonly suiviLocal = new SuiviLocal();
+  private cartesOuvertes = false;
   private effetsAllies = true;
   /** Réanimation du joueur local (0 à 1), d'après l'hôte. */
   private reanimation = 0;
@@ -99,7 +100,7 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
     positionDepart(etat.arene, session.index, etat.joueur);
     // Les coups ne se décident que chez l'hôte : ici, le joueur n'est jamais blessé et les armes ne blessent personne
     elements.joueur.invincible = true;
-    ennemis.blesser = () => {};
+    ennemis.coupsActifs = false;
 
     const partage: PartageCombat = {
       etat,
@@ -123,15 +124,15 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
     };
     for (const info of session.joueurs) {
       if (info.index === session.index) continue;
-      const c = new Combattant(info, partage, retoursAutres);
+      const c = new Combattant(info, this.listeAutres.length + 1, partage, retoursAutres);
       c.joueur.invincible = true;
       const j = c.etatJoueur;
       this.autres[info.index] = c;
       this.listeAutres.push(c);
-      this.trajets.push({ x0: j.x, z0: j.z, a0: 0, x1: j.x, z1: j.z, a1: 0 });
+      this.trajets[info.index] = { x0: j.x, z0: j.z, a0: 0, x1: j.x, z1: j.z, a1: 0 };
     }
     for (let i = 0; i < CONFIG.ennemis.capacite; i++) {
-      this.libres.push({ e: null as unknown as Ennemi, x0: 0, z0: 0, a0: 0, x1: 0, z1: 0, a1: 0, vu: 0 });
+      this.suivisPool.push({ e: ennemis.pool.elements[i], x0: 0, z0: 0, a0: 0, x1: 0, z1: 0, a1: 0, vu: 0 });
     }
     session.partie = this;
   }
@@ -161,6 +162,10 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
     this.session.envoyerDonnees(w.contenu());
   }
 
+  voit(): boolean {
+    return false;
+  }
+
   majJoueurs(): void {}
 
   /** Armes des autres joueurs, pour l'effet (option « Effets des autres joueurs »). */
@@ -176,6 +181,7 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
 
   vitesseTemps(cartesOuvertes: boolean): number {
     const etat = this.elements.etat;
+    this.cartesOuvertes = cartesOuvertes;
     this.pauseLocale = etat.issue === null && (cartesOuvertes || etat.niveauxEnAttente > 0 || etat.choixCoffre.restants > 0);
     return 1;
   }
@@ -244,8 +250,7 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
   }
 
   surDepart(): void {
-    this.connexionPerdue = true;
-    this.bandeau.afficher('Connexion avec l\'hôte perdue');
+    this.suiviLocal.signalerConnexionPerdue();
   }
 
   // --- Affichage ---------------------------------------------------------------
@@ -261,14 +266,16 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
     const t = Math.min(1, (performance.now() / 1000 - this.arrivee) / periode);
 
     for (let i = 0; i < this.listeAutres.length; i++) {
-      const a = this.trajets[i];
-      const j = this.listeAutres[i].etatJoueur;
+      const c = this.listeAutres[i];
+      const a = this.trajets[c.info.index];
+      const j = c.etatJoueur;
       j.x = a.x0 + (a.x1 - a.x0) * t;
       j.z = a.z0 + (a.z1 - a.z0) * t;
       j.angle = a.a0 + ecartAngle(a.a0, a.a1) * t;
     }
-    for (let i = 0; i < this.actifs.length; i++) {
-      const s = this.actifs[i];
+    const pool = this.elements.ennemis.pool;
+    for (let i = 0; i < pool.nombre; i++) {
+      const s = this.suivisPool[i];
       const e = s.e;
       e.x = s.x0 + (s.x1 - s.x0) * t;
       e.z = s.z0 + (s.z1 - s.z0) * t;
@@ -279,10 +286,7 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
     // Les armes (pour l'effet) cherchent leurs cibles dans la grille
     this.elements.ennemis.reconstruireGrille();
 
-    if (!this.connexionPerdue) {
-      const j = this.elements.etat.joueur;
-      this.bandeau.afficher(texteATerre(j.mort, j.tempsMort, REGLES_MULTIJOUEUR.reanimation.aTerre, this.reanimation));
-    }
+    if (this.suiviLocal.maj(this.cartesOuvertes, this.elements.etat.joueur, this.reanimation)) this.elements.choisirCarte();
   }
 
   majVisuelOmbres(ombres: Ombres): void {
@@ -357,7 +361,7 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
       j.tempsMort = tempsMort;
       j.invulnerabilite = invulnerabilite;
       if (autre) {
-        const a = this.trajets[this.listeAutres.indexOf(autre)];
+        const a = this.trajets[index];
         a.x0 = j.x;
         a.z0 = j.z;
         a.a0 = j.angle;
@@ -413,8 +417,9 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
       e.vitesseSol = vitesse;
     }
     // Disparus de l'instantané : morts (gerbe), explosés (creeper) ou trop loin
-    for (let i = this.actifs.length - 1; i >= 0; i--) {
-      const s = this.actifs[i];
+    const pool = ennemis.pool;
+    for (let i = pool.nombre - 1; i >= 0; i--) {
+      const s = this.suivisPool[i];
       if (s.vu === numero) continue;
       const e = s.e;
       if (e.mort >= 0) particules.emettre(e.x, 0.6, e.z, GERBES.mort);
@@ -422,12 +427,12 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
         particules.emettre(e.x, 0.8, e.z, GERBES.explosion);
         retours.son('explosion');
       }
-      const index = ennemis.pool.elements.indexOf(e);
-      if (index >= 0 && index < ennemis.pool.nombre) ennemis.pool.liberer(index);
       this.suivis.delete(e.id);
-      this.actifs[i] = this.actifs[this.actifs.length - 1];
-      this.actifs.pop();
-      this.libres.push(s);
+      // Le suivi suit son ennemi dans l'échange du pool
+      const dernier = pool.nombre - 1;
+      this.suivisPool[i] = this.suivisPool[dernier];
+      this.suivisPool[dernier] = s;
+      pool.liberer(i);
     }
 
     // Orbes, objets et coffres : reconstruits à chaque instantané
@@ -542,12 +547,10 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
 
   private nouvelEnnemi(id: number, type: number, x: number, z: number, angle: number): SuiviEnnemi | null {
     if (type >= IDS_ENNEMIS.length) return null;
-    const s = this.libres.pop();
-    const e = s ? this.elements.ennemis.pool.acquerir() : null;
-    if (!s || !e) {
-      if (s) this.libres.push(s);
-      return null;
-    }
+    const pool = this.elements.ennemis.pool;
+    const e = pool.acquerir();
+    if (!e) return null;
+    const s = this.suivisPool[pool.nombre - 1];
     e.id = id;
     e.indexType = type;
     e.definition = ENNEMIS[IDS_ENNEMIS[type]];
@@ -562,9 +565,7 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
     e.immunites.fill(0);
     effacerEtats(e);
     reinitialiserAnimation(e.animation);
-    s.e = e;
     this.suivis.set(id, s);
-    this.actifs.push(s);
     return s;
   }
 

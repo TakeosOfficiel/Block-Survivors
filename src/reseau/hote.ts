@@ -12,7 +12,6 @@
  * relève ; défaite quand toute l'équipe est tombée.
  */
 import { IDS_ARMES } from '../donnees/armes';
-import { ENNEMIS } from '../donnees/ennemis';
 import { facteurEquipe, REGLES_MULTIJOUEUR } from '../donnees/multijoueur';
 import { GERBES } from '../donnees/particules';
 import { IDS_PASSIFS } from '../donnees/passifs';
@@ -27,7 +26,7 @@ import { minutesSansFin, type EtatJoueur } from '../etat';
 import type { ChampDeFlux } from '../monde/navigation';
 import type { Options } from '../options';
 import type { Amelioration } from '../progression/ameliorations';
-import { Bandeau, texteATerre } from './bandeau';
+import { SuiviLocal } from './bandeau';
 import { Combattant, Commutateur, type PartageCombat } from './combattant';
 import type { CrochetsReseau, ElementsPartie } from './partie';
 import {
@@ -37,8 +36,7 @@ import {
 } from './protocole';
 import type { ObservateurPartie, SessionReseau } from './session';
 
-/** Projectiles ennemis et chiffres de dégâts retenus d'une image à l'envoi suivant. */
-const CAPACITE_PROJECTILES = 2048;
+/** Chiffres de dégâts retenus d'un envoi à l'autre. */
 const CAPACITE_CHIFFRES = 256;
 /** Sons d'un joueur distant qu'on n'entend pas chez l'hôte (ils concernent son corps à lui). */
 const SONS_PERSONNELS = new Set(['blessure_joueur', 'totem', 'orbe', 'emeraude', 'manger', 'niveau']);
@@ -57,14 +55,10 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
   private readonly contextes: ContexteComportement[] = [];
   /** Réanimation en cours de chaque joueur de l'équipe (s), par k (0 : l'hôte). */
   private readonly reanimations = new Float32Array(REGLES_MULTIJOUEUR.joueursMax);
-  private readonly bandeau = new Bandeau();
+  private readonly suiviLocal = new SuiviLocal();
+  private cartesOuvertes = false;
   private readonly ecrivain = new Ecrivain(96 * 1024);
   private readonly lecteur = new Lecteur();
-  /** Projectiles ennemis dessinés cette image : index de rendu, x, y, z, angle. */
-  private readonly projectiles = new Float32Array(CAPACITE_PROJECTILES * 5);
-  private nbProjectiles = 0;
-  private capture = false;
-  private captureBranchee = false;
   /** Chiffres de dégâts depuis le dernier envoi : x, y, z, valeur, style. */
   private readonly chiffres = new Float32Array(CAPACITE_CHIFFRES * 5);
   private nbChiffres = 0;
@@ -108,7 +102,7 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
     this.contextes.push({ cible: elements.cible, tireur: projectilesEnnemis });
     for (const info of session.joueurs) {
       if (info.index === 0) continue;
-      const c = new Combattant(info, partage, retoursDistants);
+      const c = new Combattant(info, this.combattants.length + 1, partage, retoursDistants);
       this.combattants.push(c);
       this.parIndex[info.index] = c;
       etat.joueurs.push(c.etatJoueur);
@@ -122,39 +116,13 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
     projectilesEnnemis.equipe = this;
     elements.orbes.equipe = this;
     elements.objets.equipe = this;
-    elements.coffres.equipe = this;
 
     // Difficulté selon le nombre de joueurs
     const n = this.nombre;
     const r = REGLES_MULTIJOUEUR.parJoueur;
     this.facteurApparitions = facteurEquipe(r.apparitions, n);
-    const pvEnnemis = facteurEquipe(r.pvEnnemis, n);
-    const pvBoss = facteurEquipe(r.pvBoss, n);
-    // Prototype : les méthodes de l'instance sont enveloppées plutôt que de modifier ces systèmes
-    const apparaitre = ennemis.apparaitre.bind(ennemis);
-    ennemis.apparaitre = (id, x, z, multiplicateurPv = 1) => {
-      const def = ENNEMIS[id];
-      return apparaitre(id, x, z, multiplicateurPv * (def.boss || def.miniBoss ? pvBoss : pvEnnemis));
-    };
-    // Les ennemis n'apparaissent pas sous les yeux d'un joueur distant non plus
-    const camera = elements.cameraJeu;
-    const estVisible = camera.estVisible.bind(camera);
-    const rayonVue = REGLES_MULTIJOUEUR.reseau.rayonVue;
-    camera.estVisible = (x, z, rayon) => {
-      if (estVisible(x, z, rayon)) return true;
-      for (let i = 0; i < this.combattants.length; i++) {
-        const j = this.combattants[i].etatJoueur;
-        if (!j.mort && (j.x - x) ** 2 + (j.z - z) ** 2 < (rayonVue + rayon) ** 2) return true;
-      }
-      return false;
-    };
-    // Seuls les projectiles ennemis partent dans les instantanés : chaque joueur simule les effets des armes
-    const majVisuel = projectilesEnnemis.majVisuel.bind(projectilesEnnemis);
-    projectilesEnnemis.majVisuel = (rendu) => {
-      this.capture = true;
-      majVisuel(rendu);
-      this.capture = false;
-    };
+    ennemis.multiplicateurPv = facteurEquipe(r.pvEnnemis, n);
+    ennemis.multiplicateurPvBoss = facteurEquipe(r.pvBoss, n);
     session.partie = this;
   }
 
@@ -192,6 +160,24 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
     return meilleur;
   }
 
+  /** Les ennemis n'apparaissent pas sous les yeux d'un joueur distant (un rayon autour de lui). */
+  voit(x: number, z: number, rayon: number): boolean {
+    const portee = REGLES_MULTIJOUEUR.reseau.rayonVue + rayon;
+    for (let i = 0; i < this.combattants.length; i++) {
+      const j = this.combattants[i].etatJoueur;
+      if (!j.mort && (j.x - x) ** 2 + (j.z - z) ** 2 < portee * portee) return true;
+    }
+    return false;
+  }
+
+  get actif(): number {
+    return this.commutateur.actif;
+  }
+
+  activer(k: number): number {
+    return this.commutateur.activer(k);
+  }
+
   private enChoix(k: number): boolean {
     return k === 0 ? this.pauseLocale : this.combattants[k - 1].enChoix;
   }
@@ -207,7 +193,9 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
       const c = this.combattants[i];
       if (c.parti) continue;
       if (maintenant - c.instantEntree > REGLES_MULTIJOUEUR.reseau.silenceEntrees) c.commandes.bits = 0;
-      c.enChoix = c.cartesEnAttente > 0;
+      // Protégé le temps de choisir ; au-delà (joueur absent, onglet en arrière-plan), plus de bouclier
+      c.tempsChoix = c.cartesEnAttente > 0 ? c.tempsChoix + dt : 0;
+      c.enChoix = c.cartesEnAttente > 0 && c.tempsChoix < REGLES_MULTIJOUEUR.choixCartes.delai + REGLES_MULTIJOUEUR.choixCartes.marge;
       if (c.enChoix) {
         c.etatJoueur.protection = Math.max(c.etatJoueur.protection, protection);
         c.commandes.bits = 0;
@@ -289,6 +277,7 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
   vitesseTemps(cartesOuvertes: boolean): number {
     // La partie ne s'arrête plus pour les cartes : seul le joueur qui choisit se met à l'abri
     const etat = this.elements.etat;
+    this.cartesOuvertes = cartesOuvertes;
     this.pauseLocale = etat.issue === null && (cartesOuvertes || etat.niveauxEnAttente > 0 || etat.choixCoffre.restants > 0);
     return 1;
   }
@@ -341,6 +330,7 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
     }
     if (message.type !== 'carte' || c.cartesEnAttente <= 0 || !ameliorationValide(message.amelioration)) return;
     c.cartesEnAttente--;
+    c.tempsChoix = 0;
     try {
       c.appliquerCarte(message.amelioration);
     } catch {
@@ -370,9 +360,8 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
 
   avantImage(dtReel: number): void {
     this.dtReel = dtReel;
-    const local = this.commutateur.local.joueur;
-    const r = REGLES_MULTIJOUEUR.reanimation;
-    this.bandeau.afficher(texteATerre(local.mort, local.tempsMort, r.aTerre, this.reanimations[0] / r.duree));
+    const reanimation = this.reanimations[0] / REGLES_MULTIJOUEUR.reanimation.duree;
+    if (this.suiviLocal.maj(this.cartesOuvertes, this.commutateur.local.joueur, reanimation)) this.elements.choisirCarte();
   }
 
   majVisuelOmbres(ombres: Ombres): void {
@@ -389,7 +378,6 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
   }
 
   majVisuelProjectiles(rendu: RenduProjectiles): void {
-    if (!this.captureBranchee) this.brancherCapture(rendu);
     if (!this.effetsAllies) return;
     for (let i = 0; i < this.combattants.length; i++) if (!this.combattants[i].parti) this.combattants[i].majVisuelProjectiles(rendu);
   }
@@ -416,28 +404,6 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
       this.session.envoyerDonnees(this.ecrivain.contenu(), c.info.index);
     }
     this.nbChiffres = 0;
-  }
-
-  /** Retient chaque projectile ennemi dessiné (le rendu des projectiles sert de liste commune). */
-  private brancherCapture(rendu: RenduProjectiles): void {
-    this.captureBranchee = true;
-    const ajouter = rendu.ajouter.bind(rendu);
-    const commencer = rendu.commencer.bind(rendu);
-    rendu.ajouter = (indexType, x, y, z, angle) => {
-      if (this.capture && this.nbProjectiles < CAPACITE_PROJECTILES) {
-        const o = this.nbProjectiles++ * 5;
-        this.projectiles[o] = indexType;
-        this.projectiles[o + 1] = x;
-        this.projectiles[o + 2] = y;
-        this.projectiles[o + 3] = z;
-        this.projectiles[o + 4] = angle;
-      }
-      ajouter(indexType, x, y, z, angle);
-    };
-    rendu.commencer = () => {
-      this.nbProjectiles = 0;
-      commencer();
-    };
   }
 
   /** Ce que voit le joueur `c` : l'équipe entière, puis ce qui est à moins de `rayonEnvoi` de lui. */
@@ -543,19 +509,18 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
     }
     w.ecrire16(compte, n);
 
-    // Projectiles ennemis, tels que dessinés
+    // Flèches et projectiles des ennemis
     compte = w.reserver16();
     n = 0;
-    for (let i = 0; i < this.nbProjectiles && w.reste > 2 * 1024; i++) {
-      const o = i * 5;
-      const x = this.projectiles[o + 1];
-      const z = this.projectiles[o + 3];
-      if ((x - cx) ** 2 + (z - cz) ** 2 > r2) continue;
-      w.u8(this.projectiles[o]);
-      w.coordonnee(x);
-      w.u8(Math.min(255, Math.round(this.projectiles[o + 2] * 32)));
-      w.coordonnee(z);
-      w.angle(this.projectiles[o + 4]);
+    const projectiles = this.elements.projectilesEnnemis.pool;
+    for (let i = 0; i < projectiles.nombre && w.reste > 2 * 1024; i++) {
+      const p = projectiles.elements[i];
+      if ((p.x - cx) ** 2 + (p.z - cz) ** 2 > r2) continue;
+      w.u8(p.indexRendu);
+      w.coordonnee(p.x);
+      w.u8(Math.min(255, Math.round(p.definition.hauteur * 32)));
+      w.coordonnee(p.z);
+      w.angle(Math.atan2(p.vx, p.vz));
       n++;
     }
     w.ecrire16(compte, n);

@@ -75,6 +75,13 @@ export class EcranCartes {
     this.afficherCartes(cartes);
   }
 
+  /** Choisit une carte au hasard sans attendre (multijoueur : temps de choix écoulé). */
+  choisirAuHasard(): void {
+    if (!this.ouvert || this.cartes.length === 0) return;
+    this.ouvertureMs = -Infinity;
+    this.choisir(Math.floor(Math.random() * this.cartes.length));
+  }
+
   private fermer(): void {
     this.surChoix = null;
     this.racine.classList.add('cache');

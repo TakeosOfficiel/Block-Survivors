@@ -97,6 +97,11 @@ export class Ennemis implements SourceEntites {
   private talents: CrochetsTalents | null = null;
   /** Multijoueur (hôte) : chaque ennemi vise le joueur vivant le plus proche. */
   equipe: EquipeJoueurs | null = null;
+  /** Multijoueur (hôte) : ennemis, et boss ou mini-boss, plus robustes selon le nombre de joueurs. */
+  multiplicateurPv = 1;
+  multiplicateurPvBoss = 1;
+  /** Multijoueur (joueur qui a rejoint) : les coups ne blessent pas ici, seul l'hôte en décide. */
+  coupsActifs = true;
 
   constructor(
     etat: EtatPartie,
@@ -182,7 +187,7 @@ export class Ennemis implements SourceEntites {
     e.dirZ = 0;
     e.angle = Math.atan2(this.etat.joueur.x - e.x, this.etat.joueur.z - e.z);
     e.vitesseSol = 0;
-    e.pvMax = Math.round(def.pv * multiplicateurPv);
+    e.pvMax = Math.round(def.pv * multiplicateurPv * (def.boss || def.miniBoss ? this.multiplicateurPvBoss : this.multiplicateurPv));
     e.pv = e.pvMax;
     e.minuterie = 0.5;
     e.blessure = 0;
@@ -273,7 +278,7 @@ export class Ennemis implements SourceEntites {
    * dans IDS_ARMES, −1 hors armes) crédite les dégâts dans les statistiques.
    */
   blesser(e: Ennemi, degats: number, sourceX: number, sourceZ: number, recul: number, arme = -1, nature: NatureCoup = 'arme'): void {
-    if (e.mort >= 0) return;
+    if (e.mort >= 0 || !this.coupsActifs) return;
     const stats = this.etat.stats;
     const periodique = nature === 'brulure' || nature === 'poison' || nature === 'saignement';
     if (nature === 'allie' && e.marqueTemps > 0) degats *= 1 + e.marque;
@@ -374,20 +379,20 @@ export class Ennemis implements SourceEntites {
     const m = this.etat.modificateurs;
     appliquerPeriodique(
       e.brulure, cumuls, degatsParSeconde * (1 + m.degatsBrulure), duree * (1 + m.dureeBrulure), arme,
-      cumulsMax + m.cumulsBrulure, ETATS.brulure.tic,
+      cumulsMax + m.cumulsBrulure, ETATS.brulure.tic, this.equipe?.actif ?? 0,
     );
   }
 
   /** Saignement (Saignée) : comme le poison, avec ses propres cumuls. */
   saigner(e: Ennemi, cumuls: number, degatsParSeconde: number, duree: number, arme = -1): void {
-    if (e.mort < 0) appliquerPeriodique(e.saignement, cumuls, degatsParSeconde, duree, arme, ETATS.saignement.cumulsMax, ETATS.saignement.tic);
+    if (e.mort < 0) appliquerPeriodique(e.saignement, cumuls, degatsParSeconde, duree, arme, ETATS.saignement.cumulsMax, ETATS.saignement.tic, this.equipe?.actif ?? 0);
   }
 
   /** Poison : comme la brûlure, avec ses propres cumuls. */
   empoisonner(e: Ennemi, cumuls: number, degatsParSeconde: number, duree: number, arme = -1, cumulsMax: number = ETATS.poison.cumulsMax): void {
     if (e.mort >= 0) return;
     const m = this.etat.modificateurs;
-    appliquerPeriodique(e.poison, cumuls, degatsParSeconde * (1 + m.degatsPoison), duree, arme, cumulsMax, ETATS.poison.tic);
+    appliquerPeriodique(e.poison, cumuls, degatsParSeconde * (1 + m.degatsPoison), duree, arme, cumulsMax, ETATS.poison.tic, this.equipe?.actif ?? 0);
   }
 
   /** Ralentit de `part` (0 à 1) ; le plus fort l'emporte. Un boss résiste. */
@@ -470,7 +475,11 @@ export class Ennemis implements SourceEntites {
     p.tic -= dt;
     if (p.tic <= 0) {
       p.tic += intervalle;
+      // À plusieurs, les dégâts (statistiques, talents) vont à celui qui a infligé l'état
+      const equipe = this.equipe;
+      const avant = equipe ? equipe.activer(p.source) : 0;
       this.blesser(e, p.degatsParSeconde * p.cumuls * intervalle, e.x, e.z, 0, p.arme, nature);
+      if (equipe) equipe.activer(avant);
     }
     if (p.temps <= 0) p.cumuls = 0;
   }
@@ -801,6 +810,7 @@ export class Ennemis implements SourceEntites {
 /** Ajoute des cumuls (plafonnés) et remet la durée à neuf ; les dégâts les plus forts l'emportent. */
 function appliquerPeriodique(
   p: DegatsPeriodiques, cumuls: number, degatsParSeconde: number, duree: number, arme: number, cumulsMax: number, intervalle: number,
+  source: number,
 ): void {
   if (p.cumuls === 0) {
     p.tic = intervalle;
@@ -812,6 +822,7 @@ function appliquerPeriodique(
   if (degatsParSeconde >= p.degatsParSeconde) {
     p.degatsParSeconde = degatsParSeconde;
     p.arme = arme;
+    p.source = source;
   }
 }
 

@@ -53,13 +53,15 @@ import { Ameliorations } from '../progression/ameliorations';
 import { creerModificateurs, cumulerModificateurs } from '../progression/modificateurs';
 import { Passifs } from '../progression/passifs';
 import { BITS_ACTIONS, type InfoJoueur } from './protocole';
-import { apparenceDistante, positionDepart, texteEtiquette } from './apparence';
+import { apparenceDistante, codeEtiquette, positionDepart, texteEtiquette } from './apparence';
 import { IDS_ARMES } from '../donnees/armes';
 import { REGLES_MULTIJOUEUR } from '../donnees/multijoueur';
 import { GERBES } from '../donnees/particules';
 
 /** Ce qui change d'un joueur à l'autre dans l'état de la partie. */
 export interface ProfilCombat {
+  /** Rang dans l'équipe (0 : le joueur local). */
+  rang: number;
   joueur: EtatJoueur;
   modificateurs: Modificateurs;
   talents: TalentsPartie;
@@ -109,15 +111,36 @@ export class Commutateur {
   /** Joueur local (celui de jeu.ts). */
   readonly local: ProfilCombat;
   private actuel: ProfilCombat;
+  /** Profils par rang dans l'équipe (0 : le joueur local). */
+  private readonly profils: ProfilCombat[] = [];
 
   constructor(etat: EtatPartie, ennemis: Ennemis, mecaniquesLocales: Talents) {
     this.etat = etat as EtatCommutable;
     this.ennemis = ennemis;
     this.local = {
+      rang: 0,
       joueur: etat.joueur, modificateurs: etat.modificateurs, talents: etat.talents,
       personnage: etat.personnage, idPersonnage: etat.idPersonnage, mecaniques: mecaniquesLocales, stats: etat.stats,
     };
     this.actuel = this.local;
+    this.profils.push(this.local);
+  }
+
+  /** Rang du joueur qui agit en ce moment. */
+  get actif(): number {
+    return this.actuel.rang;
+  }
+
+  /** Bascule sur le joueur de rang `rang` ; renvoie le rang d'avant. */
+  activer(rang: number): number {
+    const avant = this.actuel.rang;
+    this.vers(this.profils[rang] ?? this.local);
+    return avant;
+  }
+
+  /** Inscrit un joueur de l'équipe (à son rang). */
+  inscrire(profil: ProfilCombat): void {
+    this.profils[profil.rang] = profil;
   }
 
   /** Bascule sur `profil` ; renvoie celui d'avant (à redonner à `vers` ensuite). */
@@ -179,7 +202,9 @@ export class Combattant {
   enChoix = false;
   /** À terre : progression de sa réanimation (0 à 1). */
   reanimation = 0;
-  private texteAffiche = '';
+  /** Hôte : s passées à choisir ses cartes. */
+  tempsChoix = 0;
+  private etiquetteAffichee = -1;
   private minuterieBouclier = 0;
   /** Numéro de sa dernière entrée reçue, et quand (temps réel, s). */
   derniereEntree = 0;
@@ -205,7 +230,8 @@ export class Combattant {
   private readonly pluies: Pluies;
   private readonly pieges: Pieges;
 
-  constructor(info: InfoJoueur, partage: PartageCombat, retours: Retours) {
+  /** `rang` : place dans l'équipe (1 à 3 ; 0 est le joueur local). */
+  constructor(info: InfoJoueur, rang: number, partage: PartageCombat, retours: Retours) {
     this.info = info;
     const bonusTalents = info.bonus;
     this.partage = partage;
@@ -226,12 +252,14 @@ export class Combattant {
     const commutateur = partage.commutateur;
     // Les mécaniques sont créées une fois l'état commuté (leur constructeur le lit)
     const provisoire: ProfilCombat = {
+      rang,
       joueur, modificateurs, talents, personnage, idPersonnage: info.personnage, mecaniques: commutateur.local.mecaniques,
       stats: creerStatistiquesJoueur(commutateur.local.stats),
     };
     const avant = commutateur.vers(provisoire);
     const mecaniques = new Talents(etat);
     this.profil = { ...provisoire, mecaniques };
+    commutateur.inscrire(this.profil);
     commutateur.vers(this.profil);
 
     this.joueur = new Joueur(etat, carte, this.commandes, retours, scene, textures, apparenceDistante(info));
@@ -344,10 +372,10 @@ export class Combattant {
     const avant = this.partage.commutateur.vers(this.profil);
     this.joueur.majVisuel(ombres);
     const j = this.etatJoueur;
-    const texte = texteEtiquette(this.info.pseudo, j, this.enChoix, this.reanimation);
-    if (texte !== this.texteAffiche) {
-      this.texteAffiche = texte;
-      this.etiquette.ecrire(texte, j.mort ? '#ff8080' : this.enChoix ? '#ffd75e' : '#ffffff');
+    const code = codeEtiquette(j, this.enChoix, this.reanimation);
+    if (code !== this.etiquetteAffichee) {
+      this.etiquetteAffichee = code;
+      this.etiquette.ecrire(texteEtiquette(this.info.pseudo, code), j.mort ? '#ff8080' : this.enChoix ? '#ffd75e' : '#ffffff');
     }
     this.etiquette.placer(j.x, this.joueur.hauteur, j.z, !j.mort || j.tempsMort < REGLES_MULTIJOUEUR.reanimation.aTerre);
     if (this.enChoix && (this.minuterieBouclier -= dtReel) <= 0) {

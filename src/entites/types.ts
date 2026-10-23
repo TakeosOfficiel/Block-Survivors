@@ -53,4 +53,8 @@ export interface EquipeJoueurs {
   /** Champ de flux vers ce joueur. */
   flux(k: number): ChampDeFlux;
   readonly nombre: number;
+  /** Joueur dont les armes agissent en ce moment (0 : le joueur local). */
+  readonly actif: number;
+  /** Fait agir le joueur `k` (ses statistiques, ses talents) ; renvoie celui d'avant. */
+  activer(k: number): number;
 }

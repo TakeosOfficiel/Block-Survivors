@@ -163,11 +163,13 @@ lui renvoie un code de réponse (WebRTC, serveurs STUN publics seulement). Ça
 passe derrière la plupart des box ; deux NAT stricts (4G, réseau d'entreprise)
 ne se joignent pas : réseau local, Tailscale ou ZeroTier dans ce cas.
 
-Chacun choisit son personnage ; la progression multi est **séparée du solo**
-(sauvegarde à part) : copie du personnage solo ou personnage neuf. XP et niveau
+Chacun choisit son personnage : **le sien** (sa progression habituelle, qui
+gagne l'XP de la partie comme en solo) ou un **nouveau personnage** (parti de
+zéro, sauvegarde à part gardée d'une partie à plusieurs à l'autre). XP et niveau
 communs ; à chaque niveau et à chaque coffre ouvert (par n'importe qui), tout le
 monde choisit ses cartes, sans attendre les autres : celui qui choisit reste sur
-place, protégé par un bouclier, et les ennemis l'ignorent. Un joueur tombé reste
+place, protégé par un bouclier, et les ennemis l'ignorent (20 s pour choisir,
+ensuite une carte est prise au hasard). Un joueur tombé reste
 **à terre** 30 s : un allié qui reste 3 s près de lui le relève ; défaite quand
 toute l'équipe est tombée. Les ennemis visent le joueur le plus proche et sont
 plus nombreux et plus robustes à plusieurs. Chacun voit les effets des armes de

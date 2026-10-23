@@ -53,6 +53,8 @@ export interface ElementsPartie {
   conclure(): void;
   /** Victoire continuée en mode sans fin (jeu.ts). */
   continuerSansFin(): void;
+  /** Temps de choix écoulé : une des cartes proposées, au hasard (jeu.ts). */
+  choisirCarte(): void;
 }
 
 /** Points d'accroche appelés par jeu.ts. */
@@ -66,6 +68,8 @@ export interface CrochetsReseau {
    * reposent, mais la partie continue pour les autres (lui est protégé).
    */
   readonly pauseLocale: boolean;
+  /** Hôte : vrai si un joueur distant voit ce point (les ennemis n'y apparaissent pas). */
+  voit(x: number, z: number, rayon: number): boolean;
   /** Hôte : marche des joueurs distants, après celle du joueur local. */
   majJoueurs(dt: number): void;
   /** Armes et talents des autres joueurs, après celles du joueur local (chez un joueur qui a rejoint : leurs effets seulement). */

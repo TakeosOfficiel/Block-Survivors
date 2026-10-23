@@ -15,12 +15,11 @@ import { GERBES } from '../donnees/particules';
 import { Etiquette } from '../effets/etiquette';
 import type { Particules } from '../effets/particules';
 import type { Retours } from '../effets/retours';
-import type { EtatPartie } from '../etat';
+import type { EtatJoueur, EtatPartie } from '../etat';
 import { compilerModele } from '../modeles/compilation';
 import { creerPoseModele, ModeleInstancie, type PoseModele } from '../modeles/rendu';
 import type { Terrain } from '../monde/navigation';
 import { Pool } from '../utils/pool';
-import type { EquipeJoueurs } from './types';
 
 interface Coffre {
   indexType: number;
@@ -59,10 +58,8 @@ export class Coffres {
   /** Ennemis tués à atteindre pour le prochain coffre, et l'écart suivant. */
   private prochainSeuil = REGLES_COFFRES.tues.premier;
   private intervalle = REGLES_COFFRES.tues.intervalle;
-  /** Coffres payants déjà ouverts (le prix monte à chacun). */
+  /** Coffres payants déjà ouverts (le prix monte) ; public pour le multijoueur. */
   ouverts = 0;
-  /** Multijoueur (hôte) : n'importe quel joueur de l'équipe ouvre les coffres. */
-  equipe: EquipeJoueurs | null = null;
   // Résultat de trouverCase (évite d'allouer un objet)
   private caseX = 0;
   private caseZ = 0;
@@ -134,9 +131,7 @@ export class Coffres {
         }
         continue;
       }
-      const k = this.equipe ? this.equipe.plusProche(c.x, c.z) : -1;
-      const ouvreur = this.equipe && k >= 0 ? this.equipe.joueur(k) : j;
-      if (ouvreur.mort || (c.x - ouvreur.x) ** 2 + (c.z - ouvreur.z) ** 2 > r.rayonOuverture * r.rayonOuverture) continue;
+      if (!joueurAPortee(etat.joueurs, c.x, c.z, r.rayonOuverture)) continue;
       const prix = this.prix(c);
       if (etat.emeraudes < prix) continue;
       // Ouverture : on paie, le couvercle se lève, les cartes suivent
@@ -216,4 +211,13 @@ export class Coffres {
     if (Math.abs(x) > demiX || Math.abs(z) > demiZ) return false;
     return !carte.bloqueMarche(x, z) && carte.degatsSol(x, z) === 0 && flux.atteignable(x, z);
   }
+}
+
+/** Vrai si un joueur debout de l'équipe (le joueur seul en solo) est à moins de `rayon` de (x, z). */
+function joueurAPortee(joueurs: readonly EtatJoueur[], x: number, z: number, rayon: number): boolean {
+  for (let i = 0; i < joueurs.length; i++) {
+    const j = joueurs[i];
+    if (!j.mort && (j.x - x) ** 2 + (j.z - z) ** 2 <= rayon * rayon) return true;
+  }
+  return false;
 }

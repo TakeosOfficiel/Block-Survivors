@@ -24,6 +24,10 @@ export const REGLES_MULTIJOUEUR = {
   },
   /** Joueur qui choisit ses cartes : la partie continue pour les autres, lui est protégé. */
   choixCartes: {
+    /** s pour choisir ; ensuite, une carte est prise au hasard. */
+    delai: 20,
+    /** s de plus avant que l'hôte retire le bouclier d'un joueur qui ne choisit pas (absent). */
+    marge: 10,
     /** s de protection renouvelées à chaque pas tant qu'il choisit. */
     protection: 0.25,
     /** s entre deux gerbes de particules autour de lui (son bouclier). */

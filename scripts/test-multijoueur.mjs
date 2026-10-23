@@ -9,6 +9,7 @@
  *
  * Variables : JOUEURS (2 à 4), URL, L et H (taille des fenêtres), VITESSE (temps
  * accéléré chez l'hôte), INVINCIBLES=1, DUREE (ms), DOSSIER (captures),
+ * COFFRE=1, MINUTEUR=1, SANS_FIN=1, REANIMATION=1 (vérifications en plus),
  * PLAYWRIGHT (chemin du module playwright s'il n'est pas installé dans le projet).
  */
 const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
@@ -32,7 +33,7 @@ for (let i = 0; i < N; i++) {
     // Cartes : la première, choisie d'office
     setInterval(() => {
       const cartes = document.querySelector('#cartes');
-      if (cartes && !cartes.classList.contains('cache')) document.querySelector('#cartes-liste > *')?.click();
+      if (!window.sansChoixAuto && cartes && !cartes.classList.contains('cache')) document.querySelector('#cartes-liste > *')?.click();
     }, 700);
     window.imagesParSeconde = () => new Promise((r) => { const d = images; setTimeout(() => r(images - d), 1000); });
   });
@@ -140,6 +141,39 @@ if (process.env.COFFRE) {
   });
   await hote.waitForFunction(() => window.blockSurvivors.jeu.reseau.combattants[0].cartesEnAttente === 0, null, { timeout: 60000 });
   console.log('COFFRE : carte du joueur 1 reçue par l\'hôte');
+}
+
+// Minuteur des cartes : le joueur 1 ne choisit pas, une carte est prise d'office au bout du délai
+if (process.env.MINUTEUR) {
+  await invites[0].evaluate(() => {
+    window.sansChoixAuto = true;
+    // Durée de chaque ouverture de l'écran des cartes, et le bandeau affiché pendant
+    window.durees = [];
+    window.bandeaux = [];
+    let ouverture = -1;
+    const cartes = document.querySelector('#cartes');
+    new MutationObserver(() => {
+      const ouvert = !cartes.classList.contains('cache');
+      if (ouvert && ouverture < 0) ouverture = performance.now();
+      if (!ouvert && ouverture >= 0) {
+        window.durees.push(((performance.now() - ouverture) / 1000).toFixed(1));
+        ouverture = -1;
+      }
+    }).observe(cartes, { attributes: true });
+    setInterval(() => {
+      const texte = document.querySelector('.reseau-alerte:not(.cache)')?.textContent;
+      if (texte && !window.bandeaux.includes(texte) && window.bandeaux.length < 3) window.bandeaux.push(texte);
+    }, 1000);
+  });
+  await hote.evaluate(() => {
+    const etat = window.blockSurvivors.jeu.etat;
+    etat.choixCoffre.restants += 1;
+    etat.choixCoffre.titre = 'Coffre !';
+  });
+  await invites[0].waitForFunction(() => !document.querySelector('#cartes').classList.contains('cache'), null, { timeout: 30000 });
+  await hote.waitForFunction(() => window.blockSurvivors.jeu.reseau.combattants[0].cartesEnAttente === 0, null, { timeout: 120000 });
+  console.log('MINUTEUR :', JSON.stringify(await invites[0].evaluate(() => ({ durees: window.durees, bandeaux: window.bandeaux }))));
+  await invites[0].evaluate(() => { window.sansChoixAuto = false; });
 }
 
 // Mode sans fin : victoire, l'hôte continue, le joueur 1 reprend aussi

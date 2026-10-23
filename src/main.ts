@@ -130,7 +130,7 @@ async function demarrer(): Promise<void> {
     await textures.charger(texturesRequises(choix.arene, monde, apparenceDistante(info)));
   }
 
-  // À plusieurs, la progression (bonus permanents, récompenses) est celle de la sauvegarde multi
+  // À plusieurs, la progression (bonus permanents, récompenses) est celle choisie au salon : le personnage habituel ou un nouveau
   jeu = new Jeu(rendu, textures, monde, choix, {
     sons, options, panneauOptions, sauvegarde: multijoueur?.sauvegarde ?? sauvegarde, profil, reseau: multijoueur?.session,
   });

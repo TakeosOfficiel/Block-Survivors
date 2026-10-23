@@ -375,31 +375,20 @@ export class Sauvegarde {
 
   // --- Multijoueur --------------------------------------------------------
 
-  /** Vrai si la classe a déjà sa progression dans cette sauvegarde (copiée ou neuve). */
+  /** Vrai si la classe a déjà sa progression dans cette sauvegarde. */
   connait(personnage: IdPersonnage): boolean {
     return personnage in this.donnees.maitrise;
   }
 
-  /**
-   * Remplace la progression de la classe (maîtrise, talents, réglages des
-   * arbres) par celle de `source`, ou la remet à zéro sans source.
-   */
-  reprendrePersonnage(personnage: IdPersonnage, source: Sauvegarde | null): void {
+  /** Repart de zéro pour la classe (maîtrise, talents, réglages des arbres) : un personnage neuf. */
+  nouveauPersonnage(personnage: IdPersonnage): void {
     const d = this.donnees;
     const prefixe = `${personnage}.`;
     for (const table of [d.rangs, d.options, d.finals, d.armesDepart] as Record<string, unknown>[]) {
       for (const cle of Object.keys(table)) if (cle.startsWith(prefixe)) delete table[cle];
     }
-    d.maitrise[personnage] = source?.donnees.maitrise[personnage] ?? 0;
+    d.maitrise[personnage] = 0;
     delete d.arbres[personnage];
-    if (source) {
-      const s = source.donnees;
-      for (const [cle, val] of Object.entries(s.rangs)) if (cle.startsWith(prefixe)) d.rangs[cle] = val;
-      for (const [cle, val] of Object.entries(s.options)) if (cle.startsWith(prefixe)) d.options[cle] = val;
-      for (const [cle, val] of Object.entries(s.finals)) if (cle.startsWith(prefixe)) d.finals[cle] = val;
-      for (const [cle, val] of Object.entries(s.armesDepart)) if (cle.startsWith(prefixe)) d.armesDepart[cle] = val;
-      if (personnage in s.arbres) d.arbres[personnage] = s.arbres[personnage];
-    }
     this.enregistrer();
   }
 

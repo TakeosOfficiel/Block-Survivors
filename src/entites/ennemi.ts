@@ -12,6 +12,7 @@ export interface DegatsPeriodiques {
   temps: number;                // s restantes (remises à neuf à chaque application)
   tic: number;                  // s avant les prochains dégâts
   arme: number;                 // index dans IDS_ARMES (−1 hors armes), crédité des dégâts
+  source: number;               // multijoueur : joueur de l'équipe qui l'a infligé (0 en solo)
 }
 
 export interface Ennemi {
@@ -74,7 +75,7 @@ export interface Ennemi {
 }
 
 function creerDegatsPeriodiques(): DegatsPeriodiques {
-  return { cumuls: 0, degatsParSeconde: 0, temps: 0, tic: 0, arme: -1 };
+  return { cumuls: 0, degatsParSeconde: 0, temps: 0, tic: 0, arme: -1, source: 0 };
 }
 
 /** Efface tous les états (apparition). */

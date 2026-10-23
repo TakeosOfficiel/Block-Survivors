@@ -12,34 +12,32 @@
  * arrivent en chiffres avec les instantanés. L'option « Effets des autres
  * joueurs » coupe la simulation de leurs armes.
  */
-import { CONFIG } from '../config';
-import { ENNEMIS, IDS_ENNEMIS } from '../donnees/ennemis';
-import { MODELES } from '../donnees/modeles';
 import { REGLES_MULTIJOUEUR } from '../donnees/multijoueur';
 import { GERBES } from '../donnees/particules';
 import type { Ombres } from '../effets/ombres';
 import type { RenduProjectiles } from '../effets/renduProjectiles';
 import type { Retours } from '../effets/retours';
-import { effacerEtats, type Ennemi } from '../entites/ennemi';
-import { avancerAnimation, reinitialiserAnimation } from '../modeles/animation';
-import { compilerModele, type ModeleCompile } from '../modeles/compilation';
 import type { Options } from '../options';
 import type { BilanPartie } from '../progression/sauvegarde';
 import { ecartAngle } from '../utils/maths';
 import { positionDepart } from './apparence';
 import { SuiviLocal } from './bandeau';
+import { lireButin } from './butinRecu';
+import { lireChiffres } from './chiffresRecus';
 import { Combattant, Commutateur, type PartageCombat } from './combattant';
+import { EnnemisRecus } from './ennemisRecus';
 import type { CrochetsReseau, ElementsPartie } from './partie';
+import { ProjectilesRecus } from './projectilesRecus';
 import { enregistrerRecordsEquipe } from './records';
+import { Spectateur } from './spectateur';
 import {
-  appliquerStatistiques, BITS_ACTIONS, ENNEMI_BLESSE, ENNEMI_BRULURE, ENNEMI_MORT, ENNEMI_POISON, ENNEMI_RALENTI, ENNEMI_SAIGNEMENT,
-  carteValide, Ecrivain, JOUEUR_EN_CHOIX, JOUEUR_MORT, JOUEUR_PROTEGE, Lecteur, STYLES_CHIFFRES, TYPE_ENTREE, TYPE_INSTANTANE, type CarteJouee, type MessageFiable,
+  appliquerStatistiques, BITS_ACTIONS, carteValide, Ecrivain, JOUEUR_EN_CHOIX, JOUEUR_MORT, JOUEUR_PROTEGE, Lecteur,
+  TYPE_ENTREE, TYPE_INSTANTANE, type CarteJouee, type MessageFiable,
 } from './protocole';
 import type { ObservateurPartie, SessionReseau } from './session';
 
 /** Entrées envoyées dont on garde la position prédite (pour les comparer à celle de l'hôte). */
 const HISTORIQUE = 128;
-const CAPACITE_PROJECTILES = 2048;
 /** Sons des autres joueurs qu'on n'entend pas ici (ils concernent leur corps à eux). */
 const SONS_PERSONNELS = new Set(['blessure_joueur', 'totem', 'orbe', 'emeraude', 'manger', 'niveau']);
 
@@ -47,13 +45,6 @@ const SONS_PERSONNELS = new Set(['blessure_joueur', 'totem', 'orbe', 'emeraude',
 interface Trajet {
   x0: number; z0: number; a0: number;
   x1: number; z1: number; a1: number;
-}
-
-/** Un ennemi affiché, d'après son identifiant chez l'hôte. */
-interface SuiviEnnemi extends Trajet {
-  readonly e: Ennemi;
-  /** Numéro du dernier instantané qui le contenait. */
-  vu: number;
 }
 
 export class PartieClient implements CrochetsReseau, ObservateurPartie {
@@ -68,10 +59,8 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
   private readonly listeAutres: Combattant[] = [];
   /** Trajet de chaque autre joueur, par index de joueur. */
   private readonly trajets: Trajet[] = [];
-  /** Suivi de chaque ennemi affiché, à la même place que lui dans le pool des ennemis (échangés ensemble). */
-  private readonly suivisPool: SuiviEnnemi[] = [];
-  private readonly suivis = new Map<number, SuiviEnnemi>();
-  private readonly modeles: (ModeleCompile | null)[] = IDS_ENNEMIS.map(() => null);
+  private readonly ennemisRecus: EnnemisRecus;
+  private readonly projectilesRecus: ProjectilesRecus;
   private readonly ecrivain = new Ecrivain(16);
   private readonly lecteur = new Lecteur();
   /** Entrées envoyées : numéro, x et z prédits à l'envoi. */
@@ -81,9 +70,8 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
   private enAttente: ArrayBuffer | null = null;
   private dernierNumero = 0;
   private arrivee = 0;
-  private readonly projectiles = new Float32Array(CAPACITE_PROJECTILES * 5);
-  private nbProjectiles = 0;
   private readonly suiviLocal = new SuiviLocal();
+  private readonly spectateur = new Spectateur();
   private cartesOuvertes = false;
   private effetsAllies = true;
   /** Réanimation du joueur local (0 à 1), d'après l'hôte. */
@@ -131,9 +119,8 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
       this.listeAutres.push(c);
       this.trajets[info.index] = { x0: j.x, z0: j.z, a0: 0, x1: j.x, z1: j.z, a1: 0 };
     }
-    for (let i = 0; i < CONFIG.ennemis.capacite; i++) {
-      this.suivisPool.push({ e: ennemis.pool.elements[i], x0: 0, z0: 0, a0: 0, x1: 0, z1: 0, a1: 0, vu: 0 });
-    }
+    this.ennemisRecus = new EnnemisRecus(ennemis, elements.particules, retours);
+    this.projectilesRecus = new ProjectilesRecus(elements.terrain.carte);
     session.partie = this;
   }
 
@@ -173,7 +160,7 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
     if (!this.effetsAllies) return;
     for (let i = 0; i < this.listeAutres.length; i++) {
       const c = this.listeAutres[i];
-      if (!c.enChoix && !c.etatJoueur.mort) c.majArmes(dt);
+      c.majArmes(dt, !c.enChoix);
     }
   }
 
@@ -182,7 +169,9 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
   vitesseTemps(cartesOuvertes: boolean): number {
     const etat = this.elements.etat;
     this.cartesOuvertes = cartesOuvertes;
-    this.pauseLocale = etat.issue === null && (cartesOuvertes || etat.niveauxEnAttente > 0 || etat.choixCoffre.restants > 0);
+    // Un joueur à terre ne choisit pas : ses cartes attendent qu'il soit relevé
+    const enAttente = !etat.joueur.mort && (etat.niveauxEnAttente > 0 || etat.choixCoffre.restants > 0);
+    this.pauseLocale = etat.issue === null && (cartesOuvertes || enAttente);
     return 1;
   }
 
@@ -278,20 +267,11 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
       j.z = a.z0 + (a.z1 - a.z0) * t;
       j.angle = a.a0 + ecartAngle(a.a0, a.a1) * t;
     }
-    const pool = this.elements.ennemis.pool;
-    for (let i = 0; i < pool.nombre; i++) {
-      const s = this.suivisPool[i];
-      const e = s.e;
-      e.x = s.x0 + (s.x1 - s.x0) * t;
-      e.z = s.z0 + (s.z1 - s.z0) * t;
-      e.angle = s.a0 + ecartAngle(s.a0, s.a1) * t;
-      if (e.mort >= 0) e.mort += dtReel;
-      avancerAnimation(e.animation, this.modele(e.indexType), dtReel, e.vitesseSol / (e.definition.echelle ?? 1));
-    }
-    // Les armes (pour l'effet) cherchent leurs cibles dans la grille
-    this.elements.ennemis.reconstruireGrille();
+    this.ennemisRecus.interpoler(t, dtReel);
 
-    if (this.suiviLocal.maj(this.cartesOuvertes, this.elements.etat.joueur, this.reanimation)) this.elements.choisirCarte();
+    const moi = this.elements.etat.joueur;
+    const suivi = this.spectateur.maj(moi, this.listeAutres, this.elements.entrees, this.elements.cameraJeu);
+    if (this.suiviLocal.maj(this.cartesOuvertes, moi, this.reanimation, suivi)) this.elements.choisirCarte();
   }
 
   majVisuelOmbres(ombres: Ombres): void {
@@ -305,11 +285,8 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
   }
 
   majVisuelProjectiles(rendu: RenduProjectiles): void {
-    // Flèches des ennemis, telles que l'hôte les dessine
-    for (let i = 0; i < this.nbProjectiles; i++) {
-      const o = i * 5;
-      rendu.ajouter(this.projectiles[o], this.projectiles[o + 1], this.projectiles[o + 2], this.projectiles[o + 3], this.projectiles[o + 4]);
-    }
+    // Flèches des ennemis, avancées depuis l'instantané
+    this.projectilesRecus.dessiner(rendu, performance.now() / 1000 - this.arrivee);
     if (this.effetsAllies) for (let i = 0; i < this.listeAutres.length; i++) this.listeAutres[i].majVisuelProjectiles(rendu);
   }
 
@@ -321,7 +298,7 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
 
   private appliquer(donnees: ArrayBuffer): void {
     const l = this.lecteur;
-    const { etat, ennemis, orbes, objets, coffres, chiffres, particules, retours } = this.elements;
+    const { etat } = this.elements;
     l.lire(donnees);
     l.u8();
     const numero = l.u32();
@@ -392,140 +369,11 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
       }
     }
 
-    // Ennemis
-    let n = l.u16();
-    for (let i = 0; i < n; i++) {
-      const id = l.u32();
-      const type = l.u8();
-      const x = l.coordonnee();
-      const z = l.coordonnee();
-      const angle = l.angle();
-      const pv = l.part();
-      const drapeaux = l.u8();
-      const meche = l.part();
-      const mort = l.u8() / 100;
-      const vitesse = l.u8() / 16;
-      let s: SuiviEnnemi | null | undefined = this.suivis.get(id);
-      if (!s) {
-        s = this.nouvelEnnemi(id, type, x, z, angle);
-        if (!s) continue;
-      }
-      const e = s.e;
-      s.x0 = e.x;
-      s.z0 = e.z;
-      s.a0 = e.angle;
-      s.x1 = x;
-      s.z1 = z;
-      s.a1 = angle;
-      s.vu = numero;
-      e.pv = pv;
-      e.pvMax = 1;
-      e.mort = (drapeaux & ENNEMI_MORT) !== 0 ? Math.max(e.mort, mort) : -1;
-      e.blessure = (drapeaux & ENNEMI_BLESSE) !== 0 ? 0.1 : 0;
-      e.brulure.cumuls = (drapeaux & ENNEMI_BRULURE) !== 0 ? 1 : 0;
-      e.poison.cumuls = (drapeaux & ENNEMI_POISON) !== 0 ? 1 : 0;
-      e.saignement.cumuls = (drapeaux & ENNEMI_SAIGNEMENT) !== 0 ? 1 : 0;
-      e.ralentiTemps = (drapeaux & ENNEMI_RALENTI) !== 0 ? 1 : 0;
-      const c = e.definition.comportement;
-      e.meche = c.type === 'explosif' ? meche * c.duree : 0;
-      e.vitesseSol = vitesse;
-    }
-    // Disparus de l'instantané : morts (gerbe), explosés (creeper) ou trop loin
-    const pool = ennemis.pool;
-    for (let i = pool.nombre - 1; i >= 0; i--) {
-      const s = this.suivisPool[i];
-      if (s.vu === numero) continue;
-      const e = s.e;
-      if (e.mort >= 0) particules.emettre(e.x, 0.6, e.z, GERBES.mort);
-      else if (e.meche > 0) {
-        particules.emettre(e.x, 0.8, e.z, GERBES.explosion);
-        retours.son('explosion');
-      }
-      this.suivis.delete(e.id);
-      // Le suivi suit son ennemi dans l'échange du pool
-      const dernier = pool.nombre - 1;
-      this.suivisPool[i] = this.suivisPool[dernier];
-      this.suivisPool[dernier] = s;
-      pool.liberer(i);
-    }
-
-    // Orbes, objets et coffres : reconstruits à chaque instantané
-    n = l.u16();
-    orbes.pool.nombre = 0;
-    for (let i = 0; i < n; i++) {
-      const x = l.coordonnee();
-      const z = l.coordonnee();
-      const valeur = l.u16();
-      const o = orbes.pool.acquerir();
-      if (!o) continue;
-      o.x = x;
-      o.z = z;
-      o.valeur = valeur;
-      o.aimantee = false;
-      o.phase = x * 3.7 + z * 5.3;
-    }
-    n = l.u16();
-    objets.pool.nombre = 0;
-    for (let i = 0; i < n; i++) {
-      const type = l.u8();
-      const x = l.coordonnee();
-      const z = l.coordonnee();
-      const valeur = l.u8();
-      const o = objets.pool.acquerir();
-      if (!o) continue;
-      o.indexType = type;
-      o.x = x;
-      o.z = z;
-      o.valeur = valeur;
-      o.phase = x + z;
-      o.aimante = false;
-    }
-    coffres.ouverts = l.u16();
-    n = l.u16();
-    coffres.pool.nombre = 0;
-    for (let i = 0; i < n; i++) {
-      const type = l.u8();
-      const x = l.coordonnee();
-      const z = l.coordonnee();
-      const angle = l.angle();
-      const ouvert = l.f32();
-      const o = coffres.pool.acquerir();
-      if (!o) continue;
-      o.indexType = type;
-      o.x = x;
-      o.z = z;
-      o.angle = angle;
-      o.ouvert = ouvert;
-    }
-
-    // Flèches des ennemis, redessinées jusqu'au prochain instantané
-    n = l.u16();
-    this.nbProjectiles = 0;
-    for (let i = 0; i < n; i++) {
-      const index = l.u8();
-      const x = l.coordonnee();
-      const y = l.u8() / 32;
-      const z = l.coordonnee();
-      const angle = l.angle();
-      if (this.nbProjectiles >= CAPACITE_PROJECTILES) continue;
-      const o = this.nbProjectiles++ * 5;
-      this.projectiles[o] = index;
-      this.projectiles[o + 1] = x;
-      this.projectiles[o + 2] = y;
-      this.projectiles[o + 3] = z;
-      this.projectiles[o + 4] = angle;
-    }
-
-    // Chiffres de dégâts (les vrais, décidés par l'hôte)
-    n = l.u16();
-    for (let i = 0; i < n; i++) {
-      const x = l.coordonnee();
-      const y = l.u8() / 16;
-      const z = l.coordonnee();
-      const valeur = l.f32();
-      const style = STYLES_CHIFFRES[l.u8()] ?? 'normal';
-      chiffres.ajouter(x, y, z, valeur, style);
-    }
+    // Ce qui l'entoure
+    this.ennemisRecus.lire(l, numero);
+    lireButin(l, this.elements);
+    this.projectilesRecus.lire(l);
+    lireChiffres(l, this.elements.chiffres);
   }
 
   /**
@@ -557,38 +405,5 @@ export class PartieClient implements CrochetsReseau, ObservateurPartie {
       this.historique[i * 3 + 1] += cx;
       this.historique[i * 3 + 2] += cz;
     }
-  }
-
-  private nouvelEnnemi(id: number, type: number, x: number, z: number, angle: number): SuiviEnnemi | null {
-    if (type >= IDS_ENNEMIS.length) return null;
-    const pool = this.elements.ennemis.pool;
-    const e = pool.acquerir();
-    if (!e) return null;
-    const s = this.suivisPool[pool.nombre - 1];
-    e.id = id;
-    e.indexType = type;
-    e.definition = ENNEMIS[IDS_ENNEMIS[type]];
-    e.x = x;
-    e.z = z;
-    e.angle = angle;
-    e.vx = 0;
-    e.vz = 0;
-    e.mort = -1;
-    e.meche = 0;
-    e.blessure = 0;
-    e.immunites.fill(0);
-    effacerEtats(e);
-    reinitialiserAnimation(e.animation);
-    this.suivis.set(id, s);
-    return s;
-  }
-
-  private modele(indexType: number): ModeleCompile {
-    let modele = this.modeles[indexType];
-    if (!modele) {
-      modele = compilerModele(MODELES[ENNEMIS[IDS_ENNEMIS[indexType]].modele]);
-      this.modeles[indexType] = modele;
-    }
-    return modele;
   }
 }

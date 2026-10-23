@@ -114,7 +114,11 @@ export class DirecteurBoss {
     return ordre[this.prochain % ordre.length];
   }
 
-  /** Apparition hors champ sur une case libre, sinon au coin opposé au joueur. */
+  /**
+   * Apparition hors champ sur une case libre que le joueur peut atteindre (un
+   * boss ne traverse pas les murs : enfermé, il rendrait la victoire
+   * impossible) ; à défaut, sur n'importe quelle case atteignable, même en vue.
+   */
   private faireApparaitre(): void {
     const id = this.idProchain();
     this.prochain++;
@@ -123,14 +127,16 @@ export class DirecteurBoss {
     const limiteZ = this.etat.arene.profondeur / 2 - ENNEMIS[id].rayon - 1;
     let x = j.x > 0 ? -limiteX : limiteX;
     let z = j.z > 0 ? -limiteZ : limiteZ;
-    for (let essai = 0; essai < 16; essai++) {
+    let trouve = false;
+    for (let essai = 0; essai < 64 && !trouve; essai++) {
       const cx = (Math.random() * 2 - 1) * limiteX;
       const cz = (Math.random() * 2 - 1) * limiteZ;
       if (this.terrain.carte.bloqueMarche(cx, cz) || !this.terrain.flux.atteignable(cx, cz)) continue;
-      if (longueur(cx - j.x, cz - j.z) > this.reglages.distance && !this.vue.estVisible(cx, cz, 3)) {
+      const cache = longueur(cx - j.x, cz - j.z) > this.reglages.distance && !this.vue.estVisible(cx, cz, 3);
+      if (cache || essai >= 48) {
         x = cx;
         z = cz;
-        break;
+        trouve = true;
       }
     }
     const a = APPARITIONS;

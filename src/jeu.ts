@@ -742,10 +742,13 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.son('niveau');
   }
 
-  /** Ouvre les cartes d'un niveau en attente (un niveau à la fois), puis les objets des coffres ouverts. */
+  /**
+   * Ouvre les cartes d'un niveau en attente (un niveau à la fois), puis les objets des coffres ouverts.
+   * À plusieurs, un joueur à terre les garde pour quand il sera relevé.
+   */
   private proposerCartes(): void {
     const etat = this.etat;
-    if (this.ecranCartes.ouvert || etat.issue !== null) return;
+    if (this.ecranCartes.ouvert || etat.issue !== null || etat.joueur.mort) return;
     if (etat.niveauxEnAttente === 0 && etat.choixCoffre.restants === 0) return;
     this.ecranPause.definir(false);
     if (etat.niveauxEnAttente === 0) {

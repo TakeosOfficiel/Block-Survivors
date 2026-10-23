@@ -146,6 +146,19 @@ export class Equipement {
       const j = Math.floor(Math.random() * (i + 1));
       [cartes[i], cartes[j]] = [cartes[j], cartes[i]];
     }
+    // Rien ne plaît : quelques émeraudes à la place, toujours en dernier
+    if (cartes[0].amelioration.type !== 'emeraudes') {
+      const nombre = ender ? r.emeraudesRefus.ender : r.emeraudesRefus.bois;
+      cartes.push({
+        amelioration: { type: 'emeraudes', nombre },
+        rarete: 'action',
+        nom: 'Ne rien prendre',
+        icone: OBJETS.emeraude.icone,
+        etiquette: 'Refuser',
+        description: `Laisser ces objets dans le coffre et repartir avec ${nombre} émeraudes.`,
+        lignes: [],
+      });
+    }
     return cartes;
   }
 
@@ -223,7 +236,7 @@ export class Equipement {
     this.passifs.calculer(this.etat.modificateurs);
     const gain = this.etat.modificateurs.pvMax - pvMaxAvant;
     j.pvMax += gain;
-    j.pv = gain > 0 ? j.pv + gain : Math.min(j.pv, j.pvMax);
+    j.pv = gain > 0 && !j.mort ? j.pv + gain : Math.min(j.pv, j.pvMax);
     this.arsenal.recalculer();
     this.effets = this.portes().flatMap((o) => {
       const effet = OBJETS_EQUIPEMENT[o.id].effet;

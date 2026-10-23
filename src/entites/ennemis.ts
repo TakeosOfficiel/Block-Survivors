@@ -773,7 +773,7 @@ export class Ennemis implements SourceEntites {
       e.x = borner(e.x, -limiteX, limiteX);
       e.z = borner(e.z, -limiteZ, limiteZ);
     } else {
-      carte.resoudreCollision(e.x, e.z, def.rayon, corrige);
+      carte.resoudreCollision(e.x, e.z, def.rayonDecor ?? def.rayon, corrige);
       // Projeté contre un mur : le recul s'arrête net (Lame lourde)
       const choc = (corrige.x - e.x) ** 2 + (corrige.z - e.z) ** 2 > 1e-4 && e.vx * e.vx + e.vz * e.vz > CONFIG.ennemis.chocMur ** 2;
       e.x = corrige.x;

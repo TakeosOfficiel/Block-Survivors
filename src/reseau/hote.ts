@@ -29,15 +29,17 @@ import { SuiviLocal } from './bandeau';
 import { Combattant, Commutateur, type PartageCombat } from './combattant';
 import type { CrochetsReseau, ElementsPartie } from './partie';
 import { enregistrerRecordsEquipe } from './records';
+import { Spectateur } from './spectateur';
+import { ecrireButin } from './butinRecu';
+import { ChiffresEnvoyes } from './chiffresRecus';
+import { ecrireEnnemis } from './ennemisRecus';
+import { ecrireProjectiles } from './projectilesRecus';
 import {
-  BITS_ACTIONS, ENNEMI_BLESSE, ENNEMI_BRULURE, ENNEMI_MORT, ENNEMI_POISON, ENNEMI_RALENTI, ENNEMI_SAIGNEMENT, Ecrivain,
-  JOUEUR_EN_CHOIX, JOUEUR_MORT, JOUEUR_PROTEGE, Lecteur, STYLES_CHIFFRES, TYPE_ENTREE, TYPE_INSTANTANE,
+  BITS_ACTIONS, Ecrivain, JOUEUR_EN_CHOIX, JOUEUR_MORT, JOUEUR_PROTEGE, Lecteur, TYPE_ENTREE, TYPE_INSTANTANE,
   carteValide, statistiquesReseau, type CarteJouee, type MessageFiable,
 } from './protocole';
 import type { ObservateurPartie, SessionReseau } from './session';
 
-/** Chiffres de dégâts retenus d'un envoi à l'autre. */
-const CAPACITE_CHIFFRES = 256;
 /** Sons d'un joueur distant qu'on n'entend pas chez l'hôte (ils concernent son corps à lui). */
 const SONS_PERSONNELS = new Set(['blessure_joueur', 'totem', 'orbe', 'emeraude', 'manger', 'niveau']);
 
@@ -58,12 +60,11 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
   /** Totems déjà vus consommés par chaque joueur distant, par k (l'hôte : jeu.ts s'en charge). */
   private readonly totemsVus = new Int32Array(REGLES_MULTIJOUEUR.joueursMax);
   private readonly suiviLocal = new SuiviLocal();
+  private readonly spectateur = new Spectateur();
   private cartesOuvertes = false;
   private readonly ecrivain = new Ecrivain(96 * 1024);
   private readonly lecteur = new Lecteur();
-  /** Chiffres de dégâts depuis le dernier envoi : x, y, z, valeur, style. */
-  private readonly chiffres = new Float32Array(CAPACITE_CHIFFRES * 5);
-  private nbChiffres = 0;
+  private readonly chiffres = new ChiffresEnvoyes();
   private numero = 0;
   private prochainEnvoi = 0;
   private prochainesStats = 0;
@@ -196,9 +197,11 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
       const c = this.combattants[i];
       if (c.parti) continue;
       if (maintenant - c.instantEntree > REGLES_MULTIJOUEUR.reseau.silenceEntrees) c.commandes.bits = 0;
-      // Protégé le temps de choisir ; au-delà (joueur absent, onglet en arrière-plan), plus de bouclier
-      c.tempsChoix = c.cartesEnAttente > 0 ? c.tempsChoix + dt : 0;
-      c.enChoix = c.cartesEnAttente > 0 && c.tempsChoix < REGLES_MULTIJOUEUR.choixCartes.delai + REGLES_MULTIJOUEUR.choixCartes.marge;
+      // Protégé le temps de choisir ; au-delà (joueur absent, onglet en arrière-plan), plus de bouclier.
+      // À terre, il ne choisit pas : ses cartes attendent qu'il soit relevé
+      const choisit = c.cartesEnAttente > 0 && !c.etatJoueur.mort;
+      c.tempsChoix = choisit ? c.tempsChoix + dt : 0;
+      c.enChoix = choisit && c.tempsChoix < REGLES_MULTIJOUEUR.choixCartes.delai + REGLES_MULTIJOUEUR.choixCartes.marge;
       if (c.enChoix) {
         c.etatJoueur.protection = Math.max(c.etatJoueur.protection, protection);
         c.commandes.bits = 0;
@@ -218,7 +221,7 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
   majArmes(dt: number): void {
     for (let i = 0; i < this.combattants.length; i++) {
       const c = this.combattants[i];
-      if (!c.parti && !c.enChoix) c.majArmes(dt);
+      if (!c.parti) c.majArmes(dt, !c.enChoix);
     }
   }
 
@@ -291,7 +294,9 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
     // La partie ne s'arrête plus pour les cartes : seul le joueur qui choisit se met à l'abri
     const etat = this.elements.etat;
     this.cartesOuvertes = cartesOuvertes;
-    this.pauseLocale = etat.issue === null && (cartesOuvertes || etat.niveauxEnAttente > 0 || etat.choixCoffre.restants > 0);
+    // Un joueur à terre ne choisit pas : ses cartes attendent qu'il soit relevé
+    const enAttente = !etat.joueur.mort && (etat.niveauxEnAttente > 0 || etat.choixCoffre.restants > 0);
+    this.pauseLocale = etat.issue === null && (cartesOuvertes || enAttente);
     return 1;
   }
 
@@ -312,13 +317,7 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
   }
 
   surDegats(x: number, y: number, z: number, valeur: number, style: StyleChiffre): void {
-    if (this.nbChiffres >= CAPACITE_CHIFFRES) return;
-    const o = this.nbChiffres++ * 5;
-    this.chiffres[o] = x;
-    this.chiffres[o + 1] = y;
-    this.chiffres[o + 2] = z;
-    this.chiffres[o + 3] = valeur;
-    this.chiffres[o + 4] = STYLES_CHIFFRES.indexOf(style);
+    this.chiffres.ajouter(x, y, z, valeur, style);
   }
 
   // --- Messages des joueurs ------------------------------------------------
@@ -378,7 +377,9 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
   avantImage(dtReel: number): void {
     this.dtReel = dtReel;
     const reanimation = this.reanimations[0] / REGLES_MULTIJOUEUR.reanimation.duree;
-    if (this.suiviLocal.maj(this.cartesOuvertes, this.commutateur.local.joueur, reanimation)) this.elements.choisirCarte();
+    const local = this.commutateur.local.joueur;
+    const suivi = this.spectateur.maj(local, this.combattants, this.elements.entrees, this.elements.cameraJeu);
+    if (this.suiviLocal.maj(this.cartesOuvertes, local, reanimation, suivi)) this.elements.choisirCarte();
   }
 
   majVisuelOmbres(ombres: Ombres): void {
@@ -420,13 +421,13 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
       this.ecrireInstantane(c);
       this.session.envoyerDonnees(this.ecrivain.contenu(), c.info.index);
     }
-    this.nbChiffres = 0;
+    this.chiffres.vider();
   }
 
   /** Ce que voit le joueur `c` : l'équipe entière, puis ce qui est à moins de `rayonEnvoi` de lui. */
   private ecrireInstantane(c: Combattant): void {
     const w = this.ecrivain;
-    const { etat, ennemis, orbes, objets, coffres } = this.elements;
+    const { etat, ennemis } = this.elements;
     const cx = c.etatJoueur.x;
     const cz = c.etatJoueur.z;
     const r2 = REGLES_MULTIJOUEUR.reseau.rayonEnvoi ** 2;
@@ -465,98 +466,11 @@ export class PartieHote implements CrochetsReseau, ObservateurPartie, EquipeJoue
       w.u8(Math.min(255, j.viesUtilisees));
     }
 
-    // Ennemis
-    let compte = w.reserver16();
-    let n = 0;
-    const pool = ennemis.pool;
-    for (let i = 0; i < pool.nombre && w.reste > 16 * 1024; i++) {
-      const e = pool.elements[i];
-      if ((e.x - cx) ** 2 + (e.z - cz) ** 2 > r2) continue;
-      const comportement = e.definition.comportement;
-      w.u32(e.id);
-      w.u8(e.indexType);
-      w.coordonnee(e.x);
-      w.coordonnee(e.z);
-      w.angle(e.angle);
-      w.part(e.pvMax > 0 ? e.pv / e.pvMax : 0);
-      w.u8((e.mort >= 0 ? ENNEMI_MORT : 0) | (e.blessure > 0 ? ENNEMI_BLESSE : 0) | (e.brulure.cumuls > 0 ? ENNEMI_BRULURE : 0)
-        | (e.poison.cumuls > 0 ? ENNEMI_POISON : 0) | (e.saignement.cumuls > 0 ? ENNEMI_SAIGNEMENT : 0)
-        | (e.ralentiTemps > 0 || e.enracine > 0 ? ENNEMI_RALENTI : 0));
-      w.part(comportement.type === 'explosif' && e.meche > 0 ? e.meche / comportement.duree : 0);
-      w.u8(e.mort >= 0 ? Math.min(255, Math.round(e.mort * 100)) : 0);
-      w.u8(Math.min(255, Math.round(e.vitesseSol * 16)));
-      n++;
-    }
-    w.ecrire16(compte, n);
-
-    // Orbes d'XP, objets au sol et coffres
-    compte = w.reserver16();
-    n = 0;
-    for (let i = 0; i < orbes.pool.nombre && w.reste > 12 * 1024; i++) {
-      const o = orbes.pool.elements[i];
-      if ((o.x - cx) ** 2 + (o.z - cz) ** 2 > r2) continue;
-      w.coordonnee(o.x);
-      w.coordonnee(o.z);
-      w.u16(Math.min(65535, Math.round(o.valeur)));
-      n++;
-    }
-    w.ecrire16(compte, n);
-    compte = w.reserver16();
-    n = 0;
-    for (let i = 0; i < objets.pool.nombre && w.reste > 8 * 1024; i++) {
-      const o = objets.pool.elements[i];
-      if ((o.x - cx) ** 2 + (o.z - cz) ** 2 > r2) continue;
-      w.u8(o.indexType);
-      w.coordonnee(o.x);
-      w.coordonnee(o.z);
-      w.u8(Math.min(255, o.valeur));
-      n++;
-    }
-    w.ecrire16(compte, n);
-    w.u16(coffres.ouverts);
-    compte = w.reserver16();
-    n = 0;
-    for (let i = 0; i < coffres.pool.nombre && w.reste > 6 * 1024; i++) {
-      const o = coffres.pool.elements[i];
-      w.u8(o.indexType);
-      w.coordonnee(o.x);
-      w.coordonnee(o.z);
-      w.angle(o.angle);
-      w.f32(o.ouvert);
-      n++;
-    }
-    w.ecrire16(compte, n);
-
-    // Flèches et projectiles des ennemis
-    compte = w.reserver16();
-    n = 0;
-    const projectiles = this.elements.projectilesEnnemis.pool;
-    for (let i = 0; i < projectiles.nombre && w.reste > 2 * 1024; i++) {
-      const p = projectiles.elements[i];
-      if ((p.x - cx) ** 2 + (p.z - cz) ** 2 > r2) continue;
-      w.u8(p.indexRendu);
-      w.coordonnee(p.x);
-      w.u8(Math.min(255, Math.round(p.definition.hauteur * 32)));
-      w.coordonnee(p.z);
-      w.angle(Math.atan2(p.vx, p.vz));
-      n++;
-    }
-    w.ecrire16(compte, n);
-
-    // Chiffres de dégâts
-    compte = w.reserver16();
-    n = 0;
-    for (let i = 0; i < this.nbChiffres && n < REGLES_MULTIJOUEUR.reseau.chiffresMax && w.reste > 64; i++) {
-      const o = i * 5;
-      if ((this.chiffres[o] - cx) ** 2 + (this.chiffres[o + 2] - cz) ** 2 > r2) continue;
-      w.coordonnee(this.chiffres[o]);
-      w.u8(Math.min(255, Math.round(this.chiffres[o + 1] * 16)));
-      w.coordonnee(this.chiffres[o + 2]);
-      w.f32(this.chiffres[o + 3]);
-      w.u8(this.chiffres[o + 4]);
-      n++;
-    }
-    w.ecrire16(compte, n);
+    // Ce qui l'entoure
+    ecrireEnnemis(w, ennemis, cx, cz, r2);
+    ecrireButin(w, this.elements, cx, cz, r2);
+    ecrireProjectiles(w, this.elements.projectilesEnnemis, cx, cz, r2);
+    this.chiffres.ecrire(w, cx, cz, r2);
   }
 
   private bitsLocaux(): number {

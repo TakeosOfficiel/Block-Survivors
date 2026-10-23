@@ -262,8 +262,14 @@ export interface DefinitionEnnemi extends ApparenceEntite {
   readonly resistanceRecul?: number;
   /** Objet toujours lâché à la mort (en plus des tirages au sort). */
   readonly butin?: IdObjet;
-  /** Trop grand pour être gêné par le décor : traverse les obstacles. */
+  /** Vole : traverse les obstacles (bords de l'arène exceptés). */
   readonly ignoreObstacles?: boolean;
+  /**
+   * Rayon (blocs) contre le décor, s'il diffère de `rayon` : un boss, plus
+   * large qu'un passage, suit le joueur partout où il passe (son modèle
+   * déborde un peu sur les murs) sans jamais les traverser.
+   */
+  readonly rayonDecor?: number;
   /** Araignées : pas ralenties par les toiles, comme en jeu. */
   readonly traverseToiles?: boolean;
   /** Présent pour les boss : affichage de leur barre de vie. */
@@ -1007,6 +1013,8 @@ export interface ReglesEquipement {
   readonly chanceRenfort: number;
   /** Émeraudes offertes quand il n'y a plus rien à proposer. */
   readonly emeraudesConsolation: number;
+  /** Émeraudes de la carte « Ne rien prendre », toujours proposée avec les objets d'un coffre. */
+  readonly emeraudesRefus: { readonly bois: number; readonly ender: number };
 }
 
 // ---------------------------------------------------------------------------

@@ -5,6 +5,23 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.48.0] — 2026-10-23
+
+### Nouveautés
+- **Coffres : « Ne rien prendre »** : aucun objet ne vous plaît ? Une 4e carte laisse les objets dans le coffre et rapporte quelques émeraudes (3 pour un coffre en bois, 6 pour un coffre de l'Ender).
+- **Mode spectateur (multijoueur)** : mort pour de bon, vous restez dans la partie. La caméra suit un allié encore debout ; les touches gauche et droite passent d'un allié à l'autre.
+
+### Corrections
+- **Boss** : ils ne traversent plus les murs. Ils contournent le décor comme les autres monstres et vous suivent partout où vous passez, même dans les couloirs étroits. Ils apparaissent toujours à un endroit d'où ils peuvent vous rejoindre.
+- **Joueur à terre (multijoueur)** :
+  - plus de cartes de niveau ni de coffre tant qu'il est à terre : elles l'attendent et s'ouvrent dès qu'il est relevé ;
+  - plus aucun soin non plus (la Pomme dorée rendait des cœurs sans relever le joueur).
+- **Attaques figées (multijoueur)** : les flèches et sorts déjà lancés par un joueur qui tombe, ou qui choisit ses cartes, restaient immobiles chez les autres. Ils vont maintenant au bout de leur course.
+- **Flèches saccadées (multijoueur)** : chez les joueurs qui rejoignent, les flèches des squelettes avançaient par à-coups. Elles avancent maintenant de façon fluide, comme chez l'hôte.
+
+### Technique
+- Code réseau découpé : chaque partie des instantanés (ennemis, butin, projectiles, chiffres de dégâts) a son module, écriture côté hôte et lecture côté joueur réunies. `hote.ts` et `client.ts` sont plus courts.
+
 ## [0.47.3] — 2026-10-23
 
 ### Corrections

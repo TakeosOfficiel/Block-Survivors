@@ -38,6 +38,8 @@ export class CameraJeu implements DetecteurVisibilite {
   /** Intensité de la secousse (0 à 1). */
   private secousse = 0;
   private tempsSecousse = 0;
+  /** Point suivi à la place du joueur (multijoueur : spectateur d'un allié), null : le joueur. */
+  cible: { readonly x: number; readonly z: number } | null = null;
   /** Faux : les secousses sont ignorées (option du joueur). */
   secoussesActives = true;
   distance: number = CONFIG.camera.distance;
@@ -92,7 +94,7 @@ export class CameraJeu implements DetecteurVisibilite {
     const c = CONFIG.camera;
     const molette = this.entrees.consommerMolette();
     this.entrees.consommerSouris(this.souris);
-    const j = this.etat.joueur;
+    const j = this.cible ?? this.etat.joueur;
 
     if (this.mode === 'dessus') {
       if (molette !== 0) {

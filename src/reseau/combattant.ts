@@ -337,11 +337,17 @@ export class Combattant {
     this.flux.maj(this.etatJoueur.x, this.etatJoueur.z);
   }
 
-  /** Armes et talents (après les ennemis, qui ont reconstruit leur grille). */
-  majArmes(dt: number): void {
+  /**
+   * Armes et talents (après les ennemis, qui ont reconstruit leur grille).
+   * `tirer` faux (il choisit ses cartes) : plus de nouvelle attaque, mais celles
+   * déjà lancées vont au bout (à terre, l'arsenal ne tire de toute façon plus).
+   */
+  majArmes(dt: number, tirer: boolean): void {
     const avant = this.partage.commutateur.vers(this.profil);
-    this.arsenal.maj(dt);
-    this.profil.mecaniques.maj(dt);
+    if (tirer) {
+      this.arsenal.maj(dt);
+      this.profil.mecaniques.maj(dt);
+    }
     this.projectiles.maj(dt);
     this.invocations.maj(dt);
     this.foudre.maj(dt);

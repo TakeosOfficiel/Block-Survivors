@@ -222,4 +222,6 @@ export const REGLES_EQUIPEMENT: ReglesEquipement = {
   ender: { poids: { rare: 45, epique: 40, legendaire: 15 } },
   chanceRenfort: 0.25,
   emeraudesConsolation: 15,
+  // « Ne rien prendre » : toujours proposé, bien moins que le prix d'un coffre
+  emeraudesRefus: { bois: 3, ender: 6 },
 };

@@ -193,16 +193,16 @@ export class Ameliorations {
         const pvMaxAvant = this.etat.modificateurs.pvMax;
         this.passifs.ameliorer(amelioration.id);
         this.passifs.calculer(this.etat.modificateurs);
-        // Les cœurs gagnés arrivent pleins
+        // Les cœurs gagnés arrivent pleins (vides pour un joueur à terre : seule la réanimation le relève)
         const gainPv = this.etat.modificateurs.pvMax - pvMaxAvant;
         j.pvMax += gainPv;
-        j.pv += gainPv;
+        if (!j.mort) j.pv += gainPv;
         this.arsenal.recalculer();
         break;
       }
       case 'soin': {
         const avant = j.pv;
-        j.pv = Math.min(j.pvMax, j.pv + PROGRESSION.soin.pv);
+        if (!j.mort) j.pv = Math.min(j.pvMax, j.pv + PROGRESSION.soin.pv);
         this.etat.stats.pvSoignes += j.pv - avant;
         break;
       }

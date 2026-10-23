@@ -28,6 +28,9 @@ export class SuiviLocal {
     document.body.append(this.element);
   }
 
+  /** Allié suivi en spectateur, tel qu'affiché. */
+  private spectateurAffiche: string | null = null;
+
   signalerConnexionPerdue(): void {
     this.connexionPerdue = true;
   }
@@ -36,7 +39,11 @@ export class SuiviLocal {
    * Une image : met le bandeau à jour ; renvoie vrai quand le temps de choix
    * des cartes est écoulé (une carte doit être prise d'office).
    */
-  maj(cartesOuvertes: boolean, j: EtatJoueur, reanimation: number): boolean {
+  /**
+   * `spectateur` : pseudo de l'allié que suit la caméra, une fois mort pour de
+   * bon (null : aucun).
+   */
+  maj(cartesOuvertes: boolean, j: EtatJoueur, reanimation: number, spectateur: string | null = null): boolean {
     const delai = REGLES_MULTIJOUEUR.choixCartes.delai;
     // Horloge réelle : le délai reste juste même quand les images ralentissent
     const maintenant = performance.now();
@@ -46,13 +53,14 @@ export class SuiviLocal {
     const r = REGLES_MULTIJOUEUR.reanimation;
     let code = RIEN;
     if (this.connexionPerdue) code = CONNEXION_PERDUE * 1000;
-    else if (j.mort && j.tempsMort >= r.aTerre) code = MORT * 1000;
+    else if (j.mort && j.tempsMort >= r.aTerre) code = MORT * 1000 + (spectateur === null ? 0 : 1);
     else if (j.mort && reanimation > 0) code = REANIMATION * 1000 + Math.floor(reanimation * 10) * 10;
     else if (j.mort) code = A_TERRE * 1000 + Math.ceil(r.aTerre - j.tempsMort);
     else if (cartesOuvertes) code = CHOIX * 1000 + Math.max(0, Math.ceil(delai - tempsChoix));
-    if (code !== this.affiche) {
+    if (code !== this.affiche || spectateur !== this.spectateurAffiche) {
       this.affiche = code;
-      this.element.textContent = texte(code);
+      this.spectateurAffiche = spectateur;
+      this.element.textContent = texte(code, spectateur ?? '');
       this.element.classList.toggle('cache', code === RIEN);
     }
     if (tempsChoix < delai) return false;
@@ -61,11 +69,13 @@ export class SuiviLocal {
   }
 }
 
-function texte(code: number): string {
+function texte(code: number, spectateur: string): string {
   const valeur = code % 1000;
   switch (Math.floor(code / 1000)) {
     case CONNEXION_PERDUE: return 'Connexion avec l\'hôte perdue';
-    case MORT: return 'Vous êtes mort : vos alliés continuent sans vous';
+    case MORT: return valeur === 0
+      ? 'Vous êtes mort : vos alliés continuent sans vous'
+      : `Spectateur : vous suivez ${spectateur} (← → pour changer)`;
     case REANIMATION: return `Réanimation : ${valeur} %`;
     case A_TERRE: return `À terre ! Un allié doit rester près de vous pour vous relever (${valeur} s)`;
     case CHOIX: return `Choisissez une carte : la partie continue autour de vous (${valeur} s)`;

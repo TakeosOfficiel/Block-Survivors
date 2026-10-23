@@ -288,7 +288,10 @@ export function carteValide(c: CarteJouee): boolean {
     case 'renfort': return IDS_OBJETS_EQUIPEMENT.includes(c.id);
     case 'remplacer': return IDS_OBJETS_EQUIPEMENT.includes(c.id) && Number.isInteger(c.index) && c.index >= 0 && c.index < REGLES_EQUIPEMENT.bagues;
     // Les émeraudes sont communes : seul le sac de consolation, jamais un autre montant
-    case 'emeraudes': return c.nombre === REGLES_EQUIPEMENT.emeraudesConsolation;
+    case 'emeraudes': {
+      const r = REGLES_EQUIPEMENT;
+      return c.nombre === r.emeraudesConsolation || c.nombre === r.emeraudesRefus.bois || c.nombre === r.emeraudesRefus.ender;
+    }
     default: return false;
   }
 }

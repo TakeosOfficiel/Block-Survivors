@@ -45,6 +45,7 @@ export class PanneauOptions {
   private readonly boutonDegats = element<HTMLButtonElement>('option-degats');
   private readonly boutonCompteur = element<HTMLButtonElement>('option-compteur');
   private readonly boutonVue = element<HTMLButtonElement>('option-vue');
+  private readonly boutonEffetsAllies = element<HTMLButtonElement>('option-effets-allies');
   private readonly options: Options;
   private readonly appliquer: (options: Options) => void;
   private surFermeture: (() => void) | null = null;
@@ -92,6 +93,7 @@ export class PanneauOptions {
     });
     this.boutonCompteur.addEventListener('click', () => this.modifier((o) => { o.compteurDegats = !o.compteurDegats; }));
     this.boutonVue.addEventListener('click', () => this.modifier(vueSuivante));
+    this.boutonEffetsAllies.addEventListener('click', () => this.modifier((o) => { o.effetsAllies = !o.effetsAllies; }));
     element<HTMLButtonElement>('options-fermer').addEventListener('click', () => this.fermer());
     this.brancherSauvegarde();
     // Enregistré avant les autres écrans : Échap ferme d'abord les options
@@ -170,6 +172,7 @@ export class PanneauOptions {
     this.boutonDegats.textContent = `Chiffres des dégâts : ${o.chiffresDegats ? 'OUI' : 'NON'}`;
     this.boutonCompteur.textContent = `Compteur de dégâts (Tab) : ${o.compteurDegats ? 'OUI' : 'NON'}`;
     this.boutonVue.textContent = `Vue (F5) : ${LIBELLES_VUES[o.vue]}`;
+    this.boutonEffetsAllies.textContent = `Effets des autres joueurs (multi) : ${o.effetsAllies ? 'OUI' : 'NON'}`;
   }
 
   private readonly surTouche = (e: KeyboardEvent): void => {

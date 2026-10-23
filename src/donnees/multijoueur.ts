@@ -11,6 +11,24 @@ export const REGLES_MULTIJOUEUR = {
     pvEnnemis: 0.25,
     pvBoss: 0.7,
   },
+  /** Joueur tombé à 0 PV (après le totem) : à terre, un allié peut le relever. */
+  reanimation: {
+    /** s à terre avant d'être mort pour de bon. */
+    aTerre: 30,
+    /** Distance (blocs) et temps (s) qu'un allié doit rester près de lui. */
+    rayon: 1.6,
+    duree: 3,
+    /** Part des PV max rendus, puis s d'invincibilité. */
+    pv: 0.3,
+    protection: 2,
+  },
+  /** Joueur qui choisit ses cartes : la partie continue pour les autres, lui est protégé. */
+  choixCartes: {
+    /** s de protection renouvelées à chaque pas tant qu'il choisit. */
+    protection: 0.25,
+    /** s entre deux gerbes de particules autour de lui (son bouclier). */
+    periodeBouclier: 0.35,
+  },
   reseau: {
     /** Instantanés envoyés par seconde à chaque joueur. */
     instantanesParSeconde: 15,
@@ -22,6 +40,8 @@ export const REGLES_MULTIJOUEUR = {
     silenceEntrees: 1,
     /** Chiffres de dégâts envoyés au plus par instantané. */
     chiffresMax: 48,
+    /** s entre deux envois du bilan de chaque joueur (son compteur de dégâts). */
+    periodeStats: 1,
   },
   prediction: {
     /** Part de l'écart avec l'hôte corrigée à chaque instantané (le reste aux suivants). */

@@ -20,6 +20,8 @@ export interface Options {
   compteurDegats: boolean;
   /** Vue de la caméra (touche F5). */
   vue: ModeVue;
+  /** Multijoueur : effets des armes des autres joueurs. */
+  effetsAllies: boolean;
 }
 
 export type ModeVue = 'dessus' | 'troisieme';
@@ -41,6 +43,7 @@ const PAR_DEFAUT: Readonly<Options> = {
   chiffresDegats: true,
   compteurDegats: true,
   vue: 'dessus',
+  effetsAllies: true,
 };
 
 /**
@@ -64,6 +67,7 @@ export function chargerOptions(): Options {
     if (typeof lu.chiffresDegats === 'boolean') options.chiffresDegats = lu.chiffresDegats;
     if (typeof lu.compteurDegats === 'boolean') options.compteurDegats = lu.compteurDegats;
     if (MODES_VUE.includes(lu.vue as ModeVue)) options.vue = lu.vue as ModeVue;
+    if (typeof lu.effetsAllies === 'boolean') options.effetsAllies = lu.effetsAllies;
   }
   return options;
 }

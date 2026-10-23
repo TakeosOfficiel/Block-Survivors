@@ -20,6 +20,7 @@ import { compilerModele } from '../modeles/compilation';
 import { creerPoseModele, ModeleInstancie, type PoseModele } from '../modeles/rendu';
 import type { Terrain } from '../monde/navigation';
 import { Pool } from '../utils/pool';
+import type { EquipeJoueurs } from './types';
 
 interface Coffre {
   indexType: number;
@@ -42,7 +43,8 @@ export class Coffres {
   private readonly terrain: Terrain;
   private readonly particules: Particules;
   private readonly retours: Retours;
-  private readonly pool: Pool<Coffre>;
+  /** Public pour le multijoueur : l'hôte le lit, le client le remplit d'après l'hôte. */
+  readonly pool: Pool<Coffre>;
   private readonly rendus: ModeleInstancie[];
   private readonly pose: PoseModele;
   /** Index des parties du couvercle et du loquet (elles pivotent ensemble). */
@@ -58,7 +60,9 @@ export class Coffres {
   private prochainSeuil = REGLES_COFFRES.tues.premier;
   private intervalle = REGLES_COFFRES.tues.intervalle;
   /** Coffres payants déjà ouverts (le prix monte à chacun). */
-  private ouverts = 0;
+  ouverts = 0;
+  /** Multijoueur (hôte) : n'importe quel joueur de l'équipe ouvre les coffres. */
+  equipe: EquipeJoueurs | null = null;
   // Résultat de trouverCase (évite d'allouer un objet)
   private caseX = 0;
   private caseZ = 0;
@@ -130,7 +134,9 @@ export class Coffres {
         }
         continue;
       }
-      if (j.mort || (c.x - j.x) ** 2 + (c.z - j.z) ** 2 > r.rayonOuverture * r.rayonOuverture) continue;
+      const k = this.equipe ? this.equipe.plusProche(c.x, c.z) : -1;
+      const ouvreur = this.equipe && k >= 0 ? this.equipe.joueur(k) : j;
+      if (ouvreur.mort || (c.x - ouvreur.x) ** 2 + (c.z - ouvreur.z) ** 2 > r.rayonOuverture * r.rayonOuverture) continue;
       const prix = this.prix(c);
       if (etat.emeraudes < prix) continue;
       // Ouverture : on paie, le couvercle se lève, les cartes suivent

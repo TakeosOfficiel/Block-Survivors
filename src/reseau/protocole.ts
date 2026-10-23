@@ -7,7 +7,7 @@
  * Positions des entités en int16 au 1/64 de bloc, angles en int16.
  */
 import type { IdPersonnage } from '../donnees/personnages';
-import type { IssuePartie } from '../etat';
+import type { IssuePartie, StatistiquesPartie } from '../etat';
 import type { StyleChiffre } from '../effets/chiffresDegats';
 import type { Amelioration } from '../progression/ameliorations';
 import type { BonusTalents } from '../progression/sauvegarde';
@@ -20,6 +20,8 @@ export interface InfoJoueur {
   readonly personnage: IdPersonnage;
   readonly skin: ChoixSkin;
   readonly brasFins: boolean;
+  /** Bonus permanents (sauvegarde multi du joueur) : chacun simule les armes des autres pour leurs effets. */
+  readonly bonus: BonusTalents;
 }
 
 /** Bilan commun envoyé à la fin de la partie (les tableaux typés en listes). */
@@ -51,9 +53,18 @@ export type MessageFiable =
   | { type: 'pret' }
   /** Hôte → tous : tout le monde est prêt, la partie commence. */
   | { type: 'depart' }
-  /** Joueur → hôte : carte choisie à une montée de niveau. */
+  /** Joueur → hôte : carte choisie (montée de niveau ou coffre). */
   | { type: 'carte'; amelioration: Amelioration }
-  | { type: 'fin'; issue: Exclude<IssuePartie, null>; stats: StatistiquesReseau };
+  /** Hôte → tous : la carte choisie par le joueur `index` (chacun garde l'arsenal des autres à jour). */
+  | { type: 'carteJouee'; index: number; amelioration: Amelioration }
+  /** Hôte → tous : un coffre ouvert, des cartes pour tout le monde. */
+  | { type: 'coffre'; nombre: number; titre: string }
+  /** Hôte → un joueur : son bilan (compteur de dégâts), régulièrement et à la fin. */
+  | { type: 'stats'; stats: StatistiquesReseau }
+  | { type: 'fin'; issue: Exclude<IssuePartie, null>; stats: StatistiquesReseau }
+  /** Joueur → hôte : « Continuer sans fin » après la victoire ; hôte → tous : la partie reprend. */
+  | { type: 'continuer' }
+  | { type: 'reprise' };
 
 /** Premier octet des messages `rapide`. */
 export const TYPE_ENTREE = 1;
@@ -62,12 +73,11 @@ export const TYPE_INSTANTANE = 2;
 /** Bits des touches de déplacement dans une entrée. */
 export const BITS_ACTIONS = { haut: 1, bas: 2, gauche: 4, droite: 8 } as const;
 
-/** Drapeaux de l'en-tête d'un instantané. */
-export const INSTANTANE_PAUSE = 1;
-
 /** Drapeaux d'un joueur dans un instantané. */
 export const JOUEUR_MORT = 1;
 export const JOUEUR_PROTEGE = 2;
+/** Choisit ses cartes : protégé, ignoré des ennemis, ses armes au repos. */
+export const JOUEUR_EN_CHOIX = 4;
 
 /** Drapeaux d'un ennemi dans un instantané. */
 export const ENNEMI_MORT = 1;
@@ -205,4 +215,40 @@ export class Lecteur {
   part(): number {
     return this.u8() / 255;
   }
+}
+
+/** Bilan d'un joueur, en listes (JSON). */
+export function statistiquesReseau(s: StatistiquesPartie): StatistiquesReseau {
+  return {
+    tuesParType: Array.from(s.tuesParType),
+    degatsParArme: Array.from(s.degatsParArme),
+    coupsParArme: Array.from(s.coupsParArme),
+    critiquesParArme: Array.from(s.critiquesParArme),
+    plusGrosCoupParArme: Array.from(s.plusGrosCoupParArme),
+    tuesParArme: Array.from(s.tuesParArme),
+    acquisitionArme: Array.from(s.acquisitionArme),
+    degatsSubis: s.degatsSubis,
+    pvSoignes: s.pvSoignes,
+    xpTotale: s.xpTotale,
+    emeraudesRamassees: s.emeraudesRamassees,
+    coffresOuverts: s.coffresOuverts,
+    bossVaincus: s.bossVaincus,
+  };
+}
+
+/** Recopie un bilan reçu dans celui de la partie. */
+export function appliquerStatistiques(s: StatistiquesPartie, r: StatistiquesReseau): void {
+  s.tuesParType.set(r.tuesParType);
+  s.degatsParArme.set(r.degatsParArme);
+  s.coupsParArme.set(r.coupsParArme);
+  s.critiquesParArme.set(r.critiquesParArme);
+  s.plusGrosCoupParArme.set(r.plusGrosCoupParArme);
+  s.tuesParArme.set(r.tuesParArme);
+  s.acquisitionArme.set(r.acquisitionArme);
+  s.degatsSubis = r.degatsSubis;
+  s.pvSoignes = r.pvSoignes;
+  s.xpTotale = r.xpTotale;
+  s.emeraudesRamassees = r.emeraudesRamassees;
+  s.coffresOuverts = r.coffresOuverts;
+  s.bossVaincus = r.bossVaincus;
 }

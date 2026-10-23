@@ -119,10 +119,58 @@ for (const [k, invite] of invites.entries()) {
     const e = jeu.etat;
     const ids = [];
     for (let i = 0; i < jeu.ennemis.pool.nombre; i++) ids.push(jeu.ennemis.pool.elements[i].id);
-    return { arsenal: jeu.arsenal.armes.map((x) => `${x.id}:${x.rang}`).join(','), temps: e.tempsJeu.toFixed(1), tues: e.ennemisTues, niveau: e.joueur.niveau, x: e.joueur.x.toFixed(2), z: e.joueur.z.toFixed(2), pv: e.joueur.pv.toFixed(1), ennemis: ids.length, ids };
+    let degats = 0;
+    for (const d of e.stats.degatsParArme) degats += d;
+    return {
+      arsenal: jeu.arsenal.armes.map((x) => `${x.id}:${x.rang}`).join(','),
+      autres: jeu.reseau.listeAutres.map((c) => c.arsenal.armes.map((x) => `${x.id}:${x.rang}`).join(',')),
+      compteurDegats: Math.round(degats), temps: e.tempsJeu.toFixed(1), tues: e.ennemisTues, niveau: e.joueur.niveau, x: e.joueur.x.toFixed(2), z: e.joueur.z.toFixed(2), pv: e.joueur.pv.toFixed(1), ennemis: ids.length, ids };
   });
   const communs = etat.ids.filter((id) => etatHote.ids.includes(id)).length;
   console.log(`INVITÉ ${k + 1}`, JSON.stringify({ ...etat, ids: undefined, communsAvecHote: communs }));
 }
 for (let i = 0; i < N; i++) await pages[i].screenshot({ path: `${DOSSIER}/joueur${i}.png` });
+
+// Coffre ouvert chez l'hôte : le joueur 1 reçoit aussi ses cartes (choisies d'office par le test)
+if (process.env.COFFRE) {
+  await hote.evaluate(() => {
+    const etat = window.blockSurvivors.jeu.etat;
+    etat.choixCoffre.restants += 1;
+    etat.choixCoffre.titre = 'Coffre !';
+  });
+  await hote.waitForFunction(() => window.blockSurvivors.jeu.reseau.combattants[0].cartesEnAttente === 0, null, { timeout: 60000 });
+  console.log('COFFRE : carte du joueur 1 reçue par l\'hôte');
+}
+
+// Mode sans fin : victoire, l'hôte continue, le joueur 1 reprend aussi
+if (process.env.SANS_FIN) {
+  await hote.evaluate(() => { window.blockSurvivors.jeu.etat.tempsJeu = 15 * 60; });
+  await invites[0].waitForFunction(() => window.blockSurvivors.jeu.etat.issue === 'victoire', null, { timeout: 120000 });
+  console.log('SANS FIN : victoire reçue par le joueur 1');
+  await hote.evaluate(() => window.blockSurvivors.jeu.continuerSansFin());
+  await invites[0].waitForFunction(() => window.blockSurvivors.jeu.etat.issue === null && window.blockSurvivors.jeu.etat.sansFin, null, { timeout: 60000 });
+  console.log('SANS FIN : le joueur 1 continue avec l\'hôte');
+}
+
+// Réanimation : le joueur 1 tombe à côté de l'hôte, qui doit le relever
+if (process.env.REANIMATION) {
+  await hote.evaluate(() => {
+    const jeu = window.blockSurvivors.jeu;
+    const c = jeu.reseau.combattants[0];
+    c.joueur.invincible = false;
+    const j = c.etatJoueur;
+    j.x = jeu.etat.joueur.x + 0.8;
+    j.z = jeu.etat.joueur.z;
+    j.pv = 0;
+    j.mort = true;
+    j.tempsMort = 0;
+  });
+  await attendre(1500);
+  const pendant = await invites[0].evaluate(() => ({ mort: window.blockSurvivors.jeu.etat.joueur.mort, bandeau: document.querySelector('.reseau-alerte:not(.cache)')?.textContent ?? '' }));
+  console.log('RÉANIMATION pendant', JSON.stringify(pendant));
+  await hote.waitForFunction(() => !window.blockSurvivors.jeu.reseau.combattants[0].etatJoueur.mort, null, { timeout: 120000 });
+  await attendre(1500);
+  const apres = await invites[0].evaluate(() => ({ mort: window.blockSurvivors.jeu.etat.joueur.mort, pv: window.blockSurvivors.jeu.etat.joueur.pv }));
+  console.log('RÉANIMATION après', JSON.stringify(apres));
+}
 await navigateur.close();

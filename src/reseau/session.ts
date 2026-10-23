@@ -45,8 +45,6 @@ export class SessionReseau {
   joueurs: InfoJoueur[] = [];
   /** Identifiant de l'arène choisie par l'hôte. */
   arene = '';
-  /** Hôte : bonus permanents de chaque joueur distant, par index. */
-  readonly bonus = new Map<number, BonusTalents>();
   /** Appelé à chaque changement du salon (pour l'écran). */
   surChangement: () => void = () => {};
   /** Joueur : appelé quand l'hôte lance la partie ; avec la raison quand la connexion se perd. */
@@ -72,7 +70,7 @@ export class SessionReseau {
   static heberger(profil: ProfilReseau, arene: string): SessionReseau {
     const session = new SessionReseau('hote', profil);
     session.arene = arene;
-    session.joueurs = [{ index: 0, pseudo: profil.pseudo, personnage: profil.personnage, skin: profil.skin, brasFins: profil.brasFins }];
+    session.joueurs = [{ index: 0, pseudo: profil.pseudo, personnage: profil.personnage, skin: profil.skin, brasFins: profil.brasFins, bonus: profil.bonus }];
     return session;
   }
 
@@ -194,7 +192,6 @@ export class SessionReseau {
       surFermeture: () => {
         if (index < 0) return;
         this.pairs.delete(index);
-        this.bonus.delete(index);
         this.joueurs = this.joueurs.filter((j) => j.index !== index);
         this.partie?.surDepart(index);
         this.surPrets?.();
@@ -216,9 +213,8 @@ export class SessionReseau {
     while (this.pairs.has(index)) index++;
     if (index >= REGLES_MULTIJOUEUR.joueursMax) return refuser('La partie est complète');
     this.pairs.set(index, pair);
-    this.bonus.set(index, m.bonus);
     this.joueurs.push({
-      index, pseudo: String(m.pseudo).slice(0, 16), personnage: m.personnage, skin: m.skin, brasFins: m.brasFins === true,
+      index, pseudo: String(m.pseudo).slice(0, 16), personnage: m.personnage, skin: m.skin, brasFins: m.brasFins === true, bonus: m.bonus,
     });
     this.joueurs.sort((a, b) => a.index - b.index);
     pair.envoyer({ type: 'accueil', index } satisfies MessageFiable);

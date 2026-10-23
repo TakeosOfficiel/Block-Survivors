@@ -389,7 +389,7 @@ export class Jeu implements CallbacksBoucle, Retours {
       etat: this.etat, terrain: this.terrain, scene, camera: rendu.camera, cameraJeu: this.camera, textures, entrees: this.entrees,
       joueur: this.joueur, cible, mecaniques: this.mecaniques, ennemis: this.ennemis, projectilesEnnemis: this.projectilesEnnemis,
       orbes: this.orbes, objets: this.objets, particules: this.particules, chiffres: this.chiffres, retours: this,
-      conclure: () => this.conclure(),
+      coffres: this.coffres, conclure: () => this.conclure(), continuerSansFin: () => this.continuerSansFin(),
     }) : null;
     this.rendu.preparerOmbres();
     this.boucle = new Boucle(this);
@@ -440,6 +440,7 @@ export class Jeu implements CallbacksBoucle, Retours {
 
   /** Options modifiables en cours de partie. */
   appliquerOptions(options: Options): void {
+    this.reseau?.appliquerOptions(options);
     this.hud.afficherFps = options.afficherFps;
     this.camera.secoussesActives = options.secousses;
     if (options.vue !== this.camera.vue) this.camera.definirMode(options.vue);
@@ -467,9 +468,17 @@ export class Jeu implements CallbacksBoucle, Retours {
   // --- CallbacksBoucle ---------------------------------------------------
 
   simuler(dt: number): void {
-    // À plusieurs, un joueur qui a rejoint ne simule que sa marche : le reste vient de l'hôte
+    // À plusieurs, celui qui choisit ses cartes reste sur place, armes au repos (la partie continue)
+    const pauseLocale = this.reseau?.pauseLocale === true;
+    // À plusieurs, un joueur qui a rejoint ne simule que sa marche et l'effet des armes : le reste vient de l'hôte
     if (this.reseau?.client) {
       this.reseau.simulerClient(dt);
+      if (!pauseLocale) {
+        this.arsenal.maj(dt);
+        this.mecaniques.maj(dt);
+      }
+      this.majSystemesArmes(dt);
+      this.reseau.majArmes(dt);
       this.particules.maj(dt);
       this.chiffres.maj(dt);
       return;
@@ -478,18 +487,31 @@ export class Jeu implements CallbacksBoucle, Retours {
       this.etat.tempsJeu += dt;
       this.verifierFin();
     }
-    this.joueur.maj(dt);
+    if (!pauseLocale) this.joueur.maj(dt);
     this.reseau?.majJoueurs(dt);
     this.terrain.flux.maj(this.etat.joueur.x, this.etat.joueur.z);
     this.directeur.maj(dt * (this.reseau?.facteurApparitions ?? 1));
     this.directeurBoss.maj();
     this.directeurMiniBoss.maj();
     this.ennemis.maj(dt);           // reconstruit la grille utilisée par les armes
-    this.arsenal.maj(dt);
-    this.mecaniques.maj(dt);
+    if (!pauseLocale) {
+      this.arsenal.maj(dt);
+      this.mecaniques.maj(dt);
+    }
     this.orbes.maj(dt);
     this.objets.maj(dt);
     this.coffres.maj(dt);
+    this.majSystemesArmes(dt);
+    this.reseau?.majArmes(dt);
+    this.projectilesEnnemis.maj(dt);
+    this.particules.maj(dt);
+    this.chiffres.maj(dt);
+    this.traiterResurrection();
+    this.reseau?.finPas(dt);
+  }
+
+  /** Projectiles, invocations et effets des armes du joueur. */
+  private majSystemesArmes(dt: number): void {
     this.projectilesJoueur.maj(dt);
     this.invocations.maj(dt);
     this.foudre.maj(dt);
@@ -503,12 +525,6 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.ricochets.maj(dt);
     this.pluies.maj(dt);
     this.pieges.maj(dt);
-    this.reseau?.majArmes(dt);
-    this.projectilesEnnemis.maj(dt);
-    this.particules.maj(dt);
-    this.chiffres.maj(dt);
-    this.traiterResurrection();
-    this.reseau?.finPas();
   }
 
   /** Après une résurrection (totem) : les ennemis proches sont repoussés, gerbe de particules. */
@@ -648,6 +664,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.directeurMiniBoss.reprendre();
     this.ecranFin.masquer();
     this.hud.alerter('Mode sans fin : tenez le plus longtemps possible !', 4);
+    this.reseau?.surContinuer();
   }
 
   /** Laisse la chute ou la victoire se jouer, puis affiche le bilan. */
@@ -682,7 +699,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     const titre = coffre ? etat.choixCoffre.titre : `Niveau ${etat.joueur.niveau - etat.niveauxEnAttente + 1} !`;
     this.ecranCartes.ouvrir(titre, this.ameliorations.tirer(), (carte: Carte) => {
       this.ameliorations.appliquer(carte.amelioration);
-      if (!coffre) this.reseau?.surCarte(carte.amelioration);
+      this.reseau?.surCarte(carte.amelioration);
       if (coffre) etat.choixCoffre.restants--;
       else etat.niveauxEnAttente--;
     }, {

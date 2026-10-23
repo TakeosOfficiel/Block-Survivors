@@ -46,15 +46,17 @@ import type { Ennemis } from '../entites/ennemis';
 import { Joueur, type CommandesJoueur } from '../entites/joueur';
 import type { Orbes } from '../entites/orbes';
 import type { ProjectilesEnnemis } from '../entites/projectilesEnnemis';
-import { creerEtatPartie, type EtatJoueur, type EtatPartie, type TalentsPartie } from '../etat';
+import { creerEtatPartie, type EtatJoueur, type EtatPartie, type StatistiquesPartie, type TalentsPartie } from '../etat';
 import type { CarteMonde } from '../monde/carte';
 import { ChampDeFlux } from '../monde/navigation';
 import { Ameliorations } from '../progression/ameliorations';
 import { creerModificateurs, cumulerModificateurs } from '../progression/modificateurs';
 import { Passifs } from '../progression/passifs';
-import type { BonusTalents } from '../progression/sauvegarde';
 import { BITS_ACTIONS, type InfoJoueur } from './protocole';
-import { apparenceDistante, positionDepart } from './apparence';
+import { apparenceDistante, positionDepart, texteEtiquette } from './apparence';
+import { IDS_ARMES } from '../donnees/armes';
+import { REGLES_MULTIJOUEUR } from '../donnees/multijoueur';
+import { GERBES } from '../donnees/particules';
 
 /** Ce qui change d'un joueur à l'autre dans l'état de la partie. */
 export interface ProfilCombat {
@@ -65,6 +67,36 @@ export interface ProfilCombat {
   idPersonnage: IdPersonnage;
   /** Talents branchés sur les coups portés aux ennemis. */
   mecaniques: Talents;
+  /** Son bilan (dégâts par arme…) ; les chiffres de l'équipe (ennemis tués, XP, boss) sont communs. */
+  stats: StatistiquesPartie;
+}
+
+/**
+ * Bilan d'un joueur distant : ses propres dégâts, coups et soins, mais les
+ * ennemis tués, l'XP, les émeraudes, les coffres et les boss restent ceux de
+ * l'équipe (mêmes tableaux, valeurs lues et écrites dans `equipe`).
+ */
+function creerStatistiquesJoueur(equipe: StatistiquesPartie): StatistiquesPartie {
+  const n = IDS_ARMES.length;
+  const stats = {
+    tuesParType: equipe.tuesParType,
+    degatsParArme: new Float64Array(n),
+    coupsParArme: new Int32Array(n),
+    critiquesParArme: new Int32Array(n),
+    plusGrosCoupParArme: new Float64Array(n),
+    tuesParArme: new Int32Array(n),
+    acquisitionArme: new Float64Array(n).fill(-1),
+    degatsSubis: 0,
+    pvSoignes: 0,
+  } as StatistiquesPartie;
+  for (const cle of ['xpTotale', 'emeraudesRamassees', 'coffresOuverts', 'bossVaincus'] as const) {
+    Object.defineProperty(stats, cle, {
+      get: () => equipe[cle],
+      set: (v: number) => { equipe[cle] = v; },
+      enumerable: true,
+    });
+  }
+  return stats;
 }
 
 /** L'état de la partie, champs en lecture seule compris modifiables (commutation). */
@@ -83,7 +115,7 @@ export class Commutateur {
     this.ennemis = ennemis;
     this.local = {
       joueur: etat.joueur, modificateurs: etat.modificateurs, talents: etat.talents,
-      personnage: etat.personnage, idPersonnage: etat.idPersonnage, mecaniques: mecaniquesLocales,
+      personnage: etat.personnage, idPersonnage: etat.idPersonnage, mecaniques: mecaniquesLocales, stats: etat.stats,
     };
     this.actuel = this.local;
   }
@@ -98,6 +130,7 @@ export class Commutateur {
     e.talents = profil.talents;
     e.personnage = profil.personnage;
     e.idPersonnage = profil.idPersonnage;
+    e.stats = profil.stats;
     this.ennemis.definirTalents(profil.mecaniques);
     this.actuel = profil;
     return avant;
@@ -140,8 +173,14 @@ export class Combattant {
   readonly arsenal: Arsenal;
   readonly passifs: Passifs;
   readonly ameliorations: Ameliorations;
-  /** Montées de niveau dont il n'a pas encore choisi la carte. */
+  /** Hôte : cartes (niveaux, coffres) qu'il n'a pas encore choisies. */
   cartesEnAttente = 0;
+  /** Choisit ses cartes : protégé, ignoré des ennemis, ses armes au repos. */
+  enChoix = false;
+  /** À terre : progression de sa réanimation (0 à 1). */
+  reanimation = 0;
+  private texteAffiche = '';
+  private minuterieBouclier = 0;
   /** Numéro de sa dernière entrée reçue, et quand (temps réel, s). */
   derniereEntree = 0;
   instantEntree = 0;
@@ -166,8 +205,9 @@ export class Combattant {
   private readonly pluies: Pluies;
   private readonly pieges: Pieges;
 
-  constructor(info: InfoJoueur, bonusTalents: BonusTalents, partage: PartageCombat, retours: Retours) {
+  constructor(info: InfoJoueur, partage: PartageCombat, retours: Retours) {
     this.info = info;
+    const bonusTalents = info.bonus;
     this.partage = partage;
     const { etat, carte, ennemis, scene, textures } = partage;
     const personnage = PERSONNAGES[info.personnage];
@@ -185,7 +225,10 @@ export class Combattant {
     const talents: TalentsPartie = { armes: cumulerBonusArmes(bonusTalents.bonusArmes), mecaniques: bonusTalents.mecaniques };
     const commutateur = partage.commutateur;
     // Les mécaniques sont créées une fois l'état commuté (leur constructeur le lit)
-    const provisoire: ProfilCombat = { joueur, modificateurs, talents, personnage, idPersonnage: info.personnage, mecaniques: commutateur.local.mecaniques };
+    const provisoire: ProfilCombat = {
+      joueur, modificateurs, talents, personnage, idPersonnage: info.personnage, mecaniques: commutateur.local.mecaniques,
+      stats: creerStatistiquesJoueur(commutateur.local.stats),
+    };
     const avant = commutateur.vers(provisoire);
     const mecaniques = new Talents(etat);
     this.profil = { ...provisoire, mecaniques };
@@ -287,20 +330,34 @@ export class Combattant {
     return porte;
   }
 
-  /** Carte choisie par le joueur à une montée de niveau. */
+  /** Carte choisie par le joueur (montée de niveau ou coffre). */
   appliquerCarte(amelioration: Parameters<Ameliorations['appliquer']>[0]): void {
     const avant = this.partage.commutateur.vers(this.profil);
     this.ameliorations.appliquer(amelioration);
     this.partage.commutateur.vers(avant);
   }
 
-  // --- Affichage (chez l'hôte) --------------------------------------------
+  // --- Affichage ----------------------------------------------------------
 
-  majVisuelOmbres(ombres: Ombres): void {
+  /** Modèle, étiquette (état du joueur), bouclier pendant le choix des cartes ; `effets` : ses armes aussi. */
+  majVisuelOmbres(ombres: Ombres, dtReel: number, effets: boolean): void {
     const avant = this.partage.commutateur.vers(this.profil);
     this.joueur.majVisuel(ombres);
     const j = this.etatJoueur;
-    this.etiquette.placer(j.x, this.joueur.hauteur, j.z, !j.mort);
+    const texte = texteEtiquette(this.info.pseudo, j, this.enChoix, this.reanimation);
+    if (texte !== this.texteAffiche) {
+      this.texteAffiche = texte;
+      this.etiquette.ecrire(texte, j.mort ? '#ff8080' : this.enChoix ? '#ffd75e' : '#ffffff');
+    }
+    this.etiquette.placer(j.x, this.joueur.hauteur, j.z, !j.mort || j.tempsMort < REGLES_MULTIJOUEUR.reanimation.aTerre);
+    if (this.enChoix && (this.minuterieBouclier -= dtReel) <= 0) {
+      this.minuterieBouclier = REGLES_MULTIJOUEUR.choixCartes.periodeBouclier;
+      this.partage.particules.emettre(j.x, 1, j.z, GERBES.arcane);
+    }
+    if (!effets) {
+      this.partage.commutateur.vers(avant);
+      return;
+    }
     this.invocations.majVisuel(ombres);
     this.profil.mecaniques.majVisuel(ombres);
     this.chutes.majVisuel(ombres);

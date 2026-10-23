@@ -550,6 +550,12 @@ export class Ennemis implements SourceEntites {
     }
 
     // 3. Grille des ennemis vivants, utilisée par les armes et au pas suivant
+    this.reconstruireGrille();
+  }
+
+  /** Grille des ennemis vivants (aussi chez un joueur qui a rejoint, d'après les instantanés). */
+  reconstruireGrille(): void {
+    const elements = this.pool.elements;
     this.grille.vider();
     for (let i = 0; i < this.pool.nombre; i++) {
       if (elements[i].mort < 0) this.grille.inserer(i, elements[i].x, elements[i].z);

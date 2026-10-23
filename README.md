@@ -165,9 +165,15 @@ ne se joignent pas : réseau local, Tailscale ou ZeroTier dans ce cas.
 
 Chacun choisit son personnage ; la progression multi est **séparée du solo**
 (sauvegarde à part) : copie du personnage solo ou personnage neuf. XP et niveau
-communs, chacun choisit ses cartes (la partie attend tout le monde), les ennemis
-visent le joueur le plus proche et sont plus nombreux et plus robustes à
-plusieurs. Hôte et joueurs doivent avoir la même version du jeu.
+communs ; à chaque niveau et à chaque coffre ouvert (par n'importe qui), tout le
+monde choisit ses cartes, sans attendre les autres : celui qui choisit reste sur
+place, protégé par un bouclier, et les ennemis l'ignorent. Un joueur tombé reste
+**à terre** 30 s : un allié qui reste 3 s près de lui le relève ; défaite quand
+toute l'équipe est tombée. Les ennemis visent le joueur le plus proche et sont
+plus nombreux et plus robustes à plusieurs. Chacun voit les effets des armes de
+tous (option « Effets des autres joueurs » pour les couper) et son compteur de
+dégâts. « Continuer sans fin » après la victoire reprend la partie pour tous.
+Hôte et joueurs doivent avoir la même version du jeu.
 
 Test automatique (deux fenêtres Chromium) : `npm run dev`, puis
 `node scripts/test-multijoueur.mjs`.

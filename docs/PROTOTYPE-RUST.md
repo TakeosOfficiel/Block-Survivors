@@ -10,7 +10,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 0. Socle (espace de travail, fenêtre PC et web, CI) | fait : build web corrigé, page vérifiée (WebGL2, WebGPU) |
 | −1. Robot d'équilibrage, aléatoire à graine, pas fixe (TypeScript) | fait |
 | 0 bis. Prototype des cinq paris | fait : on continue, avec ajustements (voir la décision) ; 94 images/s mesurées sur le PC du joueur |
-| 1. Données et règles, sans rendu | en cours : données importées et validées (`bs-donnees`) ; simulation et robot à porter |
+| 1. Données et règles, sans rendu | en cours : données (`bs-donnees`), monde (`bs-monde`), partie, ennemis et toutes les armes (`bs-regles`) portés ; restent talents, cartes, équipement, robot |
 
 ---
 
@@ -353,8 +353,33 @@ l'import ; la CI échoue si `rust/donnees` n'est plus la copie exacte
 Repéré en passant (à corriger dans la version TypeScript, pas ici) : « fait 2 dégât de
 moins » (Collier du forgeron, niveau 3) devrait être au pluriel.
 
-### 1b. La simulation : à faire
+### 1b. La simulation : en cours
 
 Combat et armes (environ 5 600 lignes), ennemis et directeurs, progression (XP, cartes,
 coffres, équipement, talents, maîtrise, Collection), puis le robot, dont les statistiques
 doivent tomber dans la tolérance de celles de la version TypeScript (étape −1).
+
+| Morceau | État |
+|---|---|
+| 1b-1 Monde (`bs-monde` : arènes, collisions, champ de flux) | fait |
+| 1b-2 Partie, joueur, niveaux, passifs | fait |
+| 1b-3 Ennemis, boss et directeurs | fait |
+| 1b-4 Orbes d'XP, objets, coffres, butin | fait |
+| 1b-5 Arsenal et les 27 armes, alliés invoqués compris | fait |
+| 1b-6 Talents de classe et d'objets | à faire (tous neutres pour l'instant) |
+| 1b-7 Cartes d'amélioration et équipement | à faire |
+| 1b-8 Robot et comparaison aux références | à faire |
+
+Choix de portage (`bs-regles/src/combat/`) :
+
+- Le jeu TS garde des références d'objets ; le port garde des index. Une arme est
+  désignée par sa place dans l'arsenal (ses stats restent à jour quand elle monte de
+  rang). Un ennemi ou un allié visé est désigné par (index, identifiant) et retrouvé
+  par son identifiant s'il a changé de place dans le pool.
+- Les pools font comme `Pool.liberer` en TS (on échange avec le dernier) et sont
+  parcourus à l'envers, pour garder le même ordre et donc le même aléa.
+- Les effets purement visuels qui tirent dans l'aléa (éclairs, blocs soulevés, traces
+  des tornades, flèches de la pluie…) sont comptés, sans être affichés, pour que la
+  suite de nombres tirés reste celle du jeu TS.
+- Test `chaque_arme_frappe` : chaque arme seule, au rang maximum, pendant 60 s,
+  blesse des ennemis (l'esprit protecteur, qui ne fait que protéger, doit invoquer).

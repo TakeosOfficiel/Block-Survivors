@@ -5,6 +5,7 @@
 pub mod arme;
 pub mod feu;
 pub mod foudre;
+pub mod invocations;
 pub mod melee;
 pub mod pose;
 pub mod projectiles;
@@ -19,6 +20,7 @@ use crate::partie::Partie;
 use arme::ArmeEquipee;
 use feu::ArmesFeu;
 use foudre::Eclairs;
+use invocations::Invocations;
 use melee::Tourbillon;
 use pose::ArmesPosees;
 use projectiles::{ModeProjectile, ProjectilesJoueur};
@@ -71,6 +73,7 @@ pub struct SystemesArmes {
     pub feu: ArmesFeu,
     pub traque: ArmesTraque,
     pub posees: ArmesPosees,
+    pub invocations: Invocations,
 }
 
 impl SystemesArmes {
@@ -84,6 +87,7 @@ impl SystemesArmes {
             feu: ArmesFeu::default(),
             traque: ArmesTraque::default(),
             posees: ArmesPosees::default(),
+            invocations: Invocations::nouvelles(d.allies.allies.len()),
         }
     }
 }
@@ -131,7 +135,7 @@ impl Partie {
                 continue;
             }
             let mut minuterie = arme.minuterie - dt;
-            if minuterie < PAUSE_INVOCATIONS && self.vague_en_place(&arme) {
+            if minuterie < PAUSE_INVOCATIONS && self.vague_en_place(i, &arme) {
                 minuterie = PAUSE_INVOCATIONS;
             }
             self.arsenal.armes[i].minuterie = minuterie;
@@ -230,16 +234,5 @@ impl Partie {
             Mecanique::Piege { .. } => self.frapper_piege(i),
             Mecanique::Nova { sol_au_rang, .. } => self.frapper_nova(i, *sol_au_rang),
         }
-    }
-
-    // --- En attente des invocations ---
-
-    /// La vague d'alliés de cette arme est encore en place.
-    fn vague_en_place(&self, _arme: &ArmeEquipee) -> bool {
-        false
-    }
-    /// Invoque les alliés de l'arme `i` de l'arsenal ; renvoie leur nombre.
-    fn invoquer(&mut self, _i: usize) -> u32 {
-        0
     }
 }

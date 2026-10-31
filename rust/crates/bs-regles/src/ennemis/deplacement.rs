@@ -191,7 +191,7 @@ impl Partie {
         // Cible : l'allié qui l'a attiré s'il vit encore, sinon le joueur
         let mut cible = Cible::Joueur;
         if let Some((a, id)) = e.cible_allie {
-            if let Some((ax, az, rayon)) = self.allie_vivant(a, id) {
+            if let Some((k, ax, az, rayon)) = self.allie_vivant(a, id) {
                 let (ex, ez) = (ax - e.x, az - e.z);
                 let d = longueur(ex, ez);
                 let d = if d == 0.0 { 1e-6 } else { d };
@@ -201,7 +201,8 @@ impl Partie {
                 v.chemin_z = v.dz;
                 // La portée de contact est calculée pour le joueur : on compense la taille de l'allié
                 v.distance = (d - (rayon - rayon_joueur)).max(0.0);
-                cible = Cible::Allie(a);
+                cible = Cible::Allie(k);
+                self.ennemis.pool[index].cible_allie = Some((k, id));
             } else {
                 self.ennemis.pool[index].cible_allie = None;
             }

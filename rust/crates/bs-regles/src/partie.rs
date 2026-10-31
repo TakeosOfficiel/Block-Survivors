@@ -126,6 +126,7 @@ impl Partie {
         self.maj_coffres(dt);
         // Systèmes d'armes, dans l'ordre du jeu TS
         self.maj_projectiles_joueur(dt);
+        self.maj_invocations(dt);
         self.maj_foudre(dt);
         self.maj_fissures(dt);
         self.maj_chutes(dt);
@@ -181,17 +182,4 @@ impl Partie {
         self.repousser_ennemis(x, z, TOTEM_RAYON_RECUL, TOTEM_RECUL);
         self.ev.gerbe("totem", x, 1.2, z);
     }
-
-    // --- En attente des invocations (étape 1b-5) ---
-
-    /// Allié invoqué assez proche pour attirer un ennemi au corps à corps.
-    pub fn allie_provocateur(&mut self, _x: f32, _z: f32, _distance: f32) -> Option<(usize, u32)> {
-        None
-    }
-    /// Position et rayon de l'allié `a` s'il vit encore avec l'identifiant `id`.
-    pub fn allie_vivant(&self, _a: usize, _id: u32) -> Option<(f32, f32, f32)> {
-        None
-    }
-    pub fn blesser_allie(&mut self, _a: usize, _degats: f32) {}
-    pub fn blesser_allies_zone(&mut self, _x: f32, _z: f32, _rayon: f32, _degats: f32) {}
 }

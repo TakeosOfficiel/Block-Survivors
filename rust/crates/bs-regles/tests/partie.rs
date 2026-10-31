@@ -80,9 +80,11 @@ fn chaque_arme_frappe() {
     use bs_donnees::armes::Mecanique;
     let d = donnees();
     for (index, (id, arme)) in d.armes.iter().enumerate() {
-        if matches!(arme.mecanique, Mecanique::Invocation { .. }) {
-            continue;
-        }
+        // Les alliés de soutien protègent le joueur sans blesser
+        let soutien = match &arme.mecanique {
+            Mecanique::Invocation { allie, .. } => d.allies.allies[allie].soutien,
+            _ => false,
+        };
         let mut p = Partie::nouvelle(d, 0, 0, 3, false);
         p.joueur.invincible = true;
         p.arsenal.armes.clear();
@@ -92,6 +94,13 @@ fn chaque_arme_frappe() {
         }
         let degats = p.etat.stats.degats_par_arme[index];
         eprintln!("{id} : tués {}, dégâts {degats:.0}", p.etat.ennemis_tues);
-        assert!(degats > 0.0, "{id} n'a rien blessé");
+        if soutien {
+            assert!(
+                !p.armes.invocations.pool.is_empty(),
+                "{id} n'a rien invoqué"
+            );
+        } else {
+            assert!(degats > 0.0, "{id} n'a rien blessé");
+        }
     }
 }

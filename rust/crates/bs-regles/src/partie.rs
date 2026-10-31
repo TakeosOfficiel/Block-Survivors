@@ -127,7 +127,16 @@ impl Partie {
         // Systèmes d'armes, dans l'ordre du jeu TS
         self.maj_projectiles_joueur(dt);
         self.maj_foudre(dt);
+        self.maj_fissures(dt);
+        self.maj_chutes(dt);
         self.maj_tourbillon(dt);
+        self.maj_tornades(dt);
+        self.maj_novas(dt);
+        self.maj_meteores(dt);
+        self.maj_orbes_arcaniques(dt);
+        self.maj_ricochets(dt);
+        self.maj_pluies(dt);
+        self.maj_pieges(dt);
         self.maj_projectiles_ennemis(dt);
         self.traiter_resurrection();
     }

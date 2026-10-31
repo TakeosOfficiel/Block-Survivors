@@ -3,9 +3,13 @@
 //! `impl Partie` dans les modules voisins.
 
 pub mod arme;
+pub mod feu;
 pub mod foudre;
 pub mod melee;
+pub mod pose;
 pub mod projectiles;
+pub mod sol;
+pub mod traque;
 
 use bs_commun::maths::{atan2, cos, sin};
 use bs_donnees::Donnees;
@@ -13,9 +17,13 @@ use bs_donnees::armes::Mecanique;
 
 use crate::partie::Partie;
 use arme::ArmeEquipee;
+use feu::ArmesFeu;
 use foudre::Eclairs;
 use melee::Tourbillon;
+use pose::ArmesPosees;
 use projectiles::{ModeProjectile, ProjectilesJoueur};
+use sol::ArmesSol;
+use traque::ArmesTraque;
 
 /// s avant de réessayer une arme qui n'a trouvé aucune cible.
 const NOUVEL_ESSAI: f32 = 0.2;
@@ -59,6 +67,10 @@ pub struct SystemesArmes {
     pub angles_orbite: Vec<f32>,
     pub eclairs: Eclairs,
     pub tourbillon: Tourbillon,
+    pub sol: ArmesSol,
+    pub feu: ArmesFeu,
+    pub traque: ArmesTraque,
+    pub posees: ArmesPosees,
 }
 
 impl SystemesArmes {
@@ -68,6 +80,10 @@ impl SystemesArmes {
             angles_orbite: vec![0.0; d.armes.len()],
             eclairs: Eclairs::default(),
             tourbillon: Tourbillon::default(),
+            sol: ArmesSol::default(),
+            feu: ArmesFeu::default(),
+            traque: ArmesTraque::default(),
+            posees: ArmesPosees::default(),
         }
     }
 }
@@ -204,8 +220,15 @@ impl Partie {
             Mecanique::Orbite { .. } => true,
             Mecanique::Tourbillon { intervalle, .. } => self.frapper_tourbillon(i, *intervalle),
             Mecanique::Heurt { angle, renvoi } => self.frapper_heurt(&arme, *angle, *renvoi),
-            // Systèmes pas encore portés
-            _ => false,
+            Mecanique::Fissure { ecart, .. } => self.frapper_fissure(i, *ecart),
+            Mecanique::Chute { .. } => self.frapper_chute(i),
+            Mecanique::Tornade { .. } => self.frapper_tornade(i),
+            Mecanique::Meteore { .. } => self.frapper_meteore(i),
+            Mecanique::Orbes { .. } => self.frapper_orbes(i),
+            Mecanique::Ricochet { .. } => self.frapper_ricochet(i),
+            Mecanique::Pluie { .. } => self.frapper_pluie(i),
+            Mecanique::Piege { .. } => self.frapper_piege(i),
+            Mecanique::Nova { sol_au_rang, .. } => self.frapper_nova(i, *sol_au_rang),
         }
     }
 

@@ -1,0 +1,321 @@
+//! Armes qui poursuivent leur cible : orbes arcaniques (tournent, puis foncent) et
+//! flèches ricocheuses (port de orbesArcaniques.ts, ricochets.ts, sans les talents).
+//! Le jeu TS garde une référence vers l'ennemi visé ; ici on garde son index et son
+//! identifiant, et on le retrouve s'il a changé de place dans le pool.
+
+use bs_commun::maths::{cos, longueur, sin};
+use bs_donnees::armes::Mecanique;
+
+use super::tours;
+use crate::ennemis::Nature;
+use crate::partie::Partie;
+
+const ORBES_CAPACITE: usize = 32;
+const ORBES_VOL_MAX: f32 = 3.0;
+const ORBES_VITESSE_ORBITE: f32 = 3.0;
+const ORBES_RAYON_CONTACT: f32 = 0.45;
+const ORBES_DELAI_CONTACT: f32 = 0.5;
+
+const RICOCHET_CAPACITE: usize = 24;
+const RICOCHET_REBONDS_MAX: f32 = 6.0;
+const RICOCHET_VIE_MAX: f32 = 4.0;
+const RICOCHET_TOUCHES: usize = 8;
+
+/// Ennemi visé : index dans le pool et identifiant.
+type Cible = Option<(usize, u32)>;
+
+#[derive(Debug, Clone, Copy)]
+struct Orbe {
+    /// Position de l'arme dans l'arsenal.
+    arme: usize,
+    x: f32,
+    z: f32,
+    angle: f32,
+    temps: f32,
+    lance: bool,
+    cible: Cible,
+    facteur: f32,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Ricochet {
+    arme: usize,
+    x: f32,
+    z: f32,
+    cible: Cible,
+    degats: f32,
+    rebonds: f32,
+    touches: [u32; RICOCHET_TOUCHES],
+    nb_touches: usize,
+    vie: f32,
+}
+
+#[derive(Debug, Clone)]
+pub struct ArmesTraque {
+    orbes: Vec<Orbe>,
+    ricochets: Vec<Ricochet>,
+}
+
+impl Default for ArmesTraque {
+    fn default() -> Self {
+        Self {
+            orbes: Vec::with_capacity(ORBES_CAPACITE),
+            ricochets: Vec::with_capacity(RICOCHET_CAPACITE),
+        }
+    }
+}
+
+impl Partie {
+    /// Index actuel de l'ennemi visé s'il vit encore (il a pu changer de place dans le pool).
+    fn retrouver(&self, cible: Cible) -> Option<usize> {
+        let (i, id) = cible?;
+        let actifs = self.ennemis.actifs();
+        let i = if actifs.get(i).is_some_and(|e| e.id == id) {
+            i
+        } else {
+            actifs.iter().position(|e| e.id == id)?
+        };
+        actifs[i].vivant().then_some(i)
+    }
+
+    fn viser(&self, e: Option<usize>) -> Cible {
+        e.map(|i| (i, self.ennemis.pool[i].id))
+    }
+
+    pub(super) fn frapper_orbes(&mut self, i: usize) -> bool {
+        let s = self.arsenal.armes[i].stats;
+        let (jx, jz) = (self.etat.joueur.x, self.etat.joueur.z);
+        if self.ennemis.plus_proche(jx, jz, s.portee).is_none() {
+            return false;
+        }
+        let depart = (self.alea.tirer() * std::f64::consts::PI * 2.0) as f32;
+        for k in 0..tours(s.nombre) {
+            if self.armes.traque.orbes.len() >= ORBES_CAPACITE {
+                break;
+            }
+            let angle = depart + (k as f32 / s.nombre) * std::f32::consts::TAU;
+            self.armes.traque.orbes.push(Orbe {
+                arme: i,
+                x: jx + sin(angle) * s.zone,
+                z: jz + cos(angle) * s.zone,
+                angle,
+                temps: 0.0,
+                lance: false,
+                cible: None,
+                facteur: self.talent_facteur_declenchement(),
+            });
+        }
+        true
+    }
+
+    pub fn maj_orbes_arcaniques(&mut self, dt: f32) {
+        let (jx, jz) = (self.etat.joueur.x, self.etat.joueur.z);
+        let mut tampon = [0u32; 64];
+        let mut i = self.armes.traque.orbes.len();
+        while i > 0 {
+            i -= 1;
+            let mut o = self.armes.traque.orbes[i];
+            let arme = self.arsenal.armes[o.arme];
+            let s = arme.stats;
+            o.temps += dt;
+            let Mecanique::Orbes {
+                contact_au_rang,
+                contact,
+                ..
+            } = arme.def.mecanique
+            else {
+                self.armes.traque.orbes.swap_remove(i);
+                continue;
+            };
+            if o.temps > s.duree + ORBES_VOL_MAX {
+                self.armes.traque.orbes.swap_remove(i);
+                continue;
+            }
+
+            // Autour du joueur, puis lancée à la fin de sa durée
+            if !o.lance {
+                let a = o.angle + o.temps * ORBES_VITESSE_ORBITE;
+                o.x = jx + sin(a) * s.zone;
+                o.z = jz + cos(a) * s.zone;
+                if arme.rang as f32 >= contact_au_rang {
+                    let n = self
+                        .ennemis
+                        .chercher(o.x, o.z, ORBES_RAYON_CONTACT, &mut tampon);
+                    for &e in &tampon[..n] {
+                        let degats = s.degats * contact;
+                        self.blesser_avec_delai(
+                            e as usize,
+                            arme.index,
+                            ORBES_DELAI_CONTACT,
+                            degats,
+                            o.x,
+                            o.z,
+                            1.0,
+                        );
+                    }
+                }
+                if o.temps >= s.duree {
+                    o.lance = true;
+                }
+                self.armes.traque.orbes[i] = o;
+                continue;
+            }
+
+            let c = match self.retrouver(o.cible) {
+                Some(c) => c,
+                None => {
+                    let e = self
+                        .ennemi_au_hasard(o.x, o.z, s.portee)
+                        .or_else(|| self.ennemis.plus_proche(o.x, o.z, s.portee * 2.0));
+                    let Some(c) = e else {
+                        self.armes.traque.orbes.swap_remove(i);
+                        continue;
+                    };
+                    o.cible = self.viser(Some(c));
+                    c
+                }
+            };
+            let e = &self.ennemis.pool[c];
+            let (dx, dz) = (e.x - o.x, e.z - o.z);
+            let d = longueur(dx, dz);
+            if d <= e.def.rayon + ORBES_RAYON_CONTACT {
+                self.toucher(c, arme.index, &s, o.x, o.z, s.recul, o.facteur);
+                self.ev.gerbe("impactArcane", o.x, 1.0, o.z);
+                self.armes.traque.orbes.swap_remove(i);
+                continue;
+            }
+            let pas = d.min(s.vitesse * dt);
+            o.x += dx / d * pas;
+            o.z += dz / d * pas;
+            self.armes.traque.orbes[i] = o;
+        }
+    }
+
+    pub(super) fn frapper_ricochet(&mut self, i: usize) -> bool {
+        let s = self.arsenal.armes[i].stats;
+        let (jx, jz) = (self.etat.joueur.x, self.etat.joueur.z);
+        if self.ennemis.plus_proche(jx, jz, s.portee).is_none() {
+            return false;
+        }
+        for k in 0..tours(s.nombre) {
+            if self.armes.traque.ricochets.len() >= RICOCHET_CAPACITE {
+                break;
+            }
+            let cible = if k == 0 {
+                self.ennemis.plus_proche(jx, jz, s.portee)
+            } else {
+                self.ennemi_au_hasard(jx, jz, s.portee)
+            };
+            let cible = self.viser(cible);
+            self.armes.traque.ricochets.push(Ricochet {
+                arme: i,
+                x: jx,
+                z: jz,
+                cible,
+                degats: s.degats,
+                rebonds: RICOCHET_REBONDS_MAX.min(s.perforation),
+                touches: [0; RICOCHET_TOUCHES],
+                nb_touches: 0,
+                vie: RICOCHET_VIE_MAX,
+            });
+        }
+        true
+    }
+
+    /// Ennemi le plus proche à moins de `rayon` que la flèche n'a pas encore touché.
+    fn prochaine_cible(&mut self, f: &Ricochet, rayon: f32) -> Cible {
+        let mut tampon = [0u32; 64];
+        let n = self.ennemis.chercher(f.x, f.z, rayon, &mut tampon);
+        let mut meilleur = None;
+        let mut meilleure = f32::INFINITY;
+        for &k in &tampon[..n] {
+            let e = &self.ennemis.pool[k as usize];
+            if f.touches[..f.nb_touches].contains(&e.id) {
+                continue;
+            }
+            let d2 = (e.x - f.x) * (e.x - f.x) + (e.z - f.z) * (e.z - f.z);
+            if d2 < meilleure {
+                meilleure = d2;
+                meilleur = Some(k as usize);
+            }
+        }
+        self.viser(meilleur)
+    }
+
+    pub fn maj_ricochets(&mut self, dt: f32) {
+        let mut i = self.armes.traque.ricochets.len();
+        while i > 0 {
+            i -= 1;
+            let mut f = self.armes.traque.ricochets[i];
+            let arme = self.arsenal.armes[f.arme];
+            f.vie -= dt;
+            let Mecanique::Ricochet {
+                perte,
+                distance_rebond,
+                ..
+            } = arme.def.mecanique
+            else {
+                self.armes.traque.ricochets.swap_remove(i);
+                continue;
+            };
+            if f.vie <= 0.0 {
+                self.armes.traque.ricochets.swap_remove(i);
+                continue;
+            }
+            let c = match self.retrouver(f.cible) {
+                Some(c) => c,
+                None => {
+                    f.cible = self.prochaine_cible(&f, distance_rebond * 2.0);
+                    let Some((c, _)) = f.cible else {
+                        self.armes.traque.ricochets.swap_remove(i);
+                        continue;
+                    };
+                    c
+                }
+            };
+            let e = &self.ennemis.pool[c];
+            let (dx, dz) = (e.x - f.x, e.z - f.z);
+            let d = longueur(dx, dz);
+            let d = if d == 0.0 { 1e-6 } else { d };
+            let (dir_x, dir_z) = (dx / d, dz / d);
+            let pas = arme.stats.vitesse * dt;
+            if d <= pas + e.def.rayon {
+                f.x = e.x;
+                f.z = e.z;
+                let id = e.id;
+                let recul = arme.stats.recul;
+                self.blesser(
+                    c,
+                    f.degats,
+                    f.x - dir_x,
+                    f.z - dir_z,
+                    recul,
+                    Some(arme.index),
+                    Nature::Arme,
+                );
+                if f.nb_touches < RICOCHET_TOUCHES {
+                    f.touches[f.nb_touches] = id;
+                    f.nb_touches += 1;
+                }
+                self.ev.gerbe("impactFleche", f.x, 1.2, f.z);
+                self.ev.son("impact_fleche");
+                if f.rebonds <= 0.0 {
+                    self.armes.traque.ricochets.swap_remove(i);
+                    continue;
+                }
+                f.rebonds -= 1.0;
+                f.degats *= 1.0 - perte;
+                f.cible = self.prochaine_cible(&f, distance_rebond);
+                if f.cible.is_none() {
+                    self.armes.traque.ricochets.swap_remove(i);
+                    continue;
+                }
+                self.armes.traque.ricochets[i] = f;
+                continue;
+            }
+            f.x += dir_x * pas;
+            f.z += dir_z * pas;
+            self.armes.traque.ricochets[i] = f;
+        }
+    }
+}

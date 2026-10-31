@@ -73,3 +73,25 @@ fn armes_de_depart() {
         assert_eq!(p.arsenal.armes.len(), perso.armes_depart.len());
     }
 }
+
+/// Chaque arme (hors invocations), seule au rang maximal, blesse des ennemis en une minute.
+#[test]
+fn chaque_arme_frappe() {
+    use bs_donnees::armes::Mecanique;
+    let d = donnees();
+    for (index, (id, arme)) in d.armes.iter().enumerate() {
+        if matches!(arme.mecanique, Mecanique::Invocation { .. }) {
+            continue;
+        }
+        let mut p = Partie::nouvelle(d, 0, 0, 3, false);
+        p.joueur.invincible = true;
+        p.arsenal.armes.clear();
+        while p.ameliorer_arme(index) {}
+        for _ in 0..(60.0 / PAS_SIMULATION) as u32 {
+            p.pas(PAS_SIMULATION);
+        }
+        let degats = p.etat.stats.degats_par_arme[index];
+        eprintln!("{id} : tués {}, dégâts {degats:.0}", p.etat.ennemis_tues);
+        assert!(degats > 0.0, "{id} n'a rien blessé");
+    }
+}

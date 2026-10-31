@@ -14,6 +14,7 @@ publish = false
 bs-commun = { path = "crates/bs-commun" }
 block-survivors = { path = "crates/block-survivors" }
 bs-regles = { path = "crates/bs-regles" }
+bs-sauvegarde = { path = "crates/bs-sauvegarde" }
 libm = "0.2"
 # Fonctionnalités de Bevy listées une à une : pas d'audio de Bevy (le son passera par kira).
 # Le rendu web (WebGPU ou WebGL2, qui s'excluent) se choisit dans bs-web : d'où la liste

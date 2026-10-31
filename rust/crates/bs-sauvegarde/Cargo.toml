@@ -1,0 +1,21 @@
+[package]
+name = "bs-sauvegarde"
+description = "Fichiers .bssave (export/import de profils) : chiffrement AES-256-GCM, format JSON"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+aes-gcm = "0.10"
+sha2 = "0.10"
+base64 = "0.22"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+getrandom = "0.2"
+
+[dev-dependencies]
+serde_json = "1"
+
+[lints]
+workspace = true

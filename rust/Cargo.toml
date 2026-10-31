@@ -13,6 +13,7 @@ publish = false
 [workspace.dependencies]
 bs-commun = { path = "crates/bs-commun" }
 bs-donnees = { path = "crates/bs-donnees" }
+bs-monde = { path = "crates/bs-monde" }
 block-survivors = { path = "crates/block-survivors" }
 bs-regles = { path = "crates/bs-regles" }
 bs-sauvegarde = { path = "crates/bs-sauvegarde" }

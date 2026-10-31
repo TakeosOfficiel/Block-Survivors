@@ -1,0 +1,15 @@
+[package]
+name = "bs-monde"
+description = "Arènes : génération, carte de collision, champ de flux (aucun Bevy)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+bs-commun.workspace = true
+bs-donnees.workspace = true
+libm.workspace = true
+
+[lints]
+workspace = true

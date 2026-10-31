@@ -21,8 +21,13 @@ Une fenêtre Bevy avec un bloc qui tourne (fonctionnalités : rendu 2D et 3D, UI
 
 | Module | Brut | gzip -9 |
 |---|---|---|
-| `jeu-webgpu_bg.wasm` | 19 257 Ko | 6 469 Ko |
-| `jeu-webgl2_bg.wasm` | 19 186 Ko | 6 443 Ko |
+| `jeu-webgpu_bg.wasm` | 18 302 Ko | 6 111 Ko |
+| `jeu-webgl2_bg.wasm` | 19 155 Ko | 6 451 Ko |
+
+Premier build : le module WebGPU pesait autant que le WebGL2 (19 257 Ko) parce que la
+fonctionnalité Bevy `default_platform` active `webgl2` : le module WebGPU embarquait les
+deux. Corrigé en recopiant la liste de `default_platform` sans `webgl2` (ni Android) :
+−955 Ko bruts, −358 Ko en gzip pour WebGPU.
 
 Sans `wasm-opt`, la sortie de wasm-bindgen pèse 75 Mo : `wasm-opt` est indispensable.
 C'est déjà le socle de Bevy (rendu, UI, ECS) ; le jeu complet ajoutera surtout du code
@@ -42,7 +47,23 @@ Correction : `cargo install wasm-opt --version 0.116.1 --locked` (binaryen 116),
 
 ### La page dans Chromium (sans écran)
 
-À compléter (capture, rendu choisi, erreurs).
+Outils : `outils/page-web.mjs` (chargement, erreurs, capture) et `outils/pixels-webgpu.mjs`
+(capture du rendu WebGPU). Chromium sans GPU (SwiftShader, rendu sur le processeur).
+
+| Rendu | Démarrage | Erreurs | Image |
+|---|---|---|---|
+| WebGL2 | 1,7 s | aucune | `docs/captures/web-webgl2.png` : le bloc vert sur le ciel |
+| WebGPU | 0,6 s | aucune (adaptateur `BrowserWebGpu`) | `docs/captures/web-webgpu.png` : identique |
+
+- Les images/s mesurées (8 à 10) ne valent rien : c'est SwiftShader, sans carte graphique.
+  La mesure à 60 images/s se fera sur une vraie machine (pari 1).
+- Piège : la capture d'écran d'un canevas WebGPU sort **blanche** dans Chromium sans écran
+  (même sous Xvfb), y compris pour une page WebGPU de dix lignes qui efface en rouge ; ce
+  n'est pas Bevy. La capture WebGPU est donc lue dans la page (texture copiée juste après
+  l'envoi de l'image). Couleurs vérifiées : bloc (110, 169, 83), ciel (120, 166, 255),
+  comme en WebGL2.
+- Bevy signale en WebGPU logiciel : pas d'occlusion ambiante (SSAO, faute de textures de
+  stockage) ni de calcul pour les cartes d'environnement. Sans effet pour nous.
 
 ### CI GitHub (branche `rust`)
 

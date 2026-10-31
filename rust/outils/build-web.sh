@@ -18,9 +18,14 @@ for rendu in webgpu webgl2; do
     --no-default-features --features "$rendu"
   wasm-bindgen --target web --no-typescript --out-dir "$sortie" --out-name "jeu-$rendu" \
     "target/wasm32-unknown-unknown/$dossier/bs_web.wasm"
-  # Taille minimale pour la version publiée (si binaryen est installé)
+  # Taille minimale pour la version publiée (si binaryen est installé). Il faut binaryen 116
+  # ou plus (`cargo install wasm-opt --version 0.116.1`) : la version 108 d'Ubuntu casse la
+  # table des références de wasm-bindgen (« Table.grow(): failed to grow table »).
   if [ "$profil" = web ] && command -v wasm-opt >/dev/null; then
+    version=$(wasm-opt --version | grep -o '[0-9]\+' | head -1)
+    [ "$version" -ge 116 ] || { echo "wasm-opt $version trop ancien (116 au moins)" >&2; exit 1; }
     wasm-opt -Oz --enable-bulk-memory --enable-nontrapping-float-to-int --enable-sign-ext \
+      --enable-reference-types --enable-mutable-globals \
       -o "$sortie/jeu-$rendu.tmp.wasm" "$sortie/jeu-${rendu}_bg.wasm"
     mv "$sortie/jeu-$rendu.tmp.wasm" "$sortie/jeu-${rendu}_bg.wasm"
   fi

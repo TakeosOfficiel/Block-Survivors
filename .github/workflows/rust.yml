@@ -51,10 +51,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: rust
-      - name: Outils web (wasm-bindgen à la version du crate, binaryen)
+      - name: Outils web (wasm-bindgen à la version du crate, wasm-opt 116 : celui d'Ubuntu est trop ancien)
         run: |
           cargo install wasm-bindgen-cli --version 0.2.122 --locked
-          sudo apt-get install -y -q binaryen
+          cargo install wasm-opt --version 0.116.1 --locked
       - name: Build navigateur (WebGPU et WebGL2)
         run: outils/build-web.sh
 

@@ -13,11 +13,22 @@ publish = false
 [workspace.dependencies]
 bs-commun = { path = "crates/bs-commun" }
 block-survivors = { path = "crates/block-survivors" }
+bs-regles = { path = "crates/bs-regles" }
+libm = "0.2"
 # Fonctionnalités de Bevy listées une à une : pas d'audio de Bevy (le son passera par kira).
-# Le rendu web (WebGPU ou WebGL2, qui s'excluent) se choisit dans bs-web.
+# Le rendu web (WebGPU ou WebGL2, qui s'excluent) se choisit dans bs-web : d'où la liste
+# de `default_platform` recopiée sans « webgl2 » (sinon le module WebGPU embarque aussi
+# WebGL2) ni Android.
 bevy = { version = "0.18.1", default-features = false, features = [
     "default_app",
-    "default_platform",
+    "std",
+    "bevy_gilrs",
+    "bevy_winit",
+    "default_font",
+    "multi_threaded",
+    "x11",
+    "wayland",
+    "sysinfo_plugin",
     "3d_bevy_render",
     "2d_bevy_render",
     "ui_api",
@@ -26,7 +37,8 @@ bevy = { version = "0.18.1", default-features = false, features = [
 wasm-bindgen = "=0.2.122"
 
 [workspace.lints.rust]
-unsafe_code = "forbid"
+# « deny » (pas « forbid ») : seul le test d’allocation de bs-regles le lève, localement
+unsafe_code = "deny"
 
 [workspace.lints.clippy]
 # Les paramètres d'un système Bevy sont ses dépendances : longues listes normales

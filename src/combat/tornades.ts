@@ -23,6 +23,7 @@ import { borner, longueur } from '../utils/maths';
 import { Pool } from '../utils/pool';
 import type { ArmeEquipee } from './armeEquipee';
 import type { ContexteCombat } from './contexte';
+import { alea as tirer } from '../utils/aleatoire';
 
 interface Tornade {
   arme: ArmeEquipee | null;
@@ -148,7 +149,7 @@ export class Tornades {
       t.magma = false;
       t.zone = 1;
       t.duree = s.duree;
-      t.graine = Math.random() * 1000;
+      t.graine = tirer() * 1000;
       t.depuisTrace = Infinity;  // première brûlure dès l'apparition
     }
     return true;
@@ -231,11 +232,11 @@ export class Tornades {
     const trace = this.traces.acquerir();
     if (!trace || !t.arme) return;
     const c = CONFIG.armes.tornade.trace;
-    trace.x = t.x + (Math.random() - 0.5) * 0.3;
-    trace.z = t.z + (Math.random() - 0.5) * 0.3;
+    trace.x = t.x + (tirer() - 0.5) * 0.3;
+    trace.z = t.z + (tirer() - 0.5) * 0.3;
     trace.age = 0;
-    trace.taille = ((t.arme.stats.zone * t.zone) / 1.5) * c.taille * (0.85 + Math.random() * 0.3);
-    trace.rotation = Math.random() * Math.PI * 2;
+    trace.taille = ((t.arme.stats.zone * t.zone) / 1.5) * c.taille * (0.85 + tirer() * 0.3);
+    trace.rotation = tirer() * Math.PI * 2;
   }
 
   majVisuel(): void {

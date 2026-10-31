@@ -12,6 +12,7 @@ import { Pool } from '../utils/pool';
 import type { Ennemi } from '../entites/ennemi';
 import type { ArmeEquipee } from './armeEquipee';
 import type { ContexteCombat } from './contexte';
+import { alea } from '../utils/aleatoire';
 
 interface Eclair {
   points: Float32Array;   // (segments + 1) points x, y, z
@@ -169,9 +170,9 @@ export class Foudre {
     for (let s = 0; s <= f.segments; s++) {
       const t = s / f.segments;
       const ecart = s === 0 || s === f.segments ? 0 : 0.35;
-      e.points[s * 3] = x1 + (x2 - x1) * t + (Math.random() - 0.5) * 2 * ecart;
-      e.points[s * 3 + 1] = 1 + Math.sin(t * Math.PI) * 0.6 + (Math.random() - 0.5) * ecart;
-      e.points[s * 3 + 2] = z1 + (z2 - z1) * t + (Math.random() - 0.5) * 2 * ecart;
+      e.points[s * 3] = x1 + (x2 - x1) * t + (alea() - 0.5) * 2 * ecart;
+      e.points[s * 3 + 1] = 1 + Math.sin(t * Math.PI) * 0.6 + (alea() - 0.5) * ecart;
+      e.points[s * 3 + 2] = z1 + (z2 - z1) * t + (alea() - 0.5) * 2 * ecart;
     }
   }
 
@@ -185,9 +186,9 @@ export class Foudre {
     for (let s = 0; s <= f.segments; s++) {
       const t = s / f.segments;               // 0 = en haut, 1 = au sol
       const ecart = s === f.segments ? 0 : f.ecart * (1 - t * 0.7);
-      e.points[s * 3] = x + (Math.random() - 0.5) * 2 * ecart;
+      e.points[s * 3] = x + (alea() - 0.5) * 2 * ecart;
       e.points[s * 3 + 1] = f.hauteur * (1 - t);
-      e.points[s * 3 + 2] = z + (Math.random() - 0.5) * 2 * ecart;
+      e.points[s * 3 + 2] = z + (alea() - 0.5) * 2 * ecart;
     }
   }
 }

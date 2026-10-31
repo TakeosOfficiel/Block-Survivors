@@ -15,6 +15,7 @@ import type { ChoixEquipement } from './equipement';
 import type { EtatPartie } from '../etat';
 import { creerModificateurs, cumulerModificateurs } from './modificateurs';
 import type { Passifs } from './passifs';
+import { alea } from '../utils/aleatoire';
 
 export type Amelioration =
   | { readonly type: 'arme'; readonly id: IdArme }
@@ -173,7 +174,7 @@ export class Ameliorations {
     const possibles = this.ameliorationsPossibles();
     const cartes: Carte[] = [];
     while (cartes.length < nombre && possibles.length > 0) {
-      const [choix] = possibles.splice(Math.floor(Math.random() * possibles.length), 1);
+      const [choix] = possibles.splice(Math.floor(alea() * possibles.length), 1);
       cartes.push(this.decrire(choix));
     }
     if (cartes.length === 0) cartes.push(this.decrire({ type: 'soin' }));

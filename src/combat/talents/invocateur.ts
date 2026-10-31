@@ -24,6 +24,7 @@ import { Pool } from '../../utils/pool';
 import type { ArmeEquipee } from '../armeEquipee';
 import type { Allie } from '../invocations';
 import { indexArme, MecaniquesClasse, type Talents } from './talents';
+import { alea } from '../../utils/aleatoire';
 
 /** Valeurs des talents (provisoires), par rang quand il y en a deux. */
 const V = {
@@ -422,7 +423,7 @@ export class MecaniquesInvocateur extends MecaniquesClasse {
           const d = V.crocs.depart + k * V.crocs.ecart;
           c.x = j.x + Math.sin(angle) * d;
           c.z = j.z + Math.cos(angle) * d;
-          c.angle = angle + (Math.random() - 0.5) * 0.6;
+          c.angle = angle + (alea() - 0.5) * 0.6;
           c.t = -k * V.crocs.decalage;
           c.frappe = false;
         }

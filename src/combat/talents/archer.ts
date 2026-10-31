@@ -13,6 +13,7 @@ import type { NatureCoup } from '../../entites/ennemis';
 import { Pool } from '../../utils/pool';
 import type { ArmeEquipee } from '../armeEquipee';
 import { indexArme, MecaniquesClasse, type Talents } from './talents';
+import { alea } from '../../utils/aleatoire';
 
 /** Valeurs des talents (provisoires), par rang quand il y en a deux. */
 const V = {
@@ -87,8 +88,8 @@ export class MecaniquesArcher extends MecaniquesClasse {
       const k = ennemis.chercher(n.x, n.z, V.nuage.rayon, this.tampon);
       for (let q = 0; q < k; q++) this.empoisonner(ennemis.obtenir(this.tampon[q]), 1, n.arme);
       for (let q = 0; q < 6; q++) {
-        const a = Math.random() * Math.PI * 2;
-        const r = Math.sqrt(Math.random()) * V.nuage.rayon;
+        const a = alea() * Math.PI * 2;
+        const r = Math.sqrt(alea()) * V.nuage.rayon;
         particules.emettre(n.x + Math.sin(a) * r, 0.5, n.z + Math.cos(a) * r, GERBES.nuage);
       }
     }
@@ -185,7 +186,7 @@ export class MecaniquesArcher extends MecaniquesClasse {
     }
 
     // Venin : une part des flèches empoisonne
-    if (fleche && e.mort < 0 && Math.random() < t.valeur('venin', V.venin.chance)) this.empoisonner(e, 1, arme);
+    if (fleche && e.mort < 0 && alea() < t.valeur('venin', V.venin.chance)) this.empoisonner(e, 1, arme);
 
     // Exécutrice : les flèches achèvent un ennemi normal presque vaincu
     if (fleche && e.mort < 0 && !e.definition.boss && e.pv < V.executrice.seuil * e.pvMax && t.rang('executrice') > 0) {

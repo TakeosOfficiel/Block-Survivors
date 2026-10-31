@@ -86,6 +86,8 @@ import { vueSuivante, type PanneauOptions } from './ui/panneauOptions';
 import { element } from './ui/dom';
 import { brancherPartie, type CrochetsReseau } from './reseau/partie';
 import type { SessionReseau } from './reseau/session';
+import type { AccesRobot } from './robot/robot';
+import { alea } from './utils/aleatoire';
 
 /** Services créés avant la partie (dès le menu) et partagés avec elle. */
 export interface ServicesJeu {
@@ -484,6 +486,27 @@ export class Jeu implements CallbacksBoucle, Retours {
     this.rendu.definirShaders(options.shaders);
   }
 
+  /** Accès du robot d'équilibrage (src/robot) : pas fixes, cartes choisies sans écran. */
+  accesRobot(): AccesRobot {
+    return {
+      etat: this.etat,
+      entrees: this.entrees,
+      ennemis: this.ennemis,
+      orbes: this.orbes,
+      coffres: this.coffres,
+      carte: this.terrain.carte,
+      projectiles: this.projectilesEnnemis,
+      ameliorations: this.ameliorations,
+      equipement: this.equipement,
+      pas: (dt) => {
+        this.simuler(dt);
+        this.camera.majVisuel(dt, dt);
+      },
+      rendreInvincible: () => { this.joueur.invincible = true; },
+      dessiner: () => this.afficher(0, 0, 0),
+    };
+  }
+
   // --- Retours -----------------------------------------------------------
 
   son(id: IdSon, hauteur?: number): void {
@@ -819,7 +842,7 @@ export class Jeu implements CallbacksBoucle, Retours {
     const d = CONFIG.debug.distanceApparition;
     const j = this.etat.joueur;
     for (let essai = 0; essai < 16; essai++) {
-      const angle = Math.random() * Math.PI * 2;
+      const angle = alea() * Math.PI * 2;
       const x = j.x + Math.cos(angle) * d;
       const z = j.z + Math.sin(angle) * d;
       if (this.terrain.carte.bloqueMarche(x, z)) continue;

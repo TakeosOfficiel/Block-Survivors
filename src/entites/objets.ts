@@ -18,6 +18,7 @@ import { CONFIG } from '../config';
 import { longueur } from '../utils/maths';
 import { Pool } from '../utils/pool';
 import type { EquipeJoueurs } from './types';
+import { alea } from '../utils/aleatoire';
 
 interface Objet {
   indexType: number;
@@ -85,11 +86,11 @@ export class Objets {
     o.indexType = IDS_OBJETS.indexOf(id);
     o.x = x;
     o.z = z;
-    o.phase = Math.random() * 10;
+    o.phase = alea() * 10;
     o.aimante = false;
     o.vitesse = 0;
     const tas = OBJETS[id].emeraudes;
-    o.valeur = tas ? tas[0] + Math.floor(Math.random() * (tas[1] - tas[0] + 1)) : 0;
+    o.valeur = tas ? tas[0] + Math.floor(alea() * (tas[1] - tas[0] + 1)) : 0;
   }
 
   maj(dt: number): void {

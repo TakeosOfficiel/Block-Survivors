@@ -17,6 +17,7 @@ import type { Point } from '../monde/carte';
 import { Pool } from '../utils/pool';
 import type { ArmeEquipee } from './armeEquipee';
 import type { ContexteCombat } from './contexte';
+import { alea } from '../utils/aleatoire';
 
 interface Fissure {
   arme: ArmeEquipee | null;
@@ -169,11 +170,11 @@ export class Fissures {
       const b = this.blocs.acquerir();
       if (!b) break;
       const decalage = (k - (largeur - 1) / 2) * c.tailleBloc;
-      b.x = x + dirZ * decalage + (Math.random() - 0.5) * 0.25;
-      b.z = z - dirX * decalage + (Math.random() - 0.5) * 0.25;
+      b.x = x + dirZ * decalage + (alea() - 0.5) * 0.25;
+      b.z = z - dirX * decalage + (alea() - 0.5) * 0.25;
       b.age = 0;
-      b.rotation = Math.random() * Math.PI;
-      b.inclinaison = (Math.random() - 0.5) * 0.5;
+      b.rotation = alea() * Math.PI;
+      b.inclinaison = (alea() - 0.5) * 0.5;
     }
     particules.emettre(x, 0.4, z, GERBES.eboulis, this.texture);
 

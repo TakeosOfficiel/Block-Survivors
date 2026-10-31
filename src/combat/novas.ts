@@ -16,6 +16,7 @@ import { longueur } from '../utils/maths';
 import { Pool } from '../utils/pool';
 import type { ArmeEquipee } from './armeEquipee';
 import type { ContexteCombat } from './contexte';
+import { alea } from '../utils/aleatoire';
 
 interface Nova {
   arme: ArmeEquipee | null;
@@ -64,7 +65,7 @@ export class Novas {
     n.temps = 0;
     n.sol = arme.rang >= m.solAuRang;
     n.prochainSol = 0;
-    n.graine = Math.random() * 10;
+    n.graine = alea() * 10;
     const talents = this.contexte.talents;
     n.gel = talents.novaGel;
     n.facteur = talents.facteurDeclenchement * (n.gel ? CONFIG.armes.nova.zeroAbsolu.degats : 1);

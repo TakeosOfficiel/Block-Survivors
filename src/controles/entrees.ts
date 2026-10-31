@@ -71,6 +71,11 @@ export class Entrees {
     return false;
   }
 
+  /** Touche enfoncée ou relâchée sans clavier (robot d'équilibrage, src/robot). */
+  simulerTouche(code: string, enfoncee: boolean): void {
+    this.touches.set(code, enfoncee);
+  }
+
   /** Défilement accumulé depuis le dernier appel, puis remise à zéro. */
   consommerMolette(): number {
     const valeur = this.molette;

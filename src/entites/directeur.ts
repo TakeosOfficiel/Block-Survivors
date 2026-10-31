@@ -13,6 +13,7 @@ import { equipeVaincue, minutesSansFin, type EtatPartie } from '../etat';
 import type { Terrain } from '../monde/navigation';
 import { longueur } from '../utils/maths';
 import type { Ennemis } from './ennemis';
+import { alea } from '../utils/aleatoire';
 
 /** Ce qui sait dire si un point est visible à l'écran. */
 export interface DetecteurVisibilite {
@@ -63,8 +64,8 @@ export class DirecteurApparitions {
     const pv = interpoler(a.multiplicateurPv, t) * (1 + minutes * s.pvParMinute);
     const carte = this.terrain.carte;
     for (let i = 0; i < taille; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const r = Math.random() * a.dispersionGroupe;
+      const angle = alea() * Math.PI * 2;
+      const r = alea() * a.dispersionGroupe;
       let x = this.pointX + Math.cos(angle) * r;
       let z = this.pointZ + Math.sin(angle) * r;
       if (carte.bloqueMarche(x, z)) {
@@ -89,7 +90,7 @@ export class DirecteurApparitions {
     const temps = this.etat.tempsJeu;
     let total = 0;
     for (const e of population) if (e.depuis <= temps) total += e.poids;
-    let seuil = Math.random() * total;
+    let seuil = alea() * total;
     for (const e of population) {
       if (e.depuis > temps) continue;
       seuil -= e.poids;
@@ -109,8 +110,8 @@ export class DirecteurApparitions {
     const limiteZ = this.etat.arene.profondeur / 2 - 1;
     let meilleure = -1;
     for (let essai = 0; essai < CONFIG.ennemis.essaisApparition; essai++) {
-      const x = (Math.random() * 2 - 1) * limiteX;
-      const z = (Math.random() * 2 - 1) * limiteZ;
+      const x = (alea() * 2 - 1) * limiteX;
+      const z = (alea() * 2 - 1) * limiteZ;
       const distance = longueur(x - j.x, z - j.z);
       if (distance < APPARITIONS.distanceMin || carte.bloqueMarche(x, z) || !flux.atteignable(x, z)) continue;
       if (!this.vue.estVisible(x, z, 2)) {

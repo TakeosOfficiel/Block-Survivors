@@ -14,6 +14,7 @@ import { gagnerXp } from '../progression/niveaux';
 import { longueur } from '../utils/maths';
 import { Pool } from '../utils/pool';
 import type { EquipeJoueurs, SourceEntites } from './types';
+import { alea } from '../utils/aleatoire';
 
 interface Orbe {
   x: number;
@@ -91,7 +92,7 @@ export class Orbes implements SourceEntites, DepotXp {
     o.vitesse = 0;
     o.aimantee = false;
     o.valeur = valeur;
-    o.phase = Math.random() * 100;
+    o.phase = alea() * 100;
   }
 
   /** Attire vers le joueur les orbes à moins de `rayon` de (x, z) (Allay chanteur). */

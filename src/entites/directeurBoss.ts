@@ -15,6 +15,7 @@ import type { Terrain } from '../monde/navigation';
 import { longueur } from '../utils/maths';
 import type { DetecteurVisibilite } from './directeur';
 import type { Ennemis } from './ennemis';
+import { alea } from '../utils/aleatoire';
 
 /** Ce qui affiche l'alerte à l'écran. */
 export interface AfficheurAlerte {
@@ -129,8 +130,8 @@ export class DirecteurBoss {
     let z = j.z > 0 ? -limiteZ : limiteZ;
     let trouve = false;
     for (let essai = 0; essai < 64 && !trouve; essai++) {
-      const cx = (Math.random() * 2 - 1) * limiteX;
-      const cz = (Math.random() * 2 - 1) * limiteZ;
+      const cx = (alea() * 2 - 1) * limiteX;
+      const cz = (alea() * 2 - 1) * limiteZ;
       if (this.terrain.carte.bloqueMarche(cx, cz) || !this.terrain.flux.atteignable(cx, cz)) continue;
       const cache = longueur(cx - j.x, cz - j.z) > this.reglages.distance && !this.vue.estVisible(cx, cz, 3);
       if (cache || essai >= 48) {

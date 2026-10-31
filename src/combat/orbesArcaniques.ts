@@ -17,6 +17,7 @@ import { longueur } from '../utils/maths';
 import { Pool } from '../utils/pool';
 import type { ArmeEquipee } from './armeEquipee';
 import type { ContexteCombat } from './contexte';
+import { alea } from '../utils/aleatoire';
 
 interface Orbe {
   arme: ArmeEquipee | null;
@@ -57,7 +58,7 @@ export class OrbesArcaniques {
     const j = this.contexte.etat.joueur;
     if (!this.contexte.ennemis.plusProche(j.x, j.z, arme.stats.portee)) return false;
     const n = arme.stats.nombre;
-    const depart = Math.random() * Math.PI * 2;
+    const depart = alea() * Math.PI * 2;
     for (let k = 0; k < n; k++) {
       const o = this.orbes.acquerir();
       if (!o) break;

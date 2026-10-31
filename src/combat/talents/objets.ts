@@ -13,6 +13,7 @@ import type { Ennemi } from '../../entites/ennemi';
 import type { NatureCoup } from '../../entites/ennemis';
 import type { Equipement } from '../../progression/equipement';
 import type { Talents } from './talents';
+import { alea } from '../../utils/aleatoire';
 
 /** Brûlure d'un coup qui enflamme : dégâts par seconde (× dégâts des armes) et durée. */
 const BRULURE_OBJET = { degatsParSeconde: 3, duree: 3 };
@@ -75,7 +76,7 @@ export class MecaniquesObjets {
   /** Coup d'arme qui enflamme (chanceBrulure). */
   apresCoup(e: Ennemi, _degats: number, arme: number, _critique: boolean, nature: NatureCoup): void {
     const chance = this.t.etat.modificateurs.chanceBrulure;
-    if (chance <= 0 || arme < 0 || nature !== 'arme' || e.mort >= 0 || Math.random() >= chance) return;
+    if (chance <= 0 || arme < 0 || nature !== 'arme' || e.mort >= 0 || alea() >= chance) return;
     this.t.contexte.ennemis.bruler(e, 1, BRULURE_OBJET.degatsParSeconde * this.t.etat.modificateurs.degats, BRULURE_OBJET.duree, arme);
   }
 
@@ -85,11 +86,11 @@ export class MecaniquesObjets {
     const effets = this.equipement.effets;
     for (let i = 0; i < effets.length; i++) {
       const { effet, facteur } = effets[i];
-      if (effet.type === 'filon' && Math.random() < effet.chance) {
+      if (effet.type === 'filon' && alea() < effet.chance) {
         this.exploser(e.x, e.z, effet.rayon, effet.degats * this.t.etat.modificateurs.degats, 'critique');
         this.t.contexte.particules.emettre(e.x, 0.8, e.z, GERBES.eboulis);
         this.t.contexte.retours.son('explosion');
-      } else if (effet.type === 'spores' && Math.random() < Math.min(0.5, effet.chance * facteur)) {
+      } else if (effet.type === 'spores' && alea() < Math.min(0.5, effet.chance * facteur)) {
         this.empoisonner(e.x, e.z, effet.rayon, effet.poison * this.t.etat.modificateurs.degats, effet.duree);
         this.t.contexte.particules.emettre(e.x, 0.6, e.z, GERBES.nuage);
       }

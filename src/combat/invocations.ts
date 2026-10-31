@@ -37,6 +37,7 @@ import type { ArmeEquipee } from './armeEquipee';
 import type { ContexteCombat } from './contexte';
 import { ajouterBouclier, degatsApresDefense } from './defense';
 import type { ProjectilesJoueur } from './projectilesJoueur';
+import { alea } from '../utils/aleatoire';
 
 export interface Allie {
   /** Identifiant unique de l'invocation (les index du pool changent). */
@@ -239,7 +240,7 @@ export class Invocations implements SourceEntites {
     if (!a) return false;
     const j = this.contexte.etat.joueur;
     const def = ALLIES[m.allie];
-    const angle = Math.random() * Math.PI * 2;
+    const angle = alea() * Math.PI * 2;
     a.indexType = indexType;
     a.definition = def;
     a.arme = arme;

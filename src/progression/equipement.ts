@@ -15,6 +15,7 @@ import type { EtatPartie } from '../etat';
 import { lignesModificateurs, type Carte } from './ameliorations';
 import { creerModificateurs } from './modificateurs';
 import type { Passifs } from './passifs';
+import { alea } from '../utils/aleatoire';
 
 export type ChoixEquipement =
   | { readonly type: 'objet'; readonly id: IdObjetEquipement }
@@ -109,7 +110,7 @@ export class Equipement {
     }
     while (cartes.length < r.propositions) {
       const renfort = renforcables.find((o) => !pris.has(o.id));
-      if (renfort && Math.random() < r.chanceRenfort) {
+      if (renfort && alea() < r.chanceRenfort) {
         pris.add(renfort.id);
         cartes.push(this.carteRenfort(renfort));
         continue;
@@ -126,7 +127,7 @@ export class Equipement {
         cartes.push(this.carteRenfort(renfort));
         continue;
       }
-      const id = candidats[Math.floor(Math.random() * candidats.length)];
+      const id = candidats[Math.floor(alea() * candidats.length)];
       pris.add(id);
       cartes.push(this.carteObjet(id));
     }
@@ -143,7 +144,7 @@ export class Equipement {
     }
     // Ordre mélangé (la légendaire n'est pas toujours la première)
     for (let i = cartes.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = Math.floor(alea() * (i + 1));
       [cartes[i], cartes[j]] = [cartes[j], cartes[i]];
     }
     // Rien ne plaît : quelques émeraudes à la place, toujours en dernier
@@ -307,7 +308,7 @@ export class Equipement {
       }
     }
     const entrees = Object.entries(poids) as [RareteObjet, number][];
-    let seuil = Math.random() * entrees.reduce((t, [, p]) => t + p, 0);
+    let seuil = alea() * entrees.reduce((t, [, p]) => t + p, 0);
     for (const [rarete, p] of entrees) {
       seuil -= p;
       if (seuil < 0) return rarete;

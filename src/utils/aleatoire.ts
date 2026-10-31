@@ -21,3 +21,21 @@ export function creerAleatoire(depart: number): () => number {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+/**
+ * Aléatoire de la simulation (combat, ennemis, butin, cartes) : tout tirage qui change
+ * l'état de la partie passe par `alea()`. Graine au hasard pour une partie normale ;
+ * le robot d'équilibrage la fixe (`semerSimulation`) pour rejouer une partie à l'identique.
+ * Les effets purement visuels (particules, tremblements) gardent `Math.random`.
+ */
+let tirageSimulation = creerAleatoire((Math.random() * 4294967296) >>> 0);
+
+/** Nombre dans [0, 1) tiré par la simulation. */
+export function alea(): number {
+  return tirageSimulation();
+}
+
+/** Fixe la graine de la simulation (avant de créer la partie). */
+export function semerSimulation(depart: number): void {
+  tirageSimulation = creerAleatoire(depart);
+}

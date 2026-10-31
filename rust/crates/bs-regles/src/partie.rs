@@ -16,6 +16,7 @@ use crate::joueur::{Joueur, TOTEM_RAYON_RECUL, TOTEM_RECUL};
 use crate::passifs::Passifs;
 use crate::projectiles_ennemis::ProjectilesEnnemis;
 use crate::ramassage::Ramassables;
+use crate::talents::Talents;
 use crate::vue::VueCamera;
 
 /// Hauteur approchée d'un modèle d'ennemi (blocs), pour placer les chiffres de dégâts.
@@ -39,6 +40,7 @@ pub struct Partie {
     pub ramassables: Ramassables,
     pub passifs: Passifs,
     pub arsenal: Arsenal,
+    pub talents: Talents,
     /// États des systèmes d'armes (projectiles, orbites, éclairs…).
     pub armes: SystemesArmes,
     pub directeur: DirecteurApparitions,
@@ -72,6 +74,11 @@ impl Partie {
         etat.modificateurs = passifs.calculer(d, None);
         etat.joueur.pv_max += etat.modificateurs.pv_max;
         etat.joueur.pv = etat.joueur.pv_max;
+        let archere = d
+            .personnages
+            .personnages
+            .get_index(index_personnage)
+            .is_some_and(|(id, _)| id == "archer");
         let mut partie = Self {
             d,
             c: Catalogue::nouveau(d),
@@ -92,6 +99,7 @@ impl Partie {
             ramassables: Ramassables::nouveaux(d),
             passifs,
             arsenal: Arsenal::nouveau(),
+            talents: Talents::nouveaux(d.armes.len(), archere),
             armes: SystemesArmes::nouveaux(d),
             directeur: DirecteurApparitions::default(),
             directeur_boss: DirecteurBoss::nouveau(SorteBoss::Boss, &d.regles.boss),
@@ -121,6 +129,7 @@ impl Partie {
         // Reconstruit aussi la grille utilisée par les armes
         self.maj_ennemis(dt);
         self.maj_arsenal(dt);
+        self.maj_talents(dt);
         self.maj_orbes(dt);
         self.maj_objets(dt);
         self.maj_coffres(dt);

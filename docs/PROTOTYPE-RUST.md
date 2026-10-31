@@ -10,6 +10,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 0. Socle (espace de travail, fenêtre PC et web, CI) | fait : build web corrigé, page vérifiée (WebGL2, WebGPU) |
 | −1. Robot d'équilibrage, aléatoire à graine, pas fixe (TypeScript) | fait |
 | 0 bis. Prototype des cinq paris | fait : on continue, avec ajustements (voir la décision) ; 94 images/s mesurées sur le PC du joueur |
+| 1. Données et règles, sans rendu | en cours : données importées et validées (`bs-donnees`) ; simulation et robot à porter |
 
 ---
 
@@ -302,5 +303,58 @@ identique. Fichier illisible ou vide : erreur propre, pas de plantage. **Pari te
    Velopack ne valent rien sur l'exécutable : exécutable sans symboles (fait), puis delta
    zstd maison ou paquets complets (≈ 11 Mo), à trancher à l'étape des mises à jour.
 
-Seul point ouvert, qui demande un humain : lancer les artefacts de la CI sur un vrai PC
-(et un portable) et noter les images/s affichées dans le titre.
+Point ouvert levé le 31/10/2026 : 94 images/s sur le PC Windows du joueur (pari 1). Une
+mesure sur un portable reste bienvenue.
+
+---
+
+## Étape 1 : données et règles, sans rendu
+
+### 1a. Les données (`bs-donnees`, `rust/donnees/*.ron`) : fait
+
+Tout `src/donnees` (environ 5 000 lignes) est dans 19 fichiers RON (10 800 lignes), un par
+table : blocs, modèles, ennemis, projectiles, armes, alliés, personnages, arènes,
+structures, passifs, objets, coffres, équipement, armures, talents, sons, particules,
+règles (joueur, apparitions, boss, progression, plafonds, états, multijoueur) et textes.
+
+**Comment.** Rien n'est recopié à la main : `rust/outils/importer-donnees.sh` charge les
+modules TypeScript par Vite (`outils/exporter-donnees.mjs`, export JSON), puis
+l'importeur Rust (`importer-donnees`) les fait passer par les types Rust et écrit le RON.
+Tant que la version TypeScript reste la référence, on modifie `src/donnees` puis on relance
+l'import ; la CI échoue si `rust/donnees` n'est plus la copie exacte
+(`importer-donnees.sh --verifier`).
+
+**Garde-fous.**
+- Types stricts (`deny_unknown_fields`) : un champ en trop ou mal écrit est refusé avec le
+  fichier, la ligne et la colonne. Toutes les données de la version 0.50.0 sont passées du
+  premier coup.
+- Validation des références au chargement : arme → projectile, allié, gerbe, son ; arène →
+  blocs, structures, ennemis, boss ; talent → armes, prérequis ; modèle → parties animées ;
+  structure → légende ; etc. Une erreur dit « fichier.ron, entrée : … inconnu(e) « x » ».
+- L'ordre des tables est gardé (`IndexMap`) : c'est celui des listes et des tirages du jeu.
+- Données lues au lancement (`Donnees::charger`, pour le rechargement à chaud) ou
+  embarquées dans l'exécutable (`Donnees::embarquees`, navigateur et tests) ; un test
+  vérifie que les deux sont identiques.
+
+**Choix de forme.**
+- Noms des champs identiques à la version TypeScript (camelCase) : les identifiants du
+  contenu (parties de modèles comme `brasGauche`, gerbes comme `traineeFeu`) ont la même
+  forme, et on retrouve chaque champ des deux côtés.
+- Variantes écrites à la RON : `mecanique: tir(projectile: "fleche", dispersion: 0.18)`
+  au lieu de `{ type: 'tir', … }` (RON ne lit pas les variantes « étiquetées par un champ »).
+- L'apparence des entités (modèle, skin, ombre…) et les gains des talents sont rangés dans
+  un sous-bloc (`apparence: (…)`, `gains: (…)`) au lieu d'être à plat.
+- Descriptions de l'équipement : en TypeScript, des fonctions du niveau ; ici, le texte de
+  chaque niveau (`description: ["… 8 %", "… 12 %", "… 16 %"]`), prêt pour la traduction.
+- Arènes importées (`cartes/*.schem`) : pas dans les données ; elles seront lues au
+  lancement avec le monde (`bs-monde`, étape 2), comme aujourd'hui.
+- `Infinity` (dernier palier d'XP) devient « aucun » (`jusquAuNiveau: None`).
+
+Repéré en passant (à corriger dans la version TypeScript, pas ici) : « fait 2 dégât de
+moins » (Collier du forgeron, niveau 3) devrait être au pluriel.
+
+### 1b. La simulation : à faire
+
+Combat et armes (environ 5 600 lignes), ennemis et directeurs, progression (XP, cartes,
+coffres, équipement, talents, maîtrise, Collection), puis le robot, dont les statistiques
+doivent tomber dans la tolérance de celles de la version TypeScript (étape −1).

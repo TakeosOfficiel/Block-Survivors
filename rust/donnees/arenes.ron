@@ -1,0 +1,415 @@
+// Généré depuis la version TypeScript (src/donnees) par outils/importer-donnees.sh.
+// Tant que les deux versions coexistent, modifier src/donnees puis relancer l'import.
+#![enable(implicit_some)]
+(
+  arenes: [(
+    id: "prairie",
+    monde: prairie,
+    nom: "Prairie du village abandonné",
+    description: "Un village en ruine au milieu des champs.",
+    icone: "block/grass_block_side",
+    largeur: 60.0,
+    profondeur: 60.0,
+    hauteurMur: 2.0,
+    sol: [(
+      bloc: "grass_block",
+      poids: 1.0,
+    )],
+    taches: [taches(
+      bloc: "dirt",
+      nombre: 6.0,
+      rayon: (1.0, 2.0),
+    ), rectangle(
+      bloc: "dirt_path",
+      rect: (-30.0, -1.0, 30.0, 1.0),
+    ), rectangle(
+      bloc: "dirt_path",
+      rect: (-1.0, -30.0, 1.0, 30.0),
+    ), rectangle(
+      bloc: "gravel",
+      rect: (-4.0, -4.0, 4.0, 4.0),
+    ), taches(
+      bloc: "water",
+      nombre: 2.0,
+      rayon: (2.0, 3.0),
+      zone: (16.0, 16.0, 26.0, 26.0),
+    )],
+    murs: [(
+      bloc: "cobblestone",
+      poids: 3.0,
+    ), (
+      bloc: "mossy_cobblestone",
+      poids: 1.0,
+    )],
+    decor: [structure(
+      structure: "maison_ruine",
+      x: -16.0,
+      z: -15.0,
+    ), structure(
+      structure: "maison_ruine",
+      x: 9.0,
+      z: -15.0,
+    ), structure(
+      structure: "maison_ruine",
+      x: -16.0,
+      z: 8.0,
+    ), structure(
+      structure: "grange_ruine",
+      x: 8.0,
+      z: 8.0,
+    ), structure(
+      structure: "puits",
+      x: -12.0,
+      z: 3.0,
+    ), dispersion(
+      structure: "meule",
+      nombre: 4.0,
+      espacement: 2.0,
+      zone: (-20.0, -20.0, 20.0, 20.0),
+    ), dispersion(
+      structure: "arbre_chene",
+      nombre: 18.0,
+      espacement: 2.0,
+    ), dispersion(
+      structure: "herbes",
+      nombre: 140.0,
+      espacement: 0.0,
+    ), dispersion(
+      structure: "pissenlit",
+      nombre: 25.0,
+      espacement: 0.0,
+    ), dispersion(
+      structure: "coquelicot",
+      nombre: 25.0,
+      espacement: 0.0,
+    )],
+    zoneDepart: 5.0,
+    exterieur: (
+      bloc: "grass_block",
+      assombrissement: 0.65,
+      taille: 400.0,
+    ),
+    ciel: 7907327,
+    brouillard: (
+      debut: 45.0,
+      fin: 120.0,
+    ),
+    lumiere: (
+      ambiante: 0.35,
+      soleil: 0.75,
+      couleurAmbiante: 16777215,
+      couleurSoleil: 16777215,
+    ),
+    boss: ["geant", "seigneur_wither"],
+    miniBoss: ["zombie_colosse", "vagabond"],
+    ennemis: [(
+      ennemi: "zombie",
+      depuis: 0.0,
+      poids: 6.0,
+    ), (
+      ennemi: "araignee",
+      depuis: 20.0,
+      poids: 6.0,
+    ), (
+      ennemi: "creeper",
+      depuis: 60.0,
+      poids: 4.0,
+    ), (
+      ennemi: "squelette",
+      depuis: 90.0,
+      poids: 2.0,
+    )],
+    zones: [(
+      nom: "Village",
+      rect: (-20.0, -20.0, 20.0, 20.0),
+      ennemis: [(
+        ennemi: "zombie",
+        depuis: 0.0,
+        poids: 10.0,
+      ), (
+        ennemi: "squelette",
+        depuis: 45.0,
+        poids: 6.0,
+      ), (
+        ennemi: "creeper",
+        depuis: 120.0,
+        poids: 2.0,
+      )],
+    )],
+  ), (
+    id: "mine",
+    monde: mine,
+    nom: "Mine souterraine",
+    description: "Galeries sombres, piliers de minerai et toiles d'araignée.",
+    icone: "block/iron_ore",
+    largeur: 60.0,
+    profondeur: 60.0,
+    hauteurMur: 3.0,
+    sol: [(
+      bloc: "stone",
+      poids: 6.0,
+    ), (
+      bloc: "andesite",
+      poids: 2.0,
+    ), (
+      bloc: "gravel",
+      poids: 1.0,
+    ), (
+      bloc: "cobblestone",
+      poids: 1.0,
+    )],
+    taches: [taches(
+      bloc: "gravel",
+      nombre: 8.0,
+      rayon: (1.0, 3.0),
+    ), taches(
+      bloc: "water",
+      nombre: 2.0,
+      rayon: (2.0, 3.0),
+      zone: (-26.0, 10.0, -12.0, 24.0),
+    )],
+    murs: [(
+      bloc: "stone",
+      poids: 6.0,
+    ), (
+      bloc: "coal_ore",
+      poids: 1.0,
+    ), (
+      bloc: "iron_ore",
+      poids: 1.0,
+    )],
+    decor: [structure(
+      structure: "ruine_mine",
+      x: -4.0,
+      z: -26.0,
+    ), dispersion(
+      structure: "pilier_charbon",
+      nombre: 7.0,
+      espacement: 2.0,
+    ), dispersion(
+      structure: "pilier_fer",
+      nombre: 5.0,
+      espacement: 2.0,
+    ), dispersion(
+      structure: "pilier_diamant",
+      nombre: 2.0,
+      espacement: 2.0,
+    ), dispersion(
+      structure: "etai",
+      nombre: 8.0,
+      espacement: 1.0,
+    ), dispersion(
+      structure: "lampe",
+      nombre: 14.0,
+      espacement: 2.0,
+    ), dispersion(
+      structure: "toiles",
+      nombre: 14.0,
+      espacement: 0.0,
+      zone: (-30.0, -30.0, -4.0, -4.0),
+    ), dispersion(
+      structure: "toiles",
+      nombre: 4.0,
+      espacement: 1.0,
+    ), dispersion(
+      structure: "eboulis",
+      nombre: 8.0,
+      espacement: 1.0,
+    )],
+    zoneDepart: 5.0,
+    exterieur: (
+      bloc: "stone",
+      assombrissement: 0.25,
+      taille: 400.0,
+    ),
+    ciel: 723728,
+    brouillard: (
+      debut: 28.0,
+      fin: 70.0,
+    ),
+    lumiere: (
+      ambiante: 0.22,
+      soleil: 0.4,
+      couleurAmbiante: 10133696,
+      couleurSoleil: 16769200,
+    ),
+    boss: ["reine_araignee", "geant"],
+    miniBoss: ["araignee_geante", "zombie_colosse"],
+    ennemis: [(
+      ennemi: "zombie",
+      depuis: 0.0,
+      poids: 5.0,
+    ), (
+      ennemi: "araignee_venimeuse",
+      depuis: 0.0,
+      poids: 5.0,
+    ), (
+      ennemi: "poisson_argent",
+      depuis: 30.0,
+      poids: 4.0,
+    ), (
+      ennemi: "squelette",
+      depuis: 40.0,
+      poids: 5.0,
+    ), (
+      ennemi: "creeper",
+      depuis: 75.0,
+      poids: 3.0,
+    )],
+    zones: [(
+      nom: "Galerie des toiles",
+      rect: (-30.0, -30.0, -4.0, -4.0),
+      ennemis: [(
+        ennemi: "araignee_venimeuse",
+        depuis: 0.0,
+        poids: 12.0,
+      ), (
+        ennemi: "poisson_argent",
+        depuis: 15.0,
+        poids: 4.0,
+      )],
+    ), (
+      nom: "Filon profond",
+      rect: (6.0, 6.0, 30.0, 30.0),
+      ennemis: [(
+        ennemi: "poisson_argent",
+        depuis: 0.0,
+        poids: 6.0,
+      ), (
+        ennemi: "squelette",
+        depuis: 20.0,
+        poids: 8.0,
+      ), (
+        ennemi: "creeper",
+        depuis: 50.0,
+        poids: 4.0,
+      )],
+    )],
+  ), (
+    id: "nether",
+    monde: nether,
+    nom: "Zone volcanique",
+    description: "Lacs de lave, sable des âmes et ruines de forteresse.",
+    icone: "block/netherrack",
+    largeur: 60.0,
+    profondeur: 60.0,
+    hauteurMur: 3.0,
+    sol: [(
+      bloc: "netherrack",
+      poids: 1.0,
+    )],
+    taches: [taches(
+      bloc: "soul_sand",
+      nombre: 9.0,
+      rayon: (2.0, 4.0),
+    ), taches(
+      bloc: "magma",
+      nombre: 10.0,
+      rayon: (1.0, 2.0),
+    ), taches(
+      bloc: "lava",
+      nombre: 6.0,
+      rayon: (2.0, 4.0),
+      zone: (-2.0, -30.0, 30.0, 30.0),
+    )],
+    murs: [(
+      bloc: "nether_bricks",
+      poids: 1.0,
+    )],
+    decor: [structure(
+      structure: "rempart",
+      x: -27.0,
+      z: -20.0,
+    ), structure(
+      structure: "rempart",
+      x: -27.0,
+      z: -4.0,
+    ), structure(
+      structure: "rempart",
+      x: -27.0,
+      z: 12.0,
+    ), structure(
+      structure: "tour_nether",
+      x: -18.0,
+      z: -13.0,
+    ), structure(
+      structure: "tour_nether",
+      x: -18.0,
+      z: 18.0,
+    ), dispersion(
+      structure: "pilier_obsidienne",
+      nombre: 8.0,
+      espacement: 2.0,
+    ), dispersion(
+      structure: "amas_glowstone",
+      nombre: 8.0,
+      espacement: 1.0,
+    )],
+    zoneDepart: 6.0,
+    exterieur: (
+      bloc: "netherrack",
+      assombrissement: 0.45,
+      taille: 400.0,
+    ),
+    ciel: 2754054,
+    brouillard: (
+      debut: 25.0,
+      fin: 80.0,
+    ),
+    lumiere: (
+      ambiante: 0.4,
+      soleil: 0.45,
+      couleurAmbiante: 16756896,
+      couleurSoleil: 16748640,
+    ),
+    boss: ["magma_geant", "seigneur_wither"],
+    miniBoss: ["brute_piglin", "champion_wither"],
+    ennemis: [(
+      ennemi: "piglin_zombifie",
+      depuis: 0.0,
+      poids: 7.0,
+    ), (
+      ennemi: "cube_magma",
+      depuis: 15.0,
+      poids: 5.0,
+    ), (
+      ennemi: "blaze",
+      depuis: 45.0,
+      poids: 4.0,
+    ), (
+      ennemi: "squelette_wither",
+      depuis: 90.0,
+      poids: 3.0,
+    )],
+    zones: [(
+      nom: "Forteresse",
+      rect: (-30.0, -30.0, -12.0, 30.0),
+      ennemis: [(
+        ennemi: "piglin_zombifie",
+        depuis: 0.0,
+        poids: 6.0,
+      ), (
+        ennemi: "squelette_wither",
+        depuis: 60.0,
+        poids: 10.0,
+      ), (
+        ennemi: "blaze",
+        depuis: 30.0,
+        poids: 5.0,
+      )],
+    ), (
+      nom: "Lacs de lave",
+      rect: (6.0, -30.0, 30.0, 30.0),
+      ennemis: [(
+        ennemi: "cube_magma",
+        depuis: 0.0,
+        poids: 8.0,
+      ), (
+        ennemi: "blaze",
+        depuis: 30.0,
+        poids: 4.0,
+      )],
+    )],
+  )],
+  par_defaut: "prairie",
+)

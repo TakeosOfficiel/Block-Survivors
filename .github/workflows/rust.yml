@@ -7,9 +7,9 @@ name: Version Rust
 
 on:
   push:
-    paths: ['rust/**', '.github/workflows/rust.yml']
+    paths: ['rust/**', 'src/donnees/**', '.github/workflows/rust.yml']
   pull_request:
-    paths: ['rust/**', '.github/workflows/rust.yml']
+    paths: ['rust/**', 'src/donnees/**', '.github/workflows/rust.yml']
   workflow_dispatch:
 
 concurrency:
@@ -44,6 +44,17 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Tests
         run: cargo test --workspace
+      # Tant que la version TypeScript reste la référence : rust/donnees doit en être la copie
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Données à jour (src/donnees → rust/donnees)
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        run: |
+          (cd .. && npm ci --ignore-scripts)
+          outils/importer-donnees.sh --verifier
 
   web:
     runs-on: ubuntu-latest

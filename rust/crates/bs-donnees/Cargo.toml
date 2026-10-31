@@ -1,0 +1,18 @@
+[package]
+name = "bs-donnees"
+description = "Contenu du jeu (armes, ennemis, arènes, talents…) : fichiers RON de donnees/, chargement et validation"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+ron = "0.12"
+indexmap = { version = "2", features = ["serde"] }
+thiserror = "2"
+# Seulement pour l'importeur (JSON exporté par la version TypeScript)
+serde_json = { version = "1", features = ["preserve_order"] }
+
+[lints]
+workspace = true

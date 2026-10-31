@@ -55,6 +55,112 @@ affichent).
 
 ---
 
+## 2 bis. Structure pour la maintenance
+
+But : qu'on puisse ajouter une arme, un ennemi ou une arène sans toucher au moteur, trouver
+n'importe quoi en quelques secondes, et que deux personnes (ou deux sessions) travaillent
+en même temps sans se marcher dessus.
+
+### Arborescence détaillée
+
+```
+block-survivors/
+  Cargo.toml                 espace de travail : versions des dépendances épinglées une seule fois
+  rust-toolchain.toml        version de Rust épinglée
+  CHANGELOG.md  README.md  ARCHITECTURE.md (carte du code, une page)
+  donnees/                   CONTENU DU JEU, en fichiers RON (pas de code)
+    armes/  ennemis/  arenes/  talents/  equipement/  armures/  textes/fr.ron
+  crates/
+    bs-commun/     types partagés : identifiants, maths, horloge, erreurs
+    bs-donnees/    chargement + validation des fichiers de donnees/ (types serde)
+    bs-regles/     simulation pure (aucun Bevy) : un module par système
+      combat/ (une arme = un fichier)  ennemis/  progression/  equipement/  equipe/
+    bs-monde/      arènes, maps .schem, grille de collisions, champs de flux
+    bs-rendu/      plugins Bevy : modeles/  particules/  shaders/ (WGSL)  camera/
+    bs-ui/         plugins Bevy : un écran = un module (menu, cartes, pause, fin, pages)
+    bs-audio/      kira, catégories de sons
+    bs-sauvegarde/ profils, format, chiffrement, migrations de version
+    bs-reseau/     protocole (messages versionnés), client du relais, prédiction
+    bs-relais/     serveur (axum + tokio), sans dépendance au moteur
+    bs-maj/        lanceur et mises à jour
+    bs-robot/      robot d'équilibrage (ligne de commande, sans rendu)
+    block-survivors/  binaire PC : assemble les plugins
+    bs-web/           point d'entrée wasm
+  outils/          scripts de build web, import de maps, génération d'icônes
+  tests/           tests de bout en bout (parties complètes, coop à plusieurs)
+  .github/workflows/  CI : vérifs, builds, publication
+```
+
+### Règles de dépendance (vérifiées par la CI)
+- Le sens va toujours **du bas vers le haut** :
+  `bs-commun → bs-donnees → bs-regles / bs-monde → bs-rendu / bs-ui / bs-reseau → binaires`.
+- **`bs-regles` et `bs-monde` ne connaissent pas Bevy** : la simulation se teste et tourne sur
+  le relais, le robot et les tests sans fenêtre ni carte graphique.
+- `bs-relais` ne dépend que de `bs-reseau` (le protocole) : on peut le mettre à jour sans
+  rebâtir le jeu.
+- Aucun cycle entre crates ; un crate n'expose qu'une petite API publique (`pub` minimal).
+
+### Le contenu en données
+- Armes, ennemis, arènes, talents, objets, textes : des **fichiers RON** dans `donnees/`,
+  relus au lancement (et rechargés à chaud en développement, sans recompiler).
+- **Validation au chargement** : une référence inconnue (un ennemi qui n'existe pas dans une
+  arène, un talent qui pointe vers une arme absente) donne une erreur claire avec le fichier
+  et la ligne. La CI charge toutes les données à chaque commit.
+- Ajouter une arme = un fichier de données + (si sa mécanique est nouvelle) un fichier dans
+  `bs-regles/combat/`. Rien d'autre à toucher.
+- Textes de l'interface dans `donnees/textes/fr.ron` : prêt pour d'autres langues.
+
+### Code
+- **Une responsabilité par fichier**, 400 lignes au plus en règle générale ; au-delà, on
+  découpe (c'est ce qu'on a fait pour le code réseau).
+- Bevy organisé en **plugins** (un par domaine) et en **ensembles de systèmes ordonnés**
+  (entrées → simulation → rendu → interface), déclarés à un seul endroit.
+- Identifiants, noms et commentaires en français, comme aujourd'hui ; `rustfmt` et `clippy`
+  obligatoires (la CI refuse sinon).
+- Pas d'allocation dans la boucle de jeu (pools réutilisés, comme aujourd'hui) ; un test le
+  vérifie sur une partie simulée.
+- Erreurs : `thiserror` dans les crates, `anyhow` seulement dans les binaires et outils.
+
+### Versions et compatibilité
+- **Protocole réseau versionné** : chaque message a un numéro de format ; le relais refuse
+  les versions différentes avec un message clair.
+- **Sauvegardes versionnées** avec des migrations écrites une fois pour toutes
+  (`v1 → v2 → …`), testées sur des sauvegardes réelles gardées dans `tests/`.
+- Une seule source pour le numéro de version (`Cargo.toml` de l'espace de travail), reprise
+  par le jeu, le lanceur, le relais et `version.json`.
+
+### Tests (du plus rapide au plus lent)
+1. **Tests unitaires** dans chaque crate (`cargo test`), en quelques secondes.
+2. **Tests de données** : tout `donnees/` se charge et se valide.
+3. **Parties simulées** par le robot : graines fixes, résultats comparés à des valeurs de
+   référence (puissance, durée de survie) ; un écart trop grand fait échouer la CI.
+4. **Déterminisme** : même graine et mêmes entrées → même partie, octet pour octet (base de
+   la coop et des rejeux).
+5. **Coop de bout en bout** : un relais local et 3 clients sans fenêtre jouent une partie.
+6. **Captures** de chaque écran comparées à des références (les changements visuels sont
+   repérés).
+
+### CI (GitHub Actions)
+- Sur chaque commit : format, clippy, tests 1 à 5, build web, poids du wasm affiché (alerte
+  s'il grossit trop).
+- Sur `main` : builds Windows, Linux et web signés, publication de la release et de
+  `version.json` (comme aujourd'hui), déploiement du relais.
+- Cache de compilation (sccache) pour garder la CI rapide.
+
+### Documentation
+- `ARCHITECTURE.md` : la carte (quel crate fait quoi, le sens des dépendances, où ajouter
+  quoi).
+- Un commentaire d'en-tête par module (ce qu'il fait, pourquoi), comme aujourd'hui.
+- `CHANGELOG.md` en français, une section par version (comme aujourd'hui).
+- Guides courts : « ajouter une arme », « ajouter une arène », « publier une version ».
+
+### Travail à plusieurs
+- Chaque domaine a son crate : deux sessions peuvent avancer en parallèle (ex. une sur
+  `bs-reseau`, une sur `bs-ui`) avec peu de conflits.
+- Toute nouveauté passe par une branche, puis la CI, avant d'arriver sur `main`.
+
+---
+
 ## 3. Étapes
 
 ### Étape 0 : socle (1 à 2 semaines)

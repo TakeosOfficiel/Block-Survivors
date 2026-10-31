@@ -1,7 +1,8 @@
 # Version Rust en cours de migration (rust/, plan : docs/PLAN-RUST.md). Vérifie et
 # construit à chaque push qui touche rust/ : format, clippy, tests, build PC (Linux,
 # Windows), build navigateur (WebGPU et WebGL2, poids affiché) et chaîne de mise à jour
-# (Velopack + manifeste signé, Linux et Windows). Ne publie rien.
+# (Velopack + manifeste signé, Linux et Windows). Publie seulement les builds à tester
+# dans la pré-version « prototype-rust » de ce dépôt privé (rien pour les joueurs).
 name: Version Rust
 
 on:
@@ -46,6 +47,8 @@ jobs:
 
   web:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - run: rustup show
@@ -58,17 +61,24 @@ jobs:
           cargo install wasm-opt --version 0.116.1 --locked
       - name: Build navigateur (WebGPU et WebGL2)
         run: outils/build-web.sh
-      # À servir en local (ex. « python3 -m http.server » dans le dossier) pour mesurer
-      # Le quota de stockage des artefacts du compte peut être plein : ne fait pas échouer le job
-      - uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: block-survivors-web
-          path: rust/web/dist
-          retention-days: 3
+      # Dans la pré-version « prototype-rust » (onglet Releases) : les artefacts d'Actions
+      # sont plafonnés (quota du compte plein). Les joueurs ne la voient pas (dépôt privé ;
+      # leurs mises à jour viennent de Block-Survivors-version). À servir en local :
+      # « python3 -m http.server » dans le dossier dézippé.
+      - name: Publier dans la pré-version prototype-rust
+        if: github.event_name == 'push' && github.ref == 'refs/heads/rust'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          (cd web/dist && zip -q -r ../../block-survivors-web.zip .)
+          gh release view prototype-rust > /dev/null 2>&1 || gh release create prototype-rust --prerelease --target rust \
+            --title "Prototype Rust (à tester)" --notes "Builds du prototype Rust (branche rust), remplacés à chaque push. Images/s affichées dans le titre de la fenêtre ou de l'onglet." || true
+          gh release upload prototype-rust block-survivors-web.zip --clobber
 
   windows:
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - run: rustup show
@@ -78,13 +88,16 @@ jobs:
       - name: Build Windows (profil ship)
         run: cargo build --profile ship -p block-survivors
       # Prototype à lancer sur un vrai PC : images/s dans le titre de la fenêtre
-      # Le quota de stockage des artefacts du compte peut être plein : ne fait pas échouer le job
-      - uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: block-survivors-windows
-          path: rust/target/ship/block-survivors.exe
-          retention-days: 3
+      - name: Publier dans la pré-version prototype-rust
+        if: github.event_name == 'push' && github.ref == 'refs/heads/rust'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp target/ship/block-survivors.exe block-survivors-windows.exe
+          gh release view prototype-rust > /dev/null 2>&1 || gh release create prototype-rust --prerelease --target rust \
+            --title "Prototype Rust (à tester)" --notes "Builds du prototype Rust (branche rust), remplacés à chaque push. Images/s affichées dans le titre de la fenêtre ou de l'onglet." || true
+          gh release upload prototype-rust block-survivors-windows.exe --clobber
 
   # Chaîne de mise à jour de bout en bout : installer N, se mettre à jour seul, refuser les attaques
   mise-a-jour-linux:

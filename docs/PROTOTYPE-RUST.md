@@ -143,11 +143,12 @@ interpolé entre deux pas, pilote automatique), `bs-audio`, `bs-protocole`, `bs-
 - Les images/s ne sont **pas mesurables ici** : la machine de travail n'a pas de carte
   graphique (SwiftShader dans Chromium : 1 à 2 images/s ; lavapipe sur PC : 8 images/s,
   tout est calculé par le processeur). Le pari « 60 images/s » reste à confirmer sur une
-  vraie machine : la CI publie le build Windows (`block-survivors-windows`) et le build web
-  (`block-survivors-web`, à servir avec `python3 -m http.server`, `?rendu=webgl2` ou
-  `?rendu=webgpu`) ; les images/s s'affichent dans le titre de la fenêtre ou de l'onglet. Attention : le
-  quota de stockage des artefacts du compte GitHub était plein le 31/10 (envoi refusé) ;
-  artefacts gardés 3 jours désormais, supprimer les vieux dans l'onglet Actions si besoin.
+  vraie machine : la CI publie à chaque push sur `rust` le build Windows
+  (`block-survivors-windows.exe`) et le build web (`block-survivors-web.zip`, à dézipper et
+  servir avec `python3 -m http.server`, `?rendu=webgl2` ou `?rendu=webgpu`) dans la
+  pré-version **« prototype-rust »** (onglet Releases du dépôt, privé ; le quota des
+  artefacts d'Actions du compte était plein) ; les images/s s'affichent dans le titre de
+  la fenêtre ou de l'onglet.
   **À faire par un humain** sur un PC moyen et un portable : noter les images/s ici.
 - Le rendu est déjà économe : un maillage par type d'entité, partagé (Bevy les regroupe en
   un seul appel de dessin), aucune allocation par image.

@@ -1,0 +1,21 @@
+[package]
+name = "bs-relais"
+description = "Relais de la coop (axum + tokio, WebSocket) : salons, fait suivre les octets, ne simule rien"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+bs-protocole.workspace = true
+axum = { version = "0.8", features = ["ws"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync", "time"] }
+
+[dev-dependencies]
+bs-regles.workspace = true
+bs-commun.workspace = true
+tokio-tungstenite = "0.28"
+futures-util = "0.3"
+
+[lints]
+workspace = true

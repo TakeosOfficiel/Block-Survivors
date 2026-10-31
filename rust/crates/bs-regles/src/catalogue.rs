@@ -31,7 +31,12 @@ impl Catalogue {
                 .get(id)
                 .unwrap_or_else(|| panic!("état « {id} » absent des règles"))
         };
-        let coffre = |id: &str| d.coffres.coffres.get_index_of(id).unwrap_or_else(|| panic!("coffre « {id} » absent"));
+        let coffre = |id: &str| {
+            d.coffres
+                .coffres
+                .get_index_of(id)
+                .unwrap_or_else(|| panic!("coffre « {id} » absent"))
+        };
         Self {
             etats: EtatsRef {
                 brulure: etat("brulure"),

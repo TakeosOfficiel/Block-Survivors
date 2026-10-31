@@ -10,6 +10,7 @@
 mod prototype;
 
 pub mod catalogue;
+pub mod combat;
 pub mod directeurs;
 pub mod ennemis;
 pub mod etat;
@@ -17,6 +18,7 @@ pub mod evenements;
 pub mod grille;
 pub mod joueur;
 pub mod partie;
+pub mod passifs;
 pub mod projectiles_ennemis;
 pub mod ramassage;
 pub mod talents;

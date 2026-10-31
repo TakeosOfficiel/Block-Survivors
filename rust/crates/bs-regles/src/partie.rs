@@ -7,11 +7,13 @@ use bs_donnees::Donnees;
 use bs_monde::{CarteMonde, ChampDeFlux, generer_monde};
 
 use crate::catalogue::Catalogue;
+use crate::combat::{Arsenal, SystemesArmes};
 use crate::directeurs::{DirecteurApparitions, DirecteurBoss, SorteBoss};
 use crate::ennemis::Ennemis;
 use crate::etat::{EtatPartie, Issue};
 use crate::evenements::Evenements;
 use crate::joueur::{Joueur, TOTEM_RAYON_RECUL, TOTEM_RECUL};
+use crate::passifs::Passifs;
 use crate::projectiles_ennemis::ProjectilesEnnemis;
 use crate::ramassage::Ramassables;
 use crate::vue::VueCamera;
@@ -35,6 +37,10 @@ pub struct Partie {
     pub ennemis: Ennemis,
     pub projectiles_ennemis: ProjectilesEnnemis,
     pub ramassables: Ramassables,
+    pub passifs: Passifs,
+    pub arsenal: Arsenal,
+    /// États des systèmes d'armes (projectiles, orbites, éclairs…).
+    pub armes: SystemesArmes,
     pub directeur: DirecteurApparitions,
     pub directeur_boss: DirecteurBoss,
     pub directeur_mini_boss: DirecteurBoss,
@@ -61,8 +67,12 @@ impl Partie {
         let flux = ChampDeFlux::nouveau(&carte);
         let demi_cote = arene.largeur.max(arene.profondeur) / 2.0 + 1.0;
         let vue = VueCamera::nouvelle(etat.joueur.x, etat.joueur.z, 1280.0 / 720.0);
+        // Bonus permanents du personnage (sauvegarde vierge : ni talents ni Collection)
+        let passifs = Passifs::nouveaux(etat.personnage.bonus);
+        etat.modificateurs = passifs.calculer(d, None);
+        etat.joueur.pv_max += etat.modificateurs.pv_max;
         etat.joueur.pv = etat.joueur.pv_max;
-        Self {
+        let mut partie = Self {
             d,
             c: Catalogue::nouveau(d),
             etat,
@@ -80,12 +90,21 @@ impl Partie {
             ennemis: Ennemis::nouveaux(d, demi_cote),
             projectiles_ennemis: ProjectilesEnnemis::nouveaux(),
             ramassables: Ramassables::nouveaux(d),
+            passifs,
+            arsenal: Arsenal::nouveau(),
+            armes: SystemesArmes::nouveaux(d),
             directeur: DirecteurApparitions::default(),
             directeur_boss: DirecteurBoss::nouveau(SorteBoss::Boss, &d.regles.boss),
             directeur_mini_boss: DirecteurBoss::nouveau(SorteBoss::MiniBoss, &d.regles.mini_boss),
             prolongation: false,
             vies_traitees: 0,
+        };
+        for id in &partie.etat.personnage.armes_depart {
+            if let Some(index) = d.armes.get_index_of(id) {
+                partie.ameliorer_arme(index);
+            }
         }
+        partie
     }
 
     /// Un pas de simulation, dans l'ordre de `simuler` du jeu TS.
@@ -101,9 +120,14 @@ impl Partie {
         self.maj_directeurs_boss();
         // Reconstruit aussi la grille utilisée par les armes
         self.maj_ennemis(dt);
+        self.maj_arsenal(dt);
         self.maj_orbes(dt);
         self.maj_objets(dt);
         self.maj_coffres(dt);
+        // Systèmes d'armes, dans l'ordre du jeu TS
+        self.maj_projectiles_joueur(dt);
+        self.maj_foudre(dt);
+        self.maj_tourbillon(dt);
         self.maj_projectiles_ennemis(dt);
         self.traiter_resurrection();
     }

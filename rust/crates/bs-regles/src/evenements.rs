@@ -69,6 +69,14 @@ impl Evenements {
         self.pousser(Evenement::Son { son, hauteur: None });
     }
 
+    /// Son joué à une hauteur (vitesse de lecture) donnée.
+    pub fn son_hauteur(&mut self, son: &'static str, hauteur: f32) {
+        self.pousser(Evenement::Son {
+            son,
+            hauteur: Some(hauteur),
+        });
+    }
+
     #[inline]
     pub fn secousse(&mut self, force: f32) {
         self.pousser(Evenement::Secousse(force));

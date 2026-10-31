@@ -159,7 +159,9 @@ impl Partie {
     }
 
     fn accessible(&self, x: f32, z: f32) -> bool {
-        !self.carte.bloque_marche(x, z) && self.carte.degats_sol(x, z) == 0.0 && self.flux.atteignable(&self.carte, x, z)
+        !self.carte.bloque_marche(x, z)
+            && self.carte.degats_sol(x, z) == 0.0
+            && self.flux.atteignable(&self.carte, x, z)
     }
 
     // --- Orbes d'XP ---
@@ -183,7 +185,14 @@ impl Partie {
             return;
         }
         let phase = (self.alea.tirer() * 100.0) as f32;
-        self.ramassables.orbes.push(Orbe { x, z, vitesse: 0.0, aimantee: false, valeur, phase });
+        self.ramassables.orbes.push(Orbe {
+            x,
+            z,
+            vitesse: 0.0,
+            aimantee: false,
+            valeur,
+            phase,
+        });
     }
 
     /// Attire vers le joueur les orbes à moins de `rayon` de (x, z) (Allay chanteur).
@@ -237,10 +246,20 @@ impl Partie {
         }
         let phase = (self.alea.tirer() * 10.0) as f32;
         let valeur = match self.d.objets[index_type].emeraudes {
-            Some([min, max]) => min + libm::floor(self.alea.tirer() * f64::from(max - min + 1.0)) as f32,
+            Some([min, max]) => {
+                min + libm::floor(self.alea.tirer() * f64::from(max - min + 1.0)) as f32
+            }
             None => 0.0,
         };
-        self.ramassables.objets.push(Objet { index_type, x, z, phase, valeur, aimante: false, vitesse: 0.0 });
+        self.ramassables.objets.push(Objet {
+            index_type,
+            x,
+            z,
+            phase,
+            valeur,
+            aimante: false,
+            vitesse: 0.0,
+        });
     }
 
     pub fn maj_objets(&mut self, dt: f32) {
@@ -311,14 +330,24 @@ impl Partie {
         let j = &self.etat.joueur;
         let quart = std::f32::consts::FRAC_PI_2;
         let angle = libm::floorf(atan2(j.x - cx, j.z - cz) / quart + 0.5) * quart;
-        self.ramassables.coffres.pool.push(Coffre { index_type, x: cx, z: cz, angle, ouvert: None });
+        self.ramassables.coffres.pool.push(Coffre {
+            index_type,
+            x: cx,
+            z: cz,
+            angle,
+            ouvert: None,
+        });
         self.ev.son("coffre_apparition");
         self.ev.gerbe("invocation", cx, 0.6, cz);
     }
 
     pub fn maj_coffres(&mut self, dt: f32) {
         let r = &self.d.coffres.regles;
-        let (jx, jz, mort) = (self.etat.joueur.x, self.etat.joueur.z, self.etat.joueur.mort);
+        let (jx, jz, mort) = (
+            self.etat.joueur.x,
+            self.etat.joueur.z,
+            self.etat.joueur.mort,
+        );
 
         // Un coffre tous les tant d'ennemis tués, à quelques blocs du joueur
         let c = &mut self.ramassables.coffres;
@@ -354,12 +383,17 @@ impl Partie {
                 }
                 continue;
             }
-            let a_portee = (jx - c.x) * (jx - c.x) + (jz - c.z) * (jz - c.z) <= r.rayon_ouverture * r.rayon_ouverture;
+            let a_portee = (jx - c.x) * (jx - c.x) + (jz - c.z) * (jz - c.z)
+                <= r.rayon_ouverture * r.rayon_ouverture;
             if mort || !a_portee {
                 continue;
             }
             // Le prix est le même pour tous les coffres payants, il monte à chaque ouverture
-            let prix = if def.payant { (r.prix.base + r.prix.increment * coffres.payants_ouverts as f32) as u32 } else { 0 };
+            let prix = if def.payant {
+                (r.prix.base + r.prix.increment * coffres.payants_ouverts as f32) as u32
+            } else {
+                0
+            };
             if self.etat.emeraudes < prix {
                 continue;
             }

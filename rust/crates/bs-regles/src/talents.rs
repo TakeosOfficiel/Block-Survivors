@@ -34,6 +34,14 @@ impl Partie {
     pub fn talent_sur_mort(&mut self, _i: usize, _arme: Option<usize>, _nature: Nature) {}
     pub fn talent_sur_impact_mur(&mut self, _i: usize) {}
     pub fn talent_sur_sortie_piege(&mut self, _i: usize) {}
+    /// Multiplicateur des dégâts de l'arme qui se déclenche (talents « au déclenchement »).
+    pub fn talent_facteur_declenchement(&self) -> f32 {
+        1.0
+    }
+    /// Multiplicateur du délai entre deux déclenchements de l'arme `_arme`.
+    pub fn talent_delai(&self, _arme: usize) -> f32 {
+        self.d.regles.plafonds.delai_min.max(1.0)
+    }
     pub fn talent_vitesse(&self) -> f32 {
         1.0
     }

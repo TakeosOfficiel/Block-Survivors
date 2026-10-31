@@ -51,3 +51,25 @@ fn deterministe() {
     };
     assert_eq!(pos(&a), pos(&b));
 }
+
+/// Chaque personnage, immobile, frappe avec son arme de départ.
+#[test]
+fn armes_de_depart() {
+    let d = donnees();
+    for (index, (_, perso)) in d.personnages.personnages.iter().enumerate() {
+        let mut p = Partie::nouvelle(d, 0, index, 7, false);
+        p.joueur.invincible = true;
+        for _ in 0..(60.0 / PAS_SIMULATION) as u32 {
+            p.pas(PAS_SIMULATION);
+        }
+        let degats: f64 = p.etat.stats.degats_par_arme.iter().sum();
+        eprintln!(
+            "{:?} {:?} : tués {}, dégâts {:.0}",
+            perso.armes_depart,
+            p.arsenal.armes.len(),
+            p.etat.ennemis_tues,
+            degats
+        );
+        assert_eq!(p.arsenal.armes.len(), perso.armes_depart.len());
+    }
+}

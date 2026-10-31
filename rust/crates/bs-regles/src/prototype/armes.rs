@@ -1,7 +1,7 @@
 //! Armes du joueur (prototype : une seule, des boules de feu tirées vers l'ennemi le plus
 //! proche) et leurs projectiles, dans un tableau de capacité fixe.
 
-use crate::ennemis::Ennemis;
+use super::ennemis::Ennemis;
 
 /// Réglages de l'arme du prototype.
 #[derive(Clone, Debug)]

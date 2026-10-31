@@ -4,7 +4,7 @@
 
 use bs_commun::Alea;
 
-use crate::grille::GrilleSpatiale;
+use super::grille::GrilleSpatiale;
 
 /// Réglages des ennemis (données du prototype : des zombies).
 #[derive(Clone, Debug)]

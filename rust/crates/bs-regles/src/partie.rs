@@ -1,0 +1,164 @@
+//! Partie : regroupe l'état, le monde et tous les systèmes, et les fait avancer d'un pas
+//! dans l'ordre du jeu TypeScript (src/jeu.ts, `simuler`). Les systèmes sont écrits
+//! comme des blocs `impl Partie` dans leurs modules.
+
+use bs_commun::Mulberry;
+use bs_donnees::Donnees;
+use bs_monde::{CarteMonde, ChampDeFlux, generer_monde};
+
+use crate::catalogue::Catalogue;
+use crate::directeurs::{DirecteurApparitions, DirecteurBoss, SorteBoss};
+use crate::ennemis::Ennemis;
+use crate::etat::{EtatPartie, Issue};
+use crate::evenements::Evenements;
+use crate::joueur::{Joueur, TOTEM_RAYON_RECUL, TOTEM_RECUL};
+use crate::projectiles_ennemis::ProjectilesEnnemis;
+use crate::ramassage::Ramassables;
+use crate::vue::VueCamera;
+
+/// Hauteur approchée d'un modèle d'ennemi (blocs), pour placer les chiffres de dégâts.
+/// Visuel seulement : le jeu TS la tire du modèle compilé.
+const HAUTEUR_MODELE: f32 = 1.8;
+
+pub struct Partie {
+    pub d: &'static Donnees,
+    pub c: Catalogue,
+    pub etat: EtatPartie,
+    pub carte: CarteMonde,
+    pub flux: ChampDeFlux,
+    pub vue: VueCamera,
+    pub alea: Mulberry,
+    pub ev: Evenements,
+    /// Par type d'ennemi : hauteur des chiffres de dégâts et des gerbes.
+    pub hauteurs: Vec<f32>,
+    pub joueur: Joueur,
+    pub ennemis: Ennemis,
+    pub projectiles_ennemis: ProjectilesEnnemis,
+    pub ramassables: Ramassables,
+    pub directeur: DirecteurApparitions,
+    pub directeur_boss: DirecteurBoss,
+    pub directeur_mini_boss: DirecteurBoss,
+    /// Fin de partie atteinte avec un boss en vie : il faut le vaincre pour gagner.
+    pub prolongation: bool,
+    /// Totems déjà traités (recul des ennemis).
+    vies_traitees: u32,
+}
+
+impl Partie {
+    /// Nouvelle partie dans l'arène `index_arene` avec le personnage `index_personnage`.
+    /// `evenements` : enregistrer les retours visuels et sonores (inutile pour le robot).
+    pub fn nouvelle(
+        d: &'static Donnees,
+        index_arene: usize,
+        index_personnage: usize,
+        graine: u32,
+        evenements: bool,
+    ) -> Self {
+        let arene = &d.arenes.arenes[index_arene];
+        let monde = generer_monde(d, arene);
+        let carte = monde.carte;
+        let mut etat = EtatPartie::nouvel(d, arene, index_personnage);
+        let flux = ChampDeFlux::nouveau(&carte);
+        let demi_cote = arene.largeur.max(arene.profondeur) / 2.0 + 1.0;
+        let vue = VueCamera::nouvelle(etat.joueur.x, etat.joueur.z, 1280.0 / 720.0);
+        etat.joueur.pv = etat.joueur.pv_max;
+        Self {
+            d,
+            c: Catalogue::nouveau(d),
+            etat,
+            carte,
+            flux,
+            vue,
+            alea: Mulberry::nouveau(graine),
+            ev: Evenements::nouveaux(evenements),
+            hauteurs: d
+                .ennemis
+                .values()
+                .map(|e| HAUTEUR_MODELE * e.echelle.unwrap_or(1.0) + 0.3)
+                .collect(),
+            joueur: Joueur::default(),
+            ennemis: Ennemis::nouveaux(d, demi_cote),
+            projectiles_ennemis: ProjectilesEnnemis::nouveaux(),
+            ramassables: Ramassables::nouveaux(d),
+            directeur: DirecteurApparitions::default(),
+            directeur_boss: DirecteurBoss::nouveau(SorteBoss::Boss, &d.regles.boss),
+            directeur_mini_boss: DirecteurBoss::nouveau(SorteBoss::MiniBoss, &d.regles.mini_boss),
+            prolongation: false,
+            vies_traitees: 0,
+        }
+    }
+
+    /// Un pas de simulation, dans l'ordre de `simuler` du jeu TS.
+    pub fn simuler(&mut self, dt: f32) {
+        if self.etat.issue.is_none() {
+            self.etat.temps_jeu += f64::from(dt);
+            self.verifier_fin();
+        }
+        self.maj_joueur(dt);
+        let (jx, jz) = (self.etat.joueur.x, self.etat.joueur.z);
+        self.flux.maj(&self.carte, jx, jz);
+        self.maj_directeur(dt);
+        self.maj_directeurs_boss();
+        // Reconstruit aussi la grille utilisée par les armes
+        self.maj_ennemis(dt);
+        self.maj_orbes(dt);
+        self.maj_objets(dt);
+        self.maj_coffres(dt);
+        self.maj_projectiles_ennemis(dt);
+        self.traiter_resurrection();
+    }
+
+    /// Un pas du robot : la simulation, puis la caméra qui suit le joueur.
+    pub fn pas(&mut self, dt: f32) {
+        self.simuler(dt);
+        let (jx, jz) = (self.etat.joueur.x, self.etat.joueur.z);
+        self.vue.suivre(jx, jz, dt);
+    }
+
+    /// Défaite si le joueur est tombé ; victoire à la fin du temps, sauf boss en vie.
+    fn verifier_fin(&mut self) {
+        let duree = self.d.regles.progression.duree_partie;
+        if self.etat.joueur.mort {
+            self.etat.issue = Some(Issue::Defaite);
+        } else if !self.etat.sans_fin && self.etat.temps_jeu >= f64::from(duree) {
+            // Pas de victoire tant qu'un boss est en vie : il faut le vaincre
+            if self.ennemis.boss_actif().is_some() {
+                self.prolongation = true;
+                return;
+            }
+            if !self.prolongation {
+                self.etat.temps_jeu = f64::from(duree);
+            }
+            self.prolongation = false;
+            self.etat.issue = Some(Issue::Victoire);
+            self.terrasser_tous();
+            self.ev.son("victoire");
+            self.ev.secousse(0.5);
+        }
+    }
+
+    /// Totem consommé : les ennemis proches sont repoussés.
+    fn traiter_resurrection(&mut self) {
+        let j = &self.etat.joueur;
+        if j.vies_utilisees == self.vies_traitees {
+            return;
+        }
+        self.vies_traitees = j.vies_utilisees;
+        let (x, z) = (j.x, j.z);
+        self.repousser_ennemis(x, z, TOTEM_RAYON_RECUL, TOTEM_RECUL);
+        self.ev.gerbe("totem", x, 1.2, z);
+    }
+
+    // --- En attente des invocations (étape 1b-5) ---
+
+    /// Allié invoqué assez proche pour attirer un ennemi au corps à corps.
+    pub fn allie_provocateur(&mut self, _x: f32, _z: f32, _distance: f32) -> Option<(usize, u32)> {
+        None
+    }
+    /// Position et rayon de l'allié `a` s'il vit encore avec l'identifiant `id`.
+    pub fn allie_vivant(&self, _a: usize, _id: u32) -> Option<(f32, f32, f32)> {
+        None
+    }
+    pub fn blesser_allie(&mut self, _a: usize, _degats: f32) {}
+    pub fn blesser_allies_zone(&mut self, _x: f32, _z: f32, _rayon: f32, _degats: f32) {}
+}

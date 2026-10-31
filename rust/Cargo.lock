@@ -1891,6 +1891,8 @@ name = "bs-regles"
 version = "0.1.0"
 dependencies = [
  "bs-commun",
+ "bs-donnees",
+ "bs-monde",
  "libm",
 ]
 

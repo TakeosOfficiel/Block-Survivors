@@ -4,8 +4,8 @@
 
 use bs_commun::PAS_SIMULATION;
 
-use crate::armes::{ParametresArme, Projectiles};
-use crate::ennemis::{Ennemis, ParametresEnnemis};
+use super::armes::{ParametresArme, Projectiles};
+use super::ennemis::{Ennemis, ParametresEnnemis};
 
 /// Ce que veut le joueur pendant un pas : une direction (longueur ≤ 1).
 #[derive(Clone, Copy, Debug, Default, PartialEq)]

@@ -8,6 +8,8 @@ publish.workspace = true
 
 [dependencies]
 bs-commun.workspace = true
+bs-donnees.workspace = true
+bs-monde.workspace = true
 libm.workspace = true
 
 [lints]

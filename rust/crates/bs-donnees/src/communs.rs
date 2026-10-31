@@ -64,6 +64,18 @@ macro_rules! nombres_facultatifs {
         pub struct $nom {
             $(#[serde(default, skip_serializing_if = "nul")] pub $champ: f32,)*
         }
+
+        impl $nom {
+            /// Ajoute `autre` champ par champ.
+            pub fn cumuler(&mut self, autre: &Self) {
+                $(self.$champ += autre.$champ;)*
+            }
+
+            /// Multiplie chaque champ par `facteur`.
+            pub fn fois(&self, facteur: f32) -> Self {
+                Self { $($champ: self.$champ * facteur,)* }
+            }
+        }
     };
 }
 

@@ -1,16 +1,30 @@
 //! Simulation de Block Survivors, sans rendu ni Bevy : elle reçoit les commandes du
-//! joueur et avance d'un pas fixe (`bs_commun::PAS_SIMULATION`). Données en tableaux à
-//! plat (une colonne par champ), préallouées : aucune allocation pendant la partie.
-//! Déterministe : même graine et mêmes commandes, même état (natif comme WebAssembly).
+//! joueur et avance d'un pas fixe (`bs_commun::PAS_SIMULATION`). Données préallouées :
+//! aucune allocation pendant la partie. Déterministe : même graine et mêmes commandes,
+//! même état (natif comme WebAssembly).
 //!
-//! Prototype (étape 0 bis du plan) : une arène, le joueur, des zombies, une arme.
+//! `prototype` : le prototype de l'étape 0 bis (une arène, des zombies, une arme), gardé
+//! pour les exemples réseau et le rendu tant que la partie complète n'est pas branchée.
+//! Le reste est le port de la simulation TypeScript (étape 1), autour de `Partie`.
 
-mod armes;
-mod ennemis;
-mod grille;
-mod simulation;
+mod prototype;
 
-pub use armes::{ParametresArme, Projectiles};
-pub use ennemis::{Ennemis, ParametresEnnemis};
-pub use grille::GrilleSpatiale;
-pub use simulation::{Commande, Joueur, Parametres, Simulation};
+pub mod catalogue;
+pub mod directeurs;
+pub mod ennemis;
+pub mod etat;
+pub mod evenements;
+pub mod grille;
+pub mod joueur;
+pub mod partie;
+pub mod projectiles_ennemis;
+pub mod ramassage;
+pub mod talents;
+pub mod vue;
+
+pub use partie::Partie;
+pub use prototype::Ennemis as EnnemisPrototype;
+pub use prototype::{
+    Commande, GrilleSpatiale, Joueur, Parametres, ParametresArme, ParametresEnnemis, Projectiles,
+    Simulation,
+};

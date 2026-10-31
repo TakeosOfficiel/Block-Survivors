@@ -1,0 +1,70 @@
+# Version Rust en cours de migration (rust/, plan : docs/PLAN-RUST.md). Vérifie et
+# construit à chaque push qui touche rust/ : format, clippy, tests, build PC (Linux,
+# Windows) et build navigateur (WebGPU et WebGL2, poids affiché). Ne publie rien.
+name: Version Rust
+
+on:
+  push:
+    paths: ['rust/**', '.github/workflows/rust.yml']
+  pull_request:
+    paths: ['rust/**', '.github/workflows/rust.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: rust-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+defaults:
+  run:
+    working-directory: rust
+
+jobs:
+  verifications:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bibliothèques système (fenêtre, entrées, son)
+        run: sudo apt-get update -q && sudo apt-get install -y -q pkg-config libwayland-dev libxkbcommon-dev libudev-dev libasound2-dev libx11-dev libxcursor-dev libxrandr-dev libxi-dev
+      - name: Rust (version épinglée par rust-toolchain.toml)
+        run: rustup show
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: Format
+        run: cargo fmt --all --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Tests
+        run: cargo test --workspace
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: Outils web (wasm-bindgen à la version du crate, binaryen)
+        run: |
+          cargo install wasm-bindgen-cli --version 0.2.122 --locked
+          sudo apt-get install -y -q binaryen
+      - name: Build navigateur (WebGPU et WebGL2)
+        run: outils/build-web.sh
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: Build Windows (profil ship)
+        run: cargo build --profile ship -p block-survivors

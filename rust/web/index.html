@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Block Survivors</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #0c0f16; }
+    #jeu { display: block; width: 100%; height: 100%; outline: none; }
+    #message { position: fixed; inset: auto 0 24px; text-align: center; color: #9aa0ad; font: 14px system-ui, sans-serif; }
+  </style>
+</head>
+<body>
+  <canvas id="jeu" tabindex="0"></canvas>
+  <div id="message">Chargement…</div>
+  <script type="module">
+    // WebGPU quand le navigateur sait le faire (adaptateur réellement obtenu), sinon WebGL2
+    async function webgpuDisponible() {
+      try {
+        return !!(navigator.gpu && await navigator.gpu.requestAdapter());
+      } catch {
+        return false;
+      }
+    }
+    const rendu = new URLSearchParams(location.search).get('rendu') ?? ((await webgpuDisponible()) ? 'webgpu' : 'webgl2');
+    window.renduChoisi = rendu;
+    const message = document.getElementById('message');
+    try {
+      const module = await import(`./jeu-${rendu}.js`);
+      await module.default();
+    } catch (erreur) {
+      // Bevy rend la main au navigateur par une exception de contrôle : ce n'est pas une erreur
+      if (!String(erreur).includes('Using exceptions for control flow')) {
+        message.textContent = `Le jeu n'a pas pu démarrer (${rendu}) : ${erreur}`;
+        throw erreur;
+      }
+    }
+    message.remove();
+  </script>
+</body>
+</html>

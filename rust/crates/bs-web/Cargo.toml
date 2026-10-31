@@ -1,0 +1,27 @@
+[package]
+name = "bs-web"
+description = "Le jeu dans le navigateur (WebAssembly)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+block-survivors.workspace = true
+bevy.workspace = true
+
+# Deux builds web : WebGPU (le jeu complet) et WebGL2 (navigateurs sans WebGPU) ;
+# Bevy n'accepte qu'un des deux à la fois. La page choisit selon `navigator.gpu`.
+[features]
+default = ["webgpu"]
+webgpu = ["bevy/webgpu"]
+webgl2 = ["bevy/webgl2"]
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen.workspace = true
+
+[lints]
+workspace = true

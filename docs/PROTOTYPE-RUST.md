@@ -365,7 +365,7 @@ doivent tomber dans la tolérance de celles de la version TypeScript (étape −
 | 1b-2 Partie, joueur, niveaux, passifs | fait |
 | 1b-3 Ennemis, boss et directeurs | fait |
 | 1b-4 Orbes d'XP, objets, coffres, butin | fait |
-| 1b-5 Arsenal et les 27 armes, alliés invoqués compris | fait |
+| 1b-5 Arsenal et les 25 armes, alliés invoqués compris | fait |
 | 1b-6 Talents de classe et d'objets | à faire (tous neutres pour l'instant) |
 | 1b-7 Cartes d'amélioration et équipement | à faire |
 | 1b-8 Robot et comparaison aux références | à faire |

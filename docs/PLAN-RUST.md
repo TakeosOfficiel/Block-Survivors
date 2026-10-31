@@ -43,7 +43,7 @@ block-survivors/            (espace de travail Cargo)
     bs-ui/        menus, HUD, cartes, pages (Collection, Talents, Multijoueur…)
     bs-reseau/    protocole de coop (instantanés binaires), client du relais
     bs-relais/    serveur relais (axum + tokio), salons, liste publique
-    bs-maj/       vérification et installation des mises à jour (PC)
+    bs-maj/       mises à jour (Velopack, manifeste signé, voies, retour arrière)
     block-survivors/  le jeu (PC)
     bs-web/          le jeu (navigateur, wasm)
 ```
@@ -82,7 +82,7 @@ block-survivors/
     bs-sauvegarde/ profils, format, chiffrement, migrations de version
     bs-reseau/     protocole (messages versionnés), client du relais, prédiction
     bs-relais/     serveur (axum + tokio), sans dépendance au moteur
-    bs-maj/        lanceur et mises à jour
+    bs-maj/        mises à jour (Velopack, manifeste signé, voies, retour arrière)
     bs-robot/      robot d'équilibrage (ligne de commande, sans rendu)
     block-survivors/  binaire PC : assemble les plugins
     bs-web/           point d'entrée wasm
@@ -272,35 +272,92 @@ serveur. À décider selon le coût réel du relais.
 
 ## 5. Mises à jour
 
-### Aujourd'hui
-Electron + electron-updater : l'appli vérifie le dépôt public `Block-Survivors-version`
-au lancement, télécharge la nouvelle version en arrière-plan et l'installe à la fermeture
-(ou tout de suite en un clic). La CI publie automatiquement depuis `main`.
+Choix : **Velopack** (installeur et mises à jour, écrit en Rust, utilisé en production par
+de grosses applis), complété par **notre propre signature** des versions. Pas de lanceur
+maison simplifié : on vise directement une chaîne propre, sécurisée et optimisée.
 
-### En Rust (plus d'Electron)
-- **PC (Windows, Linux)** : un **petit lanceur** en Rust (`bs-maj`), lancé à la place du
-  jeu :
-  1. il lit `version.json` sur le dépôt public (comme aujourd'hui) ;
-  2. si une version plus récente existe, il télécharge le nouveau jeu avec une barre de
-     progression ;
-  3. il **vérifie sa signature** (clé ed25519 gardée dans les secrets de la CI : un fichier
-     modifié en route est refusé) ;
-  4. il remplace l'ancien jeu et le lance.
-  Crates possibles : `self_update` ou un code maison (reqwest + ed25519-dalek + zip).
-  Sans réseau, le lanceur démarre la version installée.
-- **Mises à jour en cours de partie** : comme aujourd'hui, un message sur le menu
-  (« Version x téléchargée, redémarrer maintenant ? »).
-- **Navigateur** : une mise à jour est simplement une nouvelle publication du site ; les
-  fichiers portent leur numéro de version (pas de vieux fichiers gardés en cache).
-- **Multi** : versions identiques exigées ; le salon dit à un joueur en retard de mettre à
-  jour, avec le bouton pour le faire.
-- **CI** : construit Windows, Linux et web, signe, publie la release et `version.json`,
-  uniquement depuis `main` (comme aujourd'hui). Le poids du jeu passe d'environ 150 Mo
-  (Electron) à quelques dizaines de Mo.
-- **Passage d'Electron au lanceur Rust** : une dernière mise à jour Electron installe le
-  lanceur Rust et y transfère les profils ; ensuite, l'appli Electron n'est plus utilisée.
+### Ce que fait le développeur
+1. Change le numéro de version (un seul endroit : `Cargo.toml` de l'espace de travail) et
+   écrit le CHANGELOG.
+2. Pousse sur `main` (ou crée un tag pour la voie « bêta », voir plus bas).
+3. Tout le reste est fait par la CI.
 
----
+### Ce que fait la CI (GitHub Actions)
+1. Vérifications complètes (format, clippy, tests, données, robot, coop de bout en bout) :
+   **rien n'est publié si un seul test échoue**.
+2. Compile le jeu (profil `ship` : LTO, optimisations maximales) pour Windows, Linux et le web.
+3. **Signe le code** :
+   - Windows : signature Authenticode (Azure Trusted Signing, environ 10 €/mois, ou un
+     certificat de signature de code) : plus d'alerte SmartScreen « éditeur inconnu » ;
+   - Linux : AppImage signée.
+4. Construit avec Velopack :
+   - l'installeur complet (première installation) ;
+   - un **paquet « delta »** par version : seulement les octets qui ont changé (souvent
+     quelques Mo au lieu du jeu entier).
+5. Écrit le **manifeste de la version** (`version.json`) : numéro, voie (stable ou bêta),
+   empreinte SHA-256 de chaque fichier, version minimale compatible en multi, notes de
+   version. Le manifeste est **signé en ed25519** avec une clé gardée uniquement dans les
+   secrets de la CI.
+6. Publie la release sur le dépôt public `Block-Survivors-version` (GitHub sert les fichiers en
+   HTTPS, gratuitement, partout dans le monde), puis le manifeste en dernier : une version
+   n'est annoncée qu'une fois tous ses fichiers en ligne.
+7. Déploie la version web (fichiers nommés avec leur empreinte, jamais de vieux fichier en cache)
+   et le relais de coop si son protocole a changé.
+
+### Ce que fait le jeu chez les joueurs
+1. Au lancement (et toutes les 30 min en jeu), il lit le manifeste en HTTPS.
+2. Il **vérifie la signature ed25519 du manifeste** avec la clé publique intégrée au jeu :
+   un manifeste falsifié (site piraté, réseau détourné) est refusé.
+3. S'il y a plus récent sur sa voie, il télécharge **le delta** en arrière-plan (reprise si
+   la connexion coupe, débit limité pendant une partie pour ne pas gêner le multi).
+4. Il **vérifie l'empreinte SHA-256** de chaque fichier téléchargé contre le manifeste signé.
+5. Il applique la mise à jour **à côté** de la version installée, puis bascule d'un coup
+   (atomique) : jamais de jeu à moitié mis à jour, même si le PC s'éteint en plein milieu.
+6. Au menu : « Version x.y.z prête, redémarrer maintenant ? » ; sinon elle s'installe au
+   prochain lancement. Pendant une partie : rien ne s'interrompt.
+7. **Retour arrière automatique** : si la nouvelle version plante au démarrage deux fois de
+   suite, le jeu revient à la précédente et le signale (journal envoyé à la prochaine
+   connexion, si le joueur l'accepte).
+8. Sans Internet : le jeu démarre la version installée, sans attendre.
+
+### Voies de publication
+- **Stable** : ce que reçoivent tous les joueurs (push sur `main`).
+- **Bêta** : pour ceux qui l'activent dans les Options (tag `vX.Y.Z-beta.N`) ; permet de tester
+  une grosse nouveauté avec quelques potes avant tout le monde.
+- **Retrait d'une version** : un manifeste peut marquer une version comme retirée ; les
+  joueurs qui l'ont reviennent à la précédente.
+- **Déploiement progressif** (optionnel) : une nouvelle version proposée d'abord à 10 % des
+  joueurs, puis à tous si rien ne casse.
+
+### Multijoueur
+- Le manifeste donne la **version minimale compatible** pour la coop : une correction qui ne
+  touche pas au protocole ne force pas tout le monde à mettre à jour.
+- Si les versions ne sont pas compatibles, le salon le dit et propose « Mettre à jour
+  maintenant ».
+- Le relais refuse un protocole trop ancien avec un message clair.
+
+### Sécurité
+- Tout en HTTPS ; **deux signatures indépendantes** (signature de code Windows et
+  manifeste ed25519) ; empreinte vérifiée pour chaque fichier.
+- Clés uniquement dans les secrets GitHub ; plan prévu en cas de clé compromise (nouvelle clé
+  annoncée par une version signée avec l'ancienne).
+- Les sauvegardes ne sont jamais touchées par une mise à jour ; avant une migration de format,
+  une copie de sécurité est faite automatiquement.
+
+### Version navigateur
+- Une nouvelle publication du site suffit ; le jeu ouvert affiche « Nouvelle version
+  disponible, recharger ? » au lieu de changer en pleine partie.
+
+### Passage depuis Electron
+- Une dernière mise à jour Electron télécharge l'installeur Velopack de la version Rust,
+  **vérifie sa signature**, transfère les profils (avec une copie de sécurité), installe, puis
+  désinstalle l'appli Electron. Les joueurs n'ont rien à faire à la main.
+
+### Tests de la chaîne de mise à jour (dans la CI)
+- Installer la version N, publier N+1 sur un dépôt de test, vérifier que N se met à jour seule.
+- Manifeste falsifié, fichier corrompu, téléchargement coupé, coupure pendant l'application :
+  chaque cas doit être refusé ou repris proprement.
+- Retour arrière après un plantage simulé au démarrage.
 
 ## 6. Risques et points à décider
 

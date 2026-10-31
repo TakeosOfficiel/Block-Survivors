@@ -1,0 +1,21 @@
+[package]
+name = "bs-audio"
+description = "Son du jeu par kira (PC et navigateur) : sons du prototype, réglage du tampon"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+kira = { version = "0.12.6", default-features = false, features = ["cpal", "ogg"] }
+
+# Banc d'essai du son dans le navigateur (outils/banc-son.sh)
+[[example]]
+name = "banc_son"
+crate-type = ["cdylib"]
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen.workspace = true
+
+[lints]
+workspace = true

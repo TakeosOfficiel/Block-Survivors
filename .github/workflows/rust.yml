@@ -57,6 +57,12 @@ jobs:
           cargo install wasm-opt --version 0.116.1 --locked
       - name: Build navigateur (WebGPU et WebGL2)
         run: outils/build-web.sh
+      # À servir en local (ex. « python3 -m http.server » dans le dossier) pour mesurer
+      - uses: actions/upload-artifact@v4
+        with:
+          name: block-survivors-web
+          path: rust/web/dist
+          retention-days: 14
 
   windows:
     runs-on: windows-latest
@@ -68,3 +74,9 @@ jobs:
           workspaces: rust
       - name: Build Windows (profil ship)
         run: cargo build --profile ship -p block-survivors
+      # Prototype à lancer sur un vrai PC : images/s dans le titre de la fenêtre
+      - uses: actions/upload-artifact@v4
+        with:
+          name: block-survivors-windows
+          path: rust/target/ship/block-survivors.exe
+          retention-days: 14

@@ -26,7 +26,8 @@ type Socket =
     tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>;
 
 async fn connecter(url: &str, premiere: Trame<'_>) -> (Socket, [u8; 6], u8) {
-    let (mut ws, _) = tokio_tungstenite::connect_async(url)
+    // nodelay aussi côté client (sinon Nagle : +40 ms sur un aller-retour sur dix)
+    let (mut ws, _) = tokio_tungstenite::connect_async_with_config(url, None, true)
         .await
         .expect("connexion au relais");
     let mut o = Vec::new();
@@ -196,8 +197,9 @@ async fn main() {
     tous.sort_by(f64::total_cmp);
     let q = |p: f64| tous[((tous.len() - 1) as f64 * p) as usize];
     println!(
-        "aller-retour invité → relais → hôte → relais → invité : médiane {:.2} ms, 99 % sous {:.2} ms, max {:.2} ms",
+        "aller-retour invité → relais → hôte → relais → invité : médiane {:.2} ms, 90 % sous {:.2} ms, 99 % sous {:.2} ms, max {:.2} ms",
         q(0.5),
+        q(0.9),
         q(0.99),
         q(1.0)
     );

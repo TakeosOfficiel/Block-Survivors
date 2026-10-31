@@ -1,0 +1,15 @@
+[package]
+name = "bs-rendu"
+description = "Rendu Bevy de la simulation : arène, joueur, ennemis, projectiles, caméra"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+bevy.workspace = true
+bs-commun.workspace = true
+bs-regles.workspace = true
+
+[lints]
+workspace = true

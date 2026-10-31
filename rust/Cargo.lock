@@ -1742,6 +1742,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bs-commun",
+ "bs-rendu",
 ]
 
 [[package]]
@@ -1805,6 +1806,15 @@ dependencies = [
  "futures-util",
  "tokio",
  "tokio-tungstenite 0.28.0",
+]
+
+[[package]]
+name = "bs-rendu"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bs-commun",
+ "bs-regles",
 ]
 
 [[package]]

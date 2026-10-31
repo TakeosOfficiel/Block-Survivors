@@ -17,6 +17,7 @@ bs-regles = { path = "crates/bs-regles" }
 bs-sauvegarde = { path = "crates/bs-sauvegarde" }
 bs-protocole = { path = "crates/bs-protocole" }
 bs-relais = { path = "crates/bs-relais" }
+bs-rendu = { path = "crates/bs-rendu" }
 libm = "0.2"
 # Fonctionnalités de Bevy listées une à une : pas d'audio de Bevy (le son passera par kira).
 # Le rendu web (WebGPU ou WebGL2, qui s'excluent) se choisit dans bs-web : d'où la liste

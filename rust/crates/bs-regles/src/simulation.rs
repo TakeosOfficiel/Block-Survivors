@@ -92,6 +92,15 @@ impl Simulation {
         }
     }
 
+    /// Taille de l'arène (blocs).
+    pub fn largeur(&self) -> f32 {
+        self.demi_l * 2.0
+    }
+
+    pub fn profondeur(&self) -> f32 {
+        self.demi_p * 2.0
+    }
+
     /// Un pas fixe de simulation.
     pub fn avancer(&mut self, commande: Commande) {
         let dt = PAS_SIMULATION;

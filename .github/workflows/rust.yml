@@ -1,6 +1,7 @@
 # Version Rust en cours de migration (rust/, plan : docs/PLAN-RUST.md). Vérifie et
 # construit à chaque push qui touche rust/ : format, clippy, tests, build PC (Linux,
-# Windows) et build navigateur (WebGPU et WebGL2, poids affiché). Ne publie rien.
+# Windows), build navigateur (WebGPU et WebGL2, poids affiché) et chaîne de mise à jour
+# (Velopack + manifeste signé, Linux et Windows). Ne publie rien.
 name: Version Rust
 
 on:
@@ -80,3 +81,32 @@ jobs:
           name: block-survivors-windows
           path: rust/target/ship/block-survivors.exe
           retention-days: 14
+
+  # Chaîne de mise à jour de bout en bout : installer N, se mettre à jour seul, refuser les attaques
+  mise-a-jour-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Outils (Velopack, AppImage)
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q squashfs-tools zstd libfuse2
+          dotnet tool install -g vpk --version 1.2.161
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: Essai de mise à jour
+        run: outils/essai-maj.sh
+
+  mise-a-jour-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: dotnet tool install -g vpk --version 1.2.161
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: Essai de mise à jour
+        shell: pwsh
+        run: ./outils/essai-maj.ps1

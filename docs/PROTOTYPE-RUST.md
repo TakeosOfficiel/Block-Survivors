@@ -9,7 +9,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 |---|---|
 | 0. Socle (espace de travail, fenêtre PC et web, CI) | fait : build web corrigé, page vérifiée (WebGL2, WebGPU) |
 | −1. Robot d'équilibrage, aléatoire à graine, pas fixe (TypeScript) | fait |
-| 0 bis. Prototype des cinq paris | fait : on continue, avec ajustements (voir la décision) ; 60 images/s à confirmer sur une vraie carte graphique |
+| 0 bis. Prototype des cinq paris | fait : on continue, avec ajustements (voir la décision) ; 94 images/s mesurées sur le PC du joueur |
 
 ---
 
@@ -138,6 +138,10 @@ interpolé entre deux pas, pilote automatique), `bs-audio`, `bs-protocole`, `bs-
 | Navigateur, WebGPU | démarre en 0,5 s, aucune erreur | `docs/captures/proto-webgpu.png` |
 | PC (Linux, Vulkan) | tourne, aucune erreur | `docs/captures/proto-pc-lavapipe.png` |
 
+- **Mesure sur un vrai PC Windows** (build `ship` de la CI, 31/10/2026) : **94 images/s**,
+  pire image 28 ms, simulation 95 µs par pas. Le pari « 60 images/s » est **tenu** avec de la
+  marge. La pire image à 28 ms est un pic isolé (démarrage ou chargement probable) ; à
+  surveiller quand le vrai rendu arrivera.
 - Simulation : **65 µs par pas** (300 zombies, projectiles, grille) en natif, soit 0,4 %
   d'une image à 60 images/s. La simulation ne sera pas le goulot.
 - Les images/s ne sont **pas mesurables ici** : la machine de travail n'a pas de carte
@@ -282,7 +286,7 @@ identique. Fichier illisible ou vide : erreur propre, pas de plantage. **Pari te
 
 | Pari | Verdict |
 |---|---|
-| 1. Rendu de 300 zombies | **tenu en fonctionnement** (WebGPU, WebGL2, PC), simulation à 65 µs/pas ; les 60 images/s restent **à confirmer sur une vraie carte graphique** (artefacts de la CI) |
+| 1. Rendu de 300 zombies | **tenu** : 94 images/s sur un vrai PC Windows (pire image 28 ms), simulation 65 à 95 µs/pas ; fonctionne aussi en WebGPU et WebGL2 |
 | 2. kira dans le navigateur | **tenu avec ajustement** : tampon de 4096 en navigateur (85 ms de latence) |
 | 3. Relais axum/tokio | **tenu** : 0,5 ms d'aller-retour en local, 35 Ko/s par invité ; mesure depuis la France à faire au déploiement |
 | 4. Velopack N → N+1, manifeste signé | **tenu avec ajustement** sous Linux et **Windows** (CI : installeur silencieux, N → N+1, delta N+1 → N+2, manifeste falsifié refusé) ; deltas de Velopack inefficaces sur l'exécutable (19 Mo sur 24) |

@@ -243,7 +243,7 @@ Essai de bout en bout, `rust/outils/essai-maj.sh` (appli de démonstration empaq
 - Mêmes vérifications en tests unitaires (`bs-maj/tests/manifeste.rs`, sans Velopack) et
   dans la CI : jobs `mise-a-jour-linux` (le script ci-dessus) et `mise-a-jour-windows`
   (`outils/essai-maj.ps1` : installeur Velopack silencieux, N → N+1 → N+2, manifeste
-  falsifié).
+  falsifié). Les deux sont **verts** (CI du 31/10, commit 4d7c48d).
 - **Deltas sur le vrai jeu : décevants.** Deux builds `ship` du prototype Bevy qui ne
   diffèrent que d'une constante (position de la caméra) : 60 Mo d'octets changent sur 71
   (LTO : toutes les adresses bougent). Mesures (Linux) :
@@ -284,7 +284,7 @@ identique. Fichier illisible ou vide : erreur propre, pas de plantage. **Pari te
 | 1. Rendu de 300 zombies | **tenu en fonctionnement** (WebGPU, WebGL2, PC), simulation à 65 µs/pas ; les 60 images/s restent **à confirmer sur une vraie carte graphique** (artefacts de la CI) |
 | 2. kira dans le navigateur | **tenu avec ajustement** : tampon de 4096 en navigateur (85 ms de latence) |
 | 3. Relais axum/tokio | **tenu** : 0,5 ms d'aller-retour en local, 35 Ko/s par invité ; mesure depuis la France à faire au déploiement |
-| 4. Velopack N → N+1, manifeste signé | **tenu avec ajustement** sous Linux (complet puis delta, toutes les attaques refusées) ; Windows dans la CI ; deltas de Velopack inefficaces sur l'exécutable (19 Mo sur 24) |
+| 4. Velopack N → N+1, manifeste signé | **tenu avec ajustement** sous Linux et **Windows** (CI : installeur silencieux, N → N+1, delta N+1 → N+2, manifeste falsifié refusé) ; deltas de Velopack inefficaces sur l'exécutable (19 Mo sur 24) |
 | 5. Import d'un vrai .bssave | **tenu** |
 
 **Continuer** la migration (étape 1 du plan). Ajustements retenus :

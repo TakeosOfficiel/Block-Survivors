@@ -59,11 +59,13 @@ jobs:
       - name: Build navigateur (WebGPU et WebGL2)
         run: outils/build-web.sh
       # À servir en local (ex. « python3 -m http.server » dans le dossier) pour mesurer
+      # Le quota de stockage des artefacts du compte peut être plein : ne fait pas échouer le job
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: block-survivors-web
           path: rust/web/dist
-          retention-days: 14
+          retention-days: 3
 
   windows:
     runs-on: windows-latest
@@ -76,11 +78,13 @@ jobs:
       - name: Build Windows (profil ship)
         run: cargo build --profile ship -p block-survivors
       # Prototype à lancer sur un vrai PC : images/s dans le titre de la fenêtre
+      # Le quota de stockage des artefacts du compte peut être plein : ne fait pas échouer le job
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: block-survivors-windows
           path: rust/target/ship/block-survivors.exe
-          retention-days: 14
+          retention-days: 3
 
   # Chaîne de mise à jour de bout en bout : installer N, se mettre à jour seul, refuser les attaques
   mise-a-jour-linux:

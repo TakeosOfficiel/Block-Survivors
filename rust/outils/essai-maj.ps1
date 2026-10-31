@@ -22,7 +22,8 @@ function Empaqueter($version, $serie) {
 }
 function Attendu($texte) {
   Start-Sleep 8
-  $derniere = (Get-Content $env:BS_JOURNAL -Encoding utf8)[-1]
+  # @( ) : avec une seule ligne, Get-Content rend une chaîne et [-1] son dernier caractère
+  $derniere = @(Get-Content $env:BS_JOURNAL -Encoding utf8)[-1]
   if ($derniere -like "*$texte*") { "ok    : $derniere" } else { throw "ÉCHEC : attendu « $texte », journal : $derniere" }
 }
 $appli = "$env:LOCALAPPDATA\BSDemo\current\demo_maj.exe"

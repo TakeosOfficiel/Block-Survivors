@@ -63,6 +63,8 @@ inherits = "release"
 lto = "fat"
 codegen-units = 1
 panic = "abort"
+# Sans les symboles : 49 Mo au lieu de 71 sous Linux (docs/PROTOTYPE-RUST.md, pari 4)
+strip = true
 
 # Navigateur : le plus petit possible
 [profile.web]

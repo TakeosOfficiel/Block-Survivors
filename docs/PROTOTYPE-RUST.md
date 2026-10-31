@@ -9,7 +9,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 |---|---|
 | 0. Socle (espace de travail, fenêtre PC et web, CI) | fait : build web corrigé, page vérifiée (WebGL2, WebGPU) |
 | −1. Robot d'équilibrage, aléatoire à graine, pas fixe (TypeScript) | fait |
-| 0 bis. Prototype des cinq paris | en cours : rendu, son, relais, sauvegardes mesurés ; mise à jour à faire |
+| 0 bis. Prototype des cinq paris | fait : on continue, avec ajustements (voir la décision) ; 60 images/s à confirmer sur une vraie carte graphique |
 
 ---
 
@@ -145,7 +145,9 @@ interpolé entre deux pas, pilote automatique), `bs-audio`, `bs-protocole`, `bs-
   tout est calculé par le processeur). Le pari « 60 images/s » reste à confirmer sur une
   vraie machine : la CI publie le build Windows (`block-survivors-windows`) et le build web
   (`block-survivors-web`, à servir avec `python3 -m http.server`, `?rendu=webgl2` ou
-  `?rendu=webgpu`) ; les images/s s'affichent dans le titre de la fenêtre ou de l'onglet.
+  `?rendu=webgpu`) ; les images/s s'affichent dans le titre de la fenêtre ou de l'onglet. Attention : le
+  quota de stockage des artefacts du compte GitHub était plein le 31/10 (envoi refusé) ;
+  artefacts gardés 3 jours désormais, supprimer les vieux dans l'onglet Actions si besoin.
   **À faire par un humain** sur un PC moyen et un portable : noter les images/s ici.
 - Le rendu est déjà économe : un maillage par type d'entité, partagé (Bevy les regroupe en
   un seul appel de dessin), aucune allocation par image.
@@ -209,6 +211,63 @@ aller_retour` (hôte + 3 invités, local, 10 s).
   tenable sur un petit serveur. Piste si besoin : instantanés différentiels.
 - Reste : la mesure depuis la France vers un vrai relais déployé (latence réseau réelle).
 
+### Pari 4 : mise à jour Velopack de N à N+1, manifeste signé
+
+`bs-maj` : `SourceSignee`, une source de mises à jour Velopack qui lit d'abord
+`version.json` (manifeste signé en ed25519), le vérifie (signature par la clé de la CI **ou**
+la clé de secours, numéro de série jamais en arrière, date d'expiration, voie) et ne
+propose à Velopack **que** les paquets qu'il liste ; chaque fichier téléchargé est revérifié
+contre son SHA-256 signé (Velopack revérifie SHA-1 et SHA-256 à son tour). `bs-signer` :
+outil de la CI (paire de clés, manifeste écrit depuis `releases.<voie>.json` de `vpk`,
+signature). Velopack 1.2.161 (crate et `vpk` à la même version ; la 1.3 est une préversion).
+
+Essai de bout en bout, `rust/outils/essai-maj.sh` (appli de démonstration empaquetée par
+`vpk` en AppImage, versions successives) :
+
+| Cas | Résultat (Linux) |
+|---|---|
+| Installer N (0.1.0), lancer | démarre en 0.1.0 |
+| N → N+1 | téléchargé, appliqué, redémarré tout seul en 0.2.0 (paquet complet) |
+| N+1 → N+2 | **delta** : 6 Ko au lieu de 5 Mo, appliqué en 0,3 s, redémarré en 0.3.0 |
+| Déjà à jour | « à jour » |
+| Manifeste falsifié (une taille changée) | refusé : signature invalide |
+| Manifeste signé par une autre clé | refusé : signature invalide |
+| Manifeste expiré | refusé |
+| Vieux manifeste rejoué (série 2 après 3) | refusé : manifeste ancien |
+| Paquets corrompus, manifeste valide | téléchargement refusé (empreinte), le jeu reste en 0.3.0 |
+
+- La première mise à jour après l'installation prend le **paquet complet** : Velopack n'a
+  pas encore de paquet local de la version installée pour lui appliquer un delta (l'AppImage
+  seule ne suffit pas). Ensuite, tout passe par les deltas. À garder en tête pour le passage
+  depuis Electron : la première mise à jour sera complète.
+- Mêmes vérifications en tests unitaires (`bs-maj/tests/manifeste.rs`, sans Velopack) et
+  dans la CI : jobs `mise-a-jour-linux` (le script ci-dessus) et `mise-a-jour-windows`
+  (`outils/essai-maj.ps1` : installeur Velopack silencieux, N → N+1 → N+2, manifeste
+  falsifié).
+- **Deltas sur le vrai jeu : décevants.** Deux builds `ship` du prototype Bevy qui ne
+  diffèrent que d'une constante (position de la caméra) : 60 Mo d'octets changent sur 71
+  (LTO : toutes les adresses bougent). Mesures (Linux) :
+
+  | Paquet | Taille |
+  |---|---|
+  | complet Velopack (exécutable de 71 Mo avec symboles) | 24,3 Mo |
+  | delta Velopack, mode par défaut (`BestSpeed`) | 19,7 Mo |
+  | delta Velopack, `--delta BestSize` | 18,9 Mo |
+  | `zstd -19 --long=27 --patch-from` (même paire) | **1,2 Mo** |
+  | exécutable sans symboles (`strip`), compressé seul | 11,3 Mo |
+  | `zstd --patch-from` entre exécutables sans symboles | **1,1 Mo** |
+
+  Le delta de Velopack ne gagne presque rien sur un gros exécutable unique ; un vrai
+  différentiel binaire (zstd) fait 16 fois mieux. Ajusté tout de suite : `strip = true`
+  dans le profil `ship` (49 Mo au lieu de 71). À décider à l'étape des mises à jour :
+  ajouter notre propre delta zstd (téléchargé, vérifié par le manifeste signé, appliqué pour
+  reconstruire le paquet complet que Velopack installe), ou s'en tenir aux paquets complets
+  (≈ 11 Mo par version, acceptable). Les données du jeu (sons, modèles) dans des fichiers à
+  part de l'exécutable ne seront, elles, retéléchargées que si elles changent.
+- Pas encore fait (étapes suivantes du plan, pas des paris) : dépôt HTTPS (aujourd'hui un
+  dossier), retour arrière après deux plantages, révocation de la clé de CI par la clé de
+  secours, voie bêta, signature Authenticode.
+
 ### Pari 5 : importer une vraie sauvegarde (.bssave)
 
 `bs-sauvegarde` lit et écrit le format du jeu TS (AES-256-GCM, clé = SHA-256 du secret,
@@ -217,3 +276,26 @@ exporté par le jeu TS 0.50.0 (`scripts/exporter-bssave.mjs` : pseudo « Éloïs
 parties) : `rust/crates/bs-sauvegarde/tests/donnees/profil-0.50.0.bssave`, relu champ par
 champ (pseudo accentué, records, statistiques), et l'aller-retour Rust → Rust est
 identique. Fichier illisible ou vide : erreur propre, pas de plantage. **Pari tenu.**
+
+### Décision : on continue (avec trois ajustements)
+
+| Pari | Verdict |
+|---|---|
+| 1. Rendu de 300 zombies | **tenu en fonctionnement** (WebGPU, WebGL2, PC), simulation à 65 µs/pas ; les 60 images/s restent **à confirmer sur une vraie carte graphique** (artefacts de la CI) |
+| 2. kira dans le navigateur | **tenu avec ajustement** : tampon de 4096 en navigateur (85 ms de latence) |
+| 3. Relais axum/tokio | **tenu** : 0,5 ms d'aller-retour en local, 35 Ko/s par invité ; mesure depuis la France à faire au déploiement |
+| 4. Velopack N → N+1, manifeste signé | **tenu avec ajustement** sous Linux (complet puis delta, toutes les attaques refusées) ; Windows dans la CI ; deltas de Velopack inefficaces sur l'exécutable (19 Mo sur 24) |
+| 5. Import d'un vrai .bssave | **tenu** |
+
+**Continuer** la migration (étape 1 du plan). Ajustements retenus :
+1. **Son en navigateur** : `Audio::ouvrir(Some(4096))` sur le web, défaut de cpal sur PC ;
+   corriger (ou faire corriger en amont) le curseur de cpal qui ne se recale pas après un
+   retard ; couper le son pendant les chargements longs.
+2. **Réseau** : `TCP_NODELAY` partout (relais et client natif), à garder dans les tests.
+3. **Mises à jour** : Velopack et `vpk` épinglés à la même version (1.2.161) ; la première
+   mise à jour après l'installation est un paquet complet (pas de delta) ; les deltas de
+   Velopack ne valent rien sur l'exécutable : exécutable sans symboles (fait), puis delta
+   zstd maison ou paquets complets (≈ 11 Mo), à trancher à l'étape des mises à jour.
+
+Seul point ouvert, qui demande un humain : lancer les artefacts de la CI sur un vrai PC
+(et un portable) et noter les images/s affichées dans le titre.

@@ -66,9 +66,12 @@ const DIRECTIONS = 16;
 const ANTICIPATION = 2;
 /** Durée (s) du trajet des projectiles ennemis pris en compte. */
 const HORIZON_TIRS = 0.6;
-/** Attrait de l'orbe d'XP la plus proche face au danger. */
+/**
+ * Attrait de l'orbe d'XP la plus proche face au danger, où qu'elle soit dans l'arène : les
+ * invocations de l'invocateur tuent loin du joueur (avec une portée de 14 blocs, il
+ * restait niveau 9 après 20 min).
+ */
 const POIDS_XP = 0.08;
-const RAYON_ORBES = 14;
 const TOUCHES = { haut: 'KeyW', bas: 'KeyS', gauche: 'KeyA', droite: 'KeyD' } as const;
 
 export class Robot {
@@ -132,7 +135,7 @@ export class Robot {
     let ox = 0;
     let oz = 0;
     let orbe = false;
-    let meilleure = RAYON_ORBES * RAYON_ORBES;
+    let meilleure = Infinity;
     for (let i = 0; i < orbes.pool.nombre; i++) {
       const o = orbes.pool.elements[i];
       const d2 = (o.x - j.x) ** 2 + (o.z - j.z) ** 2;

@@ -7,9 +7,9 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 
 | Étape | État |
 |---|---|
-| 0. Socle (espace de travail, fenêtre PC et web, CI) | fait (commit 62f77fe), build web corrigé |
-| −1. Robot d'équilibrage, aléatoire à graine, pas fixe (TypeScript) | en cours |
-| 0 bis. Prototype des cinq paris | à faire |
+| 0. Socle (espace de travail, fenêtre PC et web, CI) | fait : build web corrigé, page vérifiée (WebGL2, WebGPU) |
+| −1. Robot d'équilibrage, aléatoire à graine, pas fixe (TypeScript) | fait |
+| 0 bis. Prototype des cinq paris | en cours : sauvegardes et relais faits, rendu en mesure |
 
 ---
 
@@ -74,4 +74,48 @@ Premier passage (commit 62f77fe) : vert sur les trois jobs (vérifications 37 mi
 
 ## Étape −1 : préparer la version TypeScript
 
-À compléter.
+### Aléatoire à graine
+`src/utils/aleatoire.ts` : `alea()` (mulberry32) et `semerSimulation(graine)`. Tous les
+tirages de la simulation (combat, entités, progression, `jeu.ts`) passent par `alea()` ;
+les effets purement visuels (particules, secousses, sons, interface, pseudo) gardent
+`Math.random` et ne changent donc rien à la partie. Vérifié : même graine, même
+personnage, même arène → `parties.json` identique d'une exécution à l'autre.
+
+### Pas fixe
+Le robot fait avancer la simulation au pas fixe de 1/60 s. La boucle normale du jeu TS
+garde son pas variable : son rendu n'interpole pas, un pas fixe y saccaderait sur les
+écrans à plus de 60 Hz. La version Rust, elle, a le pas fixe partout (interpolation dans
+`bs-rendu`).
+
+### Le robot (`src/robot/robot.ts`, `npm run robot`)
+`?jouer=1&robot=1&graine=N&personnage=X&arene=Y&duree=S[&invincible=1][&voir=1]` : le robot
+joue une partie entière sans écran (≈ 1 s de calcul par 2 min de jeu) :
+- déplacement : 16 directions notées (ennemis proches à 2 blocs d'anticipation, creepers
+  fuis de loin, trajets des projectiles ennemis, murs, bords), attiré par l'orbe d'XP la
+  plus proche où qu'elle soit ;
+- cartes : barème fixe (soin si PV < 40 %, éveil, arme possédée, nouvelle arme, renfort,
+  objet, passif).
+`scripts/robot.mjs` joue N graines par personnage dans Chromium (4 en parallèle) et écrit
+`parties.json` (chaque partie) et `reference.json` (moyenne, écart type, min, max).
+
+### Références (prairie, profil vierge)
+
+`docs/robot/` : 5 graines, joueur mortel. `docs/robot-invincible/` : 3 graines, joueur
+invincible (puissance des armes sur toute la partie, jusqu'au boss).
+
+| Personnage | Survie | Niveau | Tués | Invincible : victoires | Niveau | Tués | Dégâts/s à la fin |
+|---|---|---|---|---|---|---|---|
+| archer | 149.6 s (±96) | 4.4 | 97 | 3/3 | 31.3 | 3956 | 796 |
+| guerrier | 152.3 s (±35) | 3.8 | 61 | 3/3 | 29 | 3567 | 837 |
+| invocateur | 139.5 s (±37) | 4.2 | 65 | 0/3 | 10.7 | 509 | 34 |
+| mage | 112.6 s (±31) | 4 | 55 | 3/3 | 27.3 | 3179 | 783 |
+
+- Le robot meurt vite (2 à 3 min) : il esquive moins bien qu'un joueur. Ces chiffres
+  servent de **référence de comparaison** pour la version Rust (même robot, mêmes
+  graines, tolérance), pas de mesure de la difficulté réelle.
+- **À surveiller** : l'invocateur invincible plafonne (niveau 11 en 20 min, contre 27 à 31
+  pour les autres). Le robot prend volontiers ses invocations de soutien (totem, esprit
+  protecteur : 0 dégât) et la partie s'enlise. Avant, il ne ramassait les orbes qu'à
+  14 blocs (les invocations tuent loin) : corrigé, mieux (9 → 10,7) mais pas assez. Soit
+  le barème des cartes du robot, soit un vrai défaut d'équilibrage : à trancher en
+  regardant une partie (`&voir=1`).

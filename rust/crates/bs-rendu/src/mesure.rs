@@ -1,6 +1,6 @@
 //! Mesure des performances : images/s (moyenne, pire image) et temps d'un pas de
 //! simulation, écrits toutes les 5 s dans la console (« MESURE … », lu par les scripts) et
-//! dans le titre de la fenêtre (onglet du navigateur) : lisible sans console sur un vrai PC.
+//! dans le titre de la fenêtre : lisible sans console sur un vrai PC.
 //! Sur PC, pour les mesures sans personne : `BS_DUREE=s` quitte au bout de s secondes,
 //! `BS_CAPTURE=fichier.png` enregistre une capture à mi-parcours.
 
@@ -29,7 +29,6 @@ pub struct PluginMesure;
 impl Plugin for PluginMesure {
     fn build(&self, app: &mut App) {
         app.init_resource::<Mesure>().add_systems(Last, compter);
-        #[cfg(not(target_arch = "wasm32"))]
         if let Ok(duree) = std::env::var("BS_DUREE") {
             let duree: f32 = duree.parse().expect("BS_DUREE en secondes");
             app.insert_resource(Automatique {
@@ -41,14 +40,12 @@ impl Plugin for PluginMesure {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[derive(Resource)]
 struct Automatique {
     duree: f32,
     capture: Option<String>,
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 fn automatique(
     mut commandes: Commands,
     temps: Res<Time<Real>>,

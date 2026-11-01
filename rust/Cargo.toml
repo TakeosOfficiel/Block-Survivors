@@ -24,9 +24,7 @@ bs-audio = { path = "crates/bs-audio" }
 bs-robot = { path = "crates/bs-robot" }
 libm = "0.2"
 # Fonctionnalités de Bevy listées une à une : pas d'audio de Bevy (le son passera par kira).
-# Le rendu web (WebGPU ou WebGL2, qui s'excluent) se choisit dans bs-web : d'où la liste
-# de `default_platform` recopiée sans « webgl2 » (sinon le module WebGPU embarque aussi
-# WebGL2) ni Android.
+# Liste de `default_platform` recopiée sans « webgl2 » ni Android (jeu PC seulement).
 bevy = { version = "0.18.1", default-features = false, features = [
     "default_app",
     "std",
@@ -44,7 +42,6 @@ bevy = { version = "0.18.1", default-features = false, features = [
     "png",
     "https",
 ] }
-wasm-bindgen = "=0.2.122"
 
 [workspace.lints.rust]
 # « deny » (pas « forbid ») : seul le test d’allocation de bs-regles le lève, localement
@@ -70,8 +67,3 @@ codegen-units = 1
 panic = "abort"
 # Sans les symboles : 49 Mo au lieu de 71 sous Linux (docs/PROTOTYPE-RUST.md, pari 4)
 strip = true
-
-# Navigateur : le plus petit possible
-[profile.web]
-inherits = "ship"
-opt-level = "z"

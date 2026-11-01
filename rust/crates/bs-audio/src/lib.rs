@@ -1,7 +1,5 @@
-//! Son de Block Survivors par kira, sur PC comme dans le navigateur. Dans le navigateur,
-//! cpal remplit deux tampons WebAudio depuis le fil principal (celui du jeu) : une image
-//! plus longue qu'un tampon et le son se hache. D'où `taille_tampon` : plus grand, plus
-//! robuste, mais plus de latence (voir docs/PROTOTYPE-RUST.md, pari 2).
+//! Son de Block Survivors par kira. `taille_tampon` : plus grand, plus robuste, mais plus
+//! de latence (voir docs/PROTOTYPE-RUST.md, pari 2).
 //!
 //! Prototype : deux sons synthétisés (coup, tir) ; les vrais sons (.ogg) viendront avec
 //! les catégories et le son spatial (étape 3 du plan).
@@ -21,7 +19,7 @@ pub struct Audio {
 
 impl Audio {
     /// Ouvre la sortie son ; `taille_tampon` en images (échantillons par voie), `None` :
-    /// celle de cpal (2 048 dans le navigateur).
+    /// celle de cpal.
     pub fn ouvrir(taille_tampon: Option<u32>) -> Result<Self, String> {
         let config = taille_tampon.map(|n| cpal::StreamConfig {
             channels: 2,

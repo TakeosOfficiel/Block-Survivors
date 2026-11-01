@@ -1,4 +1,4 @@
-//! Block Survivors : assemblage de l'application Bevy, commun au PC et au navigateur.
+//! Block Survivors : assemblage de l'application Bevy.
 //! La simulation vient de bs-regles, l'affichage de bs-rendu (docs/PLAN-RUST.md).
 
 use bevy::prelude::*;

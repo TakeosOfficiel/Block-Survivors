@@ -159,7 +159,7 @@ impl Donnees {
         })
     }
 
-    /// Les données embarquées dans l'exécutable (navigateur, tests).
+    /// Les données embarquées dans l'exécutable (jeu, tests).
     pub fn embarquees() -> Result<Self, ErreurDonnees> {
         Self::depuis(|nom| Ok(embarque(nom).into()))
     }

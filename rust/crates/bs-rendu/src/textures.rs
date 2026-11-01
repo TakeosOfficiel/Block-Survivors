@@ -1,6 +1,6 @@
 //! Textures vanilla de Minecraft, jamais dans le dépôt : téléchargées au lancement depuis
 //! les mêmes sources que la version TypeScript (GitHub, puis mcasset.cloud en secours),
-//! gardées en cache sur le disque du PC (le navigateur a son propre cache HTTP).
+//! gardées en cache sur le disque du PC.
 //!
 //! Une source d'assets Bevy « mc:// » essaie les adresses dans l'ordre : on charge
 //! `mc://block/dirt.png` comme n'importe quel fichier. Une texture introuvable partout
@@ -87,12 +87,9 @@ impl AssetReader for LecteurMinecraft {
     }
 }
 
-/// Dossier du cache sur PC (aucun dans le navigateur) : `sorte` = « textures » ou
+/// Dossier du cache : `sorte` = « textures » ou
 /// « fichiers ».
 fn dossier_cache(sorte: &str) -> Option<PathBuf> {
-    if cfg!(target_arch = "wasm32") {
-        return None;
-    }
     let var = |nom: &str| std::env::var_os(nom).map(PathBuf::from);
     let base = if cfg!(windows) {
         var("LOCALAPPDATA")?.join("BlockSurvivors")

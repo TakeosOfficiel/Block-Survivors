@@ -1,6 +1,6 @@
 [package]
 name = "block-survivors"
-description = "Le jeu : assemble les plugins (PC ; le navigateur passe par bs-web)"
+description = "Le jeu : assemble les plugins (PC)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

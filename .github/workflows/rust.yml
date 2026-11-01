@@ -1,6 +1,6 @@
 # Version Rust en cours de migration (rust/, plan : docs/PLAN-RUST.md). Vérifie et
 # construit à chaque push qui touche rust/ : format, clippy, tests, build PC (Linux,
-# Windows), build navigateur (WebGPU et WebGL2, poids affiché) et chaîne de mise à jour
+# Windows) et chaîne de mise à jour
 # (Velopack + manifeste signé, Linux et Windows). Publie seulement les builds à tester
 # dans la pré-version « prototype-rust » de ce dépôt privé (rien pour les joueurs).
 name: Version Rust
@@ -66,36 +66,6 @@ jobs:
           (cd .. && npm ci --ignore-scripts)
           outils/importer-donnees.sh --verifier
 
-  web:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-      - run: rustup show
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: rust
-      - name: Outils web (wasm-bindgen à la version du crate ; wasm-opt 116, celui d'Ubuntu est trop ancien)
-        run: |
-          cargo install wasm-bindgen-cli --version 0.2.122 --locked
-          cargo install wasm-opt --version 0.116.1 --locked
-      - name: Build navigateur (WebGPU et WebGL2)
-        run: outils/build-web.sh
-      # Dans la pré-version « prototype-rust » (onglet Releases) : les artefacts d'Actions
-      # sont plafonnés (quota du compte plein). Les joueurs ne la voient pas (dépôt privé ;
-      # leurs mises à jour viennent de Block-Survivors-version). À servir en local :
-      # « python3 -m http.server » dans le dossier dézippé.
-      - name: Publier dans la pré-version prototype-rust
-        if: github.event_name == 'push' && github.ref == 'refs/heads/rust'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          (cd web/dist && zip -q -r ../../block-survivors-web.zip .)
-          gh release view prototype-rust > /dev/null 2>&1 || gh release create prototype-rust --prerelease --target rust \
-            --title "Prototype Rust (à tester)" --notes "Builds du prototype Rust (branche rust), remplacés à chaque push. Images/s affichées dans le titre de la fenêtre ou de l'onglet." || true
-          gh release upload prototype-rust block-survivors-web.zip --clobber
-
   windows:
     runs-on: windows-latest
     permissions:
@@ -117,7 +87,7 @@ jobs:
         run: |
           cp target/ship/block-survivors.exe block-survivors-windows.exe
           gh release view prototype-rust > /dev/null 2>&1 || gh release create prototype-rust --prerelease --target rust \
-            --title "Prototype Rust (à tester)" --notes "Builds du prototype Rust (branche rust), remplacés à chaque push. Images/s affichées dans le titre de la fenêtre ou de l'onglet." || true
+            --title "Prototype Rust (à tester)" --notes "Builds du prototype Rust (branche rust), remplacés à chaque push. Images/s affichées dans le titre de la fenêtre." || true
           gh release upload prototype-rust block-survivors-windows.exe --clobber
 
   # Chaîne de mise à jour de bout en bout : installer N, se mettre à jour seul, refuser les attaques

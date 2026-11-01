@@ -11,7 +11,11 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | −1. Robot d'équilibrage, aléatoire à graine, pas fixe (TypeScript) | fait |
 | 0 bis. Prototype des cinq paris | fait : on continue, avec ajustements (voir la décision) ; 94 images/s mesurées sur le PC du joueur |
 | 1. Données et règles, sans rendu | fait : données, monde, simulation complète et robot (`bs-robot`) ; ses moyennes tombent dans la tolérance de celles du jeu TS (voir 1b) |
-| 2. Monde et rendu | en cours : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres) et 2d-2 (particules, chiffres de dégâts, barres de vie, secousse) faits ; 2d-3 (visuels des armes : lueurs, mêlée, foudre, feu, sol, armes posées, orbes, invocations) fait ; 2d-4 à faire |
+| 2. Monde et rendu | fait : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres), 2d-2 (particules, chiffres de dégâts, barres de vie, secousse), 2d-3 (visuels des armes), 2d-4 (vent, ombres du soleil, lumière des blocs) |
+
+**01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
+les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
+pour l'historique.
 
 ---
 

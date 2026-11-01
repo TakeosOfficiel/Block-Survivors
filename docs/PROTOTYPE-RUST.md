@@ -366,8 +366,8 @@ doivent tomber dans la tolérance de celles de la version TypeScript (étape −
 | 1b-3 Ennemis, boss et directeurs | fait |
 | 1b-4 Orbes d'XP, objets, coffres, butin | fait |
 | 1b-5 Arsenal et les 25 armes, alliés invoqués compris | fait |
-| 1b-6 Talents de classe et d'objets | à faire (tous neutres pour l'instant) |
-| 1b-7 Cartes d'amélioration et équipement | à faire |
+| 1b-6 Talents de classe et d'objets | fait (sauvegarde vierge : talents de classe au rang 0) |
+| 1b-7 Cartes d'amélioration et équipement | fait (`cartes.rs`, `equipement.rs`) |
 | 1b-8 Robot et comparaison aux références | à faire |
 
 Choix de portage (`bs-regles/src/combat/`) :
@@ -383,3 +383,5 @@ Choix de portage (`bs-regles/src/combat/`) :
   suite de nombres tirés reste celle du jeu TS.
 - Test `chaque_arme_frappe` : chaque arme seule, au rang maximum, pendant 60 s,
   blesse des ennemis (l'esprit protecteur, qui ne fait que protéger, doit invoquer).
+- Test `cartes_et_coffres` : cinq minutes en prenant toujours la première carte de
+  niveau et de coffre (avec remplacement d'objet si les emplacements sont pleins).

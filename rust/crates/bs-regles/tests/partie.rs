@@ -104,3 +104,48 @@ fn chaque_arme_frappe() {
         }
     }
 }
+
+/// Cinq minutes en choisissant toujours la première carte : niveaux, éveils et coffres.
+#[test]
+fn cartes_et_coffres() {
+    use bs_regles::equipement::ChoixEquipement;
+    let d = donnees();
+    let mut p = Partie::nouvelle(d, 0, 0, 2024, false);
+    p.joueur.invincible = true;
+    let (mut niveaux, mut objets) = (0, 0);
+    for _ in 0..(300.0 / PAS_SIMULATION) as u32 {
+        p.pas(PAS_SIMULATION);
+        while p.etat.niveaux_en_attente > 0 {
+            p.etat.niveaux_en_attente -= 1;
+            let carte = p.tirer_cartes()[0];
+            p.appliquer_amelioration(carte);
+            niveaux += 1;
+        }
+        while p.etat.choix_coffre.restants > 0 {
+            let ender = p.etat.choix_coffre.ender > 0;
+            let ouverts = p.ramassables.coffres.payants_ouverts;
+            let mut choix = p.tirer_equipement(ender, ouverts)[0];
+            if let ChoixEquipement::Objet(o) = choix
+                && p.remplacement_necessaire(o)
+            {
+                choix = p.cartes_remplacement(o)[0];
+            }
+            p.appliquer_equipement(choix);
+            objets += 1;
+            p.etat.choix_coffre.restants -= 1;
+            if ender {
+                p.etat.choix_coffre.ender -= 1;
+            }
+        }
+    }
+    let armes: Vec<_> = p.arsenal.armes.iter().map(|a| (a.index, a.rang)).collect();
+    let portes: Vec<_> = p.equipement.portes().collect();
+    eprintln!("niveaux : {niveaux}, coffres : {objets}, armes : {armes:?}, objets : {portes:?}");
+    eprintln!(
+        "passifs : {:?}, tués : {}",
+        p.passifs.possedes.len(),
+        p.etat.ennemis_tues
+    );
+    assert!(niveaux > 5, "le joueur doit monter de niveau");
+    assert!(p.arsenal.armes.len() > 1 || p.passifs.possedes.len() > 1);
+}

@@ -9,10 +9,12 @@
 
 mod prototype;
 
+pub mod cartes;
 pub mod catalogue;
 pub mod combat;
 pub mod directeurs;
 pub mod ennemis;
+pub mod equipement;
 pub mod etat;
 pub mod evenements;
 pub mod grille;

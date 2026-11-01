@@ -6,10 +6,12 @@ use bs_commun::Mulberry;
 use bs_donnees::Donnees;
 use bs_monde::{CarteMonde, ChampDeFlux, generer_monde};
 
+use crate::cartes::Cartes;
 use crate::catalogue::Catalogue;
 use crate::combat::{Arsenal, SystemesArmes};
 use crate::directeurs::{DirecteurApparitions, DirecteurBoss, SorteBoss};
 use crate::ennemis::Ennemis;
+use crate::equipement::Equipement;
 use crate::etat::{EtatPartie, Issue};
 use crate::evenements::Evenements;
 use crate::joueur::{Joueur, TOTEM_RAYON_RECUL, TOTEM_RECUL};
@@ -41,6 +43,10 @@ pub struct Partie {
     pub passifs: Passifs,
     pub arsenal: Arsenal,
     pub talents: Talents,
+    /// Cartes de niveau proposées.
+    pub cartes: Cartes,
+    /// Bagues et amulette portées.
+    pub equipement: Equipement,
     /// États des systèmes d'armes (projectiles, orbites, éclairs…).
     pub armes: SystemesArmes,
     pub directeur: DirecteurApparitions,
@@ -100,6 +106,8 @@ impl Partie {
             passifs,
             arsenal: Arsenal::nouveau(),
             talents: Talents::nouveaux(d.armes.len(), archere),
+            cartes: Cartes::nouvelles(d),
+            equipement: Equipement::nouveau(d),
             armes: SystemesArmes::nouveaux(d),
             directeur: DirecteurApparitions::default(),
             directeur_boss: DirecteurBoss::nouveau(SorteBoss::Boss, &d.regles.boss),

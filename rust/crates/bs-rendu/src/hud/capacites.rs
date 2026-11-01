@@ -11,6 +11,7 @@ use bs_regles::partie::Partie;
 
 use super::police::TextePixel;
 use super::{BLANC, JAUNE, absolu};
+use crate::dessins::Dessins;
 use crate::textures::Textures;
 
 pub fn demander_textures(d: &Donnees, demander: &mut impl FnMut(&str)) {
@@ -116,18 +117,15 @@ fn case(
 }
 
 /// Icône (ou initiale du nom) et rang.
-#[allow(clippy::too_many_arguments)]
 fn remplir_case(
     commandes: &mut Commands,
-    textures: &Textures,
-    serveur: &AssetServer,
     c: Entity,
-    icone: Option<&str>,
+    icone: Option<Handle<Image>>,
     nom: &str,
     rang: u32,
     max: u32,
 ) {
-    match icone.and_then(|i| textures.obtenir(serveur, i)) {
+    match icone {
         Some(h) => {
             commandes.spawn((
                 ImageNode::new(h),
@@ -166,6 +164,7 @@ pub fn afficher(
     commandes: &mut Commands,
     textures: &Textures,
     serveur: &AssetServer,
+    dessins: &Dessins,
     p: &Partie,
 ) {
     let d = p.d;
@@ -187,9 +186,9 @@ pub fn afficher(
             }
             let def = &d.equipement.objets[objet];
             let c = case(commandes, l.racine, Some(couleur_rarete(def.rarete)), false);
-            // Icônes dessinées des objets : pas encore portées (initiale du nom)
             let max = niveau_max_objet(d, objet);
-            remplir_case(commandes, textures, serveur, c, None, &def.nom, niveau, max);
+            let icone = dessins.objets.get(objet).cloned();
+            remplir_case(commandes, c, icone, &def.nom, niveau, max);
         }
     }
 
@@ -212,10 +211,8 @@ pub fn afficher(
             let max = def.niveaux.len() as u32;
             remplir_case(
                 commandes,
-                textures,
-                serveur,
                 c,
-                Some(&def.icone),
+                textures.obtenir(serveur, &def.icone),
                 &def.nom,
                 rang,
                 max,
@@ -240,10 +237,8 @@ pub fn afficher(
             let max = a.rang_max();
             remplir_case(
                 commandes,
-                textures,
-                serveur,
                 c,
-                Some(&a.def.icone),
+                textures.obtenir(serveur, &a.def.icone),
                 &a.def.nom,
                 rang,
                 max,

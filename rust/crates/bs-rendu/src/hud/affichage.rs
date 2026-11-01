@@ -8,6 +8,7 @@ use bs_regles::evenements::Evenement;
 use super::police::{TextePixel, colorer, ecrire};
 use super::*;
 use crate::PartieEnCours;
+use crate::dessins::Dessins;
 use crate::textures::Textures;
 
 /// Après chaque pas : annonces de boss et prolongation.
@@ -54,6 +55,7 @@ pub fn afficher(
     mut commandes: Commands,
     serveur: Res<AssetServer>,
     textures: Res<Textures>,
+    dessins: Res<Dessins>,
     jeu: Res<PartieEnCours>,
     hud: Option<ResMut<Hud>>,
     temps: Res<Time>,
@@ -205,7 +207,14 @@ pub fn afficher(
         &mut noeuds,
         &mut visibles,
     );
-    capacites::afficher(&mut hud.capacites, &mut commandes, &textures, &serveur, p);
+    capacites::afficher(
+        &mut hud.capacites,
+        &mut commandes,
+        &textures,
+        &serveur,
+        &dessins,
+        p,
+    );
 }
 
 /// Images clés de l'animation du totem (styles.css `@keyframes totem`) : décalage

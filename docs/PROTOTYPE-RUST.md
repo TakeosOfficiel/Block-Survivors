@@ -728,9 +728,45 @@ mode sans fin.
 - `barres.rs` : barre d'XP avec le niveau (contour noir) et barre du boss sous le chrono,
   à la couleur de sa définition.
 - `capacites.rs` : cases d'armes, de passifs et d'équipement, avec le niveau, la rareté
-  et l'éveil. Les icônes procédurales d'équipement (iconesObjets.ts) ne sont pas encore
-  portées : la case affiche l'initiale du nom.
+  et l'éveil. Les icônes d'équipement sont dessinées au lancement (voir 3c).
 - `bs-regles` : nouvel événement `AnnonceBoss { nom, duree }`, émis à l'annonce d'un vrai
   boss, qui affiche l'alerte « Un boss approche : <nom> ! ».
 - `BS_DEBUT=<s>` (captures) : le robot joue ce nombre de secondes avant l'affichage, avec
   la vie gardée pleine.
+
+### 3c : écrans de cartes (fait)
+
+- `bs-regles/src/textes/` : description des cartes, calculée seulement à l'ouverture d'un
+  écran. On y trouve le nom, la famille (couleur et bandeau ; la rareté pour les objets),
+  l'icône, l'étiquette, la description et les lignes « avant → après ». Ce module porte
+  `decrire` (ameliorations.ts) et les cartes d'equipement.ts. Les nombres suivent le format
+  français, avec une virgule et au plus 2 décimales. Le test `cartes_et_coffres` décrit
+  chaque carte tirée.
+- `bs-rendu/src/dessins.rs` : images en pixel art dessinées au lancement :
+  - les icônes 16 × 16 des bagues et amulettes (iconesObjets.ts), aussi utilisées dans la
+    barre des capacités ;
+  - le losange d'or serti d'une émeraude (ornements.ts).
+- `bs-rendu/src/ecran_cartes/` :
+  - `mod.rs` : un niveau en attente à la fois, puis les coffres (titre tiré des données du
+    coffre ou du coffre de l'Ender).
+    - Choix avec les touches 1 à 4 (rangée du haut ou pavé numérique) ou à la souris,
+      après un délai de 350 ms.
+    - R relance le tirage ; les relances sont communes aux niveaux et aux coffres.
+    - Si les emplacements sont pleins, une 2e étape « Remplacer quel objet ? » s'ouvre,
+      sans relance ; « Retour » rouvre les mêmes propositions.
+    - Un test vérifie le niveau, puis le remplacement, le retour et le remplacement.
+  - `vue.rs` : mise en page de styles.css :
+    - voile sombre, titre d'or entre deux traits ;
+    - cartes au liseré d'or bordé de sombre, avec un liseré intérieur et un bandeau de la
+      couleur de la famille, un fond en dégradé et le losange en haut ;
+    - la carte survolée se soulève de 8 px ;
+    - la nouvelle valeur des statistiques est en vert.
+  - Ne sont pas portés : la pulsation des cartes rares et l'éclaircissement au survol.
+- `police.rs` : texte coupé entre les mots (`TextePixel::bloc`), avec les lignes centrées,
+  et texte sans bord (bandeau).
+- Pause et démonstration (`simulation.rs`) :
+  - tant que des cartes attendent, la partie ne fait plus de pas ;
+  - le joueur choisit dès qu'il a touché une touche de déplacement, ou d'emblée avec
+    `BS_CARTES=1` ; avant cela, le robot choisit et joue seul (démonstration, captures).
+  - `BS_COFFRE=1` (ou `ender`) ajoute un coffre à ouvrir après `BS_DEBUT`, pour tester
+    l'écran des objets.

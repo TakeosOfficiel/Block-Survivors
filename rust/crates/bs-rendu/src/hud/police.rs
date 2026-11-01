@@ -61,6 +61,8 @@ pub enum Bord {
     Ombre,
     /// Contour noir d'un pixel (niveau sur la barre d'XP).
     Contour,
+    /// Rien (texte sombre sur fond clair).
+    Aucun,
 }
 
 /// Texte affiché dans l'`ImageNode` de son entité ; `taille` : pixels d'écran par pixel
@@ -72,6 +74,8 @@ pub struct TextePixel {
     pub couleur: Color,
     pub bord: Bord,
     pub taille: f32,
+    /// Largeur maximale en pixels d'écran : coupé entre les mots, lignes centrées.
+    pub largeur_max: Option<f32>,
 }
 
 /// Image propre au texte (réécrite à chaque changement).
@@ -85,11 +89,23 @@ impl TextePixel {
             couleur,
             bord: Bord::Ombre,
             taille,
+            largeur_max: None,
         }
+    }
+
+    /// Texte coupé à `largeur` pixels d'écran, lignes centrées.
+    pub fn bloc(mut self, largeur: f32) -> Self {
+        self.largeur_max = Some(largeur);
+        self
     }
 
     pub fn contour(mut self) -> Self {
         self.bord = Bord::Contour;
+        self
+    }
+
+    pub fn sans_bord(mut self) -> Self {
+        self.bord = Bord::Aucun;
         self
     }
 }
@@ -243,8 +259,40 @@ impl Police {
         texte.chars().map(|c| self.avance(c)).sum::<i32>().max(1) - 1
     }
 
+    /// Lignes d'un texte coupé entre les mots à `max` pixels de police.
+    fn couper<'a>(&self, texte: &'a str, max: Option<i32>, lignes: &mut Vec<&'a str>) {
+        lignes.clear();
+        let Some(max) = max else {
+            lignes.push(texte);
+            return;
+        };
+        for paragraphe in texte.split('\n') {
+            let mut debut = 0;
+            let mut fin = 0;
+            for (i, _) in paragraphe
+                .match_indices(' ')
+                .chain([(paragraphe.len(), "")])
+            {
+                if fin > debut && self.largeur(&paragraphe[debut..i]) > max {
+                    lignes.push(&paragraphe[debut..fin]);
+                    debut = fin + 1;
+                }
+                fin = i;
+            }
+            lignes.push(&paragraphe[debut.min(paragraphe.len())..]);
+        }
+    }
+
     /// Pixels RGBA du texte, avec son bord : (largeur, hauteur, pixels).
-    fn dessiner(&self, texte: &str, couleur: [u8; 3], bord: Bord) -> (u32, u32, Vec<u8>) {
+    fn dessiner(
+        &self,
+        texte: &str,
+        couleur: [u8; 3],
+        bord: Bord,
+        max: Option<i32>,
+    ) -> (u32, u32, Vec<u8>) {
+        let mut lignes = Vec::new();
+        self.couper(texte, max, &mut lignes);
         // Accents qui dépassent au-dessus des majuscules
         let dessus = texte
             .chars()
@@ -253,12 +301,16 @@ impl Police {
             .max()
             .unwrap_or(0)
             .max(0);
-        let (marge, extra) = match bord {
-            Bord::Ombre => (0, 1),
-            Bord::Contour => (1, 2),
+        // Marge à gauche et en haut, place ajoutée, couleur et décalages du bord
+        let (marge, extra, fond, decalages): (i32, i32, [u8; 3], &[(i32, i32)]) = match bord {
+            Bord::Ombre => (0, 1, couleur.map(|v| v / 4), &[(1, 1)]),
+            Bord::Contour => (1, 2, [0; 3], &[(1, 0), (-1, 0), (0, 1), (0, -1)]),
+            Bord::Aucun => (0, 0, [0; 3], &[]),
         };
-        let l = (self.largeur(texte) + extra).max(1);
-        let h = 8 + dessus + extra;
+        let interligne = 8 + dessus + 2;
+        let largeurs: Vec<i32> = lignes.iter().map(|t| self.largeur(t)).collect();
+        let l = (largeurs.iter().copied().max().unwrap_or(0) + extra).max(1);
+        let h = 8 + dessus + extra + interligne * (lignes.len() as i32 - 1).max(0);
         let mut px = vec![0u8; (l * h * 4) as usize];
         let mut poser = |x: i32, y: i32, c: [u8; 3]| {
             if x >= 0 && y >= 0 && x < l && y < h {
@@ -266,44 +318,40 @@ impl Police {
                 px[i..i + 4].copy_from_slice(&[c[0], c[1], c[2], 255]);
             }
         };
-        let fond = match bord {
-            Bord::Ombre => couleur.map(|v| v / 4),
-            Bord::Contour => [0, 0, 0],
-        };
-        let decalages: &[(i32, i32)] = match bord {
-            Bord::Ombre => &[(1, 1)],
-            Bord::Contour => &[(1, 0), (-1, 0), (0, 1), (0, -1)],
-        };
         // Deux passes : le bord d'abord, puis le texte par-dessus
         for passe in 0..2 {
-            let mut x = marge;
-            for c in texte.chars() {
-                if let Some(g) = self.glyphes.get(&c) {
-                    let p = &self.planches[g.planche as usize];
-                    let haut = marge + dessus + ASCENT - i32::from(g.ascent);
-                    for gy in 0..i32::from(g.hauteur) {
-                        for gx in 0..i32::from(g.largeur) {
-                            let i = ((g.y as usize + gy as usize) * p.largeur
-                                + g.x as usize
-                                + gx as usize)
-                                * 4;
-                            if p.rgba[i + 3] == 0 {
-                                continue;
-                            }
-                            if passe == 0 {
-                                for (dx, dy) in decalages {
-                                    poser(x + gx + dx, haut + gy + dy, fond);
+            for (k, ligne) in lignes.iter().enumerate() {
+                let mut x = marge + (l - extra - largeurs[k]) / 2;
+                let y0 = marge + dessus + k as i32 * interligne;
+                for c in ligne.chars() {
+                    if let Some(g) = self.glyphes.get(&c) {
+                        let p = &self.planches[g.planche as usize];
+                        let haut = y0 + ASCENT - i32::from(g.ascent);
+                        for gy in 0..i32::from(g.hauteur) {
+                            for gx in 0..i32::from(g.largeur) {
+                                let i = ((g.y as usize + gy as usize) * p.largeur
+                                    + g.x as usize
+                                    + gx as usize)
+                                    * 4;
+                                if p.rgba[i + 3] == 0 {
+                                    continue;
                                 }
-                            } else {
-                                let teinte = [0, 1, 2].map(|k| {
-                                    (u16::from(p.rgba[i + k]) * u16::from(couleur[k]) / 255) as u8
-                                });
-                                poser(x + gx, haut + gy, teinte);
+                                if passe == 0 {
+                                    for (dx, dy) in decalages {
+                                        poser(x + gx + dx, haut + gy + dy, fond);
+                                    }
+                                } else {
+                                    let teinte = [0, 1, 2].map(|k| {
+                                        (u16::from(p.rgba[i + k]) * u16::from(couleur[k]) / 255)
+                                            as u8
+                                    });
+                                    poser(x + gx, haut + gy, teinte);
+                                }
                             }
                         }
                     }
+                    x += self.avance(c);
                 }
-                x += self.avance(c);
             }
         }
         (l as u32, h as u32, px)
@@ -328,7 +376,8 @@ pub fn dessiner(
         }
         let c = t.couleur.to_srgba();
         let couleur = [c.red, c.green, c.blue].map(|v| (v * 255.0).round() as u8);
-        let (l, h, px) = police.dessiner(&t.texte, couleur, t.bord);
+        let max = t.largeur_max.map(|m| (m / t.taille) as i32);
+        let (l, h, px) = police.dessiner(&t.texte, couleur, t.bord, max);
         let mut nouvelle = Image::new(
             Extent3d {
                 width: l,

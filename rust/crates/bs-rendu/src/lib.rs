@@ -5,13 +5,15 @@
 //!
 //! Déroulé : chargement des textures de l'arène (écran de chargement à venir ; pour une
 //! map importée, d'abord ses états et modèles de blocs), puis construction de l'arène
-//! et partie. Tant que l'interface n'existe pas (étape 3), le
-//! robot choisit les cartes et conduit le joueur si personne ne touche au clavier.
+//! et partie. Tant que personne n'a touché au clavier (ou sans `BS_CARTES=1`), le robot
+//! choisit les cartes et conduit le joueur (démonstration, captures).
 
 mod arene;
 mod armes;
 mod camera;
 mod carte_mc;
+mod dessins;
+mod ecran_cartes;
 mod effets;
 mod entites;
 mod fichiers;
@@ -22,6 +24,7 @@ mod materiau_entite;
 mod mesure;
 mod modeles;
 mod retours;
+mod simulation;
 mod soleil;
 mod sons;
 mod textures;
@@ -130,7 +133,7 @@ impl Plugin for PluginJeu {
             let partie = Partie::nouvelle(d, index, self.personnage, self.graine, true);
             let monde = generer_monde(d, partie.etat.arene);
             let mut jeu = PartieEnCours::nouvelle(partie, self.graine, SourceArene::Generee(index));
-            avancer_debut(&mut jeu);
+            simulation::avancer_debut(&mut jeu);
             app.insert_resource(jeu).insert_resource(Monde(monde));
         }
         app.insert_resource(Time::<Fixed>::from_seconds(f64::from(PAS)))
@@ -139,6 +142,9 @@ impl Plugin for PluginJeu {
             .init_resource::<effets::Ombres>()
             .init_resource::<retours::Barres>()
             .init_resource::<camera::Secousse>()
+            .insert_resource(ecran_cartes::EcranCartes::nouveau(
+                std::env::var_os("BS_CARTES").is_some(),
+            ))
             .init_state::<Phase>()
             .add_plugins((
                 materiau::PluginMateriaux,
@@ -173,6 +179,7 @@ impl Plugin for PluginJeu {
                     effets::construire,
                     retours::construire,
                     armes::construire,
+                    dessins::creer,
                     hud::construire,
                 ),
             )
@@ -180,7 +187,7 @@ impl Plugin for PluginJeu {
                 FixedUpdate,
                 (
                     entites::noter_positions,
-                    avancer,
+                    simulation::avancer,
                     entites::animer,
                     retours::recevoir,
                     armes::recevoir,
@@ -199,6 +206,8 @@ impl Plugin for PluginJeu {
                     retours::dessiner,
                     armes::dessiner,
                     armes::placer_solides,
+                    ecran_cartes::gerer,
+                    ecran_cartes::survoler,
                     hud::afficher,
                 )
                     .chain()
@@ -341,51 +350,4 @@ fn creer_camera(mut commandes: Commands, jeu: Res<PartieEnCours>) {
         Vec2::new(j.x, j.z),
         Color::LinearRgba(LinearRgba::from_vec4(ciel)),
     );
-}
-
-/// Un pas : le clavier (ZQSD, WASD, flèches) conduit le joueur ; sans touche, le robot.
-/// Les cartes sont choisies par le robot tant que l'interface n'existe pas.
-/// `BS_DEBUT=<s>` (essais) : le robot joue ces secondes avant l'affichage, sans mourir.
-fn avancer_debut(jeu: &mut PartieEnCours) {
-    let secondes: f32 = std::env::var("BS_DEBUT")
-        .ok()
-        .and_then(|v| v.parse().ok())
-        .unwrap_or(0.0);
-    for _ in 0..(secondes / PAS) as u32 {
-        jeu.partie.ev.vider();
-        let j = &mut jeu.partie.etat.joueur;
-        j.pv = j.pv_max;
-        jeu.robot.avancer(&mut jeu.partie);
-    }
-}
-
-fn avancer(
-    mut jeu: ResMut<PartieEnCours>,
-    touches: Res<ButtonInput<KeyCode>>,
-    mut mesure: ResMut<Mesure>,
-) {
-    let debut = bevy::platform::time::Instant::now();
-    // Les événements du pas précédent ont été lus par `entites::animer`
-    jeu.partie.ev.vider();
-    if jeu.partie.etat.issue.is_some() {
-        jeu.fin += PAS;
-        if jeu.fin >= ATTENTE_RELANCE {
-            jeu.relancer();
-        }
-        return;
-    }
-    let PartieEnCours { partie, robot, .. } = &mut *jeu;
-    let appui = |codes: &[KeyCode]| codes.iter().any(|c| touches.pressed(*c));
-    let c = &mut partie.joueur.commandes;
-    c.haut = appui(&[KeyCode::KeyW, KeyCode::ArrowUp]);
-    c.bas = appui(&[KeyCode::KeyS, KeyCode::ArrowDown]);
-    c.gauche = appui(&[KeyCode::KeyA, KeyCode::ArrowLeft]);
-    c.droite = appui(&[KeyCode::KeyD, KeyCode::ArrowRight]);
-    if c.haut || c.bas || c.gauche || c.droite {
-        robot.choisir_cartes(partie);
-        partie.pas(PAS);
-    } else {
-        robot.avancer(partie);
-    }
-    mesure.ajouter_pas(debut.elapsed());
 }

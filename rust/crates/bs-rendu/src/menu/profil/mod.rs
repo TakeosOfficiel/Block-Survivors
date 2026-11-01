@@ -70,7 +70,7 @@ pub fn agir(sauvegarde: &mut Sauvegarde, menu: &mut Menu, action: ActionProfil) 
     true
 }
 
-fn valider(profil: &mut bs_sauvegarde::profil_joueur::ProfilJoueur, saisie: &str) {
+pub fn valider(profil: &mut bs_sauvegarde::profil_joueur::ProfilJoueur, saisie: &str) {
     let pseudo = nettoyer_pseudo(saisie);
     if !pseudo.is_empty() {
         profil.pseudo = pseudo;
@@ -78,7 +78,8 @@ fn valider(profil: &mut bs_sauvegarde::profil_joueur::ProfilJoueur, saisie: &str
     }
 }
 
-/// Saisie du pseudo au clavier, skin glissée sur la fenêtre (page Profil seulement).
+/// Saisie au clavier (pseudo, nouveau profil : Entrée la passe à `gerer`), fichier
+/// glissé sur la fenêtre (skin sur la page Profil, `.bssave` sur la page Profils).
 #[allow(clippy::too_many_arguments)]
 pub fn saisir(
     mut menu: ResMut<Menu>,
@@ -96,6 +97,10 @@ pub fn saisir(
         let FileDragAndDrop::DroppedFile { path_buf, .. } = e else {
             continue;
         };
+        if matches!(menu.page, Page::Profils(_)) {
+            menu.depose = Some(path_buf.clone());
+            menu.a_refaire = true;
+        }
         if !profil_ouvert {
             continue;
         }
@@ -145,10 +150,7 @@ pub fn saisir(
             Key::Backspace => {
                 saisie.pop();
             }
-            Key::Enter => {
-                let s = menu.saisie.take().unwrap_or_default();
-                valider(&mut sauvegarde.profil, &s);
-            }
+            Key::Enter => menu.validee = Some(menu.saisie.take().unwrap_or_default()),
             Key::Escape => menu.saisie = None,
             _ => continue,
         }

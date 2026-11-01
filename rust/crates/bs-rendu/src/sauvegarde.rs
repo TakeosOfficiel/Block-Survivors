@@ -5,8 +5,7 @@
 //!
 //! `BS_IMPORTER=<fichier.bssave>` importe un profil exporté (par exemple par la version
 //! TypeScript) : il devient le profil actif. `BS_EXPORTER=<fichier.bssave>` exporte le
-//! profil actif (lisible par la version TypeScript). Les menus des profils viendront à
-//! l'étape 5.
+//! profil actif (lisible par la version TypeScript). Le menu Profils fait de même.
 //!
 //! `BS_SKIN=<fichier.png>` importe une skin dans le profil (ramenée au format du jeu,
 //! voir `skins`) et la choisit ; `BS_PSEUDO=<pseudo>` change le pseudo.
@@ -97,12 +96,18 @@ impl Sauvegarde {
                 Err(e) => warn!("{} : {e}", chemin.display()),
             }
         }
+        let mut s = Self::du_profil(d, profils);
+        changer_profil(&mut s.profil);
+        s
+    }
+
+    /// Données du profil actif de `profils`.
+    fn du_profil(d: &'static Donnees, profils: Profils) -> Self {
         let cle = profils.cle("progression");
         let progression = Progression::charger(d, profils.stockage().clone(), cle);
         let cle = profils.cle("collection");
         let collection = Collection::charger(profils.stockage().clone(), cle);
-        let mut profil = ProfilJoueur::charger(profils.stockage().clone(), profils.cle("profil"));
-        changer_profil(&mut profil);
+        let profil = ProfilJoueur::charger(profils.stockage().clone(), profils.cle("profil"));
         let amis = Amis::charger(profils.stockage().clone(), profils.cle("amis"));
         info!("code ami : {} ({} amis)", amis.code, amis.amis.len());
         Self {
@@ -114,6 +119,34 @@ impl Sauvegarde {
             recompense: None,
             depart_sans_fin: (0.0, 0),
         }
+    }
+
+    /// Relit tout depuis le profil devenu actif (changé, créé, importé, supprimé).
+    pub fn recharger(&mut self, d: &'static Donnees) {
+        *self = Self::du_profil(d, self.profils.clone());
+        info!("profil {} chargé", self.profils.actif());
+    }
+
+    /// Exporte le profil actif en `.bssave` (dans Téléchargements s'il existe, sinon
+    /// dans le dossier des sauvegardes) ; renvoie le fichier écrit.
+    pub fn exporter(&self) -> Result<std::path::PathBuf, String> {
+        let date = date_iso();
+        let fichier = self.profils.exporter(bs_commun::VERSION, &date);
+        let pseudo: String = self
+            .profil
+            .pseudo
+            .chars()
+            .map(|c| if c.is_alphanumeric() { c } else { '_' })
+            .collect();
+        let nom = format!("block-survivors-{pseudo}-{}.bssave", &date[..10]);
+        let maison = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" });
+        let telechargements = maison
+            .map(|m| std::path::PathBuf::from(m).join("Downloads"))
+            .filter(|t| t.is_dir() && std::env::var_os("BS_DOSSIER").is_none());
+        let dossier = telechargements.unwrap_or_else(|| self.profils.stockage().dossier().into());
+        let chemin = dossier.join(nom);
+        std::fs::write(&chemin, fichier).map_err(|e| e.to_string())?;
+        Ok(chemin)
     }
 
     /// Départ d'une partie du personnage d'index `personnage` : arbre de talents actif,

@@ -251,6 +251,14 @@ fn heros(
         false,
         ActionMenu::OuvrirProfil,
     );
+    style::bouton(
+        commandes,
+        col,
+        "Profils",
+        200.0,
+        false,
+        ActionMenu::OuvrirProfils,
+    );
 }
 
 fn arenes(

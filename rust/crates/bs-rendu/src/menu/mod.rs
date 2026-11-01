@@ -1,16 +1,17 @@
 //! Menu principal (phase `Menu`, src/ui/ecranMenu.ts) : choix de la classe et de
 //! l'arène (gardé dans le profil), « Jouer » (ou Entrée) prépare la partie choisie et
-//! passe au chargement, « Quitter » ferme le jeu. Ses pages (Talents, Collection, Profil…) remplacent
+//! passe au chargement, « Quitter » ferme le jeu. Ses pages (Talents, Collection, Profil, Profils…) remplacent
 //! l'accueil ; Échap ou « Retour » y ramène. Le menu a sa caméra 2D, et une caméra 3D dessous pour l'aperçu du héros ; tout ce
 //! qu'il crée porte `ElementMenu` et disparaît à sa sortie. Chaque changement refait la
 //! page affichée en entier (hors de la boucle de jeu).
 //!
 //! Essais : `BS_JOUER=n` lance la partie choisie aux n premières entrées au menu ;
-//! `BS_MENU=talents` (ou `collection`, `profil`) ouvre cette page à l'entrée.
+//! `BS_MENU=talents` (ou `collection`, `profil`, `profils`) ouvre cette page à l'entrée.
 
 pub mod apercu;
 mod collection;
 pub mod profil;
+mod profils;
 mod talents;
 mod vue;
 
@@ -40,6 +41,9 @@ pub enum ActionMenu {
     /// Ouvre le Profil.
     OuvrirProfil,
     Profil(profil::ActionProfil),
+    /// Ouvre la page des Profils.
+    OuvrirProfils,
+    Profils(profils::ActionProfils),
     /// Revient à l'accueil.
     Fermer,
     Talent(ActionTalent),
@@ -53,6 +57,8 @@ enum Page {
     /// Collection, sur un monde.
     Collection(usize),
     Profil,
+    /// Profils ; celui dont la suppression attend confirmation.
+    Profils(Option<usize>),
 }
 
 /// Marque de tout ce que le menu crée.
@@ -72,6 +78,12 @@ pub struct Menu {
     a_refaire: bool,
     /// Le clavier a servi à la saisie à cette image (Entrée, Échap ignorés).
     clavier_pris: bool,
+    /// Saisie validée par Entrée, à traiter selon la page.
+    validee: Option<String>,
+    /// Fichier glissé sur la page Profils.
+    depose: Option<std::path::PathBuf>,
+    /// Pseudo proposé pour un nouveau profil.
+    suggestion: String,
 }
 
 /// Icônes des pages (chargées à la demande).
@@ -119,6 +131,7 @@ fn construire(
             );
             profil::construire(commandes, (dj, sauvegarde, dessins), ic, etat)
         }
+        Page::Profils(_) => profils::construire(commandes, dj, sauvegarde, menu),
     };
     commandes.entity(racine).insert(ElementMenu);
     racine
@@ -154,6 +167,7 @@ pub fn entrer(
         Ok("talents") => page_talents(&dj, &sauvegarde, choix.personnage),
         Ok("collection") => Page::Collection(collection::monde_de_l_arene(&dj, choix.arene)),
         Ok("profil") => Page::Profil,
+        Ok("profils") => Page::Profils(None),
         _ => Page::Accueil,
     };
     apercu::camera(&mut commandes, vue::FOND);
@@ -175,6 +189,9 @@ pub fn entrer(
         message: None,
         a_refaire: false,
         clavier_pris: false,
+        validee: None,
+        depose: None,
+        suggestion: profils::suggestion(),
     };
     let mut ic = Icones {
         serveur: &serveur,
@@ -193,11 +210,11 @@ pub fn gerer(
     mut menu: ResMut<Menu>,
     dj: Res<DonneesJeu>,
     mut sauvegarde: ResMut<Sauvegarde>,
-    (serveur, mut textures, dessins, images): (
+    (serveur, mut textures, dessins, mut images): (
         Res<AssetServer>,
         ResMut<Textures>,
         Res<Dessins>,
-        Res<Assets<Image>>,
+        ResMut<Assets<Image>>,
     ),
     touches: Res<ButtonInput<KeyCode>>,
     boutons: Query<(&Interaction, &ActionMenu), Changed<Interaction>>,
@@ -223,8 +240,34 @@ pub fn gerer(
     } else if !accueil && clavier && touches.just_pressed(KeyCode::Escape) {
         action = Some(ActionMenu::Fermer);
     }
+    let mut suite = None;
+    if let Some(s) = menu.validee.take() {
+        match menu.page {
+            Page::Profil => profil::valider(&mut sauvegarde.profil, &s),
+            Page::Profils(_) => suite = Some(profils::creer(&mut sauvegarde, &mut menu, &s)),
+            _ => {}
+        }
+    }
+    if let Some(f) = menu.depose.take() {
+        suite = Some(profils::importer(&mut sauvegarde, &mut menu, &f));
+    }
+    if let Some(ActionMenu::Profils(a)) = action {
+        suite = Some(profils::agir(&mut sauvegarde, &mut menu, a));
+    }
+    if suite == Some(profils::Suite::Recharger) {
+        // Autre profil : ses données, sa skin, son dernier choix ; retour à l'accueil
+        sauvegarde.recharger(dj.d);
+        if let Some(image) = sauvegarde.skin_importee() {
+            let chemin = bs_sauvegarde::profil_joueur::CHEMIN_SKIN_IMPORTE;
+            textures.inserer(chemin, images.add(image));
+        }
+        menu.choix = lancement::choix_memorise(&dj, &sauvegarde);
+        menu.page = Page::Accueil;
+        menu.a_refaire = true;
+    }
     let (mut choix, mut page) = (menu.choix, menu.page);
     match action {
+        _ if suite.is_some() => {}
         None if menu.a_refaire => {}
         None => return,
         Some(ActionMenu::Classe(k)) => choix.personnage = k,
@@ -235,6 +278,11 @@ pub fn gerer(
         }
         Some(ActionMenu::Monde(k)) => page = Page::Collection(k),
         Some(ActionMenu::OuvrirProfil) => page = Page::Profil,
+        Some(ActionMenu::OuvrirProfils) => {
+            page = Page::Profils(None);
+            menu.suggestion = profils::suggestion();
+        }
+        Some(ActionMenu::Profils(_)) => {}
         Some(ActionMenu::Profil(a)) => {
             profil::agir(&mut sauvegarde, &mut menu, a);
         }

@@ -14,7 +14,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 2. Monde et rendu | fait : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres), 2d-2 (particules, chiffres de dégâts, barres de vie, secousse), 2d-3 (visuels des armes), 2d-4 (vent, ombres du soleil, lumière des blocs) |
 | 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
 | 4. Sauvegardes et profils | fait : 4a à 4i (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques des quatre classes, Collection, profil du joueur, amis) |
-| 5. Menus | en cours : 5a (menu principal, lancement, retour au menu), 5b (Talents), 5c (Collection), 5d (Profil) |
+| 5. Menus | en cours : 5a (menu principal, lancement, retour au menu), 5b (Talents), 5c (Collection), 5d (Profil), 5e (Profils) |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -1067,3 +1067,16 @@ mode sans fin.
   construit par `Rendus::heros` (le même code que les modèles en partie) une fois ses
   textures chargées, et refait quand la skin ou l'armure change.
 - Essais : `BS_MENU=profil`. Vérifié aux clics (skin, casque, cape) et au clavier (pseudo).
+
+### 5e : Profils (fait)
+
+- `bs-rendu/src/menu/profils.rs` : les profils de l'installation (pseudo, maîtrise des
+  classes jouées, lus sans charger le profil), « Jouer avec », « Supprimer » (second clic
+  pour confirmer, jamais le dernier), nouveau profil (pseudo tapé ou tiré au hasard, au
+  plus 8 profils), « Exporter ce profil » (`.bssave` dans Téléchargements, ou dans le
+  dossier des sauvegardes), import en glissant un `.bssave` sur la fenêtre.
+- Changer de profil (ou supprimer l'actif, créer, importer) relit toutes ses données
+  (`Sauvegarde::recharger`), sa skin importée et son dernier choix, puis revient à
+  l'accueil : pas besoin de relancer le jeu comme dans la version TS.
+- Essais : `BS_MENU=profils`. Vérifié aux clics et au clavier (création, export,
+  suppression confirmée de l'actif).

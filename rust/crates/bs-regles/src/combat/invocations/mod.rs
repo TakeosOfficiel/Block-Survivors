@@ -1,12 +1,15 @@
 //! Alliés invoqués par les armes : ils combattent au contact, tirent, soutiennent le
-//! joueur ou posent une aura (port de src/combat/invocations.ts, sans les talents de
-//! l'Invocateur ni l'affichage). Les ennemis les visent par (index, identifiant).
+//! joueur ou posent une aura (port de src/combat/invocations.ts, sans l'affichage). Les
+//! ennemis les visent par (index, identifiant). Les talents de l'Invocateur s'accrochent à
+//! la création, à la visée, aux coups et à la mort des alliés ; alliés temporaires (Lune de
+//! sang, loups fantômes) et haie du Bosquet : talents.rs.
 
 use bs_commun::maths::{cos, longueur, sin};
 use bs_donnees::armes::Mecanique;
 use bs_donnees::entites::Allie as DefinitionAllie;
 
 mod comportements;
+mod talents;
 
 use super::arme::ArmeEquipee;
 use super::tours;
@@ -21,6 +24,8 @@ const RAPPELS_MAX: usize = 16;
 const SEPARATION_PASSES: u32 = 3;
 /// s de surcouche rouge après une blessure (visuel).
 const DUREE_BLESSURE: f32 = 0.3;
+/// Portée de provocation de l'alpha gardien (multiplicateur).
+const PROVOCATION_ALPHA: f32 = 2.5;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Allie {
@@ -42,6 +47,14 @@ pub struct Allie {
     pub minuterie: f32,
     pub vitesse_sol: f32,
     pub dernier_soin: f64,
+    /// Première morsure renforcée (Chef de meute).
+    pub premiere_morsure: bool,
+    /// Loup alpha (Alpha), déjà revenu après sa mort (Gardien alpha), taille d'affichage.
+    pub alpha: bool,
+    pub revenu: bool,
+    pub echelle: f32,
+    /// Hors quota, jamais renouvelé, sa fin n'est pas une mort.
+    pub temporaire: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -52,6 +65,8 @@ pub struct Invocations {
     rappels: Vec<[f64; RAPPELS_MAX]>,
     /// Centre du dernier groupe visé par un totem (partagé, comme dans le jeu TS).
     groupe: (f32, f32),
+    /// s avant le prochain ralentissement de la haie du Bosquet.
+    minuterie_haie: f32,
 }
 
 impl Invocations {
@@ -61,6 +76,7 @@ impl Invocations {
             prochain_id: 1,
             rappels: vec![[0.0; RAPPELS_MAX]; types],
             groupe: (0.0, 0.0),
+            minuterie_haie: 0.0,
         }
     }
 
@@ -95,8 +111,9 @@ impl Partie {
         }
         let mut nouveaux = 0;
         for _ in 0..tours(arme.stats.nombre) {
-            if ((self.presents(type_allie) + self.en_rappel(type_allie)) as f32) < def.quota
-                && self.creer(i, type_allie, def)
+            let quota = def.quota + self.talent_quota_allie(def);
+            if ((self.presents(type_allie) + self.en_rappel(type_allie)) as f32) < quota
+                && self.creer(i, type_allie, def, false).is_some()
             {
                 nouveaux += 1;
             } else if def.remplacement {
@@ -120,10 +137,11 @@ impl Partie {
             .invocations
             .pool
             .iter()
-            .any(|a| a.arme == Some(i) && a.pv > 0.0)
+            .any(|a| a.arme == Some(i) && a.pv > 0.0 && !a.temporaire)
     }
 
-    fn presents(&self, type_allie: usize) -> usize {
+    /// Alliés vivants de ce type.
+    pub(crate) fn presents(&self, type_allie: usize) -> usize {
         let pool = &self.armes.invocations.pool;
         pool.iter()
             .filter(|a| a.type_allie == type_allie && a.arme.is_some() && a.pv > 0.0)
@@ -140,7 +158,7 @@ impl Partie {
 
     fn mettre_en_rappel(&mut self, a: usize) {
         let allie = self.armes.invocations.pool[a];
-        let Some(arme) = allie.arme else {
+        let Some(arme) = allie.arme.filter(|_| !allie.temporaire) else {
             return;
         };
         let cadence = self.arsenal.armes[arme].stats.cadence;
@@ -158,6 +176,7 @@ impl Partie {
             if a.type_allie == type_allie
                 && a.arme.is_some()
                 && a.pv > 0.0
+                && !a.temporaire
                 && choisi.is_none_or(|c| a.vie < pool[c].vie)
             {
                 choisi = Some(k);
@@ -187,9 +206,16 @@ impl Partie {
         self.ev.gerbe("invocation", gx, 1.0, gz);
     }
 
-    fn creer(&mut self, i: usize, type_allie: usize, def: &'static DefinitionAllie) -> bool {
+    /// Crée un allié de l'arme `i` ; renvoie sa place dans le pool.
+    fn creer(
+        &mut self,
+        i: usize,
+        type_allie: usize,
+        def: &'static DefinitionAllie,
+        temporaire: bool,
+    ) -> Option<usize> {
         if self.armes.invocations.pool.len() >= CAPACITE {
-            return false;
+            return None;
         }
         let arme = self.arsenal.armes[i];
         let j = &self.etat.joueur;
@@ -221,10 +247,18 @@ impl Partie {
             minuterie: if def.soutien { 1.0 } else { 0.0 },
             vitesse_sol: 0.0,
             dernier_soin: f64::NEG_INFINITY,
+            premiere_morsure: false,
+            alpha: false,
+            revenu: false,
+            echelle: 1.0,
+            temporaire,
         };
         inv.pool.push(a);
+        let k = inv.pool.len() - 1;
+        self.talent_sur_creation_allie(k);
+        let a = self.armes.invocations.pool[k];
         self.ev.gerbe("invocation", a.x, 1.0, a.z);
-        true
+        Some(k)
     }
 
     pub fn maj_invocations(&mut self, dt: f32) {
@@ -259,6 +293,7 @@ impl Partie {
         for _ in 0..SEPARATION_PASSES {
             self.separer_allies();
         }
+        self.maj_haies(dt);
     }
 
     /// Allié assez proche (plus que le joueur) pour attirer un ennemi au corps à corps.
@@ -270,7 +305,12 @@ impl Partie {
                 continue;
             }
             let d = longueur(a.x - x, a.z - z);
-            if d < a.def.provocation && d < meilleure {
+            let alpha = if a.alpha && a.echelle > 1.0 {
+                PROVOCATION_ALPHA
+            } else {
+                1.0
+            };
+            if d < a.def.provocation * alpha && d < meilleure {
                 meilleure = d;
                 meilleur = Some((k, a.id));
             }
@@ -296,6 +336,10 @@ impl Partie {
         let def = a.def;
         if a.pv > 0.0 {
             self.ev.son(&def.son_blessure);
+            return;
+        }
+        // Mort : un talent peut le ramener, sinon il disparaît au prochain pas
+        if self.talent_sur_mort_allie(k) {
             return;
         }
         self.ev.son(&def.son_mort);

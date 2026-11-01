@@ -2,7 +2,8 @@
 //! (`animation`), géométrie (`geometrie`) et rendu instancié (`rendu`).
 //!
 //! `Rendus` tient un rendu par apparence : le personnage joué, chaque type d'ennemi,
-//! chaque type d'allié puis chaque coffre, dans l'ordre des tables de données.
+//! chaque type d'allié, chaque coffre puis les créatures des talents (ravageur, crocs),
+//! dans l'ordre des tables de données.
 
 pub mod animation;
 pub mod compilation;
@@ -36,6 +37,7 @@ pub fn apparences(
         .chain(d.ennemis.values().map(|e| &e.apparence))
         .chain(d.allies.allies.values().map(|a| &a.apparence))
         .chain(d.coffres.coffres.values().map(|c| &c.apparence))
+        .chain(d.allies.creatures_talents.values())
 }
 
 /// Textures de toutes les apparences (skins et objets tenus).
@@ -58,6 +60,7 @@ pub struct Rendus {
     pub liste: Vec<RenduModele>,
     nombre_ennemis: usize,
     nombre_allies: usize,
+    nombre_coffres: usize,
 }
 
 impl Rendus {
@@ -77,6 +80,12 @@ impl Rendus {
         &mut self.liste[1 + self.nombre_ennemis + self.nombre_allies + type_coffre]
     }
 
+    /// Créature d'un talent (index dans `allies.creatures_talents`).
+    pub fn creature(&mut self, k: usize) -> &mut RenduModele {
+        let debut = 1 + self.nombre_ennemis + self.nombre_allies + self.nombre_coffres;
+        &mut self.liste[debut + k]
+    }
+
     /// Modèle compilé (sans emprunt mutable).
     pub fn modele_ennemi(&self, type_ennemi: usize) -> &ModeleCompile {
         &self.liste[1 + type_ennemi].modele
@@ -84,6 +93,11 @@ impl Rendus {
 
     pub fn modele_allie(&self, type_allie: usize) -> &ModeleCompile {
         &self.liste[1 + self.nombre_ennemis + type_allie].modele
+    }
+
+    pub fn modele_creature(&self, k: usize) -> &ModeleCompile {
+        let debut = 1 + self.nombre_ennemis + self.nombre_allies + self.nombre_coffres;
+        &self.liste[debut + k].modele
     }
 
     pub fn modele_joueur(&self) -> &ModeleCompile {
@@ -144,6 +158,7 @@ impl Rendus {
             liste,
             nombre_ennemis: d.ennemis.len(),
             nombre_allies: d.allies.allies.len(),
+            nombre_coffres: d.coffres.coffres.len(),
         }
     }
 }

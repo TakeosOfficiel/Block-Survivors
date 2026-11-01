@@ -351,3 +351,83 @@ fn mage_talents() {
     assert_eq!(p.etat.joueur.pv, (p.etat.joueur.pv_max * 0.4).ceil());
     assert!(!p.talent_eviter_mort());
 }
+
+/// Talents de l'Invocateur : alpha, Lune de sang (loups hors quota), crocs et ravageur
+/// crédités aux loups, haie du Bosquet ; une minute et quelques sans rien casser.
+#[test]
+fn invocateur_talents() {
+    use bs_donnees::progression::BonusTalents;
+    let d = donnees();
+    let invocateur = d
+        .personnages
+        .personnages
+        .get_index_of("invocateur")
+        .unwrap();
+    let mut p = Partie::nouvelle(d, 0, invocateur, 13, false);
+    assert!(p.talents.classes.invocateur.is_some());
+    let b = BonusTalents {
+        mecaniques: vec![
+            ("chef_meute", 1),
+            ("morsure_marquante", 2),
+            ("reactivite", 2),
+            ("meute_soudee", 2),
+            ("traque", 1),
+            ("curee", 1),
+            ("hurlement", 2),
+            ("encerclement", 2),
+            ("braises_blaze", 2),
+            ("coordination", 2),
+            ("alpha", 2),
+            ("ruee_meute", 1),
+            ("lune_de_sang", 1),
+            ("gardien_alpha", 1),
+            ("lien_spirituel", 1),
+            ("garde_rapprochee", 2),
+            ("allay_chanteur", 1),
+            ("essaim", 2),
+            ("evocation_superieure", 1),
+            ("crocs_evocateur", 1),
+            ("bosquet", 1),
+        ],
+        ..Default::default()
+    };
+    p.appliquer_talents(&b);
+    p.joueur.invincible = true;
+    for id in [
+        "loups",
+        "vex",
+        "esprit_blaze",
+        "totem_racines",
+        "esprit_protecteur",
+    ] {
+        p.ameliorer_arme(d.armes.get_index_of(id).unwrap());
+    }
+    let loup = d.allies.allies.get_index_of("loup").unwrap();
+    let loups_vivants = |p: &Partie| {
+        p.armes
+            .invocations
+            .pool
+            .iter()
+            .filter(|a| a.type_allie == loup && a.arme.is_some() && a.pv > 0.0)
+            .count()
+    };
+    let mut alpha = false;
+    let mut crocs = false;
+    let mut ravageur = false;
+    let mut max_loups = 0;
+    for _ in 0..(62.0 / PAS_SIMULATION) as u32 {
+        p.pas(PAS_SIMULATION);
+        alpha |= p.armes.invocations.pool.iter().any(|a| a.alpha);
+        let v = p.talents.classes.invocateur.as_ref().unwrap();
+        crocs |= !v.crocs.is_empty();
+        ravageur |= v.ravageur.actif;
+        max_loups = max_loups.max(loups_vivants(&p));
+    }
+    assert!(alpha, "aucun loup alpha");
+    assert!(crocs, "aucun croc");
+    assert!(ravageur, "pas de ravageur");
+    // Lune de sang : plus de loups que le quota normal (6)
+    assert!(max_loups > 6, "loups au plus : {max_loups}");
+    let loups = d.armes.get_index_of("loups").unwrap();
+    assert!(p.etat.stats.degats_par_arme[loups] > 0.0);
+}

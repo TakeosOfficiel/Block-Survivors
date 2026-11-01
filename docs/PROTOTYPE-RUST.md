@@ -13,7 +13,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 1. Données et règles, sans rendu | fait : données, monde, simulation complète et robot (`bs-robot`) ; ses moyennes tombent dans la tolérance de celles du jeu TS (voir 1b) |
 | 2. Monde et rendu | fait : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres), 2d-2 (particules, chiffres de dégâts, barres de vie, secousse), 2d-3 (visuels des armes), 2d-4 (vent, ombres du soleil, lumière des blocs) |
 | 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
-| 4. Sauvegardes et profils | en cours : 4a à 4e (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques du Guerrier, de l'Archère et du Mage) |
+| 4. Sauvegardes et profils | en cours : 4a à 4f (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques des quatre classes) |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -918,3 +918,24 @@ mode sans fin.
 - Correction : la couleur des éclairs affichés venait de la mauvaise arme (index de
   l'arsenal au lieu du catalogue).
 - Test : `mage_talents` (20 talents, une minute avec tous les sorts, Phénix).
+
+### 4f : mécaniques des talents de l'Invocateur (faites)
+
+- `bs-regles/src/classes/invocateur/mod.rs` (état, Hurlement, Lune de sang, Ruée, Curée,
+  Garde rapprochée, Évocation supérieure), `allies.rs` (crochets dans le système des
+  invocations) et `ravageur.rs` (ravageur et crocs), port de `invocateur.ts`. Les 21
+  mécaniques sont portées :
+  - Maître-chien : Chef de meute, Morsure marquante, Réactivité, Meute soudée, Traque,
+    Curée, Hurlement, Encerclement, Braises de blaze, Coordination, Alpha, Ruée de la
+    meute, Lune de sang, Gardien alpha ;
+  - Évocateur : Lien spirituel, Garde rapprochée, Allay chanteur, Essaim, Évocation
+    supérieure, Crocs de l'évocateur, Bosquet.
+- Système des invocations (`combat/invocations/`) : nouveaux champs des alliés (première
+  morsure, alpha, revenu, échelle, temporaire), quota + Lune, cible prioritaire, dégâts,
+  cadence et vitesse des alliés, morsure, mort rattrapée (Gardien alpha) ; alliés
+  temporaires hors quota, allié proche du joueur et haie du Bosquet dans `talents.rs`.
+- Affichage (`bs-rendu/src/creatures.rs`) : le ravageur marche en chargeant, les crocs
+  sortent de terre, claquent et s'enfoncent ; l'alpha du Gardien est 1,25 fois plus grand.
+  Les créatures des talents ont leur rendu à la suite des coffres.
+- Test : `invocateur_talents` (21 talents, un peu plus d'une minute : alpha, crocs,
+  ravageur, Lune de sang au-delà du quota, dégâts crédités aux loups).

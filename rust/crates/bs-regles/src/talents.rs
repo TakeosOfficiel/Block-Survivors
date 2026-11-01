@@ -82,6 +82,7 @@ impl Partie {
         let mut m =
             self.guerrier_multiplicateur(i, arme) * self.archere_multiplicateur(i, arme, nature);
         m *= self.mage_multiplicateur(arme, nature);
+        m *= self.invocateur_multiplicateur(i, arme, nature);
         for &(effet, facteur) in &self.talents.effets {
             if let EffetObjet::Bastion { seuil, bonus } = *effet
                 && j.pv < seuil * j.pv_max
@@ -135,6 +136,7 @@ impl Partie {
         self.guerrier_apres_coup(i, arme, critique, nature);
         self.archere_apres_coup(i, degats, arme, critique, nature);
         self.mage_apres_coup(i, arme, critique, nature);
+        self.invocateur_apres_coup(i, nature);
         if nature != Nature::Arme || !self.ennemis.pool[i].vivant() {
             return;
         }
@@ -153,6 +155,7 @@ impl Partie {
         self.guerrier_sur_mort(arme);
         self.archere_sur_mort(i);
         self.mage_sur_mort(i);
+        self.invocateur_sur_mort(i);
         if self.talents.en_reaction {
             return;
         }
@@ -213,6 +216,7 @@ impl Partie {
         self.guerrier_apres_declenchement(i, declenchee);
         self.archere_apres_declenchement(i, declenchee);
         self.mage_apres_declenchement(i, declenchee);
+        self.invocateur_apres_declenchement(i, declenchee);
     }
     /// Multiplicateur du délai entre deux déclenchements de l'arme `arme` (au mieux −50 %).
     pub fn talent_delai(&mut self, arme: usize) -> f32 {
@@ -226,7 +230,7 @@ impl Partie {
         self.guerrier_degats_recus(degats, boss)
     }
     pub fn talent_armure(&self) -> f32 {
-        self.guerrier_armure()
+        self.guerrier_armure() + self.invocateur_armure()
     }
     pub fn talent_eviter_mort(&mut self) -> bool {
         self.guerrier_eviter_mort() || self.mage_eviter_mort()
@@ -280,6 +284,7 @@ impl Partie {
         self.guerrier_maj(dt);
         self.archere_maj(dt);
         self.mage_maj(dt);
+        self.invocateur_maj(dt);
         if self.talents.recharge_magma > 0.0 {
             self.talents.recharge_magma -= dt;
         }

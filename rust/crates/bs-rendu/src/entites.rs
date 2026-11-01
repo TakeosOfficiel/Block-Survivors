@@ -66,6 +66,8 @@ pub struct Animations {
     joueur: EtatAnimation,
     ennemis: HashMap<u32, EtatAnimation>,
     allies: HashMap<u32, EtatAnimation>,
+    /// Ravageur de l'Évocation supérieure.
+    pub(crate) ravageur: EtatAnimation,
     /// Graine de la partie animée (une nouvelle partie remet tout à zéro).
     graine: u32,
     /// Numéro du pas, pour oublier les entités disparues.
@@ -101,6 +103,7 @@ pub fn creer_entites(mut commandes: Commands, jeu: Res<PartieEnCours>) {
         joueur: EtatAnimation::nouveau(0.0),
         ennemis: HashMap::with_capacity(capacite),
         allies: HashMap::with_capacity(CAPACITE_ALLIES),
+        ravageur: EtatAnimation::nouveau(0.0),
         graine: jeu.graine,
         pas: 0,
         brulure: teinte(d, "brulure"),
@@ -160,6 +163,7 @@ pub fn animer(jeu: Res<PartieEnCours>, rendus: Res<Rendus>, mut anim: ResMut<Ani
         etat.avancer(m, PAS, al.vitesse_sol);
     }
     a.allies.retain(|_, e| e.vu == pas);
+    crate::creatures::animer(p, &rendus, &mut a.ravageur);
     for ev in &p.ev.liste {
         let Evenement::Geste(qui) = ev else { continue };
         match qui {
@@ -326,8 +330,8 @@ pub fn placer_entites(
         pose.position = Vec3::new(pos.x, y, pos.y);
         pose.angle = a.angle;
         pose.inclinaison = 0.0;
-        pose.echelle_xz = 1.0;
-        pose.echelle_y = 1.0;
+        pose.echelle_xz = a.echelle;
+        pose.echelle_y = a.echelle;
         pose.surcouche = if a.blessure > 0.0 { rouge() } else { [0.0; 4] };
         r.ajouter(&mut commandes, &mut q);
         ombres.0.push([pos.x, pos.y, a.def.apparence.rayon_ombre]);
@@ -337,6 +341,15 @@ pub fn placer_entites(
             barres.0.push([pos.x, y, pos.y, a.pv / a.pv_max, 1.0]);
         }
     }
+
+    crate::creatures::placer(
+        p,
+        &anim.ravageur,
+        &mut rendus,
+        &mut commandes,
+        &mut q,
+        &mut ombres,
+    );
 
     // Coffres : retournés (loquet en −Z), le couvercle se lève en douceur
     let duree = p.d.coffres.regles.duree_ouverture;

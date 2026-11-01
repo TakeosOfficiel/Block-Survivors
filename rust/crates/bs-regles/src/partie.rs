@@ -127,6 +127,9 @@ impl Partie {
         if classe == "mage" {
             talents.classes.mage = Some(crate::classes::Mage::nouveau(d));
         }
+        if classe == "invocateur" {
+            talents.classes.invocateur = Some(crate::classes::Invocateur::nouveau(d));
+        }
         let mut partie = Self {
             d,
             c: Catalogue::nouveau(d),

@@ -2,11 +2,12 @@
 //! mouvements du joueur (temps immobile, distance parcourue), soins plafonnés, coups
 //! « en réaction » qui ne relancent pas les talents, cercles de particules, ordres aux
 //! systèmes d'armes (Séisme, Zéro absolu, Écho). Chaque classe a son état et ses mécaniques
-//! (guerrier/, archere/, mage/) ;
+//! (guerrier/, archere/, mage/, invocateur/) ;
 //! leurs rangs sont lus une fois, au début de la partie.
 
 pub mod archere;
 pub mod guerrier;
+pub mod invocateur;
 pub mod mage;
 
 use bs_commun::maths::{cos, longueur, sin};
@@ -17,6 +18,7 @@ use crate::partie::Partie;
 
 pub use archere::Archere;
 pub use guerrier::Guerrier;
+pub use invocateur::Invocateur;
 pub use mage::Mage;
 
 /// Vitesse (blocs/s) sous laquelle le joueur compte comme immobile.
@@ -57,6 +59,7 @@ pub struct Classes {
     pub guerrier: Option<Guerrier>,
     pub archere: Option<Archere>,
     pub mage: Option<Mage>,
+    pub invocateur: Option<Invocateur>,
 }
 
 impl Partie {

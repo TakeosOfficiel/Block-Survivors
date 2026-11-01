@@ -26,7 +26,7 @@ impl Partie {
                 continue;
             }
             let vol_a = a.def.vol.is_some();
-            let rayon_a = a.def.rayon;
+            let rayon_a = a.def.rayon * a.echelle;
             for (k, b) in pool[i + 1..].iter_mut().enumerate() {
                 let q = i + 1 + k;
                 if b.arme.is_none() || b.pv <= 0.0 || b.def.vol.is_some() != vol_a {
@@ -36,7 +36,7 @@ impl Partie {
                 if !mobile_a && !mobile_b {
                     continue;
                 }
-                let ecart = rayon_a + b.def.rayon + SEPARATION_MARGE;
+                let ecart = rayon_a + b.def.rayon * b.echelle + SEPARATION_MARGE;
                 let (mut dx, mut dz) = (b.x - a.x, b.z - a.z);
                 let d = longueur(dx, dz);
                 if d >= ecart {
@@ -84,7 +84,10 @@ impl Partie {
         let a = self.armes.invocations.pool[i];
         let s = self.arsenal.armes[arme].stats;
         let index_arme = self.arsenal.armes[arme].index;
-        let cible = self.ennemis.plus_proche(a.x, a.z, a.def.detection);
+        let cible = match self.talent_cible_prioritaire(i) {
+            Some(c) => Some(c),
+            None => self.ennemis.plus_proche(a.x, a.z, a.def.detection),
+        };
         let (jx, jz) = (self.etat.joueur.x, self.etat.joueur.z);
         let (vx, vz, arret) = match cible {
             Some(c) => {
@@ -98,19 +101,16 @@ impl Partie {
             && distance <= arret
             && a.minuterie <= 0.0
         {
+            let degats = s.degats * self.talent_multiplicateur_allie(i);
+            self.armes.invocations.pool[i].premiere_morsure = false;
             let a = self.armes.invocations.pool[i];
-            self.blesser(
-                c,
-                s.degats,
-                a.x,
-                a.z,
-                s.recul,
-                Some(index_arme),
-                Nature::Allie,
-            );
+            let source = Some(index_arme);
+            self.blesser(c, degats, a.x, a.z, s.recul, source, Nature::Allie);
+            self.talent_sur_morsure(i, c);
             self.ev.son(&a.def.son_coup);
             self.ev.geste(Some(a.id));
-            self.armes.invocations.pool[i].minuterie = a.def.cadence_coups;
+            let cadence = a.def.cadence_coups * self.talent_cadence_allie();
+            self.armes.invocations.pool[i].minuterie = cadence;
         }
     }
 
@@ -122,10 +122,13 @@ impl Partie {
         let equipee = self.arsenal.armes[arme];
         let s = equipee.stats;
         let (jx, jz) = (self.etat.joueur.x, self.etat.joueur.z);
-        let Some(c) = self
-            .ennemis
-            .plus_proche(a.x, a.z, a.def.detection.min(s.portee))
-        else {
+        let cible = match self.talent_cible_prioritaire(i) {
+            Some(c) => Some(c),
+            None => self
+                .ennemis
+                .plus_proche(a.x, a.z, a.def.detection.min(s.portee)),
+        };
+        let Some(c) = cible else {
             self.aller_vers(i, jx, jz, DISTANCE_SUIVI, dt);
             return;
         };
@@ -135,7 +138,11 @@ impl Partie {
             return;
         }
         let a = self.armes.invocations.pool[i];
+        // Brûlure au dernier rang, ou dès le rang 1 avec Braises de blaze (dégâts doublés
+        // au rang 2)
+        let braises = self.talents.rang("braises_blaze");
         let brulure = match &equipee.def.mecanique {
+            _ if braises > 0 => DEGATS_BRULURE * braises as f32,
             Mecanique::Invocation {
                 brulure_au_rang: Some(r),
                 ..
@@ -162,7 +169,8 @@ impl Partie {
             );
         }
         self.ev.son_hauteur(&a.def.son_coup, 1.3);
-        self.armes.invocations.pool[i].minuterie = a.def.cadence_coups;
+        let cadence = a.def.cadence_coups * self.talent_cadence_allie();
+        self.armes.invocations.pool[i].minuterie = cadence;
     }
 
     pub(super) fn soutenir(&mut self, i: usize, arme: usize, dt: f32) {
@@ -240,15 +248,16 @@ impl Partie {
         vers_x /= distance;
         vers_z /= distance;
         a.vitesse_sol = 0.0;
-        if distance > arret && a.vitesse > 0.0 {
-            let nx = a.x + vers_x * a.vitesse * dt;
-            let nz = a.z + vers_z * a.vitesse * dt;
+        let vitesse = a.vitesse * self.talent_vitesse_allie(i);
+        if distance > arret && vitesse > 0.0 {
+            let nx = a.x + vers_x * vitesse * dt;
+            let nz = a.z + vers_z * vitesse * dt;
             (a.x, a.z) = if a.def.vol.is_some() {
                 (nx, nz)
             } else {
                 self.carte.resoudre_collision(nx, nz, a.def.rayon)
             };
-            a.vitesse_sol = a.vitesse;
+            a.vitesse_sol = vitesse;
         }
         a.angle += ecart_angle(a.angle, atan2(vers_x, vers_z)) * facteur_lissage(10.0, dt);
         self.armes.invocations.pool[i] = a;

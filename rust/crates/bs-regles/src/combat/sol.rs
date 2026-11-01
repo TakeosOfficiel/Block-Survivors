@@ -92,7 +92,7 @@ impl Default for ArmesSol {
 
 impl Partie {
     /// Vrai si l'ennemi `e` est encore immunisé contre l'arme ; sinon l'immunise `delai` s.
-    pub(super) fn immunise(&mut self, e: usize, arme: usize, delai: f32) -> bool {
+    pub(crate) fn immunise(&mut self, e: usize, arme: usize, delai: f32) -> bool {
         let temps = self.etat.temps_jeu;
         let imm = &mut self.ennemis.pool[e].immunites[arme];
         if f64::from(*imm) > temps {

@@ -12,6 +12,7 @@ mod arene;
 mod armes;
 mod camera;
 mod carte_mc;
+mod creatures;
 mod dessins;
 mod ecran_cartes;
 mod ecrans;

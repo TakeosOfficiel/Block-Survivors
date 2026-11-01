@@ -83,9 +83,7 @@ impl Robot {
         p.joueur.invincible = invincible;
         let mut pas: u64 = 0;
         while p.etat.issue.is_none() && p.etat.temps_jeu < duree {
-            self.choisir_cartes(p);
-            self.diriger(p);
-            p.pas(PAS);
+            self.avancer(p);
             pas += 1;
             if pas.is_multiple_of(3600) {
                 self.noter_minute(p, 60.0);
@@ -96,6 +94,13 @@ impl Robot {
             self.noter_minute(p, reste);
         }
         self.bilan(p, graine)
+    }
+
+    /// Un pas : cartes en attente, direction, puis la simulation.
+    pub fn avancer(&mut self, p: &mut Partie) {
+        self.choisir_cartes(p);
+        self.diriger(p);
+        p.pas(PAS);
     }
 
     fn noter_minute(&mut self, p: &Partie, secondes: f64) {

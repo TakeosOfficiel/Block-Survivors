@@ -23,6 +23,17 @@ impl Mulberry {
         Self { etat: depart }
     }
 
+    /// Nombre de tirages faits depuis la graine `depart` (débogage : comparer avec le jeu TS).
+    pub fn tirages(&self, depart: u32) -> u32 {
+        // Inverse de 0x6d2b79f5 modulo 2³² (Newton : chaque passe double les bits justes)
+        let a: u32 = 0x6d2b_79f5;
+        let mut inverse = a;
+        for _ in 0..5 {
+            inverse = inverse.wrapping_mul(2u32.wrapping_sub(a.wrapping_mul(inverse)));
+        }
+        self.etat.wrapping_sub(depart).wrapping_mul(inverse)
+    }
+
     /// Nombre dans [0, 1), en double précision comme en TypeScript.
     pub fn tirer(&mut self) -> f64 {
         self.etat = self.etat.wrapping_add(0x6d2b_79f5);

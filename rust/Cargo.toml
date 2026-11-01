@@ -41,6 +41,8 @@ bevy = { version = "0.18.1", default-features = false, features = [
     "2d_bevy_render",
     "ui_api",
     "ui_bevy_render",
+    "png",
+    "https",
 ] }
 wasm-bindgen = "=0.2.122"
 

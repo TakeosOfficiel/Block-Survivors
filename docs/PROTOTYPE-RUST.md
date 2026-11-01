@@ -11,6 +11,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | −1. Robot d'équilibrage, aléatoire à graine, pas fixe (TypeScript) | fait |
 | 0 bis. Prototype des cinq paris | fait : on continue, avec ajustements (voir la décision) ; 94 images/s mesurées sur le PC du joueur |
 | 1. Données et règles, sans rendu | fait : données, monde, simulation complète et robot (`bs-robot`) ; ses moyennes tombent dans la tolérance de celles du jeu TS (voir 1b) |
+| 2. Monde et rendu | en cours : 2a (textures vanilla, arène affichée, vraie partie) fait ; 2b modèles d'entités, 2c maps .schem, 2d effets à faire |
 
 ---
 
@@ -413,3 +414,38 @@ vingtaine de minutes pour le robot TS dans Chromium), puis compare aux référen
   dans la tolérance (par exemple guerrier : niveau 29 / 28,4, tués 3567 / 3502).
 - Butin d'armure des boss : la Collection n'agit que sur les parties suivantes, mais ses
   tirages dans l'aléa sont reproduits (`butin.rs`).
+
+---
+
+## Étape 2 : monde et rendu
+
+### 2a : textures vanilla et arène affichée
+
+- **Textures.** Jamais dans le dépôt : téléchargées au lancement depuis les mêmes
+  adresses que le jeu TS (GitHub, puis mcasset.cloud en secours), par une source
+  d'assets Bevy `mc://` (`bs-rendu/src/textures.rs`). Sur PC elles sont gardées en
+  cache (`~/.cache/block-survivors/textures/26.3` sous Linux, `%LOCALAPPDATA%` sous
+  Windows) ; le navigateur garde son cache HTTP. Une texture introuvable donne la
+  couleur de secours du bloc, en damier, comme en TS.
+- **Arène.** Un seul maillage par (bloc, groupe de faces : côtés, dessus, dessous) :
+  les faces collées à un bloc plein opaque, et celles entre deux cases du même liquide,
+  ne sont pas créées. Formes : cube, croix (fleurs, herbes), liquide (14/16 de haut).
+  Rotation aléatoire par quarts de tour, comme en TS. Terrain extérieur autour de
+  l'arène, texture répétée et assombrie.
+- **Matériau des blocs** (`shaders/blocs.wgsl`) : le même éclairage que le Lambert de
+  three.js (ambiante + soleil, sans reflets), brouillard linéaire lissé comme
+  `THREE.Fog`, découpe nette (feuilles, fleurs), blocs lumineux, eau et lave animées
+  (bande d'images, aller-retour). Pas de tonemapping : couleurs identiques au TS.
+- **Caméra** vue de dessus inclinée à 55°, suivi lissé, zoom à la molette (réglages de
+  `src/config.ts`).
+- **Partie.** La vraie simulation (`bs-regles`) tourne à 60 pas/s ; ZQSD/WASD ou les
+  flèches conduisent le joueur, sinon le robot joue (et choisit les cartes, en
+  attendant l'interface de l'étape 3). Joueur et ennemis sont encore des personnages
+  cubiques (modèles Minecraft : 2b). Relance automatique 3 s après la fin.
+- **Capture** (PC sans carte graphique, lavapipe) : `docs/captures/arene-prairie-pc.png`.
+  Simulation : environ 30 µs par pas.
+- **Tests** : faces cachées entre blocs et dans un liquide, hauteur de l'eau, damier
+  de secours (sans carte graphique).
+- **Développement local** : `CARGO_PROFILE_DEV_DEBUG=0` évite de remplir le disque
+  (les infos de débogage de Bevy dépassaient 20 Go).
+

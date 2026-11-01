@@ -198,7 +198,7 @@ impl Robot {
     // --- Cartes ------------------------------------------------------------
 
     /// Cartes de niveau puis objets des coffres, choisis par une règle fixe.
-    fn choisir_cartes(&mut self, p: &mut Partie) {
+    pub fn choisir_cartes(&mut self, p: &mut Partie) {
         if p.etat.issue.is_some() || p.etat.joueur.mort {
             return;
         }

@@ -10,6 +10,10 @@ publish.workspace = true
 bevy.workspace = true
 bs-commun.workspace = true
 bs-regles.workspace = true
+bs-donnees.workspace = true
+bs-monde.workspace = true
+# Provisoire (jusqu'à l'interface, étape 3) : choix des cartes et pilote automatique
+bs-robot.workspace = true
 
 [lints]
 workspace = true

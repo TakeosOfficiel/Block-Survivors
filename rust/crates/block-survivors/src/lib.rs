@@ -1,12 +1,13 @@
 //! Block Survivors : assemblage de l'application Bevy, commun au PC et au navigateur.
-//! Prototype de l'étape 0 bis (docs/PLAN-RUST.md) : l'arène, le joueur, 300 zombies et une
-//! arme (bs-regles pour la simulation, bs-rendu pour l'affichage).
+//! La simulation vient de bs-regles, l'affichage de bs-rendu (docs/PLAN-RUST.md).
 
 use bevy::prelude::*;
 
 /// Lance le jeu (ne rend pas la main avant la fermeture de la fenêtre).
 pub fn lancer() {
     App::new()
+        // Source « mc:// » des textures vanilla : avant l'AssetPlugin de DefaultPlugins
+        .add_plugins(bs_rendu::PluginSourceTextures)
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: format!("Block Survivors {}", bs_commun::VERSION),
@@ -18,6 +19,10 @@ pub fn lancer() {
             }),
             ..default()
         }))
-        .add_plugins(bs_rendu::PluginPrototype { graine: 1 })
+        .add_plugins(bs_rendu::PluginJeu {
+            graine: 1,
+            arene: 0,
+            personnage: 0,
+        })
         .run();
 }

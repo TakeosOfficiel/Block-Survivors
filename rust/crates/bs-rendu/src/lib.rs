@@ -1,236 +1,252 @@
-//! Rendu Bevy de la simulation (`bs-regles`) : la simulation avance dans `FixedUpdate`
-//! (60 pas/s), le rendu place chaque entité entre ses deux dernières positions
-//! (`overstep_fraction`), donc fluide à toute fréquence d'écran. Les entités visibles sont
-//! créées une fois (une par emplacement des tableaux de la simulation) et seulement
-//! déplacées ou cachées ensuite : aucune création pendant la partie.
+//! Rendu Bevy de la partie (`bs-regles`). La simulation avance dans `FixedUpdate`
+//! (60 pas/s) ; le rendu place chaque entité entre ses deux dernières positions
+//! (`overstep_fraction`), donc fluide à toute fréquence d'écran. Le rendu ne modifie
+//! jamais la simulation.
 //!
-//! Prototype (étape 0 bis, pari 1) : arène, joueur, 300 zombies, une arme ; mesure des
-//! images/s dans la console.
+//! Déroulé : chargement des textures de l'arène (écran de chargement à venir), puis
+//! construction de l'arène et partie. Tant que l'interface n'existe pas (étape 3), le
+//! robot choisit les cartes et conduit le joueur si personne ne touche au clavier.
 
+mod arene;
+mod camera;
+mod entites;
+mod materiau;
 mod mesure;
 mod modeles;
+mod textures;
 
 use bevy::prelude::*;
-use bs_commun::PAS_SIMULATION;
-use bs_regles::{Commande, Parametres, Simulation};
+use bs_donnees::Donnees;
+use bs_monde::{MondeGenere, generer_monde};
+use bs_regles::partie::Partie;
+use bs_robot::Robot;
 
+pub use arene::{GroupeFaces, MaillageBloc, maillage_exterieur, maillages_arene};
 pub use mesure::Mesure;
+pub use textures::PluginSourceTextures;
 
-/// La simulation, ressource Bevy.
-#[derive(Resource)]
-pub struct Partie(pub Simulation);
+use crate::materiau::{AnimationTexture, MateriauBloc, ParametresBloc};
+use crate::textures::Textures;
 
-/// Emplacement d'un ennemi ou d'un projectile dans les tableaux de la simulation.
-#[derive(Component)]
-struct Zombie(usize);
-#[derive(Component)]
-struct Projectile(usize);
-#[derive(Component)]
-struct JoueurVisible;
+/// Pas fixe de la simulation (s).
+const PAS: f32 = 1.0 / 60.0;
+/// Attente après la fin d'une partie avant d'en relancer une (s).
+const ATTENTE_RELANCE: f32 = 3.0;
 
-/// Plugin du prototype : simulation, scène et caméra.
-pub struct PluginPrototype {
-    pub graine: u64,
+#[derive(States, Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+enum Phase {
+    #[default]
+    Chargement,
+    Partie,
 }
 
-impl Plugin for PluginPrototype {
+/// La partie en cours, ressource Bevy.
+#[derive(Resource)]
+pub struct PartieEnCours {
+    pub partie: Partie,
+    robot: Robot,
+    graine: u32,
+    arene: usize,
+    /// Temps écoulé depuis la fin de la partie.
+    fin: f32,
+}
+
+/// Monde généré de l'arène (blocs à afficher).
+#[derive(Resource)]
+struct Monde(MondeGenere);
+
+/// Plugin du jeu : données, partie, arène, entités, caméra.
+pub struct PluginJeu {
+    pub graine: u32,
+    pub arene: usize,
+    pub personnage: usize,
+}
+
+impl Plugin for PluginJeu {
     fn build(&self, app: &mut App) {
-        app.insert_resource(Partie(Simulation::nouvelle(
-            self.graine,
-            Parametres::default(),
-        )))
-        .insert_resource(Time::<Fixed>::from_seconds(PAS_SIMULATION as f64))
-        .insert_resource(ClearColor(Color::srgb(0.47, 0.65, 1.0)))
-        .add_plugins(mesure::PluginMesure)
-        .add_systems(Startup, installer_scene)
-        .add_systems(FixedUpdate, avancer)
+        let d: &'static Donnees =
+            Box::leak(Box::new(Donnees::embarquees().expect("données du jeu")));
+        let partie = Partie::nouvelle(d, self.arene, self.personnage, self.graine, true);
+        let monde = generer_monde(d, partie.etat.arene);
+        app.insert_resource(PartieEnCours {
+            partie,
+            robot: Robot::default(),
+            graine: self.graine,
+            arene: self.arene,
+            fin: 0.0,
+        })
+        .insert_resource(Monde(monde))
+        .insert_resource(Time::<Fixed>::from_seconds(f64::from(PAS)))
+        .init_resource::<Textures>()
+        .init_resource::<camera::Cible>()
+        .init_state::<Phase>()
+        .add_plugins((materiau::PluginMateriaux, mesure::PluginMesure))
+        .add_systems(Startup, demander_textures)
         .add_systems(
             Update,
-            (
-                placer_joueur,
-                placer_zombies,
-                placer_projectiles,
-                suivre_camera,
-            )
-                .chain(),
+            attendre_textures.run_if(in_state(Phase::Chargement)),
+        )
+        .add_systems(
+            OnEnter(Phase::Partie),
+            (construire_arene, entites::creer_entites),
+        )
+        .add_systems(
+            FixedUpdate,
+            (entites::noter_positions, avancer)
+                .chain()
+                .run_if(in_state(Phase::Partie)),
+        )
+        .add_systems(
+            Update,
+            (entites::placer_entites, camera::suivre)
+                .chain()
+                .run_if(in_state(Phase::Partie)),
         );
     }
 }
 
-/// Clavier (ZQSD, WASD ou flèches) ; sans touche, un pilote automatique tourne en rond
-/// (mesures sans personne au clavier).
-fn commande(touches: &ButtonInput<KeyCode>, pas: u64) -> Commande {
-    let appui = |codes: &[KeyCode]| codes.iter().any(|c| touches.pressed(*c)) as i32 as f32;
-    let dx =
-        appui(&[KeyCode::KeyD, KeyCode::ArrowRight]) - appui(&[KeyCode::KeyA, KeyCode::ArrowLeft]);
-    let dz =
-        appui(&[KeyCode::KeyS, KeyCode::ArrowDown]) - appui(&[KeyCode::KeyW, KeyCode::ArrowUp]);
-    if dx != 0.0 || dz != 0.0 {
-        return Commande { dx, dz };
+/// Toutes les textures des blocs de l'arène (et de son terrain extérieur).
+fn demander_textures(
+    serveur: Res<AssetServer>,
+    mut textures: ResMut<Textures>,
+    jeu: Res<PartieEnCours>,
+    monde: Res<Monde>,
+) {
+    let d = jeu.partie.d;
+    let mut blocs: Vec<&str> = monde.0.blocs.iter().map(|(id, _)| id.as_str()).collect();
+    if let Some(ext) = &jeu.partie.etat.arene.exterieur {
+        blocs.push(&ext.bloc);
     }
-    let a = pas as f32 * 0.004;
-    Commande {
-        dx: a.cos(),
-        dz: a.sin(),
+    for id in blocs {
+        let f = &d.blocs[id].faces;
+        for chemin in [&f.haut, &f.cotes, &f.bas] {
+            textures.demander(&serveur, chemin);
+        }
     }
 }
 
+fn attendre_textures(
+    serveur: Res<AssetServer>,
+    textures: Res<Textures>,
+    mut phase: ResMut<NextState<Phase>>,
+) {
+    let a = textures.avancement(&serveur);
+    if a.faites == a.total {
+        if a.manquantes > 0 {
+            warn!(
+                "{} texture(s) introuvable(s) : couleurs de secours",
+                a.manquantes
+            );
+        }
+        phase.set(Phase::Partie);
+    }
+}
+
+fn construire_arene(
+    mut commandes: Commands,
+    serveur: Res<AssetServer>,
+    textures: Res<Textures>,
+    jeu: Res<PartieEnCours>,
+    monde: Res<Monde>,
+    mut maillages: ResMut<Assets<Mesh>>,
+    mut materiaux: ResMut<Assets<MateriauBloc>>,
+) {
+    let d = jeu.partie.d;
+    let def = jeu.partie.etat.arene;
+    let ambiance = ParametresBloc::de_l_arene(def);
+    let a_texture = |chemin: &str| textures.obtenir(&serveur, chemin).is_some();
+    let mut liste = maillages_arene(d, &monde.0, a_texture);
+    let exterieur = maillage_exterieur(d, def, a_texture);
+    let indice_exterieur = exterieur.as_ref().map(|_| liste.len());
+    liste.extend(exterieur);
+    for (k, m) in liste.iter().enumerate() {
+        let b = &d.blocs[m.bloc];
+        let groupe = m.groupe.unwrap_or(GroupeFaces::Cotes);
+        let chemin = groupe.texture(b);
+        let mut parametres = ambiance;
+        parametres.brouillard.z = if b.decoupe { 0.5 } else { 0.0 };
+        parametres.brouillard.w = if b.lumineux { 1.0 } else { 0.0 };
+        // Terrain extérieur : texture répétée (une par bloc)
+        parametres.animation.z = if Some(k) == indice_exterieur {
+            1.0
+        } else {
+            0.0
+        };
+        let croix = b.forme == Some(bs_donnees::blocs::FormeBloc::Croix);
+        let materiau = materiaux.add(MateriauBloc {
+            parametres,
+            texture: textures.obtenir(&serveur, chemin),
+            double_face: croix || b.decoupe,
+        });
+        let mut entite = commandes.spawn((
+            Name::new(format!(
+                "{}:{groupe:?}",
+                d.blocs.get_index(m.bloc).map_or("", |(id, _)| id)
+            )),
+            Mesh3d(maillages.add(m.en_mesh())),
+            MeshMaterial3d(materiau.clone()),
+        ));
+        if let Some(a) = &b.animation {
+            entite.insert(AnimationTexture {
+                materiau,
+                images_par_seconde: a.images_par_seconde,
+                aller_retour: a.aller_retour,
+            });
+        }
+    }
+    let ciel = Color::LinearRgba(LinearRgba::from_vec4(ambiance.ciel));
+    let j = &jeu.partie.etat.joueur;
+    camera::creer_camera(&mut commandes, Vec2::new(j.x, j.z), ciel);
+    // Lumière des entités provisoires (StandardMaterial), en attendant leurs modèles
+    commandes.spawn((
+        DirectionalLight {
+            illuminance: 6000.0,
+            ..default()
+        },
+        Transform::from_xyz(3.0, 10.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+    ));
+    commandes.insert_resource(GlobalAmbientLight {
+        brightness: 600.0,
+        ..default()
+    });
+}
+
+/// Un pas : le clavier (ZQSD, WASD, flèches) conduit le joueur ; sans touche, le robot.
+/// Les cartes sont choisies par le robot tant que l'interface n'existe pas.
 fn avancer(
-    mut partie: ResMut<Partie>,
+    mut jeu: ResMut<PartieEnCours>,
     touches: Res<ButtonInput<KeyCode>>,
     mut mesure: ResMut<Mesure>,
 ) {
     let debut = bevy::platform::time::Instant::now();
-    let c = commande(&touches, partie.0.pas);
-    partie.0.avancer(c);
-    mesure.ajouter_pas(debut.elapsed());
-}
-
-fn installer_scene(
-    mut commandes: Commands,
-    mut maillages: ResMut<Assets<Mesh>>,
-    mut materiaux: ResMut<Assets<StandardMaterial>>,
-    partie: Res<Partie>,
-) {
-    let s = &partie.0;
-    let (largeur, profondeur) = (s.largeur(), s.profondeur());
-    // Sol en damier de deux herbes (deux maillages, pas un bloc par case)
-    let (sol_a, sol_b) = modeles::sol(largeur, profondeur);
-    for (m, couleur) in [
-        (sol_a, Color::srgb(0.36, 0.62, 0.25)),
-        (sol_b, Color::srgb(0.33, 0.58, 0.23)),
-    ] {
-        commandes.spawn((
-            Mesh3d(maillages.add(m)),
-            MeshMaterial3d(materiaux.add(couleur)),
-        ));
-    }
-    commandes.spawn((
-        JoueurVisible,
-        Mesh3d(maillages.add(modeles::personnage())),
-        MeshMaterial3d(materiaux.add(Color::srgb(0.2, 0.45, 0.85))),
-        Transform::default(),
-    ));
-    // Tous les zombies partagent maillage et matériau : Bevy les dessine en lots
-    let zombie = maillages.add(modeles::personnage());
-    let peau = materiaux.add(Color::srgb(0.33, 0.55, 0.3));
-    for i in 0..s.ennemis.x.len() {
-        commandes.spawn((
-            Zombie(i),
-            Mesh3d(zombie.clone()),
-            MeshMaterial3d(peau.clone()),
-            Transform::default(),
-        ));
-    }
-    let boule = maillages.add(Sphere::new(0.25).mesh().ico(1).expect("sphère"));
-    let feu = materiaux.add(StandardMaterial {
-        base_color: Color::srgb(1.0, 0.55, 0.1),
-        emissive: LinearRgba::rgb(4.0, 1.5, 0.2),
-        ..default()
-    });
-    for k in 0..s.projectiles.x.len() {
-        commandes.spawn((
-            Projectile(k),
-            Mesh3d(boule.clone()),
-            MeshMaterial3d(feu.clone()),
-            Transform::default(),
-            Visibility::Hidden,
-        ));
-    }
-    commandes.spawn((
-        DirectionalLight {
-            illuminance: 9000.0,
-            shadows_enabled: true,
-            ..default()
-        },
-        Transform::from_xyz(20.0, 40.0, 15.0).looking_at(Vec3::ZERO, Vec3::Y),
-    ));
-    commandes.insert_resource(GlobalAmbientLight {
-        brightness: 400.0,
-        ..default()
-    });
-    commandes.spawn((
-        Camera3d::default(),
-        Transform::from_xyz(0.0, 18.0, 14.0).looking_at(Vec3::ZERO, Vec3::Y),
-    ));
-}
-
-fn entre(a: f32, b: f32, t: f32) -> f32 {
-    a + (b - a) * t
-}
-
-fn placer_joueur(
-    partie: Res<Partie>,
-    temps: Res<Time<Fixed>>,
-    mut q: Query<&mut Transform, With<JoueurVisible>>,
-) {
-    let t = temps.overstep_fraction();
-    let j = &partie.0.joueur;
-    for mut tr in &mut q {
-        tr.translation = Vec3::new(entre(j.x_prec, j.x, t), 0.0, entre(j.z_prec, j.z, t));
-        tr.rotation = Quat::from_rotation_y(j.angle);
-    }
-}
-
-fn placer_zombies(
-    partie: Res<Partie>,
-    temps: Res<Time<Fixed>>,
-    mut q: Query<(&Zombie, &mut Transform, &mut Visibility)>,
-) {
-    let t = temps.overstep_fraction();
-    let e = &partie.0.ennemis;
-    for (Zombie(i), mut tr, mut vis) in &mut q {
-        let i = *i;
-        let voulu = if e.vivant[i] {
-            Visibility::Inherited
-        } else {
-            Visibility::Hidden
-        };
-        vis.set_if_neq(voulu);
-        if e.vivant[i] {
-            tr.translation = Vec3::new(
-                entre(e.x_prec[i], e.x[i], t),
-                0.0,
-                entre(e.z_prec[i], e.z[i], t),
-            );
-            tr.rotation = Quat::from_rotation_y(e.angle[i]);
+    if jeu.partie.etat.issue.is_some() {
+        jeu.fin += PAS;
+        if jeu.fin >= ATTENTE_RELANCE {
+            let graine = jeu.graine.wrapping_add(1);
+            let (d, arene, perso) = (jeu.partie.d, jeu.arene, jeu.partie.etat.index_personnage);
+            *jeu = PartieEnCours {
+                partie: Partie::nouvelle(d, arene, perso, graine, true),
+                robot: Robot::default(),
+                graine,
+                arene,
+                fin: 0.0,
+            };
         }
-    }
-}
-
-fn placer_projectiles(
-    partie: Res<Partie>,
-    temps: Res<Time<Fixed>>,
-    mut q: Query<(&Projectile, &mut Transform, &mut Visibility)>,
-) {
-    let t = temps.overstep_fraction();
-    let p = &partie.0.projectiles;
-    for (Projectile(k), mut tr, mut vis) in &mut q {
-        let k = *k;
-        let actif = k < p.nombre;
-        vis.set_if_neq(if actif {
-            Visibility::Inherited
-        } else {
-            Visibility::Hidden
-        });
-        if actif {
-            tr.translation = Vec3::new(
-                entre(p.x_prec[k], p.x[k], t),
-                0.9,
-                entre(p.z_prec[k], p.z[k], t),
-            );
-        }
-    }
-}
-
-/// Caméra au-dessus du joueur, légèrement en arrière (comme la vue « dessus » du jeu TS).
-fn suivre_camera(
-    joueur: Query<&Transform, (With<JoueurVisible>, Without<Camera3d>)>,
-    mut camera: Query<&mut Transform, With<Camera3d>>,
-) {
-    let (Ok(j), Ok(mut c)) = (joueur.single(), camera.single_mut()) else {
         return;
-    };
-    let cible = j.translation;
-    *c = Transform::from_translation(cible + Vec3::new(0.0, 18.0, 12.0)).looking_at(cible, Vec3::Y);
+    }
+    let PartieEnCours { partie, robot, .. } = &mut *jeu;
+    let appui = |codes: &[KeyCode]| codes.iter().any(|c| touches.pressed(*c));
+    let c = &mut partie.joueur.commandes;
+    c.haut = appui(&[KeyCode::KeyW, KeyCode::ArrowUp]);
+    c.bas = appui(&[KeyCode::KeyS, KeyCode::ArrowDown]);
+    c.gauche = appui(&[KeyCode::KeyA, KeyCode::ArrowLeft]);
+    c.droite = appui(&[KeyCode::KeyD, KeyCode::ArrowRight]);
+    if c.haut || c.bas || c.gauche || c.droite {
+        robot.choisir_cartes(partie);
+        partie.pas(PAS);
+    } else {
+        robot.avancer(partie);
+    }
+    partie.ev.vider();
+    mesure.ajouter_pas(debut.elapsed());
 }

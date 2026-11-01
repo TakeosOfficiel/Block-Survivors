@@ -29,8 +29,15 @@ defaults:
 jobs:
   verifications:
     runs-on: ubuntu-latest
+    env:
+      # Sans infos de débogage : les binaires de test (Bevy) remplissaient le disque
+      # du runner (éditeur de liens tué par SIGBUS)
+      CARGO_PROFILE_DEV_DEBUG: '0'
     steps:
       - uses: actions/checkout@v4
+      - name: Place disque (outils inutiles ici)
+        working-directory: .
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL && df -h /
       - name: Bibliothèques système (fenêtre, entrées, son)
         run: sudo apt-get update -q && sudo apt-get install -y -q pkg-config libwayland-dev libxkbcommon-dev libudev-dev libasound2-dev libx11-dev libxcursor-dev libxrandr-dev libxi-dev
       - name: Rust (version épinglée par rust-toolchain.toml)

@@ -1,84 +1,161 @@
-//! Son de Block Survivors par kira. `taille_tampon` : plus grand, plus robuste, mais plus
-//! de latence (voir docs/PROTOTYPE-RUST.md, pari 2).
-//!
-//! Prototype : deux sons synthétisés (coup, tir) ; les vrais sons (.ogg) viendront avec
-//! les catégories et le son spatial (étape 3 du plan).
+//! Son de Block Survivors par kira (src/audio/sons.ts de la version TypeScript) : les
+//! sons vanilla (.ogg décodés une fois), joués par catégorie (joueur, armes, créatures,
+//! interface) avec le volume général et celui de la catégorie, une hauteur tirée dans
+//! les bornes de chaque son, un délai minimal entre deux lectures et un nombre de voix
+//! limité (la plus ancienne s'arrête pour laisser place à la nouvelle).
+//! Sans sortie son (machine sans carte, CI), tout reste muet sans erreur.
 
-use std::sync::Arc;
+use std::io::Cursor;
 
-use kira::backend::cpal::{CpalBackend, CpalBackendSettings, cpal};
-use kira::sound::static_sound::{StaticSoundData, StaticSoundSettings};
-use kira::{AudioManager, AudioManagerSettings, Frame};
+use bs_donnees::effets::{CategorieSon, Son};
+use kira::backend::cpal::CpalBackend;
+use kira::sound::PlaybackState;
+use kira::sound::static_sound::StaticSoundHandle;
+use kira::{AudioManager, AudioManagerSettings, Decibels, PlaybackRate, Tween};
 
-/// Fréquence d'échantillonnage du jeu.
-pub const FREQUENCE: u32 = 48_000;
+pub use kira::sound::static_sound::StaticSoundData;
 
-pub struct Audio {
-    gestionnaire: AudioManager<CpalBackend>,
+/// Volumes de 0 à 1 (options du jeu, src/options.ts).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Volumes {
+    pub general: f32,
+    /// Dans l'ordre de `CategorieSon` : joueur, armes, créatures, interface.
+    pub categories: [f32; 4],
 }
 
-impl Audio {
-    /// Ouvre la sortie son ; `taille_tampon` en images (échantillons par voie), `None` :
-    /// celle de cpal.
-    pub fn ouvrir(taille_tampon: Option<u32>) -> Result<Self, String> {
-        let config = taille_tampon.map(|n| cpal::StreamConfig {
-            channels: 2,
-            sample_rate: FREQUENCE,
-            buffer_size: cpal::BufferSize::Fixed(n),
-        });
-        let reglages = AudioManagerSettings {
-            backend_settings: CpalBackendSettings {
-                device: None,
-                config,
-            },
-            ..Default::default()
+impl Default for Volumes {
+    fn default() -> Self {
+        Self {
+            general: 0.7,
+            categories: [1.0; 4],
+        }
+    }
+}
+
+impl Volumes {
+    pub fn de(&self, c: CategorieSon) -> f32 {
+        let k = match c {
+            CategorieSon::Joueur => 0,
+            CategorieSon::Armes => 1,
+            CategorieSon::Creatures => 2,
+            CategorieSon::Interface => 3,
         };
-        let gestionnaire = AudioManager::<CpalBackend>::new(reglages).map_err(|e| e.to_string())?;
-        Ok(Self { gestionnaire })
-    }
-
-    pub fn jouer(&mut self, son: &StaticSoundData) {
-        // Un son de plus que la capacité est simplement ignoré (pas de plantage en partie)
-        let _ = self.gestionnaire.play(son.clone());
+        self.general * self.categories[k]
     }
 }
 
-/// Son synthétisé : `duree` s, échantillon `f(t)` entre -1 et 1.
-fn synthese(duree: f32, f: impl Fn(f32) -> f32) -> StaticSoundData {
-    let n = (duree * FREQUENCE as f32) as usize;
-    let images: Arc<[Frame]> = (0..n)
-        .map(|i| Frame::from_mono(f(i as f32 / FREQUENCE as f32)))
-        .collect();
-    StaticSoundData {
-        sample_rate: FREQUENCE,
-        frames: images,
-        settings: StaticSoundSettings::default(),
-        slice: None,
+/// Décode un fichier .ogg.
+pub fn decoder(octets: Vec<u8>) -> Result<StaticSoundData, String> {
+    StaticSoundData::from_cursor(Cursor::new(octets)).map_err(|e| e.to_string())
+}
+
+/// Un son de la table : données (une fois téléchargées), dernière lecture, voix.
+struct Canal {
+    donnees: Option<StaticSoundData>,
+    dernier: f64,
+    voix: Vec<StaticSoundHandle>,
+}
+
+/// Tous les sons du jeu, repérés par leur index dans la table des données.
+pub struct Mixeur {
+    sortie: Option<AudioManager<CpalBackend>>,
+    canaux: Vec<Canal>,
+    pub volumes: Volumes,
+    alea: u32,
+}
+
+/// Amplitude (0 à 1) en décibels pour kira.
+fn decibels(a: f32) -> Decibels {
+    if a <= 0.0 {
+        Decibels::SILENCE
+    } else {
+        Decibels(20.0 * a.log10())
     }
 }
 
-/// Bruit pseudo-aléatoire déterministe (pas de dépendance d'aléa pour un son).
-fn bruit(t: f32) -> f32 {
-    let x = (t * 48_000.0) as u32;
-    let h = x.wrapping_mul(0x9e37_79b9) ^ (x >> 15).wrapping_mul(0x85eb_ca6b);
-    (h >> 8) as f32 / (1 << 23) as f32 - 1.0
-}
+impl Mixeur {
+    /// Ouvre la sortie son pour `n` sons ; `muet` : ne l'ouvre pas.
+    pub fn nouveau(n: usize, muet: bool) -> Self {
+        let sortie = if muet {
+            None
+        } else {
+            AudioManager::<CpalBackend>::new(AudioManagerSettings::default()).ok()
+        };
+        Self {
+            sortie,
+            canaux: (0..n)
+                .map(|_| Canal {
+                    donnees: None,
+                    dernier: f64::NEG_INFINITY,
+                    voix: Vec::new(),
+                })
+                .collect(),
+            volumes: Volumes::default(),
+            alea: 0x2545_f491,
+        }
+    }
 
-/// Coup sourd (un zombie frappé) : sinus grave qui descend, vite éteint.
-pub fn son_coup() -> StaticSoundData {
-    synthese(0.18, |t| {
-        let f = 140.0 - 300.0 * t;
-        (core::f32::consts::TAU * f * t).sin() * (-t * 22.0).exp() * 0.6
-            + bruit(t) * (-t * 60.0).exp() * 0.2
-    })
-}
+    /// Une sortie son est ouverte.
+    pub fn actif(&self) -> bool {
+        self.sortie.is_some()
+    }
 
-/// Souffle (boule de feu tirée) : bruit filtré grossièrement, enveloppe montante puis éteinte.
-pub fn son_tir() -> StaticSoundData {
-    synthese(0.3, |t| {
-        let enveloppe = (t * 30.0).min(1.0) * (-t * 9.0).exp();
-        (bruit(t) + bruit(t - 1.0 / 48_000.0) + bruit(t - 2.0 / 48_000.0)) / 3.0 * enveloppe * 0.5
-    })
+    /// Le son `k` est prêt (téléchargé et décodé).
+    pub fn pret(&self, k: usize) -> bool {
+        self.canaux.get(k).is_some_and(|c| c.donnees.is_some())
+    }
+
+    /// Donne au son `k` (défini par `def`) ses échantillons.
+    pub fn charger(&mut self, k: usize, def: &Son, donnees: StaticSoundData) {
+        if let Some(c) = self.canaux.get_mut(k) {
+            c.donnees = Some(donnees);
+            c.voix = Vec::with_capacity(def.simultanes.max(1) as usize);
+        }
+    }
+
+    fn hasard(&mut self) -> f32 {
+        // xorshift : le son n'a pas besoin de l'aléatoire à graine de la simulation
+        let mut x = self.alea;
+        x ^= x << 13;
+        x ^= x >> 17;
+        x ^= x << 5;
+        self.alea = x;
+        (x >> 8) as f32 / (1 << 24) as f32
+    }
+
+    /// Joue le son `k` ; `hauteur` multiplie la hauteur tirée au hasard ; `maintenant`
+    /// en secondes (horloge réelle).
+    pub fn jouer(&mut self, k: usize, def: &Son, hauteur: f32, maintenant: f64) {
+        let volume = self.volumes.de(def.categorie) * def.volume;
+        if volume <= 0.0 || self.sortie.is_none() {
+            return;
+        }
+        let [min, max] = def.hauteur;
+        let vitesse = (hauteur * (min + self.hasard() * (max - min))).clamp(0.25, 4.0);
+        let Some(c) = self.canaux.get_mut(k) else {
+            return;
+        };
+        let Some(donnees) = &c.donnees else {
+            return;
+        };
+        if maintenant - c.dernier < f64::from(def.intervalle_min) {
+            return;
+        }
+        c.dernier = maintenant;
+        c.voix.retain(|v| v.state() != PlaybackState::Stopped);
+        if c.voix.len() >= def.simultanes.max(1) as usize {
+            let mut ancienne = c.voix.remove(0);
+            ancienne.stop(Tween::default());
+        }
+        let son = donnees
+            .volume(decibels(volume.min(1.0)))
+            .playback_rate(PlaybackRate(f64::from(vitesse)));
+        if let Some(sortie) = self.sortie.as_mut()
+            && let Ok(v) = sortie.play(son)
+        {
+            c.voix.push(v);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -86,14 +163,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn sons_bornes() {
-        for s in [son_coup(), son_tir()] {
-            assert!(
-                s.frames
-                    .iter()
-                    .all(|f| f.left.abs() <= 1.0 && f.right.abs() <= 1.0)
-            );
-            assert!(s.frames.len() > 4800);
-        }
+    fn volumes_et_decibels() {
+        let v = Volumes {
+            general: 0.5,
+            categories: [1.0, 0.0, 0.5, 1.0],
+        };
+        assert_eq!(v.de(CategorieSon::Armes), 0.0);
+        assert_eq!(v.de(CategorieSon::Creatures), 0.25);
+        assert_eq!(decibels(1.0).0, 0.0);
+        assert!((decibels(0.1).0 + 20.0).abs() < 1e-4);
+    }
+
+    #[test]
+    fn muet_sans_sortie() {
+        let mut m = Mixeur::nouveau(1, true);
+        assert!(!m.actif());
+        let d = bs_donnees::Donnees::embarquees().expect("données");
+        let (_, def) = d.sons.get_index(0).expect("un son");
+        m.jouer(0, def, 1.0, 0.0);
+        assert!(!m.pret(0));
     }
 }

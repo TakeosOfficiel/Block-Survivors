@@ -10,7 +10,7 @@ mod capacites;
 mod coeurs;
 pub mod police;
 
-pub use affichage::{afficher, recevoir};
+pub use affichage::{afficher, alerter, recevoir};
 
 use bevy::asset::RenderAssetUsages;
 use bevy::image::ImageSampler;
@@ -62,6 +62,8 @@ impl Plugin for PluginHud {
 /// Entités du HUD et minuteries des bandeaux.
 #[derive(Resource)]
 pub struct Hud {
+    /// Racine (masquée sous l'écran de fin).
+    pub racine: Entity,
     chrono: Entity,
     prochain_boss: Entity,
     emeraudes: Entity,
@@ -106,6 +108,7 @@ pub fn demander_textures(
     barres::demander_textures(d, &mut demander);
     capacites::demander_textures(d, &mut demander);
     crate::ecran_cartes::demander_textures(d, &mut demander);
+    crate::ecrans::demander_textures(&mut demander);
 }
 
 /// Taille de l'interface : la fenêtre de référence tient dans la fenêtre, par quarts
@@ -333,6 +336,7 @@ pub fn construire(
 
     let capacites = capacites::construire(&mut commandes, racine);
     commandes.insert_resource(Hud {
+        racine,
         chrono,
         prochain_boss,
         emeraudes,

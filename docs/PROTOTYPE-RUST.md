@@ -770,3 +770,30 @@ mode sans fin.
     `BS_CARTES=1` ; avant cela, le robot choisit et joue seul (démonstration, captures).
   - `BS_COFFRE=1` (ou `ender`) ajoute un coffre à ouvrir après `BS_DEBUT`, pour tester
     l'écran des objets.
+
+### 3d : pause, fin, bilan, mode sans fin (fait)
+
+- `bs-rendu/src/ecrans/` :
+  - `style.rs` : style commun (couleurs d'or, cadre orné avec ses losanges, traits d'or
+    estompés, boutons qui s'éclairent au survol, teinte violette de « Continuer sans
+    fin »). L'écran de cartes l'utilise aussi.
+  - `mod.rs` : quel écran est ouvert.
+    - Échap ouvre ou ferme la pause. La perte du focus de la fenêtre l'ouvre aussi quand
+      le joueur joue. Pas de pause pendant les cartes ni après la fin.
+    - La pause propose Reprendre, Recommencer et Statistiques (Échap revient à la pause).
+    - L'écran de fin s'ouvre 1,6 s après la mort ou la victoire. Rejouer (ou Entrée)
+      relance la partie. Après une victoire, « Continuer sans fin » efface l'issue,
+      relance les directeurs de boss et affiche l'alerte du mode sans fin.
+    - Le HUD est masqué sous l'écran de fin ; sous un écran, la molette fait défiler le
+      bilan au lieu de zoomer.
+  - `bilan.rs` : résumé (pastilles de la pause, tuiles de la fin) et bilan : chiffres clés
+    sur deux colonnes, équipement porté, ennemis vaincus par type (en texte : les
+    portraits ne sont pas portés), tableau des dégâts par arme avec sa jauge.
+  - `vues.rs` : bandeau de pause, panneau des statistiques, écran de fin sur fond rouge
+    (défaite) ou doré (victoire).
+- `simulation.rs` : pas de pas pendant la pause. En démonstration, la partie se relance
+  seule 3 s après la fin ; le joueur, lui, choisit sur l'écran de fin.
+- Essais : `BS_PAUSE=1` (ou `stats`) ouvre la pause (ou ses statistiques) ; `BS_FIN=mort`
+  (ou `victoire`) termine la partie après `BS_DEBUT` (avec `BS_CARTES=1` pour l'écran).
+- Ne sont pas portés : le menu principal, les options, la récompense de maîtrise et les
+  profils.

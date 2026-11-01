@@ -9,25 +9,20 @@ use bevy::prelude::*;
 use bs_donnees::equipement::Rarete;
 use bs_regles::textes::{Carte, Famille, Icone};
 
-use crate::dessins::{COTE_JOYAU, Dessins};
+use crate::dessins::Dessins;
+use crate::ecrans::style::{GRIS, JOYAU, OR, OR_CLAIR, SOMBRE, plein};
 use crate::hud::police::TextePixel;
 use crate::textures::Textures;
 
-const OR: Color = Color::srgb_u8(0xe0, 0xb0, 0x40);
-const OR_CLAIR: Color = Color::srgb_u8(0xff, 0xd7, 0x5e);
-const SOMBRE: Color = Color::srgb_u8(0x1a, 0x12, 0x06);
 const VOILE: Color = Color::srgba_u8(6, 8, 14, 188);
 const FOND_CARTE: Color = Color::srgba_u8(10, 12, 18, 240);
 const TEXTE_BANDEAU: Color = Color::srgb_u8(0x10, 0x13, 0x1b);
 const DESCRIPTION: Color = Color::srgb_u8(0xc8, 0xcc, 0xd6);
 const STATS: Color = Color::srgb_u8(0xcf, 0xe9, 0xc8);
 const VALEUR: Color = Color::srgb_u8(0x7d, 0xff, 0x7d);
-const GRIS: Color = Color::srgb_u8(0x9a, 0xa0, 0xad);
 const LARGEUR_CARTE: f32 = 250.0;
 /// Largeur du texte dans la carte (marges de 18 px et liseré).
 const LARGEUR_TEXTE: f32 = LARGEUR_CARTE - 2.0 * 18.0 - 6.0;
-/// Losange affiché à 3 pixels d'écran par pixel de dessin.
-const JOYAU: f32 = COTE_JOYAU as f32 * 3.0;
 
 /// Carte cliquable (index dans la liste).
 #[derive(Component)]
@@ -45,7 +40,7 @@ pub struct Contexte<'a> {
 }
 
 /// Couleur de la famille et opacité de son voile (styles.css `.famille-*`).
-fn couleur_famille(f: Famille) -> (Color, f32) {
+pub(crate) fn couleur_famille(f: Famille) -> (Color, f32) {
     let (rgb, voile) = match f {
         Famille::Arme => (0xd8dde6, 0.16),
         Famille::Passif => (0x55e055, 0.22),
@@ -61,17 +56,6 @@ fn couleur_famille(f: Famille) -> (Color, f32) {
     };
     let c = Color::srgb_u8((rgb >> 16) as u8, (rgb >> 8) as u8, rgb as u8);
     (c, voile)
-}
-
-fn plein() -> Node {
-    Node {
-        position_type: PositionType::Absolute,
-        left: Val::ZERO,
-        right: Val::ZERO,
-        top: Val::ZERO,
-        bottom: Val::ZERO,
-        ..default()
-    }
 }
 
 /// Construit l'écran ; `relances` : `None` sans bouton (étape de remplacement).

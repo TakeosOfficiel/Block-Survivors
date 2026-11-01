@@ -14,6 +14,7 @@ mod camera;
 mod carte_mc;
 mod dessins;
 mod ecran_cartes;
+mod ecrans;
 mod effets;
 mod entites;
 mod fichiers;
@@ -142,6 +143,7 @@ impl Plugin for PluginJeu {
             .init_resource::<effets::Ombres>()
             .init_resource::<retours::Barres>()
             .init_resource::<camera::Secousse>()
+            .init_resource::<ecrans::Ecrans>()
             .insert_resource(ecran_cartes::EcranCartes::nouveau(
                 std::env::var_os("BS_CARTES").is_some(),
             ))
@@ -208,6 +210,9 @@ impl Plugin for PluginJeu {
                     armes::placer_solides,
                     ecran_cartes::gerer,
                     ecran_cartes::survoler,
+                    ecrans::gerer,
+                    ecrans::defiler,
+                    ecrans::style::survoler,
                     hud::afficher,
                 )
                     .chain()

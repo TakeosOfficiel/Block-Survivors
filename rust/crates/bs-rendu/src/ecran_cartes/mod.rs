@@ -16,6 +16,7 @@ use bs_regles::equipement::ChoixEquipement;
 use bs_regles::partie::Partie;
 use bs_regles::textes::{Carte, Choix};
 
+pub(crate) use vue::couleur_famille;
 pub use vue::{BoutonCarte, BoutonRelancer};
 
 use crate::PartieEnCours;
@@ -60,6 +61,11 @@ impl EcranCartes {
             humain,
             ..default()
         }
+    }
+
+    /// Des cartes sont affichées.
+    pub fn ouvert(&self) -> bool {
+        self.etape.is_some()
     }
 }
 

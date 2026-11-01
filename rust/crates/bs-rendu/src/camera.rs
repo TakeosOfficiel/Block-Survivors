@@ -101,6 +101,7 @@ pub fn suivre(
     cible: Res<Cible>,
     mut secousse: ResMut<Secousse>,
     mut molette: MessageReader<MouseWheel>,
+    ecrans: Res<crate::ecrans::Ecrans>,
     mut cameras: Query<(&mut CameraJeu, &mut Transform)>,
 ) {
     let dt = temps.delta_secs();
@@ -110,6 +111,10 @@ pub fn suivre(
             bevy::input::mouse::MouseScrollUnit::Line => m.y * PIXELS_PAR_LIGNE,
             bevy::input::mouse::MouseScrollUnit::Pixel => m.y,
         };
+    }
+    // Sous un écran, la molette fait défiler le bilan
+    if ecrans.ouvert() {
+        crans = 0.0;
     }
     let (sin_i, cos_i) = INCLINAISON_DEG.to_radians().sin_cos();
     let decalage = secousse.avancer(dt);

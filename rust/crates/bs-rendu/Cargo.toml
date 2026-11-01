@@ -16,6 +16,7 @@ serde_json = { version = "1", features = ["preserve_order"] }
 # Provisoire (jusqu'à l'interface, étape 3) : choix des cartes et pilote automatique
 bs-robot.workspace = true
 bs-audio.workspace = true
+bs-sauvegarde.workspace = true
 
 [lints]
 workspace = true

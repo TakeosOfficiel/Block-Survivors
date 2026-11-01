@@ -5,6 +5,7 @@
 //! Construit à l'ouverture de l'écran seulement.
 
 use bevy::prelude::*;
+use bs_donnees::Donnees;
 use bs_regles::equipement::niveau_max_objet;
 use bs_regles::partie::Partie;
 use bs_regles::textes::Famille;
@@ -24,7 +25,8 @@ const VERT: Color = Color::srgb_u8(0x3c, 0xb8, 0x50);
 const TAILLE: f32 = 2.0;
 const TAILLE_TABLEAU: f32 = 1.5;
 
-pub fn demander_textures(demander: &mut impl FnMut(&str)) {
+pub fn demander_textures(d: &Donnees, demander: &mut impl FnMut(&str)) {
+    demander(&d.talents.maitrise.icone);
     for t in [ICONE_TEMPS, ICONE_TUES, ICONE_NIVEAU] {
         demander(t);
     }
@@ -38,7 +40,7 @@ pub struct Contexte<'a> {
 }
 
 impl Contexte<'_> {
-    fn image(&self, chemin: &str, cote: f32) -> impl Bundle {
+    pub(super) fn image(&self, chemin: &str, cote: f32) -> impl Bundle {
         let image = self
             .textures
             .obtenir(self.serveur, chemin)

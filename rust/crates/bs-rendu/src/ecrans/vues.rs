@@ -5,6 +5,7 @@
 use bevy::prelude::*;
 use bs_regles::etat::Issue;
 use bs_regles::partie::Partie;
+use bs_sauvegarde::Recompense;
 
 use super::Action;
 use super::bilan::{self, Contexte, texte};
@@ -15,6 +16,9 @@ const PLAN: i32 = 20;
 const NOIR: (u8, u8, u8) = (6, 8, 14);
 const ROUGE: Color = Color::srgb_u8(0xff, 0x6a, 0x6a);
 const SOUS_TITRE: Color = Color::srgb_u8(0xc8, 0xcc, 0xd6);
+/// Couleurs du jeu (`--mc-jaune`, `--mc-vert`).
+const JAUNE: Color = Color::srgb_u8(0xff, 0xff, 0x55);
+const VERT: Color = Color::srgb_u8(0x55, 0xff, 0x55);
 
 /// Zone qui défile à la molette.
 #[derive(Component)]
@@ -194,7 +198,12 @@ pub fn statistiques(commandes: &mut Commands, c: &Contexte, p: &Partie) -> Entit
 
 /// Fin de partie : titre, personnage et arène, tuiles, bilan, Rejouer (et « Continuer
 /// sans fin » après une victoire hors mode sans fin).
-pub fn fin(commandes: &mut Commands, c: &Contexte, p: &Partie) -> Entity {
+pub fn fin(
+    commandes: &mut Commands,
+    c: &Contexte,
+    p: &Partie,
+    recompense: Option<&Recompense>,
+) -> Entity {
     let e = &p.etat;
     let victoire = e.issue == Some(Issue::Victoire);
     let (haut, bas) = if victoire {
@@ -223,13 +232,21 @@ pub fn fin(commandes: &mut Commands, c: &Contexte, p: &Partie) -> Entity {
     };
     style::titre(commandes, r, titre, couleur, 6.0);
     let lieu = format!("{} · {}", e.personnage.nom, e.arene.nom);
-    let lieu = if e.sans_fin {
+    let record = recompense.is_some_and(|r| r.record_sans_fin);
+    let lieu = if record {
+        let t = bilan::temps(e.temps_jeu);
+        format!("Mode sans fin · {lieu} · nouveau record : {t} !")
+    } else if e.sans_fin {
         format!("Mode sans fin · {lieu}")
     } else {
         lieu
     };
-    texte(commandes, r, &lieu, SOUS_TITRE, 2.0);
+    let couleur = if record { JAUNE } else { SOUS_TITRE };
+    texte(commandes, r, &lieu, couleur, 2.0);
     bilan::tuiles(commandes, c, r, p);
+    if let Some(rec) = recompense {
+        maitrise(commandes, c, r, p, rec);
+    }
     panneau(commandes, c, r, p);
     let boutons = rangee(commandes, r);
     style::bouton(commandes, boutons, "Rejouer", 240.0, true, Action::Rejouer);
@@ -252,4 +269,95 @@ pub fn fin(commandes: &mut Commands, c: &Contexte, p: &Partie) -> Entity {
     }
     texte(commandes, r, "Entrée : rejouer", GRIS, 1.5);
     r
+}
+
+/// Maîtrise gagnée : fiole, « Classe · Maîtrise N », barre verte du niveau, XP gagnée
+/// (et points de talent), déblocages.
+fn maitrise(commandes: &mut Commands, c: &Contexte, parent: Entity, p: &Partie, r: &Recompense) {
+    let bloc = commandes
+        .spawn((
+            Node {
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                row_gap: Val::Px(4.0),
+                ..default()
+            },
+            ChildOf(parent),
+        ))
+        .id();
+    let bandeau = commandes
+        .spawn((
+            Node {
+                width: Val::Px(360.0),
+                align_items: AlignItems::Center,
+                column_gap: Val::Px(8.0),
+                ..default()
+            },
+            ChildOf(bloc),
+        ))
+        .id();
+    let icone = c.image(&p.d.talents.maitrise.icone, 32.0);
+    commandes.spawn((icone, ChildOf(bandeau)));
+    let textes = commandes
+        .spawn((
+            Node {
+                flex_direction: FlexDirection::Column,
+                flex_grow: 1.0,
+                row_gap: Val::Px(4.0),
+                ..default()
+            },
+            ChildOf(bandeau),
+        ))
+        .id();
+    let a = r.apres;
+    let nom = format!("{} · Maîtrise {}", p.etat.personnage.nom, a.niveau);
+    texte(commandes, textes, &nom, Color::WHITE, 2.0);
+    let barre = commandes
+        .spawn((
+            Node {
+                height: Val::Px(14.0),
+                border: UiRect::all(Val::Px(2.0)),
+                ..default()
+            },
+            BackgroundColor(Color::srgb_u8(0x1a, 0x1a, 0x1a)),
+            BorderColor::all(Color::BLACK),
+            ChildOf(textes),
+        ))
+        .id();
+    let part = (a.xp - a.debut_niveau) as f32 / (a.fin_niveau - a.debut_niveau).max(1) as f32;
+    let vert = |r, g, b| Color::srgb_u8(r, g, b);
+    let stops = vec![
+        ColorStop::new(vert(0xb6, 0xff, 0x6a), Val::Px(0.0)),
+        ColorStop::new(vert(0xb6, 0xff, 0x6a), Val::Px(2.0)),
+        ColorStop::new(vert(0x80, 0xff, 0x20), Val::Px(2.0)),
+        ColorStop::new(vert(0x80, 0xff, 0x20), Val::Px(4.0)),
+        ColorStop::new(vert(0x3d, 0x9a, 0x12), Val::Px(4.0)),
+    ];
+    commandes.spawn((
+        Node {
+            width: Val::Percent(part.clamp(0.0, 1.0) * 100.0),
+            height: Val::Percent(100.0),
+            ..default()
+        },
+        BackgroundGradient::from(LinearGradient::to_bottom(stops)),
+        ChildOf(barre),
+    ));
+    let xp = bs_regles::textes::libelles::nombre(r.xp as f32);
+    let niveaux = a.niveau - r.avant.niveau;
+    let (gain, couleur) = if niveaux > 0 {
+        let s = if niveaux > 1 { "s" } else { "" };
+        let n = r.avant.niveau;
+        let t = format!(
+            "+{xp} XP · niveau {n} → {} : +{niveaux} point{s} de talent !",
+            a.niveau
+        );
+        (t, JAUNE)
+    } else {
+        (format!("+{xp} XP de maîtrise"), VERT)
+    };
+    texte(commandes, bloc, &gain, couleur, 2.0);
+    for &i in &r.deblocages {
+        let t = format!("Débloqué : {} !", p.d.talents.deblocages[i].nom);
+        texte(commandes, bloc, &t, JAUNE, 2.0);
+    }
 }

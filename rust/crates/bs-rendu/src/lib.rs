@@ -25,6 +25,7 @@ mod materiau_entite;
 mod mesure;
 mod modeles;
 mod retours;
+mod sauvegarde;
 mod simulation;
 mod soleil;
 mod sons;
@@ -121,6 +122,7 @@ impl Plugin for PluginJeu {
         let d: &'static Donnees =
             Box::leak(Box::new(Donnees::embarquees().expect("données du jeu")));
         app.insert_non_send_resource(sons::Sons::nouveaux(d));
+        app.insert_resource(sauvegarde::Sauvegarde::charger(d));
         let id = self.arene.as_deref().unwrap_or("");
         let carte = bs_monde::minecraft::cartes::cartes()
             .iter()

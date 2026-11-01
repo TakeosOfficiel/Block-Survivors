@@ -108,7 +108,7 @@ pub fn demander_textures(
     barres::demander_textures(d, &mut demander);
     capacites::demander_textures(d, &mut demander);
     crate::ecran_cartes::demander_textures(d, &mut demander);
-    crate::ecrans::demander_textures(&mut demander);
+    crate::ecrans::demander_textures(d, &mut demander);
 }
 
 /// Taille de l'interface : la fenêtre de référence tient dans la fenêtre, par quarts

@@ -12,6 +12,8 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 0 bis. Prototype des cinq paris | fait : on continue, avec ajustements (voir la décision) ; 94 images/s mesurées sur le PC du joueur |
 | 1. Données et règles, sans rendu | fait : données, monde, simulation complète et robot (`bs-robot`) ; ses moyennes tombent dans la tolérance de celles du jeu TS (voir 1b) |
 | 2. Monde et rendu | fait : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres), 2d-2 (particules, chiffres de dégâts, barres de vie, secousse), 2d-3 (visuels des armes), 2d-4 (vent, ombres du soleil, lumière des blocs) |
+| 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
+| 4. Sauvegardes et profils | en cours : 4a (stockage, profils, maîtrise, records, import et export `.bssave`) |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -797,3 +799,39 @@ mode sans fin.
   (ou `victoire`) termine la partie après `BS_DEBUT` (avec `BS_CARTES=1` pour l'écran).
 - Ne sont pas portés : le menu principal, les options, la récompense de maîtrise et les
   profils.
+
+## Étape 4 : sauvegardes et profils
+
+### 4a : stockage, profils, maîtrise et records (fait)
+
+- `bs-sauvegarde` reprend le format de la version TypeScript, pour qu'un joueur garde tout :
+  - `stockage.rs` : comme le stockage local du navigateur, une clé et sa valeur JSON, un
+    fichier `<clé>.json` par clé. Le dossier est celui du système (`%APPDATA%`, `~/Library/
+    Application Support` ou `~/.local/share`, puis `block-survivors`), ou `BS_DOSSIER`.
+    L'écriture passe par un fichier temporaire renommé.
+  - `profils.rs` : registre des profils (8 au plus), clés « block-survivors.p.<id>.<nom> »,
+    création, changement, suppression. Au premier lancement, une sauvegarde d'avant les
+    profils devient le profil 1. Import d'un `.bssave` (même d'avant les profils) en
+    nouveau profil actif, export du profil actif.
+  - `progression/` : progression version 3 (sauvegarde.ts) au même JSON (entiers écrits
+    sans « .0 »). Lecture tolérante, comme en TS : une valeur invalide vaut 0, une version
+    plus ancienne perd ses talents. On y trouve la maîtrise par classe, les records (et
+    records sans fin), les déblocages et la fin de partie (`terminer_partie`). `talents.rs`
+    gère les rangs, paliers, prérequis, points libres, options, talent final et arme de
+    départ.
+  - Tests : un vrai profil exporté par la version TS 0.50.0 est importé puis relu, une
+    fin de partie fait passer un niveau et débloque la Mine, un talent racine s'achète
+    jusqu'au maximum, et tout se relit après écriture.
+- Jeu (`bs-rendu/src/sauvegarde.rs`) : le profil actif est lu au lancement. Quand l'écran
+  de fin s'ouvre sur une partie jouée (pas la démonstration), la partie est enregistrée.
+  Après « Continuer sans fin », la suite compte à part, à sa propre fin (XP et boss de la
+  suite, record sans fin).
+- Écran de fin : fiole, « Classe · Maîtrise N », barre verte du niveau, XP gagnée (en
+  jaune avec les points de talent gagnés), déblocages et nouveau record sans fin.
+- Essais : `BS_IMPORTER=<fichier.bssave>` importe un profil au lancement ;
+  `BS_EXPORTER=<fichier.bssave>` exporte le profil actif. Vérifié avec le profil TS de
+  test : import, partie gagnée enregistrée (parties 2 → 3, XP de maîtrise du Guerrier),
+  export.
+- Reste pour l'étape 4 : les effets des talents en jeu (arbres achetés appliqués au
+  départ de la partie), la Collection et les armures, les skins importées, l'apparence et
+  les amis. Les écrans des profils et des talents viendront avec les menus (étape 5).

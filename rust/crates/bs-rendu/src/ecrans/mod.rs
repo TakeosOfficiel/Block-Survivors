@@ -19,6 +19,7 @@ use crate::dessins::Dessins;
 use crate::ecran_cartes::EcranCartes;
 use crate::hud::police::TextePixel;
 use crate::hud::{self, Hud};
+use crate::sauvegarde::Sauvegarde;
 use crate::textures::Textures;
 
 pub use bilan::demander_textures;
@@ -75,6 +76,7 @@ pub fn gerer(
     mut ecrans: ResMut<Ecrans>,
     mut jeu: ResMut<PartieEnCours>,
     cartes: Res<EcranCartes>,
+    mut sauvegarde: ResMut<Sauvegarde>,
     (serveur, textures, dessins): (Res<AssetServer>, Res<Textures>, Res<Dessins>),
     touches: Res<ButtonInput<KeyCode>>,
     mut focus: MessageReader<WindowFocused>,
@@ -122,10 +124,12 @@ pub fn gerer(
         Some(Action::Statistiques) => vue = Vue::Statistiques,
         Some(Action::Retour) => vue = Vue::Pause,
         Some(Action::Recommencer | Action::Rejouer) => {
+            sauvegarde.recompense = None;
             jeu.relancer();
             vue = Vue::Aucune;
         }
         Some(Action::Continuer) => {
+            sauvegarde.continuer_sans_fin(&jeu.partie);
             let p = &mut jeu.partie;
             p.etat.issue = None;
             p.etat.sans_fin = true;
@@ -143,6 +147,9 @@ pub fn gerer(
         commandes.entity(r).despawn();
     }
     ecrans.vue = vue;
+    if vue == Vue::Fin {
+        sauvegarde.terminer(&jeu.partie);
+    }
     let c = bilan::Contexte {
         serveur: &serveur,
         textures: &textures,
@@ -153,7 +160,12 @@ pub fn gerer(
         Vue::Aucune => None,
         Vue::Pause => Some(vues::pause(&mut commandes, &c, p)),
         Vue::Statistiques => Some(vues::statistiques(&mut commandes, &c, p)),
-        Vue::Fin => Some(vues::fin(&mut commandes, &c, p)),
+        Vue::Fin => Some(vues::fin(
+            &mut commandes,
+            &c,
+            p,
+            sauvegarde.recompense.as_ref(),
+        )),
     };
     if let Ok(mut v) = visibilites.get_mut(hud.racine) {
         *v = if vue == Vue::Fin {

@@ -11,6 +11,9 @@ use crate::PartieEnCours;
 use crate::dessins::Dessins;
 use crate::textures::Textures;
 
+/// s d'affichage du message de butin d'un boss.
+const DUREE_BUTIN: f32 = 4.0;
+
 /// Après chaque pas : annonces de boss et prolongation.
 pub fn recevoir(
     jeu: Res<PartieEnCours>,
@@ -21,13 +24,24 @@ pub fn recevoir(
         return;
     };
     for ev in &jeu.partie.ev.liste {
-        if let Evenement::AnnonceBoss { nom, duree } = *ev {
-            alerter(
+        match *ev {
+            Evenement::AnnonceBoss { nom, duree } => alerter(
                 &mut hud,
                 &mut textes,
                 &format!("Un boss approche : {nom} !"),
                 duree,
-            );
+            ),
+            Evenement::ButinBoss { monde, pieces } => {
+                let armure = jeu.partie.d.armures.armures.get(&monde);
+                let noms: Vec<&str> = pieces
+                    .iter()
+                    .flatten()
+                    .filter_map(|p| armure?.pieces.get(p).map(|a| a.nom.as_str()))
+                    .collect();
+                let texte = format!("Butin du boss : {} !", noms.join(" et "));
+                afficher_message(&mut hud, &mut textes, &texte, DUREE_BUTIN);
+            }
+            _ => {}
         }
     }
     if jeu.partie.prolongation && !hud.prolongation_vue {
@@ -39,6 +53,19 @@ pub fn recevoir(
         );
     }
     hud.prolongation_vue = jeu.partie.prolongation;
+}
+
+/// Message jaune au-dessus du centre pendant `duree` s.
+pub fn afficher_message(
+    hud: &mut Hud,
+    textes: &mut Query<&mut TextePixel>,
+    texte: &str,
+    duree: f32,
+) {
+    if let Ok(mut t) = textes.get_mut(hud.message) {
+        ecrire(&mut t, texte);
+    }
+    hud.minuterie_message = duree;
 }
 
 /// Bandeau d'alerte rouge clignotant pendant `duree` s.

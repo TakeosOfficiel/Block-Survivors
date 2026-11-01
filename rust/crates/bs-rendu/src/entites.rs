@@ -244,6 +244,7 @@ pub fn placer_entites(
     let touche = j.invulnerabilite > anim.invulnerabilite - DUREE_BLESSURE;
     pose.surcouche = if j.mort || touche { rouge() } else { [0.0; 4] };
     r.ajouter(&mut commandes, &mut q);
+    rendus.poser_armure(&mut commandes, &mut q);
     let rayon = p.d.personnages.personnages[p.etat.index_personnage]
         .apparence
         .rayon_ombre;

@@ -3,9 +3,10 @@
 //!
 //! `Rendus` tient un rendu par apparence : le personnage joué, chaque type d'ennemi,
 //! chaque type d'allié, chaque coffre puis les créatures des talents (ravageur, crocs),
-//! dans l'ordre des tables de données.
+//! dans l'ordre des tables de données, puis les pièces d'armure portées (`armure`).
 
 pub mod animation;
+pub mod armure;
 pub mod compilation;
 pub mod geometrie;
 pub mod rendu;
@@ -13,6 +14,7 @@ pub mod rendu;
 use bevy::prelude::*;
 use bs_donnees::Apparence;
 use bs_donnees::Donnees;
+use bs_donnees::arenes::Monde;
 
 use crate::arene::couleur_lineaire;
 use crate::materiau::ParametresBloc;
@@ -61,6 +63,8 @@ pub struct Rendus {
     nombre_ennemis: usize,
     nombre_allies: usize,
     nombre_coffres: usize,
+    /// Pièces d'armure portées : index dans `liste`, et partie du joueur de chaque partie.
+    armure: Vec<(usize, Vec<Option<usize>>)>,
 }
 
 impl Rendus {
@@ -104,63 +108,133 @@ impl Rendus {
         &self.liste[0].modele
     }
 
-    /// Construit les rendus (textures déjà chargées ou introuvables).
+    /// Construit les rendus (textures déjà chargées ou introuvables) ; `portees` : monde
+    /// de la pièce d'armure portée à chaque emplacement.
+    #[allow(clippy::too_many_arguments)]
     pub fn construire(
         d: &'static Donnees,
         personnage: usize,
+        portees: &[Option<Monde>; 7],
         ambiance: ParametresBloc,
         serveur: &AssetServer,
         textures: &Textures,
-        images: &Assets<Image>,
+        images: &mut Assets<Image>,
         maillages: &mut Assets<Mesh>,
         materiaux: &mut Assets<MateriauEntite>,
     ) -> Self {
         let mut parametres = ambiance;
         parametres.brouillard.z = DECOUPE;
         parametres.brouillard.w = 0.0;
-        let liste = apparences(d, personnage)
+        let mut liste: Vec<RenduModele> = apparences(d, personnage)
             .map(|a| {
-                let def = &d.modeles[a.modele.as_str()];
-                let modele = ModeleCompile::nouveau(def);
                 let skin = textures.obtenir(serveur, &a.skin);
-                let parties = def
-                    .parties
-                    .iter()
-                    .map(|(nom, cube)| {
-                        let couleur = if skin.is_some() {
-                            [1.0; 4]
-                        } else {
-                            couleur_lineaire(
-                                a.couleurs_secours
-                                    .get(nom)
-                                    .copied()
-                                    .or(a.couleur_secours_par_defaut)
-                                    .unwrap_or(SECOURS_PAR_DEFAUT),
-                            )
-                        };
-                        let mut m = Maillage::default();
-                        geometrie::cube(&mut m, cube, def.taille_texture, couleur);
-                        maillages.add(m.en_mesh())
-                    })
-                    .collect();
-                let materiau = materiaux.add(MateriauEntite {
-                    parametres,
-                    texture: skin,
-                    lumiere: None,
-                });
                 let objet = objet_tenu(
-                    a, &modele, serveur, textures, images, maillages, materiaux, parametres,
+                    a,
+                    &ModeleCompile::nouveau(&d.modeles[a.modele.as_str()]),
+                    serveur,
+                    textures,
+                    images,
+                    maillages,
+                    materiaux,
+                    parametres,
                 );
-                RenduModele::nouveau(&a.modele, modele, parties, materiau, objet)
+                rendu(d, a, skin, objet, maillages, materiaux, parametres)
             })
             .collect();
+        let mut pieces = Vec::new();
+        for (piece, monde) in armure::visibles(portees) {
+            let Some(id) = armure::modele(piece) else {
+                continue;
+            };
+            let a = Apparence {
+                modele: id.to_owned(),
+                skin: String::new(),
+                couleurs_secours: Default::default(),
+                couleur_secours_par_defaut: Some(armure::SECOURS_ARMURE),
+                rayon_ombre: 0.0,
+                objet_en_main: None,
+            };
+            let skin = armure::skin(d, piece, monde, serveur, textures, images);
+            let r = rendu(d, &a, skin, None, maillages, materiaux, parametres);
+            pieces.push((
+                liste.len(),
+                armure::correspondance(&liste[0].modele, &r.modele),
+            ));
+            liste.push(r);
+        }
         Self {
             liste,
             nombre_ennemis: d.ennemis.len(),
             nombre_allies: d.allies.allies.len(),
             nombre_coffres: d.coffres.coffres.len(),
+            armure: pieces,
         }
     }
+
+    /// Dessine l'armure portée sur le joueur tel qu'il vient d'être posé (même place,
+    /// mêmes rotations, même surcouche).
+    pub fn poser_armure(&mut self, commandes: &mut Commands, q: &mut rendu::Composants) {
+        for k in 0..self.armure.len() {
+            let (i, _) = self.armure[k];
+            let (joueur, reste) = self.liste.split_at_mut(i);
+            let source = &joueur[0].pose;
+            let r = &mut reste[0];
+            let cible = &mut r.pose;
+            cible.position = source.position;
+            cible.angle = source.angle;
+            cible.inclinaison = source.inclinaison;
+            cible.echelle_xz = source.echelle_xz;
+            cible.echelle_y = source.echelle_y;
+            cible.surcouche = source.surcouche;
+            for (partie, origine) in self.armure[k].1.iter().enumerate() {
+                if let Some(o) = origine {
+                    cible.rotations[partie] = source.rotations[*o];
+                }
+            }
+            r.ajouter(commandes, q);
+        }
+    }
+}
+
+/// Rendu d'une apparence : un maillage par partie (blanc si texturé, sinon couleur de
+/// secours), un matériau.
+fn rendu(
+    d: &'static Donnees,
+    a: &Apparence,
+    skin: Option<Handle<Image>>,
+    objet: Option<ObjetTenu>,
+    maillages: &mut Assets<Mesh>,
+    materiaux: &mut Assets<MateriauEntite>,
+    parametres: ParametresBloc,
+) -> RenduModele {
+    let def = &d.modeles[a.modele.as_str()];
+    let modele = ModeleCompile::nouveau(def);
+    let parties = def
+        .parties
+        .iter()
+        .map(|(nom, cube)| {
+            let couleur = if skin.is_some() {
+                [1.0; 4]
+            } else {
+                couleur_lineaire(
+                    a.couleurs_secours
+                        .get(nom)
+                        .copied()
+                        .or(a.couleur_secours_par_defaut)
+                        .unwrap_or(SECOURS_PAR_DEFAUT),
+                )
+            };
+            let mut m = Maillage::default();
+            geometrie::cube(&mut m, cube, def.taille_texture, couleur);
+            maillages.add(m.en_mesh())
+        })
+        .collect();
+    let materiau = materiaux.add(MateriauEntite {
+        parametres,
+        texture: skin,
+        lumiere: None,
+    });
+    RenduModele::nouveau(&a.modele, modele, parties, materiau, objet)
 }
 
 /// Objet tenu en main, extrudé depuis les pixels de sa texture (aucun si la texture

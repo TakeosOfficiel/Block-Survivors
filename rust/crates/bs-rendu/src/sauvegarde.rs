@@ -7,16 +7,48 @@
 //! TypeScript) : il devient le profil actif. `BS_EXPORTER=<fichier.bssave>` exporte le
 //! profil actif (lisible par la version TypeScript). Les menus des profils viendront à
 //! l'étape 5.
+//!
+//! La Collection (armures, objets découverts) donne ses bonus au départ de chaque partie
+//! et retient aussitôt les pièces gagnées sur les boss et les objets pris.
 
 use bevy::prelude::*;
 use bs_donnees::Donnees;
+use bs_donnees::arenes::Monde;
+use bs_donnees::equipement::Piece;
 use bs_donnees::progression::BonusTalents;
+use bs_regles::evenements::Evenement;
 use bs_regles::partie::Partie;
-use bs_sauvegarde::{Bilan, Profils, Progression, Recompense, Stockage};
+use bs_sauvegarde::collection::MONDES;
+use bs_sauvegarde::{Bilan, Collection, Profils, Progression, Recompense, Stockage};
+
+use crate::PartieEnCours;
+
+/// Ce que le profil apporte à chaque partie : talents (et bonus d'armure portée), pièces
+/// d'armure déjà possédées (jamais retirées sur un boss).
+#[derive(Debug, Clone, Default)]
+pub struct Depart {
+    pub talents: BonusTalents,
+    pub armures: Vec<(Monde, Piece)>,
+}
+
+impl Depart {
+    pub fn appliquer(&self, partie: &mut Partie) {
+        partie.appliquer_talents(&self.talents);
+        let monde = partie.etat.arene.monde;
+        let pieces: Vec<Piece> = self
+            .armures
+            .iter()
+            .filter(|(m, _)| *m == monde)
+            .map(|(_, p)| *p)
+            .collect();
+        partie.posseder(&pieces);
+    }
+}
 
 #[derive(Resource)]
 pub struct Sauvegarde {
     pub progression: Progression,
+    pub collection: Collection,
     /// Récompense de la partie qui vient de finir (écran de fin).
     pub recompense: Option<Recompense>,
     /// XP totale et boss vaincus au passage en mode sans fin.
@@ -53,20 +85,33 @@ impl Sauvegarde {
         }
         let cle = profils.cle("progression");
         let progression = Progression::charger(d, profils.stockage().clone(), cle);
+        let cle = profils.cle("collection");
+        let collection = Collection::charger(profils.stockage().clone(), cle);
         Self {
             progression,
+            collection,
             recompense: None,
             depart_sans_fin: (0.0, 0),
         }
     }
 
-    /// Effets en jeu de l'arbre de talents actif du personnage d'index `personnage`.
-    pub fn talents(&self, d: &Donnees, personnage: usize) -> BonusTalents {
-        d.personnages
+    /// Départ d'une partie du personnage d'index `personnage` : arbre de talents actif,
+    /// bonus de l'armure portée, pièces possédées.
+    pub fn depart(&self, d: &Donnees, personnage: usize) -> Depart {
+        let mut talents: BonusTalents = d
+            .personnages
             .personnages
             .get_index(personnage)
             .map(|(id, _)| self.progression.bonus(id))
-            .unwrap_or_default()
+            .unwrap_or_default();
+        talents.modif.cumuler(&self.collection.bonus(d));
+        let mut armures = Vec::new();
+        for monde in MONDES {
+            for piece in self.collection.pieces_du_monde(monde) {
+                armures.push((monde, piece));
+            }
+        }
+        Depart { talents, armures }
     }
 
     /// Enregistre la partie finie ; sa récompense est gardée pour l'écran de fin.
@@ -101,6 +146,28 @@ impl Sauvegarde {
         let s = &p.etat.stats;
         self.depart_sans_fin = (s.xp_totale, s.boss_vaincus);
         self.recompense = None;
+    }
+}
+
+/// Après chaque pas : pièces gagnées sur un boss et objets découverts entrent dans la
+/// Collection (enregistrée aussitôt) ; les pièces comptent dès la partie suivante.
+pub fn noter_collection(mut jeu: ResMut<PartieEnCours>, mut sauvegarde: ResMut<Sauvegarde>) {
+    let jeu = &mut *jeu;
+    for ev in &jeu.partie.ev.liste {
+        match *ev {
+            Evenement::ButinBoss { monde, pieces } => {
+                for piece in pieces.into_iter().flatten() {
+                    sauvegarde.collection.ajouter(monde, piece);
+                    jeu.depart.armures.push((monde, piece));
+                }
+            }
+            Evenement::Decouverte(objet) => {
+                if let Some((id, _)) = jeu.partie.d.equipement.objets.get_index(objet) {
+                    sauvegarde.collection.decouvrir(id);
+                }
+            }
+            _ => {}
+        }
     }
 }
 

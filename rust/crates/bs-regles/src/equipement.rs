@@ -232,6 +232,7 @@ impl Partie {
                     return;
                 };
                 *libre = Some(ObjetPorte { objet, niveau: 1 });
+                self.trouver_objet(objet);
             }
             ChoixEquipement::Remplacer { objet, index } => {
                 let places = eq.emplacements(d.equipement.objets[objet].emplacement);
@@ -239,6 +240,7 @@ impl Partie {
                     return;
                 };
                 *place = Some(ObjetPorte { objet, niveau: 1 });
+                self.trouver_objet(objet);
             }
             ChoixEquipement::Renfort(objet) => {
                 let Some(o) = eq.porte_mut(objet) else {

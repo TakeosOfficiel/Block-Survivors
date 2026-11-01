@@ -8,7 +8,6 @@ use bevy::mesh::{Indices, PrimitiveTopology};
 use bevy::prelude::*;
 use bs_donnees::Donnees;
 use bs_donnees::arenes::Arene;
-use bs_donnees::progression::BonusTalents;
 use bs_monde::lumiere::volume_de_schematique;
 use bs_monde::minecraft::cartes::{Carte, definition, importer};
 use bs_monde::minecraft::maillage::{
@@ -32,7 +31,7 @@ pub struct Import {
     definition: Option<Arene>,
     personnage: usize,
     graine: u32,
-    talents: Option<BonusTalents>,
+    talents: Option<crate::sauvegarde::Depart>,
 }
 
 impl Import {
@@ -42,7 +41,7 @@ impl Import {
         carte: &Carte,
         personnage: usize,
         graine: u32,
-        talents: BonusTalents,
+        talents: crate::sauvegarde::Depart,
     ) -> Result<Self, String> {
         Ok(Self {
             d,

@@ -35,7 +35,6 @@ mod textures;
 use bevy::prelude::*;
 use bs_donnees::Donnees;
 use bs_donnees::arenes::Arene;
-use bs_donnees::progression::BonusTalents;
 use bs_monde::CarteMonde;
 use bs_monde::{MondeGenere, generer_monde};
 use bs_regles::partie::Partie;
@@ -75,8 +74,8 @@ pub struct PartieEnCours {
     robot: Robot,
     graine: u32,
     source: SourceArene,
-    /// Effets de l'arbre de talents actif du profil, appliqués à chaque partie.
-    talents: BonusTalents,
+    /// Talents et Collection du profil, appliqués à chaque partie.
+    depart: sauvegarde::Depart,
     /// Temps écoulé depuis la fin de la partie.
     fin: f32,
 }
@@ -86,9 +85,10 @@ impl PartieEnCours {
         mut partie: Partie,
         graine: u32,
         source: SourceArene,
-        talents: BonusTalents,
+        depart: sauvegarde::Depart,
     ) -> Self {
-        partie.appliquer_talents(&talents);
+        depart.appliquer(&mut partie);
+        let talents = &depart.talents;
         let mecaniques: Vec<_> = talents
             .mecaniques
             .iter()
@@ -105,7 +105,7 @@ impl PartieEnCours {
             robot: Robot::default(),
             graine,
             source,
-            talents,
+            depart,
             fin: 0.0,
         }
     }
@@ -120,7 +120,7 @@ impl PartieEnCours {
                 Partie::avec_arene(d, arene, carte.clone(), perso, graine, true)
             }
         };
-        self.partie.appliquer_talents(&self.talents);
+        self.depart.appliquer(&mut self.partie);
         self.robot = Robot::default();
         self.graine = graine;
         self.fin = 0.0;
@@ -146,7 +146,7 @@ impl Plugin for PluginJeu {
             Box::leak(Box::new(Donnees::embarquees().expect("données du jeu")));
         app.insert_non_send_resource(sons::Sons::nouveaux(d));
         let sauvegarde = sauvegarde::Sauvegarde::charger(d);
-        let talents = sauvegarde.talents(d, self.personnage);
+        let talents = sauvegarde.depart(d, self.personnage);
         app.insert_resource(sauvegarde);
         let id = self.arene.as_deref().unwrap_or("");
         let carte = bs_monde::minecraft::cartes::cartes()
@@ -192,6 +192,7 @@ impl Plugin for PluginJeu {
                 (
                     carte_mc::avancer_import,
                     hud::demander_textures.run_if(resource_exists::<PartieEnCours>),
+                    demander_armure.run_if(resource_exists::<PartieEnCours>),
                     attendre_textures.run_if(resource_exists::<PartieEnCours>),
                 )
                     .chain()
@@ -223,6 +224,7 @@ impl Plugin for PluginJeu {
                     armes::recevoir,
                     sons::jouer,
                     hud::recevoir,
+                    sauvegarde::noter_collection,
                 )
                     .chain()
                     .run_if(in_state(Phase::Partie)),
@@ -251,6 +253,20 @@ impl Plugin for PluginJeu {
 }
 
 /// Toutes les textures des blocs de l'arène (et de son terrain extérieur).
+/// Textures de l'armure de la Collection portée.
+fn demander_armure(
+    serveur: Res<AssetServer>,
+    mut textures: ResMut<Textures>,
+    jeu: Res<PartieEnCours>,
+    sauvegarde: Res<sauvegarde::Sauvegarde>,
+    mut fait: Local<bool>,
+) {
+    if !std::mem::replace(&mut *fait, true) {
+        let portees = sauvegarde.collection.portees();
+        modeles::armure::demander_textures(jeu.partie.d, &portees, &serveur, &mut textures);
+    }
+}
+
 fn demander_textures(
     serveur: Res<AssetServer>,
     mut textures: ResMut<Textures>,
@@ -281,7 +297,8 @@ fn construire_modeles(
     serveur: Res<AssetServer>,
     textures: Res<Textures>,
     jeu: Res<PartieEnCours>,
-    images: Res<Assets<Image>>,
+    sauvegarde: Res<sauvegarde::Sauvegarde>,
+    mut images: ResMut<Assets<Image>>,
     mut maillages: ResMut<Assets<Mesh>>,
     mut materiaux: ResMut<Assets<materiau_entite::MateriauEntite>>,
 ) {
@@ -289,10 +306,11 @@ fn construire_modeles(
     commandes.insert_resource(modeles::Rendus::construire(
         p.d,
         p.etat.index_personnage,
+        &sauvegarde.collection.portees(),
         ParametresBloc::de_l_arene(p.etat.arene),
         &serveur,
         &textures,
-        &images,
+        &mut images,
         &mut maillages,
         &mut materiaux,
     ));

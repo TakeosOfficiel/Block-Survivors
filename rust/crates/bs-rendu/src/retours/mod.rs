@@ -203,7 +203,9 @@ pub fn recevoir(
             Evenement::Son { .. }
             | Evenement::Geste(_)
             | Evenement::Effet { .. }
-            | Evenement::AnnonceBoss { .. } => {}
+            | Evenement::AnnonceBoss { .. }
+            | Evenement::ButinBoss { .. }
+            | Evenement::Decouverte(_) => {}
         }
     }
 }

@@ -2,6 +2,9 @@
 //! chiffres de dégâts, secousses. La simulation les empile dans un tampon réutilisé ;
 //! le jeu les consomme à chaque image (le robot les ignore). Rien ici ne change l'état.
 
+use bs_donnees::arenes::Monde;
+use bs_donnees::equipement::Piece;
+
 /// Style d'un chiffre de dégâts.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StyleChiffre {
@@ -67,6 +70,13 @@ pub enum Evenement {
     /// Annonce d'un boss (bandeau d'alerte) : bientôt là pendant `duree` s, ou arrivé
     /// (`duree` nulle).
     AnnonceBoss { nom: &'static str, duree: f32 },
+    /// Pièces d'armure gagnées sur un boss (une ou deux), du monde de l'arène.
+    ButinBoss {
+        monde: Monde,
+        pieces: [Option<Piece>; 2],
+    },
+    /// Objet d'équipement (index du catalogue) pris pour la première fois de la partie.
+    Decouverte(usize),
     /// Effet de l'arme `arme` (index dans le catalogue des armes) en (x, z).
     Effet {
         arme: usize,

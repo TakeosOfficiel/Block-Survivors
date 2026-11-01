@@ -1,0 +1,1816 @@
+[
+ {
+  "graine": 1,
+  "personnage": "archer",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 51.2,
+  "niveau": 2,
+  "xp": 13,
+  "tues": 19,
+  "boss": 0,
+  "degatsSubis": 18,
+  "puissanceParMinute": [
+   7
+  ],
+  "armes": {
+   "arc": {
+    "degats": 252,
+    "dps": 5
+   },
+   "fusee": {
+    "degats": 124,
+    "dps": 10
+   }
+  },
+  "calcul": 0.2
+ },
+ {
+  "graine": 10,
+  "personnage": "archer",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 163.5,
+  "niveau": 5,
+  "xp": 109,
+  "tues": 99,
+  "boss": 0,
+  "degatsSubis": 18,
+  "puissanceParMinute": [
+   8,
+   15,
+   25
+  ],
+  "armes": {
+   "arc": {
+    "degats": 1416,
+    "dps": 9
+   },
+   "salve": {
+    "degats": 193,
+    "dps": 4
+   },
+   "fusee": {
+    "degats": 441,
+    "dps": 7
+   },
+   "piege_ronces": {
+    "degats": 428,
+    "dps": 3
+   }
+  },
+  "calcul": 0.5
+ },
+ {
+  "graine": 11,
+  "personnage": "archer",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 77.2,
+  "niveau": 2,
+  "xp": 17,
+  "tues": 21,
+  "boss": 0,
+  "degatsSubis": 18,
+  "puissanceParMinute": [
+   6,
+   6
+  ],
+  "armes": {
+   "arc": {
+    "degats": 447,
+    "dps": 6
+   }
+  },
+  "calcul": 0.3
+ },
+ {
+  "graine": 12,
+  "personnage": "archer",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 238.4,
+  "niveau": 6,
+  "xp": 157,
+  "tues": 177,
+  "boss": 0,
+  "degatsSubis": 38,
+  "puissanceParMinute": [
+   8,
+   11,
+   23,
+   36
+  ],
+  "armes": {
+   "arc": {
+    "degats": 1642,
+    "dps": 7
+   },
+   "pluie_fleches": {
+    "degats": 413,
+    "dps": 15
+   },
+   "fusee": {
+    "degats": 1591,
+    "dps": 7
+   },
+   "piege_ronces": {
+    "degats": 1002,
+    "dps": 8
+   }
+  },
+  "calcul": 1
+ },
+ {
+  "graine": 13,
+  "personnage": "archer",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 634.3,
+  "niveau": 19,
+  "xp": 1760,
+  "tues": 1163,
+  "boss": 1,
+  "degatsSubis": 39,
+  "puissanceParMinute": [
+   6,
+   19,
+   27,
+   36,
+   50,
+   74,
+   92,
+   111,
+   126,
+   166,
+   214
+  ],
+  "armes": {
+   "arc": {
+    "degats": 6514,
+    "dps": 10
+   },
+   "pluie_fleches": {
+    "degats": 2501,
+    "dps": 6
+   },
+   "fleche_ricochet": {
+    "degats": 25943,
+    "dps": 46
+   },
+   "fusee": {
+    "degats": 14753,
+    "dps": 40
+   }
+  },
+  "calcul": 2.7
+ },
+ {
+  "graine": 14,
+  "personnage": "archer",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 254.2,
+  "niveau": 5,
+  "xp": 94,
+  "tues": 108,
+  "boss": 0,
+  "degatsSubis": 18,
+  "puissanceParMinute": [
+   7,
+   12,
+   14,
+   15,
+   28
+  ],
+  "armes": {
+   "arc": {
+    "degats": 1747,
+    "dps": 7
+   },
+   "salve": {
+    "degats": 1522,
+    "dps": 7
+   }
+  },
+  "calcul": 1.1
+ },
+ {
+  "graine": 15,
+  "personnage": "archer",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 372.9,
+  "niveau": 11,
+  "xp": 514,
+  "tues": 398,
+  "boss": 1,
+  "degatsSubis": 41,
+  "puissanceParMinute": [
+   7,
+   17,
+   27,
+   33,
+   52,
+   72,
+   81
+  ],
+  "armes": {
+   "arc": {
+    "degats": 2605,
+    "dps": 7
+   },
+   "salve": {
+    "degats": 1491,
+    "dps": 5
+   },
+   "pluie_fleches": {
+    "degats": 2054,
+    "dps": 6
+   },
+   "fleche_ricochet": {
+    "degats": 7372,
+    "dps": 27
+   }
+  },
+  "calcul": 1.6
+ },
+ {
+  "graine": 2,
+  "personnage": "archer",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 96.8,
+  "niveau": 3,
+  "xp": 33,
+  "tues": 37,
+  "boss": 0,
+  "degatsSubis": 22,
+  "puissanceParMinute": [
+   7,
+   11
+  ],
+  "armes": {
+   "arc": {
+    "degats": 582,
+    "dps": 6
+   },
+   "pluie_fleches": {
+    "degats": 212,
+    "dps": 3
+   }
+  },
+  "calcul": 0.5
+ },
+ {
+  "graine": 3,
+  "personnage": "archer",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 331.4,
+  "niveau": 10,
+  "xp": 497,
+  "tues": 315,
+  "boss": 0,
+  "degatsSubis": 21,
+  "puissanceParMinute": [
+   8,
+   16,
+   29,
+   37,
+   46,
+   58
+  ],
+  "armes": {
+   "arc": {
+    "degats": 2350,
+    "dps": 7
+   },
+   "pluie_fleches": {
+    "degats": 1075,
+    "dps": 4
+   },
+   "fleche_ricochet": {
+    "degats": 6164,
+    "dps": 20
+   },
+   "piege_ronces": {
+    "degats": 352,
+    "dps": 2
+   }
+  },
+  "calcul": 1.1
+ },
+ {
+  "graine": 4,
+  "personnage": "archer",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 138.8,
+  "niveau": 3,
+  "xp": 39,
+  "tues": 63,
+  "boss": 0,
+  "degatsSubis": 20,
+  "puissanceParMinute": [
+   6,
+   11,
+   19
+  ],
+  "armes": {
+   "arc": {
+    "degats": 917,
+    "dps": 7
+   },
+   "piege_ronces": {
+    "degats": 470,
+    "dps": 8
+   }
+  },
+  "calcul": 0.6
+ },
+ {
+  "graine": 5,
+  "personnage": "archer",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 129.7,
+  "niveau": 4,
+  "xp": 50,
+  "tues": 51,
+  "boss": 0,
+  "degatsSubis": 18,
+  "puissanceParMinute": [
+   8,
+   12,
+   13
+  ],
+  "armes": {
+   "arc": {
+    "degats": 1271,
+    "dps": 10
+   }
+  },
+  "calcul": 0.9
+ },
+ {
+  "graine": 6,
+  "personnage": "archer",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 236,
+  "niveau": 6,
+  "xp": 138,
+  "tues": 148,
+  "boss": 0,
+  "degatsSubis": 22,
+  "puissanceParMinute": [
+   7,
+   11,
+   21,
+   28
+  ],
+  "armes": {
+   "arc": {
+    "degats": 2369,
+    "dps": 10
+   },
+   "fusee": {
+    "degats": 1551,
+    "dps": 9
+   }
+  },
+  "calcul": 0.7
+ },
+ {
+  "graine": 7,
+  "personnage": "archer",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 59.3,
+  "niveau": 2,
+  "xp": 8,
+  "tues": 14,
+  "boss": 0,
+  "degatsSubis": 18,
+  "puissanceParMinute": [
+   6
+  ],
+  "armes": {
+   "arc": {
+    "degats": 349,
+    "dps": 6
+   }
+  },
+  "calcul": 0.3
+ },
+ {
+  "graine": 8,
+  "personnage": "archer",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 154.5,
+  "niveau": 5,
+  "xp": 94,
+  "tues": 84,
+  "boss": 0,
+  "degatsSubis": 18,
+  "puissanceParMinute": [
+   8,
+   15,
+   21
+  ],
+  "armes": {
+   "arc": {
+    "degats": 1557,
+    "dps": 10
+   },
+   "pluie_fleches": {
+    "degats": 540,
+    "dps": 4
+   }
+  },
+  "calcul": 0.4
+ },
+ {
+  "graine": 9,
+  "personnage": "archer",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 188,
+  "niveau": 4,
+  "xp": 69,
+  "tues": 81,
+  "boss": 0,
+  "degatsSubis": 32,
+  "puissanceParMinute": [
+   6,
+   12,
+   17,
+   24
+  ],
+  "armes": {
+   "arc": {
+    "degats": 1336,
+    "dps": 7
+   },
+   "piege_ronces": {
+    "degats": 963,
+    "dps": 9
+   }
+  },
+  "calcul": 0.9
+ },
+ {
+  "graine": 1,
+  "personnage": "guerrier",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 168.5,
+  "niveau": 4,
+  "xp": 77,
+  "tues": 73,
+  "boss": 0,
+  "degatsSubis": 27,
+  "puissanceParMinute": [
+   8,
+   10,
+   17
+  ],
+  "armes": {
+   "epee": {
+    "degats": 672,
+    "dps": 4
+   },
+   "trident": {
+    "degats": 1176,
+    "dps": 9
+   },
+   "heurt_bouclier": {
+    "degats": 32,
+    "dps": 1
+   }
+  },
+  "calcul": 0.8
+ },
+ {
+  "graine": 10,
+  "personnage": "guerrier",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 99.8,
+  "niveau": 3,
+  "xp": 40,
+  "tues": 36,
+  "boss": 0,
+  "degatsSubis": 36,
+  "puissanceParMinute": [
+   8,
+   10
+  ],
+  "armes": {
+   "epee": {
+    "degats": 714,
+    "dps": 7
+   },
+   "haches": {
+    "degats": 174,
+    "dps": 4
+   }
+  },
+  "calcul": 0.4
+ },
+ {
+  "graine": 11,
+  "personnage": "guerrier",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 197.4,
+  "niveau": 4,
+  "xp": 47,
+  "tues": 57,
+  "boss": 0,
+  "degatsSubis": 28,
+  "puissanceParMinute": [
+   6,
+   4,
+   11,
+   13
+  ],
+  "armes": {
+   "epee": {
+    "degats": 1432,
+    "dps": 7
+   },
+   "onde_choc": {
+    "degats": 62,
+    "dps": 13
+   }
+  },
+  "calcul": 1.2
+ },
+ {
+  "graine": 12,
+  "personnage": "guerrier",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 220.5,
+  "niveau": 3,
+  "xp": 33,
+  "tues": 42,
+  "boss": 0,
+  "degatsSubis": 24,
+  "puissanceParMinute": [
+   2,
+   6,
+   5,
+   10
+  ],
+  "armes": {
+   "epee": {
+    "degats": 1198,
+    "dps": 5
+   },
+   "heurt_bouclier": {
+    "degats": 24,
+    "dps": 0
+   }
+  },
+  "calcul": 2.8
+ },
+ {
+  "graine": 13,
+  "personnage": "guerrier",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 175.8,
+  "niveau": 5,
+  "xp": 114,
+  "tues": 115,
+  "boss": 0,
+  "degatsSubis": 28,
+  "puissanceParMinute": [
+   2,
+   20,
+   28
+  ],
+  "armes": {
+   "epee": {
+    "degats": 971,
+    "dps": 6
+   },
+   "trident": {
+    "degats": 656,
+    "dps": 8
+   },
+   "lame_colossale": {
+    "degats": 1217,
+    "dps": 11
+   }
+  },
+  "calcul": 0.6
+ },
+ {
+  "graine": 14,
+  "personnage": "guerrier",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 233.3,
+  "niveau": 2,
+  "xp": 19,
+  "tues": 22,
+  "boss": 0,
+  "degatsSubis": 24,
+  "puissanceParMinute": [
+   2,
+   6,
+   3,
+   3
+  ],
+  "armes": {
+   "epee": {
+    "degats": 800,
+    "dps": 3
+   }
+  },
+  "calcul": 1.7
+ },
+ {
+  "graine": 15,
+  "personnage": "guerrier",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 56.9,
+  "niveau": 2,
+  "xp": 15,
+  "tues": 21,
+  "boss": 0,
+  "degatsSubis": 24,
+  "puissanceParMinute": [
+   8
+  ],
+  "armes": {
+   "epee": {
+    "degats": 276,
+    "dps": 5
+   },
+   "lame_colossale": {
+    "degats": 184,
+    "dps": 17
+   }
+  },
+  "calcul": 0.2
+ },
+ {
+  "graine": 2,
+  "personnage": "guerrier",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 144.6,
+  "niveau": 4,
+  "xp": 74,
+  "tues": 68,
+  "boss": 0,
+  "degatsSubis": 36,
+  "puissanceParMinute": [
+   8,
+   10,
+   28
+  ],
+  "armes": {
+   "epee": {
+    "degats": 822,
+    "dps": 6
+   },
+   "trident": {
+    "degats": 848,
+    "dps": 9
+   },
+   "haches": {
+    "degats": 89,
+    "dps": 1
+   }
+  },
+  "calcul": 0.5
+ },
+ {
+  "graine": 3,
+  "personnage": "guerrier",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 142.6,
+  "niveau": 3,
+  "xp": 20,
+  "tues": 27,
+  "boss": 0,
+  "degatsSubis": 24,
+  "puissanceParMinute": [
+   1,
+   5,
+   22
+  ],
+  "armes": {
+   "epee": {
+    "degats": 762,
+    "dps": 5
+   },
+   "tourbillon_lames": {
+    "degats": 82,
+    "dps": 82
+   }
+  },
+  "calcul": 1.3
+ },
+ {
+  "graine": 4,
+  "personnage": "guerrier",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 206.3,
+  "niveau": 5,
+  "xp": 82,
+  "tues": 108,
+  "boss": 0,
+  "degatsSubis": 32,
+  "puissanceParMinute": [
+   5,
+   10,
+   26,
+   11
+  ],
+  "armes": {
+   "epee": {
+    "degats": 1519,
+    "dps": 7
+   },
+   "trident": {
+    "degats": 5,
+    "dps": 5
+   },
+   "onde_choc": {
+    "degats": 1220,
+    "dps": 8
+   }
+  },
+  "calcul": 0.8
+ },
+ {
+  "graine": 5,
+  "personnage": "guerrier",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 99.3,
+  "niveau": 3,
+  "xp": 30,
+  "tues": 29,
+  "boss": 0,
+  "degatsSubis": 24,
+  "puissanceParMinute": [
+   1,
+   16
+  ],
+  "armes": {
+   "epee": {
+    "degats": 701,
+    "dps": 7
+   }
+  },
+  "calcul": 0.8
+ },
+ {
+  "graine": 6,
+  "personnage": "guerrier",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 231.2,
+  "niveau": 3,
+  "xp": 38,
+  "tues": 49,
+  "boss": 0,
+  "degatsSubis": 24,
+  "puissanceParMinute": [
+   4,
+   3,
+   5,
+   20
+  ],
+  "armes": {
+   "epee": {
+    "degats": 813,
+    "dps": 4
+   },
+   "haches": {
+    "degats": 304,
+    "dps": 2
+   },
+   "onde_choc": {
+    "degats": 686,
+    "dps": 12
+   }
+  },
+  "calcul": 1.7
+ },
+ {
+  "graine": 7,
+  "personnage": "guerrier",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 251.7,
+  "niveau": 5,
+  "xp": 122,
+  "tues": 133,
+  "boss": 0,
+  "degatsSubis": 32,
+  "puissanceParMinute": [
+   6,
+   8,
+   15,
+   29,
+   46
+  ],
+  "armes": {
+   "epee": {
+    "degats": 1092,
+    "dps": 4
+   },
+   "haches": {
+    "degats": 386,
+    "dps": 2
+   },
+   "onde_choc": {
+    "degats": 2507,
+    "dps": 14
+   },
+   "heurt_bouclier": {
+    "degats": 49,
+    "dps": 0
+   }
+  },
+  "calcul": 1.8
+ },
+ {
+  "graine": 8,
+  "personnage": "guerrier",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 134.5,
+  "niveau": 4,
+  "xp": 48,
+  "tues": 50,
+  "boss": 0,
+  "degatsSubis": 24,
+  "puissanceParMinute": [
+   1,
+   16,
+   6
+  ],
+  "armes": {
+   "epee": {
+    "degats": 551,
+    "dps": 4
+   },
+   "haches": {
+    "degats": 260,
+    "dps": 5
+   },
+   "onde_choc": {
+    "degats": 263,
+    "dps": 13
+   },
+   "tourbillon_lames": {
+    "degats": 15,
+    "dps": 1
+   }
+  },
+  "calcul": 0.5
+ },
+ {
+  "graine": 9,
+  "personnage": "guerrier",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 257.2,
+  "niveau": 2,
+  "xp": 18,
+  "tues": 26,
+  "boss": 0,
+  "degatsSubis": 24,
+  "puissanceParMinute": [
+   2,
+   3,
+   3,
+   6,
+   17
+  ],
+  "armes": {
+   "epee": {
+    "degats": 799,
+    "dps": 3
+   },
+   "haches": {
+    "degats": 256,
+    "dps": 1
+   }
+  },
+  "calcul": 2
+ },
+ {
+  "graine": 1,
+  "personnage": "invocateur",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 76.2,
+  "niveau": 2,
+  "xp": 12,
+  "tues": 18,
+  "boss": 0,
+  "degatsSubis": 19,
+  "puissanceParMinute": [
+   5,
+   8
+  ],
+  "armes": {
+   "loups": {
+    "degats": 424,
+    "dps": 6
+   }
+  },
+  "calcul": 0.5
+ },
+ {
+  "graine": 10,
+  "personnage": "invocateur",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 140,
+  "niveau": 3,
+  "xp": 34,
+  "tues": 47,
+  "boss": 0,
+  "degatsSubis": 29,
+  "puissanceParMinute": [
+   7,
+   9,
+   11
+  ],
+  "armes": {
+   "totem_racines": {
+    "degats": 0,
+    "dps": 0
+   },
+   "loups": {
+    "degats": 1168,
+    "dps": 8
+   }
+  },
+  "calcul": 1
+ },
+ {
+  "graine": 11,
+  "personnage": "invocateur",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 88,
+  "niveau": 2,
+  "xp": 15,
+  "tues": 27,
+  "boss": 0,
+  "degatsSubis": 20,
+  "puissanceParMinute": [
+   6,
+   7
+  ],
+  "armes": {
+   "totem_racines": {
+    "degats": 0,
+    "dps": 0
+   },
+   "loups": {
+    "degats": 560,
+    "dps": 6
+   }
+  },
+  "calcul": 0.4
+ },
+ {
+  "graine": 12,
+  "personnage": "invocateur",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 268.8,
+  "niveau": 8,
+  "xp": 249,
+  "tues": 212,
+  "boss": 0,
+  "degatsSubis": 44,
+  "puissanceParMinute": [
+   6,
+   18,
+   23,
+   31,
+   35
+  ],
+  "armes": {
+   "esprit_blaze": {
+    "degats": 919,
+    "dps": 5
+   },
+   "esprit_protecteur": {
+    "degats": 0,
+    "dps": 0
+   },
+   "golems": {
+    "degats": 2524,
+    "dps": 13
+   },
+   "loups": {
+    "degats": 2266,
+    "dps": 8
+   }
+  },
+  "calcul": 0.8
+ },
+ {
+  "graine": 13,
+  "personnage": "invocateur",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 159.5,
+  "niveau": 4,
+  "xp": 55,
+  "tues": 66,
+  "boss": 0,
+  "degatsSubis": 28,
+  "puissanceParMinute": [
+   9,
+   9,
+   15
+  ],
+  "armes": {
+   "esprit_blaze": {
+    "degats": 416,
+    "dps": 4
+   },
+   "loups": {
+    "degats": 1217,
+    "dps": 8
+   }
+  },
+  "calcul": 0.6
+ },
+ {
+  "graine": 14,
+  "personnage": "invocateur",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 113.7,
+  "niveau": 3,
+  "xp": 29,
+  "tues": 39,
+  "boss": 0,
+  "degatsSubis": 20,
+  "puissanceParMinute": [
+   6,
+   11
+  ],
+  "armes": {
+   "totem_racines": {
+    "degats": 0,
+    "dps": 0
+   },
+   "loups": {
+    "degats": 1003,
+    "dps": 9
+   }
+  },
+  "calcul": 0.3
+ },
+ {
+  "graine": 15,
+  "personnage": "invocateur",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 364.1,
+  "niveau": 9,
+  "xp": 333,
+  "tues": 311,
+  "boss": 0,
+  "degatsSubis": 52,
+  "puissanceParMinute": [
+   9,
+   15,
+   26,
+   33,
+   36,
+   35,
+   27
+  ],
+  "armes": {
+   "totem_racines": {
+    "degats": 0,
+    "dps": 0
+   },
+   "loups": {
+    "degats": 5713,
+    "dps": 16
+   },
+   "vex": {
+    "degats": 3653,
+    "dps": 11
+   }
+  },
+  "calcul": 1.1
+ },
+ {
+  "graine": 2,
+  "personnage": "invocateur",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 135.6,
+  "niveau": 4,
+  "xp": 72,
+  "tues": 62,
+  "boss": 0,
+  "degatsSubis": 20,
+  "puissanceParMinute": [
+   8,
+   11,
+   22
+  ],
+  "armes": {
+   "esprit_blaze": {
+    "degats": 153,
+    "dps": 3
+   },
+   "esprit_protecteur": {
+    "degats": 0,
+    "dps": 0
+   },
+   "loups": {
+    "degats": 1359,
+    "dps": 10
+   }
+  },
+  "calcul": 0.7
+ },
+ {
+  "graine": 3,
+  "personnage": "invocateur",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 191.2,
+  "niveau": 6,
+  "xp": 130,
+  "tues": 117,
+  "boss": 0,
+  "degatsSubis": 25,
+  "puissanceParMinute": [
+   8,
+   11,
+   26,
+   23
+  ],
+  "armes": {
+   "totem_racines": {
+    "degats": 0,
+    "dps": 0
+   },
+   "golems": {
+    "degats": 1221,
+    "dps": 15
+   },
+   "loups": {
+    "degats": 1745,
+    "dps": 9
+   }
+  },
+  "calcul": 0.9
+ },
+ {
+  "graine": 4,
+  "personnage": "invocateur",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 155,
+  "niveau": 4,
+  "xp": 70,
+  "tues": 66,
+  "boss": 0,
+  "degatsSubis": 19,
+  "puissanceParMinute": [
+   8,
+   10,
+   11
+  ],
+  "armes": {
+   "esprit_blaze": {
+    "degats": 377,
+    "dps": 3
+   },
+   "esprit_protecteur": {
+    "degats": 0,
+    "dps": 0
+   },
+   "loups": {
+    "degats": 1107,
+    "dps": 7
+   }
+  },
+  "calcul": 0.7
+ },
+ {
+  "graine": 5,
+  "personnage": "invocateur",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 139.5,
+  "niveau": 5,
+  "xp": 93,
+  "tues": 63,
+  "boss": 0,
+  "degatsSubis": 25,
+  "puissanceParMinute": [
+   7,
+   12,
+   20
+  ],
+  "armes": {
+   "esprit_blaze": {
+    "degats": 435,
+    "dps": 5
+   },
+   "esprit_protecteur": {
+    "degats": 0,
+    "dps": 0
+   },
+   "loups": {
+    "degats": 1096,
+    "dps": 8
+   }
+  },
+  "calcul": 1
+ },
+ {
+  "graine": 6,
+  "personnage": "invocateur",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 201.3,
+  "niveau": 5,
+  "xp": 108,
+  "tues": 103,
+  "boss": 0,
+  "degatsSubis": 40,
+  "puissanceParMinute": [
+   7,
+   16,
+   16,
+   17
+  ],
+  "armes": {
+   "totem_racines": {
+    "degats": 0,
+    "dps": 0
+   },
+   "loups": {
+    "degats": 1623,
+    "dps": 8
+   },
+   "vex": {
+    "degats": 1065,
+    "dps": 8
+   }
+  },
+  "calcul": 1.5
+ },
+ {
+  "graine": 7,
+  "personnage": "invocateur",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 132.7,
+  "niveau": 3,
+  "xp": 28,
+  "tues": 41,
+  "boss": 0,
+  "degatsSubis": 21,
+  "puissanceParMinute": [
+   7,
+   7,
+   10
+  ],
+  "armes": {
+   "loups": {
+    "degats": 947,
+    "dps": 7
+   }
+  },
+  "calcul": 0.8
+ },
+ {
+  "graine": 8,
+  "personnage": "invocateur",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 307.2,
+  "niveau": 9,
+  "xp": 372,
+  "tues": 266,
+  "boss": 0,
+  "degatsSubis": 27,
+  "puissanceParMinute": [
+   8,
+   14,
+   28,
+   34,
+   39,
+   36
+  ],
+  "armes": {
+   "esprit_blaze": {
+    "degats": 497,
+    "dps": 4
+   },
+   "esprit_protecteur": {
+    "degats": 0,
+    "dps": 0
+   },
+   "golems": {
+    "degats": 2557,
+    "dps": 10
+   },
+   "loups": {
+    "degats": 4647,
+    "dps": 15
+   }
+  },
+  "calcul": 1.3
+ },
+ {
+  "graine": 9,
+  "personnage": "invocateur",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 138.6,
+  "niveau": 4,
+  "xp": 57,
+  "tues": 59,
+  "boss": 0,
+  "degatsSubis": 23,
+  "puissanceParMinute": [
+   8,
+   11,
+   13
+  ],
+  "armes": {
+   "loups": {
+    "degats": 1391,
+    "dps": 10
+   }
+  },
+  "calcul": 0.8
+ },
+ {
+  "graine": 1,
+  "personnage": "mage",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 79.4,
+  "niveau": 3,
+  "xp": 29,
+  "tues": 33,
+  "boss": 0,
+  "degatsSubis": 16,
+  "puissanceParMinute": [
+   7,
+   15
+  ],
+  "armes": {
+   "boules_feu": {
+    "degats": 487,
+    "dps": 6
+   },
+   "nova_glace": {
+    "degats": 208,
+    "dps": 6
+   }
+  },
+  "calcul": 0.4
+ },
+ {
+  "graine": 10,
+  "personnage": "mage",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 75,
+  "niveau": 3,
+  "xp": 28,
+  "tues": 29,
+  "boss": 0,
+  "degatsSubis": 16,
+  "puissanceParMinute": [
+   6,
+   14
+  ],
+  "armes": {
+   "boules_feu": {
+    "degats": 556,
+    "dps": 7
+   },
+   "orbes_arcaniques": {
+    "degats": 41,
+    "dps": 5
+   }
+  },
+  "calcul": 0.5
+ },
+ {
+  "graine": 11,
+  "personnage": "mage",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 128.4,
+  "niveau": 4,
+  "xp": 61,
+  "tues": 57,
+  "boss": 0,
+  "degatsSubis": 20,
+  "puissanceParMinute": [
+   7,
+   14,
+   20
+  ],
+  "armes": {
+   "boules_feu": {
+    "degats": 890,
+    "dps": 7
+   },
+   "eclairs": {
+    "degats": 427,
+    "dps": 6
+   },
+   "nova_glace": {
+    "degats": 95,
+    "dps": 3
+   }
+  },
+  "calcul": 0.4
+ },
+ {
+  "graine": 12,
+  "personnage": "mage",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 150.4,
+  "niveau": 4,
+  "xp": 68,
+  "tues": 75,
+  "boss": 0,
+  "degatsSubis": 16,
+  "puissanceParMinute": [
+   8,
+   10,
+   23
+  ],
+  "armes": {
+   "boules_feu": {
+    "degats": 975,
+    "dps": 6
+   },
+   "orbes_arcaniques": {
+    "degats": 833,
+    "dps": 7
+   }
+  },
+  "calcul": 0.8
+ },
+ {
+  "graine": 13,
+  "personnage": "mage",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 94,
+  "niveau": 3,
+  "xp": 36,
+  "tues": 42,
+  "boss": 0,
+  "degatsSubis": 16,
+  "puissanceParMinute": [
+   7,
+   13
+  ],
+  "armes": {
+   "boules_feu": {
+    "degats": 465,
+    "dps": 5
+   },
+   "orbes_arcaniques": {
+    "degats": 413,
+    "dps": 7
+   }
+  },
+  "calcul": 0.4
+ },
+ {
+  "graine": 14,
+  "personnage": "mage",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 109.1,
+  "niveau": 4,
+  "xp": 50,
+  "tues": 47,
+  "boss": 0,
+  "degatsSubis": 25,
+  "puissanceParMinute": [
+   8,
+   11
+  ],
+  "armes": {
+   "boules_feu": {
+    "degats": 751,
+    "dps": 7
+   },
+   "eclairs": {
+    "degats": 253,
+    "dps": 5
+   }
+  },
+  "calcul": 0.4
+ },
+ {
+  "graine": 15,
+  "personnage": "mage",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 208.6,
+  "niveau": 7,
+  "xp": 204,
+  "tues": 153,
+  "boss": 0,
+  "degatsSubis": 24,
+  "puissanceParMinute": [
+   9,
+   13,
+   28,
+   35
+  ],
+  "armes": {
+   "boules_feu": {
+    "degats": 1045,
+    "dps": 5
+   },
+   "eclairs": {
+    "degats": 1678,
+    "dps": 10
+   },
+   "nova_glace": {
+    "degats": 246,
+    "dps": 2
+   },
+   "orbes_arcaniques": {
+    "degats": 998,
+    "dps": 7
+   }
+  },
+  "calcul": 0.6
+ },
+ {
+  "graine": 2,
+  "personnage": "mage",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 166.7,
+  "niveau": 6,
+  "xp": 145,
+  "tues": 104,
+  "boss": 0,
+  "degatsSubis": 18,
+  "puissanceParMinute": [
+   9,
+   14,
+   24
+  ],
+  "armes": {
+   "boules_feu": {
+    "degats": 937,
+    "dps": 6
+   },
+   "nova_glace": {
+    "degats": 305,
+    "dps": 3
+   },
+   "meteore": {
+    "degats": 447,
+    "dps": 6
+   },
+   "orbes_arcaniques": {
+    "degats": 821,
+    "dps": 6
+   }
+  },
+  "calcul": 0.7
+ },
+ {
+  "graine": 3,
+  "personnage": "mage",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 85.7,
+  "niveau": 3,
+  "xp": 31,
+  "tues": 34,
+  "boss": 0,
+  "degatsSubis": 16,
+  "puissanceParMinute": [
+   7,
+   11
+  ],
+  "armes": {
+   "boules_feu": {
+    "degats": 657,
+    "dps": 8
+   },
+   "nova_glace": {
+    "degats": 57,
+    "dps": 4
+   }
+  },
+  "calcul": 0.3
+ },
+ {
+  "graine": 4,
+  "personnage": "mage",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 111,
+  "niveau": 4,
+  "xp": 52,
+  "tues": 51,
+  "boss": 0,
+  "degatsSubis": 20,
+  "puissanceParMinute": [
+   7,
+   13
+  ],
+  "armes": {
+   "boules_feu": {
+    "degats": 651,
+    "dps": 6
+   },
+   "tornade_feu": {
+    "degats": 162,
+    "dps": 5
+   },
+   "nova_glace": {
+    "degats": 204,
+    "dps": 4
+   },
+   "meteore": {
+    "degats": 40,
+    "dps": 6
+   }
+  },
+  "calcul": 0.4
+ },
+ {
+  "graine": 5,
+  "personnage": "mage",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 120.3,
+  "niveau": 4,
+  "xp": 55,
+  "tues": 55,
+  "boss": 0,
+  "degatsSubis": 20,
+  "puissanceParMinute": [
+   8,
+   12
+  ],
+  "armes": {
+   "boules_feu": {
+    "degats": 808,
+    "dps": 7
+   },
+   "meteore": {
+    "degats": 391,
+    "dps": 5
+   }
+  },
+  "calcul": 0.5
+ },
+ {
+  "graine": 6,
+  "personnage": "mage",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 149.1,
+  "niveau": 6,
+  "xp": 127,
+  "tues": 85,
+  "boss": 0,
+  "degatsSubis": 16,
+  "puissanceParMinute": [
+   8,
+   13,
+   30
+  ],
+  "armes": {
+   "boules_feu": {
+    "degats": 1087,
+    "dps": 7
+   },
+   "tornade_feu": {
+    "degats": 297,
+    "dps": 6
+   },
+   "nova_glace": {
+    "degats": 262,
+    "dps": 3
+   },
+   "meteore": {
+    "degats": 467,
+    "dps": 4
+   }
+  },
+  "calcul": 0.8
+ },
+ {
+  "graine": 7,
+  "personnage": "mage",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 80.2,
+  "niveau": 3,
+  "xp": 25,
+  "tues": 30,
+  "boss": 0,
+  "degatsSubis": 16,
+  "puissanceParMinute": [
+   8,
+   10
+  ],
+  "armes": {
+   "boules_feu": {
+    "degats": 673,
+    "dps": 8
+   }
+  },
+  "calcul": 0.3
+ },
+ {
+  "graine": 8,
+  "personnage": "mage",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 115.5,
+  "niveau": 4,
+  "xp": 54,
+  "tues": 52,
+  "boss": 0,
+  "degatsSubis": 20,
+  "puissanceParMinute": [
+   8,
+   11
+  ],
+  "armes": {
+   "boules_feu": {
+    "degats": 568,
+    "dps": 5
+   },
+   "eclairs": {
+    "degats": 288,
+    "dps": 5
+   },
+   "nova_glace": {
+    "degats": 265,
+    "dps": 3
+   }
+  },
+  "calcul": 0.7
+ },
+ {
+  "graine": 9,
+  "personnage": "mage",
+  "arene": "prairie",
+  "issue": "defaite",
+  "temps": 77.8,
+  "niveau": 3,
+  "xp": 23,
+  "tues": 26,
+  "boss": 0,
+  "degatsSubis": 16,
+  "puissanceParMinute": [
+   6,
+   8
+  ],
+  "armes": {
+   "boules_feu": {
+    "degats": 516,
+    "dps": 7
+   }
+  },
+  "calcul": 0.4
+ }
+]

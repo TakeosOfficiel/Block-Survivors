@@ -10,7 +10,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 0. Socle (espace de travail, fenêtre PC et web, CI) | fait : build web corrigé, page vérifiée (WebGL2, WebGPU) |
 | −1. Robot d'équilibrage, aléatoire à graine, pas fixe (TypeScript) | fait |
 | 0 bis. Prototype des cinq paris | fait : on continue, avec ajustements (voir la décision) ; 94 images/s mesurées sur le PC du joueur |
-| 1. Données et règles, sans rendu | en cours : données (`bs-donnees`), monde (`bs-monde`), partie, ennemis et toutes les armes (`bs-regles`) portés ; restent talents, cartes, équipement, robot |
+| 1. Données et règles, sans rendu | fait : données, monde, simulation complète et robot (`bs-robot`) ; ses moyennes tombent dans la tolérance de celles du jeu TS (voir 1b) |
 
 ---
 
@@ -101,7 +101,8 @@ joue une partie entière sans écran (≈ 1 s de calcul par 2 min de jeu) :
 
 ### Références (prairie, profil vierge)
 
-`docs/robot/` : 5 graines, joueur mortel. `docs/robot-invincible/` : 3 graines, joueur
+`docs/robot/` : 5 graines, joueur mortel. `docs/robot-15/` : 15 graines, joueur mortel
+(celle que vérifie le robot Rust). `docs/robot-invincible/` : 3 graines, joueur
 invincible (puissance des armes sur toute la partie, jusqu'au boss).
 
 | Personnage | Survie | Niveau | Tués | Invincible : victoires | Niveau | Tués | Dégâts/s à la fin |
@@ -353,7 +354,7 @@ l'import ; la CI échoue si `rust/donnees` n'est plus la copie exacte
 Repéré en passant (à corriger dans la version TypeScript, pas ici) : « fait 2 dégât de
 moins » (Collier du forgeron, niveau 3) devrait être au pluriel.
 
-### 1b. La simulation : en cours
+### 1b. La simulation : faite
 
 Combat et armes (environ 5 600 lignes), ennemis et directeurs, progression (XP, cartes,
 coffres, équipement, talents, maîtrise, Collection), puis le robot, dont les statistiques
@@ -368,7 +369,7 @@ doivent tomber dans la tolérance de celles de la version TypeScript (étape −
 | 1b-5 Arsenal et les 25 armes, alliés invoqués compris | fait |
 | 1b-6 Talents de classe et d'objets | fait (sauvegarde vierge : talents de classe au rang 0) |
 | 1b-7 Cartes d'amélioration et équipement | fait (`cartes.rs`, `equipement.rs`) |
-| 1b-8 Robot et comparaison aux références | à faire |
+| 1b-8 Robot (`bs-robot`) et comparaison aux références | fait (vérifié en CI) |
 
 Choix de portage (`bs-regles/src/combat/`) :
 
@@ -385,3 +386,30 @@ Choix de portage (`bs-regles/src/combat/`) :
   blesse des ennemis (l'esprit protecteur, qui ne fait que protéger, doit invoquer).
 - Test `cartes_et_coffres` : cinq minutes en prenant toujours la première carte de
   niveau et de coffre (avec remplacement d'objet si les emplacements sont pleins).
+
+### Le robot Rust (`rust/crates/bs-robot`)
+
+Port de `robot.ts` (mêmes règles de déplacement et de choix des cartes, même bilan).
+`cargo run --release -p bs-robot` joue 15 graines × 4 personnages en 2 s (contre une
+vingtaine de minutes pour le robot TS dans Chromium), puis compare aux références TS.
+
+- **Même partie au départ, puis divergence.** L'exemple `trace` sort la partie pas à pas
+  (tirages d'aléa, positions, PV), comme une trace équivalente du jeu TS : les deux sont
+  identiques au millième de bloc pendant les premières secondes, jusqu'à ce qu'une
+  minuterie en f32 tombe à 0 un pas plus tôt que la même en f64. La suite est
+  chaotique : on ne compare que des moyennes.
+- **Tolérance.** Une mesure passe si l'écart des moyennes est d'au plus 25 %, ou d'au
+  plus deux erreurs types de la différence (les parties sont très dispersées : survie de
+  50 à 650 s pour l'archer). Mesures vérifiées : survie, niveau, tués, dégâts subis,
+  puissance minute par minute (tant que la moitié des parties jouent encore). Les dégâts
+  par seconde de chaque arme sont indicatifs : l'arme arrive à des moments très
+  différents d'une partie à l'autre, et dans peu de parties.
+- **Résultat (15 graines, joueur mortel).** Toutes les mesures vérifiées passent. Survie
+  moyenne TS / Rust : archer 208 / 245 s, guerrier 175 / 201 s, invocateur 174 / 149 s,
+  mage 117 / 151 s. Puissance des trois premières minutes à ±15 % près (mage : 7,5 /
+  12,1 / 25 en TS ; 7,3 / 12,1 / 23,7 en Rust). Les armes obtenues se répartissent de
+  la même façon.
+- **Joueur invincible (3 et 5 graines).** Survie, niveau, tués et puissance par minute
+  dans la tolérance (par exemple guerrier : niveau 29 / 28,4, tués 3567 / 3502).
+- Butin d'armure des boss : la Collection n'agit que sur les parties suivantes, mais ses
+  tirages dans l'aléa sont reproduits (`butin.rs`).

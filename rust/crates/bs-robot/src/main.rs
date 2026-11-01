@@ -4,9 +4,9 @@
 //!   cargo run --release -p bs-robot
 //!   GRAINES=10 PERSONNAGES=guerrier,archer INVINCIBLE=1 cargo run --release -p bs-robot
 //!
-//! Variables : GRAINES (5), PERSONNAGES (guerrier,archer,mage,invocateur), ARENES
+//! Variables : GRAINES (15), PERSONNAGES (guerrier,archer,mage,invocateur), ARENES
 //! (prairie), DUREE (1200 s de jeu), INVINCIBLE=1, REFERENCE (dossier des références
-//! TS : docs/robot, ou docs/robot-invincible), SORTIE (dossier où écrire les bilans
+//! TS : docs/robot-15, ou docs/robot-invincible ; docs/robot : 5 graines), SORTIE (dossier où écrire les bilans
 //! Rust, rien par défaut), VERIFIER=1 (échoue si une mesure sort de la tolérance).
 
 use std::sync::Mutex;
@@ -21,8 +21,16 @@ fn variable(nom: &str, defaut: &str) -> String {
     std::env::var(nom).unwrap_or_else(|_| defaut.into())
 }
 
+/// Parties d'un groupe « personnage/arène ».
+fn du_groupe<'a>(liste: &'a [Bilan], cle: &str) -> Vec<&'a Bilan> {
+    liste
+        .iter()
+        .filter(|b| format!("{}/{}", b.personnage, b.arene) == cle)
+        .collect()
+}
+
 fn main() {
-    let graines: u32 = variable("GRAINES", "5").parse().expect("GRAINES");
+    let graines: u32 = variable("GRAINES", "15").parse().expect("GRAINES");
     let personnages = variable("PERSONNAGES", "guerrier,archer,mage,invocateur");
     let arenes = variable("ARENES", "prairie");
     let duree: f64 = variable("DUREE", "1200").parse().expect("DUREE");
@@ -31,7 +39,7 @@ fn main() {
     let defaut = if invincible {
         "docs/robot-invincible"
     } else {
-        "docs/robot"
+        "docs/robot-15"
     };
     let dossier_ref = variable("REFERENCE", &format!("{racine}/{defaut}"));
     let d: &'static Donnees = Box::leak(Box::new(Donnees::embarquees().expect("données")));
@@ -110,6 +118,11 @@ fn main() {
     let texte = std::fs::read_to_string(format!("{dossier_ref}/reference.json"))
         .expect("référence TS introuvable");
     let ts: FichierReference = serde_json::from_str(&texte).expect("référence TS illisible");
+    // Parties TS par minute : lues dans parties.json s'il est là, sinon toutes
+    let bilans_ts: Vec<Bilan> = std::fs::read_to_string(format!("{dossier_ref}/parties.json"))
+        .ok()
+        .and_then(|t| serde_json::from_str(&t).ok())
+        .unwrap_or_default();
     let mut hors = 0;
     for (cle, r) in &rust {
         let Some(t) = ts.reference.get(cle) else {
@@ -117,16 +130,21 @@ fn main() {
             continue;
         };
         println!("\n{cle} ({} parties TS, {} Rust)", t.parties, r.parties);
-        for e in comparer(t, r) {
-            let marque = if e.ok { "  " } else { "!!" };
-            hors += usize::from(!e.ok);
+        let (groupe_ts, groupe_rust) = (du_groupe(&bilans_ts, cle), du_groupe(&bilans, cle));
+        for e in comparer(t, r, &groupe_ts, &groupe_rust) {
+            let marque = match (e.ok, e.indicatif) {
+                (true, _) => "  ",
+                (false, true) => " ~",
+                (false, false) => "!!",
+            };
+            hors += usize::from(!e.ok && !e.indicatif);
             println!(
                 "{marque} {:<28} TS {:>8.1}   Rust {:>8.1}",
                 e.mesure, e.ts, e.rust
             );
         }
     }
-    println!("\n{hors} mesure(s) hors tolérance");
+    println!("\n{hors} mesure(s) hors tolérance (~ : indicatif, ne compte pas)");
     if hors > 0 && variable("VERIFIER", "") == "1" {
         std::process::exit(1);
     }

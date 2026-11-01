@@ -119,41 +119,95 @@ pub struct Ecart {
     pub ts: f64,
     pub rust: f64,
     pub ok: bool,
+    /// Mesure indicative : hors tolérance, elle ne fait pas échouer la comparaison.
+    pub indicatif: bool,
 }
 
-fn comparer_valeurs(mesure: String, ts: &Resume, rust: f64) -> Ecart {
+/// Dans la tolérance : écart relatif d'au plus `TOLERANCE_RELATIVE`, ou d'au plus deux
+/// erreurs types de la différence des moyennes (les parties sont très dispersées).
+fn comparer_valeurs(
+    mesure: String,
+    ts: &Resume,
+    n_ts: usize,
+    rust: &Resume,
+    n_rust: usize,
+) -> Ecart {
+    let variance =
+        ts.ecart.powi(2) / n_ts.max(1) as f64 + rust.ecart.powi(2) / n_rust.max(1) as f64;
     let marge = (ts.moyenne.abs() * TOLERANCE_RELATIVE)
-        .max(ts.ecart)
+        .max(2.0 * variance.sqrt())
         .max(1.0);
     Ecart {
-        ok: (rust - ts.moyenne).abs() <= marge,
+        ok: (rust.moyenne - ts.moyenne).abs() <= marge,
         mesure,
         ts: ts.moyenne,
-        rust,
+        rust: rust.moyenne,
+        indicatif: false,
     }
 }
 
-/// Compare une référence Rust à celle du jeu TS : survie, niveau, tués, dégâts subis,
-/// puissance moyenne et dégâts par seconde des armes vues des deux côtés.
-pub fn comparer(ts: &Reference, rust: &Reference) -> Vec<Ecart> {
+/// Puissance de la minute `k` des parties qui l'ont jouée (None : moins de la moitié).
+fn puissance_minute(bilans: &[&Bilan], k: usize) -> Option<Resume> {
+    let v: Vec<f64> = bilans
+        .iter()
+        .filter_map(|b| b.puissance_par_minute.get(k).copied())
+        .collect();
+    (!v.is_empty() && 2 * v.len() >= bilans.len()).then(|| {
+        let mut r = resumer(&v);
+        r.parties = Some(v.len());
+        r
+    })
+}
+
+/// Compare une référence Rust à celle du jeu TS. Mesures qui comptent : survie, niveau,
+/// tués, dégâts subis, puissance des minutes jouées par au moins la moitié des parties
+/// des deux côtés (`bilans_ts`, `bilans_rust` : les parties). Les dégâts par seconde des
+/// armes obtenues dans au moins deux parties de chaque côté sont indicatifs (`indicatif`) :
+/// trop peu de parties, et l'arme arrive à des moments très différents.
+pub fn comparer(
+    ts: &Reference,
+    rust: &Reference,
+    bilans_ts: &[&Bilan],
+    bilans_rust: &[&Bilan],
+) -> Vec<Ecart> {
+    let (n, m) = (ts.parties, rust.parties);
     let mut ecarts = vec![
-        comparer_valeurs("survie".into(), &ts.survie, rust.survie.moyenne),
-        comparer_valeurs("niveau".into(), &ts.niveau, rust.niveau.moyenne),
-        comparer_valeurs("tués".into(), &ts.tues, rust.tues.moyenne),
+        comparer_valeurs("survie".into(), &ts.survie, n, &rust.survie, m),
+        comparer_valeurs("niveau".into(), &ts.niveau, n, &rust.niveau, m),
+        comparer_valeurs("tués".into(), &ts.tues, n, &rust.tues, m),
         comparer_valeurs(
             "dégâts subis".into(),
             &ts.degats_subis,
-            rust.degats_subis.moyenne,
+            n,
+            &rust.degats_subis,
+            m,
         ),
     ];
-    let moyenne = |v: &[f64]| v.iter().sum::<f64>() / v.len().max(1) as f64;
-    let p_ts = moyenne(&ts.puissance_par_minute);
-    let p_rust = moyenne(&rust.puissance_par_minute);
-    let r = resumer(&[p_ts]);
-    ecarts.push(comparer_valeurs("puissance".into(), &r, p_rust));
+    for k in 0.. {
+        let (Some(a), Some(b)) = (
+            puissance_minute(bilans_ts, k),
+            puissance_minute(bilans_rust, k),
+        ) else {
+            break;
+        };
+        let (pa, pb) = (a.parties.unwrap_or(0), b.parties.unwrap_or(0));
+        ecarts.push(comparer_valeurs(
+            format!("puissance minute {}", k + 1),
+            &a,
+            pa,
+            &b,
+            pb,
+        ));
+    }
     for (id, a) in &ts.dps_par_arme {
-        if let Some(b) = rust.dps_par_arme.get(id) {
-            ecarts.push(comparer_valeurs(format!("dps {id}"), a, b.moyenne));
+        let Some(b) = rust.dps_par_arme.get(id) else {
+            continue;
+        };
+        let (pa, pb) = (a.parties.unwrap_or(0), b.parties.unwrap_or(0));
+        if pa >= 2 && pb >= 2 {
+            let mut e = comparer_valeurs(format!("dps {id}"), a, pa, b, pb);
+            e.indicatif = true;
+            ecarts.push(e);
         }
     }
     ecarts

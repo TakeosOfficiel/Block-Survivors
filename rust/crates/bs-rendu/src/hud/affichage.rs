@@ -96,6 +96,10 @@ pub fn afficher(
     let Some(mut hud) = hud else {
         return;
     };
+    // HUD d'une nouvelle partie : tout est réécrit
+    if hud.is_added() {
+        *cache = None;
+    }
     let dt = temps.delta_secs();
     hud.temps += dt;
     let p = &jeu.partie;

@@ -183,6 +183,14 @@ pub fn pause(commandes: &mut Commands, c: &Contexte, p: &Partie) -> Entity {
         false,
         Action::Statistiques,
     );
+    style::bouton(
+        commandes,
+        boutons,
+        "Menu principal",
+        180.0,
+        false,
+        Action::Menu,
+    );
     texte(commandes, bande, "Échap : reprendre", GRIS, 1.5);
     r
 }
@@ -267,6 +275,14 @@ pub fn fin(
             .entity(b)
             .insert((BorderColor::all(teinte.bord), BackgroundColor(teinte.fond)));
     }
+    style::bouton(
+        commandes,
+        boutons,
+        "Menu principal",
+        200.0,
+        false,
+        Action::Menu,
+    );
     texte(commandes, r, "Entrée : rejouer", GRIS, 1.5);
     r
 }

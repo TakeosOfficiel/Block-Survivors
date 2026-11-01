@@ -3,10 +3,12 @@
 //! (`overstep_fraction`), donc fluide à toute fréquence d'écran. Le rendu ne modifie
 //! jamais la simulation.
 //!
-//! Déroulé : chargement des textures de l'arène (écran de chargement à venir ; pour une
-//! map importée, d'abord ses états et modèles de blocs), puis construction de l'arène
-//! et partie. Tant que personne n'a touché au clavier (ou sans `BS_CARTES=1`), le robot
-//! choisit les cartes et conduit le joueur (démonstration, captures).
+//! Déroulé : menu principal (`menu`), chargement des textures de l'arène (écran de
+//! chargement à venir ; pour une map importée, d'abord ses états et modèles de blocs),
+//! puis construction de l'arène et partie ; « Menu principal » ramène au menu
+//! (`lancement::nettoyer`). Une partie lancée directement (`BS_ARENE`) saute le menu :
+//! tant que personne n'a touché au clavier (ou sans `BS_CARTES=1`), le robot y choisit
+//! les cartes et conduit le joueur (démonstration, captures).
 
 mod arene;
 mod armes;
@@ -20,9 +22,11 @@ mod effets;
 mod entites;
 mod fichiers;
 mod hud;
+mod lancement;
 mod lumiere;
 mod materiau;
 mod materiau_entite;
+mod menu;
 mod mesure;
 mod modeles;
 mod retours;
@@ -37,7 +41,7 @@ use bevy::prelude::*;
 use bs_donnees::Donnees;
 use bs_donnees::arenes::Arene;
 use bs_monde::CarteMonde;
-use bs_monde::{MondeGenere, generer_monde};
+use bs_monde::MondeGenere;
 use bs_regles::partie::Partie;
 use bs_robot::Robot;
 
@@ -53,9 +57,9 @@ pub(crate) const PAS: f32 = 1.0 / 60.0;
 /// Attente après la fin d'une partie avant d'en relancer une (s).
 const ATTENTE_RELANCE: f32 = 3.0;
 
-#[derive(States, Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-enum Phase {
-    #[default]
+#[derive(States, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) enum Phase {
+    Menu,
     Chargement,
     Partie,
 }
@@ -155,25 +159,26 @@ impl Plugin for PluginJeu {
             Box::leak(Box::new(Donnees::embarquees().expect("données du jeu")));
         app.insert_non_send_resource(sons::Sons::nouveaux(d));
         let sauvegarde = sauvegarde::Sauvegarde::charger(d);
-        let talents = sauvegarde.depart(d, self.personnage);
-        app.insert_resource(sauvegarde);
-        let id = self.arene.as_deref().unwrap_or("");
-        let carte = bs_monde::minecraft::cartes::cartes()
-            .iter()
-            .find(|c| c.id == id);
-        if let Some(carte) = carte {
-            let import = carte_mc::Import::nouvel(d, carte, self.personnage, self.graine, talents)
-                .unwrap_or_else(|e| panic!("map {id} : {e}"));
-            app.insert_resource(import);
+        let dj = lancement::DonneesJeu::nouvelles(d);
+        // Partie lancée directement (sinon : menu principal)
+        let directe = self.arene.as_deref().map(|id| {
+            let arene = dj.arene(id).unwrap_or(0);
+            let choix = lancement::ChoixPartie {
+                personnage: self.personnage,
+                arene,
+            };
+            lancement::PartiePreparee::nouvelle(&dj, &sauvegarde, choix, self.graine)
+                .unwrap_or_else(|e| panic!("arène {id} : {e}"))
+        });
+        let phase = if directe.is_some() {
+            Phase::Chargement
         } else {
-            let index = d.arenes.arenes.iter().position(|a| a.id == id).unwrap_or(0);
-            let partie = Partie::nouvelle(d, index, self.personnage, self.graine, true);
-            let monde = generer_monde(d, partie.etat.arene);
-            let mut jeu =
-                PartieEnCours::nouvelle(partie, self.graine, SourceArene::Generee(index), talents);
-            simulation::avancer_debut(&mut jeu);
-            app.insert_resource(jeu).insert_resource(Monde(monde));
+            Phase::Menu
+        };
+        if let Some(p) = directe {
+            p.inserer(&mut app.world_mut().commands());
         }
+        app.insert_resource(sauvegarde).insert_resource(dj);
         app.insert_resource(Time::<Fixed>::from_seconds(f64::from(PAS)))
             .init_resource::<Textures>()
             .init_resource::<camera::Cible>()
@@ -184,7 +189,7 @@ impl Plugin for PluginJeu {
             .insert_resource(ecran_cartes::EcranCartes::nouveau(
                 std::env::var_os("BS_CARTES").is_some(),
             ))
-            .init_state::<Phase>()
+            .insert_state(phase)
             .add_plugins((
                 materiau::PluginMateriaux,
                 materiau_entite::PluginMateriauEntite,
@@ -196,7 +201,16 @@ impl Plugin for PluginJeu {
                 hud::PluginHud,
             ))
             .add_systems(
-                Startup,
+                OnEnter(Phase::Menu),
+                (lancement::nettoyer, menu::entrer).chain(),
+            )
+            .add_systems(
+                Update,
+                (menu::gerer, ecrans::style::survoler).run_if(in_state(Phase::Menu)),
+            )
+            .add_systems(OnExit(Phase::Menu), menu::sortir)
+            .add_systems(
+                OnEnter(Phase::Chargement),
                 (
                     sauvegarde::inserer_skin,
                     demander_textures.run_if(resource_exists::<Monde>),
@@ -270,15 +284,15 @@ impl Plugin for PluginJeu {
     }
 }
 
-/// Textures de l'armure de la Collection portée.
+/// Textures de l'armure de la Collection portée (elle peut changer entre deux parties).
 fn demander_armure(
     serveur: Res<AssetServer>,
     mut textures: ResMut<Textures>,
     jeu: Res<PartieEnCours>,
     sauvegarde: Res<sauvegarde::Sauvegarde>,
-    mut fait: Local<bool>,
 ) {
-    if !std::mem::replace(&mut *fait, true) {
+    // Une fois par partie chargée
+    if jeu.is_added() {
         let portees = sauvegarde.collection.portees();
         modeles::armure::demander_textures(jeu.partie.d, &portees, &serveur, &mut textures);
     }

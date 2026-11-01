@@ -1,10 +1,11 @@
 //! Écrans en jeu hors cartes (src/ui/ecranPause.ts, ecranFin.ts) : pause (Échap, ou
 //! fenêtre qui perd le focus quand le joueur joue), statistiques de la pause, écran de fin
 //! 1,6 s après la mort ou la victoire, mode sans fin après une victoire. Pas de pause
-//! pendant les cartes ni après la fin. Le menu principal et les options ne sont pas
-//! encore portés. Le HUD est masqué sous l'écran de fin.
+//! pendant les cartes ni après la fin. « Menu principal » abandonne la partie (une
+//! partie finie est déjà comptée). Le HUD est masqué sous l'écran de fin.
 //!
-//! Essais : `BS_PAUSE=1` (ou `stats`) ouvre la pause (ou ses statistiques) au début.
+//! Essais : `BS_PAUSE=1` (ou `stats`) ouvre la pause (ou ses statistiques) au début ;
+//! `BS_PAUSE=menu` revient aussitôt au menu principal.
 
 mod bilan;
 pub mod style;
@@ -67,6 +68,8 @@ pub enum Action {
     Retour,
     Rejouer,
     Continuer,
+    /// Retour au menu principal (la partie est abandonnée).
+    Menu,
 }
 
 /// Ouvre, ferme et change d'écran selon les touches, les clics, le focus et l'issue.
@@ -86,7 +89,7 @@ pub fn gerer(
         Query<&mut TextePixel>,
         Query<&mut Visibility>,
     ),
-    mut debut: Local<bool>,
+    (mut debut, mut phase): (Local<bool>, ResMut<NextState<crate::Phase>>),
 ) {
     let perte_focus = focus.read().any(|f| !f.focused);
     let mut action = boutons
@@ -111,6 +114,8 @@ pub fn gerer(
                     vue = Vue::Pause;
                 } else if essai.as_deref() == Some("stats") {
                     vue = Vue::Statistiques;
+                } else if essai.as_deref() == Some("menu") {
+                    action = Some(Action::Menu);
                 }
             }
         }
@@ -137,6 +142,11 @@ pub fn gerer(
             jeu.fin = 0.0;
             hud::alerter(&mut hud, &mut textes, ALERTE_SANS_FIN, 4.0);
             vue = Vue::Aucune;
+        }
+        Some(Action::Menu) => {
+            sauvegarde.recompense = None;
+            phase.set(crate::Phase::Menu);
+            return;
         }
         None => {}
     }

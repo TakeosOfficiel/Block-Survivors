@@ -14,6 +14,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 2. Monde et rendu | fait : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres), 2d-2 (particules, chiffres de dégâts, barres de vie, secousse), 2d-3 (visuels des armes), 2d-4 (vent, ombres du soleil, lumière des blocs) |
 | 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
 | 4. Sauvegardes et profils | fait : 4a à 4i (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques des quatre classes, Collection, profil du joueur, amis) |
+| 5. Menus | en cours : 5a (menu principal, lancement, retour au menu) |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -998,3 +999,26 @@ mode sans fin.
 - Présence en ligne, invitations et demandes : avec la coop par relais (étape 6).
 - Tests : codes remis en forme et tirés au hasard, liste relue, JSON du jeu TS (code
   invalide écarté, pseudo absent).
+
+## Étape 5 : menus
+
+### 5a : Menu principal, lancement d'une partie, retour au menu (fait)
+
+- Phases `Menu` → `Chargement` → `Partie`. Sans `BS_ARENE`, le jeu s'ouvre sur le menu ;
+  avec, la partie se lance tout de suite (robot de démonstration, captures).
+- `bs-rendu/src/lancement.rs` : arènes proposées (celles du jeu, puis les maps de
+  `cartes/`), dernier choix gardé dans le profil (clé `choix`, même JSON que le jeu TS),
+  préparation de la partie choisie (graine tirée de l'horloge), et `nettoyer` au retour au
+  menu : toutes les entités racines et les ressources de la partie sont retirées, comme
+  le rechargement de page du jeu TS.
+- `bs-rendu/src/menu/` : classes à gauche (verrous, description, cœurs, vitesse, arme,
+  bonus de classe), pseudo, maîtrise et talents au centre, arènes à droite (verrous,
+  records, mobs dans l'ordre d'arrivée, calendrier des boss, record sans fin). « Jouer »
+  (ou Entrée) lance, « Quitter » ferme le jeu. Caméra 2D propre au menu.
+- Pause et écran de fin : bouton « Menu principal » (partie abandonnée ; une partie finie
+  est déjà comptée). Le HUD d'une nouvelle partie est entièrement réécrit, les textures
+  d'armure redemandées à chaque partie (la Collection peut changer entre deux).
+- Essais : `BS_JOUER=n` lance la partie choisie aux n premières entrées au menu,
+  `BS_PAUSE=menu` revient au menu dès le début de la partie. Vérifié : menu, partie,
+  retour, seconde partie (une seule étiquette, HUD complet).
+

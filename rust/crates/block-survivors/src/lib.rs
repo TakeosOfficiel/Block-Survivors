@@ -21,8 +21,8 @@ pub fn lancer() {
         }))
         .add_plugins(bs_rendu::PluginJeu {
             graine: 1,
-            // Provisoire (jusqu'au menu, étape 3) : BS_ARENE=map_mushroom,
-            // BS_PERSONNAGE=1 par exemple
+            // Sans BS_ARENE : menu principal. Avec (BS_ARENE=map_mushroom,
+            // BS_PERSONNAGE=1 par exemple) : partie lancée tout de suite
             arene: std::env::var("BS_ARENE").ok(),
             personnage: std::env::var("BS_PERSONNAGE")
                 .ok()

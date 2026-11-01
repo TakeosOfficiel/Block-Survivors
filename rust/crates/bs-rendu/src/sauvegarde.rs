@@ -58,6 +58,8 @@ pub struct Sauvegarde {
     pub progression: Progression,
     pub collection: Collection,
     pub profil: ProfilJoueur,
+    /// Profils du dossier (profil actif, clés de ses données).
+    pub profils: Profils,
     /// Code ami et amis (réseau : étape 6).
     #[allow(dead_code)] // lu par la page Multijoueur (étapes 5 et 6)
     pub amis: Amis,
@@ -107,6 +109,7 @@ impl Sauvegarde {
             progression,
             collection,
             profil,
+            profils,
             amis,
             recompense: None,
             depart_sans_fin: (0.0, 0),

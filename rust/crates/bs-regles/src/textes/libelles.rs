@@ -191,6 +191,20 @@ pub fn lignes_modificateurs(avant: &Modifs, apres: &Modifs, sortie: &mut Vec<Str
     }
 }
 
+/// Lignes « Nom : valeur » des bonus d'une classe (`decrireBonus`) : chaque modificateur
+/// non nul, ajouté aux valeurs de base du joueur.
+pub fn lignes_bonus(bonus: &Modifs) -> Vec<String> {
+    let mut valeurs = crate::etat::modificateurs_de_base();
+    valeurs.cumuler(bonus);
+    MODIFICATEURS
+        .iter()
+        .filter(|(_, lire, _)| lire(bonus) != 0.0)
+        .map(|(nom, lire, forme)| {
+            format!("{nom} : {}", formater_modificateur(*forme, lire(&valeurs)))
+        })
+        .collect()
+}
+
 /// Arrondi comme `Math.round` (moitiés vers +∞).
 fn arrondi_js(v: f32) -> i64 {
     (f64::from(v) + 0.5).floor() as i64

@@ -1,6 +1,6 @@
 [package]
 name = "bs-monde"
-description = "Arènes : génération, carte de collision, champ de flux (aucun Bevy)"
+description = "Arènes : génération, maps Minecraft (.schem), carte de collision, champ de flux (aucun Bevy)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,6 +10,10 @@ publish.workspace = true
 bs-commun.workspace = true
 bs-donnees.workspace = true
 libm.workspace = true
+flate2 = "1"
+serde = { version = "1", features = ["derive"] }
+# Ordre des variantes des blockstates : la première qui convient l'emporte
+serde_json = { version = "1", features = ["preserve_order"] }
 
 [lints]
 workspace = true

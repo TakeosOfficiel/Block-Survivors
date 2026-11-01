@@ -1,0 +1,16 @@
+//! Maps construites dans Minecraft (src/minecraft de la version TypeScript) : lecture
+//! des schématiques (NBT), cuisson des modèles de blocs vanilla, zone jouable et carte
+//! de collision, maillages par texture. Rien ici ne télécharge ni n'affiche : les
+//! fichiers vanilla arrivent par une `SourceFichiers`, les maillages partent au rendu.
+
+pub mod cartes;
+pub mod cuisson;
+pub mod maillage;
+pub mod modeles;
+pub mod nbt;
+pub mod proprietes;
+pub mod schematique;
+pub mod zone;
+
+#[cfg(test)]
+mod tests;

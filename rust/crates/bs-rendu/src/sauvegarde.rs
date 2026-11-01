@@ -10,6 +10,7 @@
 
 use bevy::prelude::*;
 use bs_donnees::Donnees;
+use bs_donnees::progression::BonusTalents;
 use bs_regles::partie::Partie;
 use bs_sauvegarde::{Bilan, Profils, Progression, Recompense, Stockage};
 
@@ -57,6 +58,15 @@ impl Sauvegarde {
             recompense: None,
             depart_sans_fin: (0.0, 0),
         }
+    }
+
+    /// Effets en jeu de l'arbre de talents actif du personnage d'index `personnage`.
+    pub fn talents(&self, d: &Donnees, personnage: usize) -> BonusTalents {
+        d.personnages
+            .personnages
+            .get_index(personnage)
+            .map(|(id, _)| self.progression.bonus(id))
+            .unwrap_or_default()
     }
 
     /// Enregistre la partie finie ; sa récompense est gardée pour l'écran de fin.

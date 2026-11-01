@@ -285,3 +285,17 @@ pub struct Talents {
     pub maitrise: Maitrise,
     pub deblocages: Vec<Deblocage>,
 }
+
+/// Effets en jeu de l'arbre actif d'une classe (src/progression/sauvegarde.ts `bonus`),
+/// cumulés rang après rang.
+#[derive(Debug, Clone, Default)]
+pub struct BonusTalents {
+    pub modif: Modifs,
+    /// Rangs d'armes offerts au départ (une entrée par rang).
+    pub armes: Vec<&'static str>,
+    pub relances: u32,
+    /// Bonus d'armes précises (une entrée par rang).
+    pub bonus_armes: Vec<&'static BonusArmeTalent>,
+    /// Mécaniques propres actives et leur rang.
+    pub mecaniques: Vec<(&'static str, u32)>,
+}

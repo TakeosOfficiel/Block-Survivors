@@ -34,6 +34,7 @@ mod textures;
 use bevy::prelude::*;
 use bs_donnees::Donnees;
 use bs_donnees::arenes::Arene;
+use bs_donnees::progression::BonusTalents;
 use bs_monde::CarteMonde;
 use bs_monde::{MondeGenere, generer_monde};
 use bs_regles::partie::Partie;
@@ -73,17 +74,37 @@ pub struct PartieEnCours {
     robot: Robot,
     graine: u32,
     source: SourceArene,
+    /// Effets de l'arbre de talents actif du profil, appliqués à chaque partie.
+    talents: BonusTalents,
     /// Temps écoulé depuis la fin de la partie.
     fin: f32,
 }
 
 impl PartieEnCours {
-    fn nouvelle(partie: Partie, graine: u32, source: SourceArene) -> Self {
+    fn nouvelle(
+        mut partie: Partie,
+        graine: u32,
+        source: SourceArene,
+        talents: BonusTalents,
+    ) -> Self {
+        partie.appliquer_talents(&talents);
+        let mecaniques: Vec<_> = talents
+            .mecaniques
+            .iter()
+            .map(|(m, r)| format!("{m} {r}"))
+            .collect();
+        info!(
+            "talents : armes offertes {:?}, relances +{}, mécaniques [{}]",
+            talents.armes,
+            talents.relances,
+            mecaniques.join(", ")
+        );
         Self {
             partie,
             robot: Robot::default(),
             graine,
             source,
+            talents,
             fin: 0.0,
         }
     }
@@ -98,6 +119,7 @@ impl PartieEnCours {
                 Partie::avec_arene(d, arene, carte.clone(), perso, graine, true)
             }
         };
+        self.partie.appliquer_talents(&self.talents);
         self.robot = Robot::default();
         self.graine = graine;
         self.fin = 0.0;
@@ -122,20 +144,23 @@ impl Plugin for PluginJeu {
         let d: &'static Donnees =
             Box::leak(Box::new(Donnees::embarquees().expect("données du jeu")));
         app.insert_non_send_resource(sons::Sons::nouveaux(d));
-        app.insert_resource(sauvegarde::Sauvegarde::charger(d));
+        let sauvegarde = sauvegarde::Sauvegarde::charger(d);
+        let talents = sauvegarde.talents(d, self.personnage);
+        app.insert_resource(sauvegarde);
         let id = self.arene.as_deref().unwrap_or("");
         let carte = bs_monde::minecraft::cartes::cartes()
             .iter()
             .find(|c| c.id == id);
         if let Some(carte) = carte {
-            let import = carte_mc::Import::nouvel(d, carte, self.personnage, self.graine)
+            let import = carte_mc::Import::nouvel(d, carte, self.personnage, self.graine, talents)
                 .unwrap_or_else(|e| panic!("map {id} : {e}"));
             app.insert_resource(import);
         } else {
             let index = d.arenes.arenes.iter().position(|a| a.id == id).unwrap_or(0);
             let partie = Partie::nouvelle(d, index, self.personnage, self.graine, true);
             let monde = generer_monde(d, partie.etat.arene);
-            let mut jeu = PartieEnCours::nouvelle(partie, self.graine, SourceArene::Generee(index));
+            let mut jeu =
+                PartieEnCours::nouvelle(partie, self.graine, SourceArene::Generee(index), talents);
             simulation::avancer_debut(&mut jeu);
             app.insert_resource(jeu).insert_resource(Monde(monde));
         }

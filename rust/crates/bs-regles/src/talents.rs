@@ -3,7 +3,8 @@
 //! (cloche, couronne, bastion, filon, spores, magma) et coup qui enflamme.
 //!
 //! Les parties du robot partent d'une sauvegarde vierge : les arbres de talents de classe
-//! sont au rang 0, où leurs mécaniques sont neutres. Seule exception : le Venin de
+//! sont au rang 0, où leurs mécaniques sont neutres. Une partie du joueur reçoit les
+//! effets de son arbre actif par `Partie::appliquer_talents` (talents_classe.rs). Seule exception : le Venin de
 //! l'Archère tire dans l'aléa à chaque coup de flèche, même sans le talent ; on garde ce
 //! tirage. Les dégâts des talents et des objets sont des « réactions » : ils ne relancent
 //! ni les talents ni les objets.
@@ -11,6 +12,7 @@
 use bs_donnees::armes::{EtatEveil, Eveil, FamilleArme, TypeEtat};
 use bs_donnees::equipement::EffetObjet;
 
+use crate::combat::arme::BonusArmeCumule;
 use crate::ennemis::Nature;
 use crate::partie::Partie;
 
@@ -25,6 +27,10 @@ const EFFETS_MAX: usize = 8;
 
 #[derive(Debug, Clone)]
 pub struct Talents {
+    /// Bonus des talents propres à chaque arme (par index d'arme).
+    pub armes: Vec<BonusArmeCumule>,
+    /// Mécaniques propres de l'arbre actif et leur rang.
+    pub mecaniques: Vec<(&'static str, u32)>,
     /// État infligé par l'éveil de chaque arme (par index d'arme).
     etats_eveils: Vec<Option<&'static EtatEveil>>,
     /// Dégâts causés par un talent ou un objet en cours : ils ne relancent rien.
@@ -42,6 +48,8 @@ pub struct Talents {
 impl Talents {
     pub fn nouveaux(armes: usize, archere: bool) -> Self {
         Self {
+            armes: vec![BonusArmeCumule::default(); armes],
+            mecaniques: Vec::new(),
             etats_eveils: vec![None; armes],
             en_reaction: false,
             archere,
@@ -50,6 +58,14 @@ impl Talents {
             couronne: 0.0,
             recharge_magma: 0.0,
         }
+    }
+
+    /// Rang de la mécanique propre `nom` dans l'arbre actif (0 sans le talent).
+    pub fn rang(&self, nom: &str) -> u32 {
+        self.mecaniques
+            .iter()
+            .find(|(n, _)| *n == nom)
+            .map_or(0, |&(_, r)| r)
     }
 
     /// L'arme d'index `arme` vient d'être éveillée.

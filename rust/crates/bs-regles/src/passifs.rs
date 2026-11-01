@@ -30,6 +30,11 @@ impl Passifs {
         }
     }
 
+    /// Ajoute des bonus permanents (talents de l'arbre actif).
+    pub fn ajouter_bonus(&mut self, bonus: &Modifs) {
+        self.bonus.cumuler(bonus);
+    }
+
     /// Remplace les bonus de l'équipement (pris en compte au prochain `calculer`).
     pub fn definir_equipement(&mut self, bonus: impl IntoIterator<Item = Modifs>) {
         self.equipement.clear();

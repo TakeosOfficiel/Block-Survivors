@@ -1,10 +1,34 @@
 //! Arme possédée par le joueur : rang, statistiques calculées, minuterie
-//! (port de src/combat/armeEquipee.ts, sans les bonus d'armes des talents).
+//! (port de src/combat/armeEquipee.ts), avec les bonus des talents propres à l'arme.
 
 use bs_donnees::armes::{Arme, Eveil, FamilleArme, Mecanique};
+use bs_donnees::progression::BonusArmeTalent;
 use bs_donnees::{Donnees, ModifArme, StatsArme};
 
 use crate::etat::Modificateurs;
+
+/// Bonus de talents d'une arme précise, cumulés rang après rang (nuls sans talent).
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct BonusArmeCumule {
+    pub ajout: ModifArme,
+    pub part: ModifArme,
+    /// Alliés invoqués : PV et vitesse en plus (parts).
+    pub pv: f32,
+    pub vitesse: f32,
+}
+
+impl BonusArmeCumule {
+    pub fn cumuler(&mut self, b: &BonusArmeTalent) {
+        if let Some(a) = &b.ajout {
+            self.ajout.cumuler(a);
+        }
+        if let Some(p) = &b.part {
+            self.part.cumuler(p);
+        }
+        self.pv += b.pv.unwrap_or(0.0);
+        self.vitesse += b.vitesse.unwrap_or(0.0);
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct ArmeEquipee {
@@ -13,6 +37,8 @@ pub struct ArmeEquipee {
     pub def: &'static Arme,
     pub rang: u32,
     pub stats: StatsArme,
+    /// Bonus des talents propres à cette arme.
+    pub talent: BonusArmeCumule,
     /// Éveil choisi (index dans `def.eveils`).
     pub eveil: Option<usize>,
     /// s avant le prochain déclenchement.
@@ -20,13 +46,19 @@ pub struct ArmeEquipee {
 }
 
 impl ArmeEquipee {
-    pub fn nouvelle(d: &'static Donnees, index: usize, m: &Modificateurs) -> Self {
+    pub fn nouvelle(
+        d: &'static Donnees,
+        index: usize,
+        m: &Modificateurs,
+        talent: BonusArmeCumule,
+    ) -> Self {
         let def = &d.armes[index];
         let mut arme = Self {
             index,
             def,
             rang: 1,
             stats: def.stats,
+            talent,
             eveil: None,
             minuterie: 0.0,
         };
@@ -45,7 +77,7 @@ impl ArmeEquipee {
     }
 
     pub fn recalculer(&mut self, d: &Donnees, m: &Modificateurs) {
-        self.stats = calculer_stats(d, self.def, self.rang, m, self.eveil_choisi());
+        self.stats = calculer_stats(d, self.def, self.rang, m, &self.talent, self.eveil_choisi());
     }
 }
 
@@ -81,19 +113,22 @@ fn multiplier_parts(s: &mut StatsArme, m: &ModifArme) {
     s.etourdi *= 1.0 + m.etourdi;
 }
 
-/// Statistiques d'une arme au rang donné : base + améliorations des rangs atteints,
-/// puis modificateurs globaux et de sa famille, puis parts de l'éveil, dans leurs plafonds.
+/// Statistiques d'une arme au rang donné : base + améliorations des rangs atteints et
+/// ajouts des talents, puis modificateurs globaux et de sa famille, puis parts des
+/// talents et de l'éveil, dans leurs plafonds.
 pub fn calculer_stats(
     d: &Donnees,
     def: &Arme,
     rang: u32,
     m: &Modificateurs,
+    talent: &BonusArmeCumule,
     eveil: Option<&Eveil>,
 ) -> StatsArme {
     let mut s = def.stats;
     for niveau in def.niveaux.iter().take(rang.saturating_sub(1) as usize) {
         ajouter(&mut s, &niveau.modif);
     }
+    ajouter(&mut s, &talent.ajout);
     if let Some(a) = eveil.and_then(|e| e.ajout.as_ref()) {
         ajouter(&mut s, a);
     }
@@ -123,6 +158,7 @@ pub fn calculer_stats(
     s.zone *= zone;
     s.portee *= m.portee;
     s.recul *= m.recul;
+    multiplier_parts(&mut s, &talent.part);
     if let Some(part) = eveil.and_then(|e| e.part.as_ref()) {
         multiplier_parts(&mut s, part);
     }

@@ -201,7 +201,7 @@ impl Partie {
             (j.x, j.z, 1.5)
         };
         let m = &self.etat.modificateurs;
-        let pv_max = def.pv * (1.0 + m.pv_allies);
+        let pv_max = def.pv * (1.0 + m.pv_allies + arme.talent.pv);
         let inv = &mut self.armes.invocations;
         let id = inv.prochain_id;
         inv.prochain_id += 1;
@@ -216,7 +216,7 @@ impl Partie {
             vie: arme.stats.duree,
             pv: pv_max,
             pv_max,
-            vitesse: def.vitesse * (1.0 + m.vitesse_allies),
+            vitesse: def.vitesse * (1.0 + m.vitesse_allies + arme.talent.vitesse),
             blessure: 0.0,
             minuterie: if def.soutien { 1.0 } else { 0.0 },
             vitesse_sol: 0.0,

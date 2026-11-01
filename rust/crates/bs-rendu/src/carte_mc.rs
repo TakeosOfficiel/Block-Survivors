@@ -8,6 +8,7 @@ use bevy::mesh::{Indices, PrimitiveTopology};
 use bevy::prelude::*;
 use bs_donnees::Donnees;
 use bs_donnees::arenes::Arene;
+use bs_donnees::progression::BonusTalents;
 use bs_monde::lumiere::volume_de_schematique;
 use bs_monde::minecraft::cartes::{Carte, definition, importer};
 use bs_monde::minecraft::maillage::{
@@ -31,6 +32,7 @@ pub struct Import {
     definition: Option<Arene>,
     personnage: usize,
     graine: u32,
+    talents: Option<BonusTalents>,
 }
 
 impl Import {
@@ -40,6 +42,7 @@ impl Import {
         carte: &Carte,
         personnage: usize,
         graine: u32,
+        talents: BonusTalents,
     ) -> Result<Self, String> {
         Ok(Self {
             d,
@@ -47,6 +50,7 @@ impl Import {
             definition: Some(definition(d, carte)?),
             personnage,
             graine,
+            talents: Some(talents),
         })
     }
 }
@@ -114,6 +118,7 @@ pub fn avancer_import(
         partie,
         import.graine,
         SourceArene::Importee(arene, ai.carte),
+        import.talents.take().unwrap_or_default(),
     );
     crate::retours::demander_textures(&jeu, &serveur, &mut textures);
     crate::armes::demander_textures(d, &serveur, &mut textures);

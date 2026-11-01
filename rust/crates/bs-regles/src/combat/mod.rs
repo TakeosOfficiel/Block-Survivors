@@ -98,7 +98,7 @@ impl Partie {
         let m = self.etat.modificateurs;
         match self.arsenal.armes.iter().position(|a| a.index == index) {
             None => {
-                let arme = ArmeEquipee::nouvelle(self.d, index, &m);
+                let arme = ArmeEquipee::nouvelle(self.d, index, &m, self.talents.armes[index]);
                 self.arsenal.armes.push(arme);
                 self.etat.stats.acquisition_arme[index] = self.etat.temps_jeu;
             }

@@ -13,7 +13,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 1. Données et règles, sans rendu | fait : données, monde, simulation complète et robot (`bs-robot`) ; ses moyennes tombent dans la tolérance de celles du jeu TS (voir 1b) |
 | 2. Monde et rendu | fait : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres), 2d-2 (particules, chiffres de dégâts, barres de vie, secousse), 2d-3 (visuels des armes), 2d-4 (vent, ombres du soleil, lumière des blocs) |
 | 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
-| 4. Sauvegardes et profils | en cours : 4a (stockage, profils, maîtrise, records, import et export `.bssave`) |
+| 4. Sauvegardes et profils | en cours : 4a, 4b (stockage, profils, maîtrise, records, `.bssave`, talents appliqués) |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -835,3 +835,28 @@ mode sans fin.
 - Reste pour l'étape 4 : les effets des talents en jeu (arbres achetés appliqués au
   départ de la partie), la Collection et les armures, les skins importées, l'apparence et
   les amis. Les écrans des profils et des talents viendront avec les menus (étape 5).
+
+### 4b : arbre de talents actif appliqué en partie (fait)
+
+- `Progression::bonus(personnage)` (`bs-sauvegarde/src/progression/bonus.rs`) fait comme
+  `bonus` en TS. Il parcourt les talents actifs de l'arbre actif (talent final choisi,
+  arme de départ active) et joue l'option choisie d'un talent à choix. Il cumule, rang
+  après rang : modificateurs, bonus d'armes précises, rangs d'armes offerts et relances.
+  Il donne aussi le rang de chaque mécanique propre. Le type `BonusTalents` est dans
+  `bs-donnees`.
+- `Partie::appliquer_talents` (`bs-regles/src/talents_arbre.rs`) se lance avant le premier
+  pas. Il ajoute les modificateurs aux bonus du personnage, puis recalcule les PV max et
+  les relances. Il donne à chaque arme ses bonus de talents (`BonusArmeCumule`, sur
+  `ArmeEquipee` : ajouts avant les modificateurs, parts après, PV et vitesse des alliés),
+  comme `calculerStats` en TS. Il offre aussi les rangs d'armes, après les armes de départ
+  du personnage. `Talents::rang(nom)` donne le rang d'une mécanique propre.
+- Jeu : chaque partie, et chaque relance, reçoit les talents du profil actif. Le journal
+  les affiche au lancement.
+- Essais :
+  - un profil Guerrier avec Enchaînement, Lame affûtée 3 et Maître d'armes 2 commence
+    avec l'Épée au rang 3 ;
+  - tests : `bonus` d'un arbre acheté, `appliquer_talents` (PV, relances, rang et dégâts
+    de l'arme).
+- Les mécaniques propres (87 dans `mecaniques_pretes`) ont leur rang, mais leurs effets
+  restent neutres. Elles seront portées classe par classe aux étapes 4c à 4f : Guerrier,
+  Archère, Mage, Invocateur.

@@ -25,6 +25,7 @@ pub mod passifs;
 pub mod projectiles_ennemis;
 pub mod ramassage;
 pub mod talents;
+mod talents_arbre;
 pub mod textes;
 pub mod vue;
 

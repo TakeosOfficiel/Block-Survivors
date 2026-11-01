@@ -104,7 +104,8 @@ impl Partie {
         let def = &d.armes[index];
         let rang = self.arsenal.rang(index);
         let m = &self.etat.modificateurs;
-        let apres = calculer_stats(d, def, rang + 1, m, None);
+        let t = &self.talents.armes[index];
+        let apres = calculer_stats(d, def, rang + 1, m, t, None);
         let nom_stat = |cle| {
             def.libelles
                 .as_ref()
@@ -133,7 +134,7 @@ impl Partie {
                     .collect(),
             };
         }
-        let avant = calculer_stats(d, def, rang, m, None);
+        let avant = calculer_stats(d, def, rang, m, t, None);
         let mut lignes = lignes_stats(&avant, &apres, nom_stat);
         if let bs_donnees::armes::Mecanique::Retour { loyaute, .. } = def.mecanique
             && (rang + 1) as f32 == loyaute
@@ -160,8 +161,9 @@ impl Partie {
             return self.decrire_amelioration(Amelioration::Soin);
         };
         let m = &self.etat.modificateurs;
-        let avant = calculer_stats(d, def, arme.rang, m, None);
-        let apres = calculer_stats(d, def, arme.rang, m, Some(eveil));
+        let t = &arme.talent;
+        let avant = calculer_stats(d, def, arme.rang, m, t, None);
+        let apres = calculer_stats(d, def, arme.rang, m, t, Some(eveil));
         let nom_stat = |cle| {
             def.libelles
                 .as_ref()

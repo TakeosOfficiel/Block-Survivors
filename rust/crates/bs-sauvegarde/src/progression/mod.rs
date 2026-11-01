@@ -7,7 +7,7 @@
 //! Chaque niveau de maîtrise donne un point de talent ; un rang coûte un point. Les deux
 //! arbres d'une classe ont chacun tous les points (double spécialisation). Une sauvegarde
 //! d'une version plus ancienne perd ses talents (records et arbre actif gardés).
-//! Les effets des talents en jeu viendront avec leur portage dans la simulation.
+//! `bonus` donne les effets en jeu de l'arbre actif (bonus.rs).
 
 use std::collections::BTreeMap;
 
@@ -17,6 +17,7 @@ use serde_json::{Map, Value};
 
 use crate::stockage::Stockage;
 
+mod bonus;
 mod talents;
 
 const VERSION: u32 = 3;

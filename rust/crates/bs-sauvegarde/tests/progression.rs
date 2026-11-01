@@ -63,6 +63,20 @@ fn fin_de_partie_et_talents() {
     }
     assert_eq!(p.refus_achat(perso, 0, racine), Some(RefusAchat::Max));
 
+    // Effets en jeu de l'arbre actif (guerrier : Enchaînement, Lame affûtée, Maître d'armes)
+    let noeud = |id| {
+        let noeuds = &d.talents.arbres[perso][0].noeuds;
+        noeuds.iter().find(|n| n.id == id).unwrap()
+    };
+    for id in ["lame", "lame", "lame", "maitre", "maitre"] {
+        assert!(p.acheter(perso, 0, noeud(id)), "{id}");
+    }
+    let b = p.bonus(perso);
+    assert_eq!(b.mecaniques, vec![("enchainement", 1)]);
+    assert!((b.modif.degats_melee - 0.12).abs() < 1e-6);
+    assert_eq!(b.armes, ["epee", "epee"]);
+    assert_eq!(p.bonus("inconnu").armes.len(), 0);
+
     // Suite en mode sans fin : record sans fin, pas de partie de plus
     let suite = Bilan {
         temps: 700.0,

@@ -164,3 +164,52 @@ fn verifier(c: &bs_regles::textes::Carte) {
     assert!(!c.nom.is_empty() && !c.etiquette.is_empty(), "{c:?}");
     assert!(!c.description.is_empty(), "{c:?}");
 }
+
+/// Talents de l'arbre actif : PV max, relances, rangs d'armes offerts, bonus d'arme.
+#[test]
+fn talents_appliques() {
+    use bs_donnees::progression::{BonusArmeTalent, BonusTalents};
+    let d = donnees();
+    let mut p = Partie::nouvelle(d, 0, 0, 5, false);
+    let epee = d.armes.get_index_of("epee").unwrap();
+    let (pv, relances, rang) = (
+        p.etat.joueur.pv_max,
+        p.etat.relances_restantes,
+        p.arsenal.rang(epee),
+    );
+    let degats = p
+        .arsenal
+        .armes
+        .iter()
+        .find(|a| a.index == epee)
+        .map(|a| a.stats.degats);
+    let bonus_arme: &'static BonusArmeTalent = Box::leak(Box::new(BonusArmeTalent {
+        arme: "epee".into(),
+        ajout: Some(bs_donnees::ModifArme {
+            degats: 2.0,
+            ..Default::default()
+        }),
+        part: None,
+        pv: None,
+        vitesse: None,
+    }));
+    let mut b = BonusTalents {
+        relances: 2,
+        armes: vec!["epee"],
+        bonus_armes: vec![bonus_arme],
+        mecaniques: vec![("enchainement", 1)],
+        ..Default::default()
+    };
+    b.modif.pv_max = 4.0;
+    p.appliquer_talents(&b);
+    assert_eq!(p.etat.joueur.pv_max, pv + 4.0);
+    assert_eq!(p.etat.joueur.pv, p.etat.joueur.pv_max);
+    assert_eq!(p.etat.relances_restantes, relances + 2);
+    assert_eq!(p.arsenal.rang(epee), rang + 1);
+    assert_eq!(p.talents.rang("enchainement"), 1);
+    let apres = p.arsenal.armes.iter().find(|a| a.index == epee).unwrap();
+    assert_eq!(apres.talent.ajout.degats, 2.0);
+    if let Some(degats) = degats {
+        assert!(apres.stats.degats > degats);
+    }
+}

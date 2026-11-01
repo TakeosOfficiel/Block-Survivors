@@ -21,55 +21,56 @@ const TRACE_ESPACEMENT: f32 = 0.5;
 const TRACE_DUREE: f32 = 2.0;
 
 const METEORE_CAPACITE: usize = 18;
-const METEORE_DUREE: f32 = 0.6;
+/// Durée de la chute d'un météore (s).
+pub const METEORE_DUREE: f32 = 0.6;
 const METEORE_TIC: f32 = 0.5;
 const METEORE_DECALAGE: f32 = 0.3;
 
 #[derive(Debug, Clone, Copy)]
-struct Tornade {
+pub struct Tornade {
     /// Position de l'arme dans l'arsenal.
-    arme: usize,
-    x: f32,
-    z: f32,
-    dir_x: f32,
-    dir_z: f32,
-    temps: f32,
-    prochain_coup: f32,
-    facteur: f32,
-    zone: f32,
-    duree: f32,
-    depuis_trace: f32,
+    pub arme: usize,
+    pub x: f32,
+    pub z: f32,
+    pub dir_x: f32,
+    pub dir_z: f32,
+    pub temps: f32,
+    pub prochain_coup: f32,
+    pub facteur: f32,
+    pub zone: f32,
+    pub duree: f32,
+    pub depuis_trace: f32,
 }
 
 #[derive(Debug, Clone, Copy)]
-struct Meteore {
-    arme: usize,
-    x: f32,
-    z: f32,
-    t: f32,
-    facteur: f32,
-    taille: f32,
+pub struct Meteore {
+    pub arme: usize,
+    pub x: f32,
+    pub z: f32,
+    pub t: f32,
+    pub facteur: f32,
+    pub taille: f32,
 }
 
 #[derive(Debug, Clone, Copy)]
-struct Feu {
-    arme: usize,
-    x: f32,
-    z: f32,
-    temps: f32,
-    prochain_tic: f32,
-    facteur: f32,
-    zone: f32,
-    duree: f32,
+pub struct Feu {
+    pub arme: usize,
+    pub x: f32,
+    pub z: f32,
+    pub temps: f32,
+    pub prochain_tic: f32,
+    pub facteur: f32,
+    pub zone: f32,
+    pub duree: f32,
 }
 
 #[derive(Debug, Clone)]
 pub struct ArmesFeu {
-    tornades: Vec<Tornade>,
+    pub tornades: Vec<Tornade>,
     /// Âge des traces de brûlure (visuelles).
-    traces: Vec<f32>,
-    meteores: Vec<Meteore>,
-    feux: Vec<Feu>,
+    pub traces: Vec<f32>,
+    pub meteores: Vec<Meteore>,
+    pub feux: Vec<Feu>,
 }
 
 impl Default for ArmesFeu {

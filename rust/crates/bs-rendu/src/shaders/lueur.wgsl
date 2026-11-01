@@ -84,15 +84,17 @@ fn fragment(in: Sortie) -> @location(0) vec4<f32> {
         a = exp(-d * d * 3.0) * step(r, 1.0) + max(1.0 - r, 0.0) * 0.12;
         blanc = exp(-d * d * 18.0) * 0.6;
     } else if forme == 3 {
-        // Flamme : bruit qui monte, forme effilée vers le haut
+        // Flamme : goutte qui ondule, rongée par un bruit qui monte ; cœur doré
         let h = in.uv.y;
         let t = globals.time * 2.4 + in.forme.y * 17.0;
-        let n = bruit(vec2(in.uv.x * 4.0, h * 3.0 - t)) * 0.65
-            + bruit(vec2(in.uv.x * 9.0, h * 7.0 - t * 1.7)) * 0.35;
-        let largeur = (1.0 - h) * 0.9 + 0.1;
-        let bord = abs(q.x) / largeur;
-        a = clamp((1.0 - bord) * 1.6 - h * 1.1 + n * 0.9 - 0.45, 0.0, 1.0);
-        blanc = smoothstep(0.55, 1.0, a) * (1.0 - h);
+        let n = bruit(vec2(in.uv.x * 3.0, h * 3.0 - t)) * 0.65
+            + bruit(vec2(in.uv.x * 7.0, h * 6.0 - t * 1.7)) * 0.35;
+        let x = q.x + (bruit(vec2(h * 2.0 - t * 0.6, in.forme.y)) - 0.5) * 0.5 * h;
+        let largeur = mix(0.8, 0.04, pow(h, 0.75));
+        let bord = abs(x) / largeur;
+        a = clamp((1.0 - bord) * 1.4 + (n - 0.5) * 0.9 - h * 0.35, 0.0, 1.0)
+            * smoothstep(0.0, 0.12, h);
+        blanc = smoothstep(0.7, 1.0, a) * (1.0 - h) * 0.35;
     } else if forme == 4 {
         // Traînée : plus vive vers la tête et vers le bord extérieur, stries le long
         let tete = in.uv.x;

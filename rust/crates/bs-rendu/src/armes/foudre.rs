@@ -77,6 +77,21 @@ impl Eclair {
     }
 }
 
+impl Eclair {
+    /// Déplace tout l'éclair (vitrine : il suit le joueur).
+    pub fn deplacer(&mut self, d: Vec3) {
+        self.centre += d;
+        for p in &mut self.points {
+            *p += d;
+        }
+        for b in &mut self.branches {
+            for p in b.iter_mut() {
+                *p += d;
+            }
+        }
+    }
+}
+
 pub fn avancer(eclairs: &mut Vec<Eclair>, dt: f32) {
     eclairs.retain_mut(|e| {
         e.age += dt;

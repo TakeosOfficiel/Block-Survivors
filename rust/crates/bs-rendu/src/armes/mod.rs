@@ -3,12 +3,16 @@
 //! lueurs calculées par le shader (`lueur`), ajoutées à la scène, en un seul appel de
 //! dessin ; les pools ont une taille fixe et ne réallouent jamais.
 
+mod feu;
 mod foudre;
 mod lueur;
 mod melee;
+mod solides;
+mod vitrine;
 
 use bevy::prelude::*;
 use bs_commun::Alea;
+use bs_donnees::Donnees;
 use bs_donnees::armes::Mecanique;
 use bs_regles::evenements::{EffetArme, Evenement};
 
@@ -16,11 +20,17 @@ use crate::arene::couleur_lineaire;
 use crate::camera::Cible;
 use crate::effets::Effets;
 use crate::materiau::ParametresBloc;
+use crate::materiau_entite::MateriauEntite;
+use crate::modeles::rendu::Composants;
+use crate::textures::Textures;
 use crate::{PAS, PartieEnCours};
+use feu::Braise;
 use foudre::Eclair;
 pub use lueur::PluginLueur;
 use lueur::{MaillageLueur, MateriauLueur, ParametresLueur};
 use melee::{Coup, Genre};
+use solides::Solides;
+use vitrine::Etalage;
 
 /// Couleur des éclairs sans arme de foudre (vitrine).
 const FOUDRE_DEFAUT: u32 = 0x9fd8ff;
@@ -32,14 +42,13 @@ pub struct VisuelsArmes {
     lueur: MaillageLueur,
     coups: Vec<Coup>,
     eclairs: Vec<Eclair>,
+    braises: Vec<Braise>,
+    solides: Solides,
     alea: Alea,
     /// Sens du prochain balayage (alterné).
     sens: f32,
-    /// Vitrine : temps avant la prochaine démonstration.
-    minuteur: f32,
-    /// Vitrine : exemplaires figés à un instant choisi (captures).
-    etalage_coups: Vec<Coup>,
-    etalage_eclairs: Vec<Eclair>,
+    /// Vitrine : exemplaires figés et démonstrations.
+    etalage: Etalage,
 }
 
 impl VisuelsArmes {
@@ -59,39 +68,82 @@ impl VisuelsArmes {
         });
     }
 
+    fn couleur_eclair(&self, couleur: u32) -> [f32; 3] {
+        let c = couleur_lineaire(couleur);
+        [c[0], c[1], c[2]].map(|v| v * FOUDRE_INTENSITE)
+    }
+
     fn eclair(&mut self, x: f32, z: f32, zone: f32, couleur: u32) {
         if self.eclairs.len() >= foudre::CAPACITE {
             return;
         }
-        let c = couleur_lineaire(couleur);
-        let rgb = [c[0], c[1], c[2]].map(|v| v * FOUDRE_INTENSITE);
+        let rgb = self.couleur_eclair(couleur);
         let e = Eclair::nouveau(&mut self.alea, x, z, zone, rgb);
         self.eclairs.push(e);
     }
 }
 
+/// Textures des pièces solides (blocs des météores).
+pub fn demander_textures(d: &'static Donnees, serveur: &AssetServer, t: &mut Textures) {
+    for chemin in solides::textures_meteores(d) {
+        t.demander(serveur, chemin);
+    }
+}
+
+/// Zone de l'arme `arme` de l'arsenal (1 si elle n'y est pas : vitrine).
+fn zone(jeu: &PartieEnCours, arme: usize) -> f32 {
+    jeu.partie
+        .arsenal
+        .armes
+        .get(arme)
+        .map_or(1.0, |a| a.stats.zone)
+}
+
+/// Texture du météore de l'arme `arme` (la première connue si elle n'y est pas).
+fn texture_meteore(jeu: &PartieEnCours, arme: usize) -> Option<&'static str> {
+    match jeu.partie.arsenal.armes.get(arme).map(|a| &a.def.mecanique) {
+        Some(Mecanique::Meteore { texture, .. }) => Some(texture.as_str()),
+        _ => solides::textures_meteores(jeu.partie.d).next(),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 pub fn construire(
     mut commandes: Commands,
     jeu: Res<PartieEnCours>,
+    serveur: Res<AssetServer>,
+    textures: Res<Textures>,
+    images: Res<Assets<Image>>,
     mut maillages: ResMut<Assets<Mesh>>,
     mut materiaux: ResMut<Assets<MateriauLueur>>,
+    mut materiaux_entites: ResMut<Assets<MateriauEntite>>,
 ) {
-    let b = ParametresBloc::de_l_arene(jeu.partie.etat.arene).brouillard;
+    let ambiance = ParametresBloc::de_l_arene(jeu.partie.etat.arene);
+    let b = ambiance.brouillard;
     let materiau = materiaux.add(MateriauLueur {
         parametres: ParametresLueur {
             brouillard: Vec4::new(b.x, b.y, 1.0, 0.0),
         },
     });
     let lueur = MaillageLueur::nouveau(&mut commandes, &mut maillages, materiau);
+    let solides = Solides::nouveaux(
+        jeu.partie.d,
+        ambiance,
+        &serveur,
+        &textures,
+        &images,
+        &mut maillages,
+        &mut materiaux_entites,
+    );
     commandes.insert_resource(VisuelsArmes {
         lueur,
         coups: Vec::with_capacity(melee::CAPACITE),
         eclairs: Vec::with_capacity(foudre::CAPACITE),
+        braises: Vec::with_capacity(feu::BRAISES),
+        solides,
         alea: Alea::nouveau(u64::from(jeu.graine), 13),
         sens: 1.0,
-        minuteur: 0.0,
-        etalage_coups: Vec::new(),
-        etalage_eclairs: Vec::new(),
+        etalage: Etalage::default(),
     });
 }
 
@@ -124,61 +176,60 @@ pub fn recevoir(jeu: Res<PartieEnCours>, mut v: ResMut<VisuelsArmes>, effets: Re
                 };
                 v.eclair(x, z, zone, couleur);
             }
-            EffetArme::Soulevement { .. } | EffetArme::Brulure => {}
+            EffetArme::Brulure => {
+                if v.braises.len() < feu::BRAISES {
+                    v.braises.push(Braise { x, z, age: 0.0 });
+                }
+            }
+            EffetArme::Soulevement { .. } => {}
         }
     }
     if effets.vitrine {
-        vitrine(&jeu, &mut v);
+        vitrine::avancer(&jeu, &mut v);
     }
 }
 
-/// `BS_VITRINE` : chaque effet à tour de rôle autour du joueur, et un exemplaire figé
-/// de chacun derrière lui.
-fn vitrine(jeu: &PartieEnCours, v: &mut VisuelsArmes) {
-    let j = &jeu.partie.etat.joueur;
-    if v.etalage_coups.is_empty() {
-        let fige = |genre, decalage: Vec2, portee, ouverture, age| Coup {
-            genre,
-            angle: std::f32::consts::PI,
-            portee,
-            ouverture,
-            sens: 1.0,
-            age,
-            decalage,
+/// Blocs solides de l'image (météores en chute).
+pub fn placer_solides(
+    mut commandes: Commands,
+    jeu: Res<PartieEnCours>,
+    temps: Res<Time>,
+    fixe: Res<Time<Fixed>>,
+    mut v: ResMut<VisuelsArmes>,
+    mut q: Composants,
+) {
+    let avance = fixe.overstep_fraction() * PAS;
+    let t = temps.elapsed_secs();
+    let VisuelsArmes {
+        solides, etalage, ..
+    } = &mut *v;
+    solides.commencer();
+    for me in jeu
+        .partie
+        .armes
+        .feu
+        .meteores
+        .iter()
+        .chain(&etalage.meteores)
+    {
+        let k = me.t + avance;
+        let Some(texture) = texture_meteore(&jeu, me.arme) else {
+            continue;
         };
-        v.etalage_coups.extend([
-            fige(Genre::Balayage, Vec2::new(7.0, -2.0), 2.6, 2.4, 0.11),
-            fige(Genre::Heurt, Vec2::new(0.0, -6.5), 3.0, 1.6, 0.1),
-            fige(Genre::Tourbillon, Vec2::new(5.5, -7.5), 2.4, 0.0, 0.1),
-        ]);
-        let couleur = couleur_lineaire(FOUDRE_DEFAUT).map(|c| c * FOUDRE_INTENSITE);
-        let mut e = Eclair::nouveau(
-            &mut v.alea,
-            j.x - 7.0,
-            j.z + 1.5,
-            1.8,
-            [couleur[0], couleur[1], couleur[2]],
-        );
-        e.age = 0.03;
-        v.etalage_eclairs.push(e);
+        if k >= 0.0 {
+            let pos = feu::position_meteore(me.x, me.z, k, me.taille);
+            solides.meteore(&mut commandes, &mut q, texture, pos, me.taille, t);
+        }
     }
-    v.minuteur -= PAS;
-    if v.minuteur > 0.0 {
-        return;
-    }
-    v.minuteur = 0.6;
-    let angle = v.alea.unite() * std::f32::consts::TAU;
-    match (v.alea.unite() * 3.0) as u32 {
-        0 => v.coup(Genre::Balayage, angle, 2.6, 2.4),
-        1 => v.coup(Genre::Heurt, angle, 3.0, 1.6),
-        _ => v.coup(Genre::Tourbillon, angle, 2.4, 0.0),
-    }
-    v.eclair(j.x + 3.0, j.z - 3.0, 1.8, FOUDRE_DEFAUT);
+    solides.terminer(&mut q);
 }
 
 /// Vie et dessin de l'image.
+#[allow(clippy::too_many_arguments)]
 pub fn dessiner(
     temps: Res<Time>,
+    fixe: Res<Time<Fixed>>,
+    jeu: Res<PartieEnCours>,
     mut v: ResMut<VisuelsArmes>,
     cible: Res<Cible>,
     camera: Query<&Transform, With<Camera3d>>,
@@ -186,15 +237,42 @@ pub fn dessiner(
     mut visibilites: Query<&mut Visibility>,
 ) {
     let dt = temps.delta_secs();
+    let t = temps.elapsed_secs();
+    let avance = fixe.overstep_fraction() * PAS;
     let tf = camera.single().copied().unwrap_or_default();
     let (oeil, droite, haut) = (tf.translation, tf.rotation * Vec3::X, tf.rotation * Vec3::Y);
     let v = &mut *v;
     melee::avancer(&mut v.coups, dt);
     foudre::avancer(&mut v.eclairs, dt);
-    v.lueur.commencer();
-    melee::dessiner(&mut v.lueur, &v.coups, cible.0);
-    foudre::dessiner(&mut v.lueur, &v.eclairs, oeil, droite, haut);
-    melee::dessiner(&mut v.lueur, &v.etalage_coups, cible.0);
-    foudre::dessiner(&mut v.lueur, &v.etalage_eclairs, oeil, droite, haut);
-    v.lueur.terminer(&mut maillages, &mut visibilites);
+    feu::avancer(&mut v.braises, dt);
+    let m = &mut v.lueur;
+    m.commencer();
+    let e = &v.etalage;
+    for coups in [&v.coups, &e.coups] {
+        melee::dessiner(m, coups, cible.0);
+    }
+    for eclairs in [&v.eclairs, &e.eclairs] {
+        foudre::dessiner(m, eclairs, oeil, droite, haut);
+    }
+    let f = &jeu.partie.armes.feu;
+    let scenes = [
+        feu::Scene {
+            tornades: &f.tornades,
+            meteores: &f.meteores,
+            feux: &f.feux,
+            braises: &v.braises,
+            avance,
+        },
+        feu::Scene {
+            tornades: &e.tornades,
+            meteores: &e.meteores,
+            feux: &e.feux,
+            braises: &e.braises,
+            avance: 0.0,
+        },
+    ];
+    for scene in &scenes {
+        feu::dessiner(m, scene, |a| zone(&jeu, a), t, oeil, droite, haut);
+    }
+    m.terminer(&mut maillages, &mut visibilites);
 }

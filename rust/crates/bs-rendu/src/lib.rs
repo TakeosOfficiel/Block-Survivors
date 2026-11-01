@@ -188,6 +188,7 @@ impl Plugin for PluginJeu {
                     effets::placer,
                     retours::dessiner,
                     armes::dessiner,
+                    armes::placer_solides,
                 )
                     .chain()
                     .run_if(in_state(Phase::Partie)),
@@ -217,6 +218,7 @@ fn demander_textures(
     modeles::demander_textures(d, perso, &serveur, &mut textures);
     effets::demander_textures(d, &serveur, &mut textures);
     retours::demander_textures(&jeu, &serveur, &mut textures);
+    armes::demander_textures(d, &serveur, &mut textures);
 }
 
 /// Modèles des entités (textures déjà chargées).

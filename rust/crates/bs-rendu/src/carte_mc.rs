@@ -113,6 +113,7 @@ pub fn avancer_import(
         SourceArene::Importee(arene, ai.carte),
     );
     crate::retours::demander_textures(&jeu, &serveur, &mut textures);
+    crate::armes::demander_textures(d, &serveur, &mut textures);
     commandes.insert_resource(jeu);
     commandes.insert_resource(CarteImportee {
         schematique: s,

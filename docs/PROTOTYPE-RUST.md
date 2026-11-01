@@ -11,7 +11,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | −1. Robot d'équilibrage, aléatoire à graine, pas fixe (TypeScript) | fait |
 | 0 bis. Prototype des cinq paris | fait : on continue, avec ajustements (voir la décision) ; 94 images/s mesurées sur le PC du joueur |
 | 1. Données et règles, sans rendu | fait : données, monde, simulation complète et robot (`bs-robot`) ; ses moyennes tombent dans la tolérance de celles du jeu TS (voir 1b) |
-| 2. Monde et rendu | en cours : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres) et 2d-2 (particules, chiffres de dégâts, barres de vie, secousse) faits ; 2d-3a (lueurs, mêlée, foudre) fait ; 2d-3b, 2d-3c et 2d-4 à faire |
+| 2. Monde et rendu | en cours : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres) et 2d-2 (particules, chiffres de dégâts, barres de vie, secousse) faits ; 2d-3a (lueurs, mêlée, foudre) et 2d-3b (feu) faits ; 2d-3c et 2d-4 à faire |
 
 ---
 
@@ -590,3 +590,19 @@ invocations.
   l'arme.
 - **Vitrine** : `BS_VITRINE=1` montre aussi un exemplaire figé de chaque effet.
 - **Capture** : `docs/captures/vitrine-armes-melee-foudre-pc.png`.
+
+##### 2d-3b : feu (fait)
+
+- **Simulation** : les tornades, météores et feux au sol sont lisibles par
+  l'affichage (champs publics) ; chaque trace de brûlure émet `EffetArme::Brulure`.
+- **Tornade** : colonne de chaleur, sept brins de feu en spirale qui tournent,
+  anneaux qui montent en s'élargissant, flammes à la base, lueur au sol ; elle laisse
+  des braises (lueur au sol et escarbille qui s'élève).
+- **Météore** : vrai bloc texturé (texture de l'arme, première image si elle est
+  animée) qui tombe en accélérant et en tournoyant, halo et traînée ; cible marquée
+  au sol, de plus en plus vive jusqu'à l'impact.
+- **Feu au sol** : flammes en goutte, ondulantes, rongées par un bruit qui monte
+  (shader), posées à des places fixes tirées de la position ; lueur qui vacille ;
+  à l'apparition, éclair de lumière et onde.
+- **Vitrine** : l'étalage suit le joueur ; capture
+  `docs/captures/vitrine-armes-feu-pc.png`.

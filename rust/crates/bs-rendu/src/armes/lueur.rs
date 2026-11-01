@@ -25,7 +25,6 @@ pub enum Forme {
     Disque = 0,
     Faisceau = 1,
     Anneau = 2,
-    #[expect(dead_code, reason = "feu au sol et tornades : 2d-3b")]
     Flamme = 3,
     Trainee = 4,
     Etincelle = 5,

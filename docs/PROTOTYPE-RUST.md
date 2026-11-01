@@ -708,3 +708,29 @@ mode sans fin.
 - Sans sortie son (CI, xvfb), rien n'est téléchargé et la partie reste muette.
   `BS_SON=0` coupe le son. Vérifié : les 71 sons se téléchargent et se décodent sans
   erreur.
+
+### 3b : HUD (fait)
+
+- `bs-rendu/src/hud/` reprend src/ui/ avec bevy_ui. `UiScale` part d'une fenêtre de
+  référence de 1280 × 820, par quarts au-dessus de 1.
+- `police.rs` : police pixel du jeu (planches `font/*.png` et table
+  `font/include/default.json`). Chaque `TextePixel` est rasterisé dans sa propre image, et
+  seulement quand il change. Bord au choix : ombre (couleur / 4, décalée de 1, 1) ou
+  contour noir.
+- `affichage.rs` :
+  - en haut : chrono (doré dans la dernière minute) et « Prochain boss dans » (rouge à
+    10 s) ;
+  - à droite : émeraudes et tués ;
+  - totems de vie, avec une animation quand un totem est consommé ;
+  - alerte clignotante et voile rouge.
+- `coeurs.rs` : cœurs vanilla × 3 rognés colonne par colonne, cœurs dorés du bouclier,
+  tremblement à 4 PV ou moins, et PV au dixième.
+- `barres.rs` : barre d'XP avec le niveau (contour noir) et barre du boss sous le chrono,
+  à la couleur de sa définition.
+- `capacites.rs` : cases d'armes, de passifs et d'équipement, avec le niveau, la rareté
+  et l'éveil. Les icônes procédurales d'équipement (iconesObjets.ts) ne sont pas encore
+  portées : la case affiche l'initiale du nom.
+- `bs-regles` : nouvel événement `AnnonceBoss { nom, duree }`, émis à l'annonce d'un vrai
+  boss, qui affiche l'alerte « Un boss approche : <nom> ! ».
+- `BS_DEBUT=<s>` (captures) : le robot joue ce nombre de secondes avant l'affichage, avec
+  la vie gardée pleine.

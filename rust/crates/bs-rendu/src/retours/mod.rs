@@ -200,7 +200,10 @@ pub fn recevoir(
                 style,
             } => retours.chiffres.ajouter(Vec3::new(x, y, z), valeur, style),
             Evenement::Secousse(force) => secousse.ajouter(force),
-            Evenement::Son { .. } | Evenement::Geste(_) | Evenement::Effet { .. } => {}
+            Evenement::Son { .. }
+            | Evenement::Geste(_)
+            | Evenement::Effet { .. }
+            | Evenement::AnnonceBoss { .. } => {}
         }
     }
 }

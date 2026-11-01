@@ -64,6 +64,9 @@ pub enum Evenement {
     Secousse(f32),
     /// Geste d'attaque du modèle : le joueur (`None`) ou l'allié de cet identifiant.
     Geste(Option<u32>),
+    /// Annonce d'un boss (bandeau d'alerte) : bientôt là pendant `duree` s, ou arrivé
+    /// (`duree` nulle).
+    AnnonceBoss { nom: &'static str, duree: f32 },
     /// Effet de l'arme `arme` (position dans l'arsenal) en (x, z).
     Effet {
         arme: usize,

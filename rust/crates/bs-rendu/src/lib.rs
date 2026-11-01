@@ -15,6 +15,7 @@ mod carte_mc;
 mod effets;
 mod entites;
 mod fichiers;
+mod hud;
 mod lumiere;
 mod materiau;
 mod materiau_entite;
@@ -128,12 +129,9 @@ impl Plugin for PluginJeu {
             let index = d.arenes.arenes.iter().position(|a| a.id == id).unwrap_or(0);
             let partie = Partie::nouvelle(d, index, self.personnage, self.graine, true);
             let monde = generer_monde(d, partie.etat.arene);
-            app.insert_resource(PartieEnCours::nouvelle(
-                partie,
-                self.graine,
-                SourceArene::Generee(index),
-            ))
-            .insert_resource(Monde(monde));
+            let mut jeu = PartieEnCours::nouvelle(partie, self.graine, SourceArene::Generee(index));
+            avancer_debut(&mut jeu);
+            app.insert_resource(jeu).insert_resource(Monde(monde));
         }
         app.insert_resource(Time::<Fixed>::from_seconds(f64::from(PAS)))
             .init_resource::<Textures>()
@@ -150,12 +148,14 @@ impl Plugin for PluginJeu {
                 fichiers::PluginFichiers,
                 soleil::PluginSoleil,
                 sons::PluginSons,
+                hud::PluginHud,
             ))
             .add_systems(Startup, demander_textures.run_if(resource_exists::<Monde>))
             .add_systems(
                 Update,
                 (
                     carte_mc::avancer_import,
+                    hud::demander_textures.run_if(resource_exists::<PartieEnCours>),
                     attendre_textures.run_if(resource_exists::<PartieEnCours>),
                 )
                     .chain()
@@ -173,6 +173,7 @@ impl Plugin for PluginJeu {
                     effets::construire,
                     retours::construire,
                     armes::construire,
+                    hud::construire,
                 ),
             )
             .add_systems(
@@ -184,6 +185,7 @@ impl Plugin for PluginJeu {
                     retours::recevoir,
                     armes::recevoir,
                     sons::jouer,
+                    hud::recevoir,
                 )
                     .chain()
                     .run_if(in_state(Phase::Partie)),
@@ -197,6 +199,7 @@ impl Plugin for PluginJeu {
                     retours::dessiner,
                     armes::dessiner,
                     armes::placer_solides,
+                    hud::afficher,
                 )
                     .chain()
                     .run_if(in_state(Phase::Partie)),
@@ -342,6 +345,20 @@ fn creer_camera(mut commandes: Commands, jeu: Res<PartieEnCours>) {
 
 /// Un pas : le clavier (ZQSD, WASD, flèches) conduit le joueur ; sans touche, le robot.
 /// Les cartes sont choisies par le robot tant que l'interface n'existe pas.
+/// `BS_DEBUT=<s>` (essais) : le robot joue ces secondes avant l'affichage, sans mourir.
+fn avancer_debut(jeu: &mut PartieEnCours) {
+    let secondes: f32 = std::env::var("BS_DEBUT")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(0.0);
+    for _ in 0..(secondes / PAS) as u32 {
+        jeu.partie.ev.vider();
+        let j = &mut jeu.partie.etat.joueur;
+        j.pv = j.pv_max;
+        jeu.robot.avancer(&mut jeu.partie);
+    }
+}
+
 fn avancer(
     mut jeu: ResMut<PartieEnCours>,
     touches: Res<ButtonInput<KeyCode>>,

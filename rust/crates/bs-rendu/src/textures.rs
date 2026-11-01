@@ -215,6 +215,16 @@ impl Textures {
         a
     }
 
+    /// Chargement fini, réussi ou non (texture inconnue : faux).
+    pub fn termine(&self, serveur: &AssetServer, chemin: &str) -> bool {
+        self.poignees.get(chemin).is_some_and(|p| {
+            matches!(
+                serveur.load_state(p),
+                LoadState::Loaded | LoadState::Failed(_)
+            )
+        })
+    }
+
     /// Texture chargée, ou `None` si elle manque (couleur de secours).
     pub fn obtenir(&self, serveur: &AssetServer, chemin: &str) -> Option<Handle<Image>> {
         let p = self.poignees.get(chemin)?;

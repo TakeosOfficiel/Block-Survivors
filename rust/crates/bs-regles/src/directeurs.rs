@@ -11,6 +11,7 @@ use bs_donnees::Intervalle;
 use bs_donnees::arenes::ChoixEnnemi;
 use bs_donnees::regles::CalendrierBoss;
 
+use crate::evenements::Evenement;
 use crate::partie::Partie;
 
 /// Tirages pour trouver un point hors champ.
@@ -222,9 +223,18 @@ impl Partie {
         let t = self.etat.temps_jeu as f32;
         let d = self.directeur_boss(sorte);
         if !d.annonce && t >= d.moment - c.avertissement {
-            // L'alerte à l'écran est l'affaire de l'interface (temps_avant_boss)
             d.annonce = true;
+            let prochain = d.prochain;
+            let liste = self.liste_boss(sorte);
+            let def = self.d.ennemis.get(&liste[prochain % liste.len()]);
+            if let (SorteBoss::Boss, Some(def)) = (sorte, def) {
+                self.ev.pousser(Evenement::AnnonceBoss {
+                    nom: &def.nom,
+                    duree: c.avertissement,
+                });
+            }
         }
+        let d = self.directeur_boss(sorte);
         if t >= d.moment {
             self.faire_apparaitre_boss(sorte);
             let d = self.directeur_boss(sorte);

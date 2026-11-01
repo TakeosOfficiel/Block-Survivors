@@ -143,6 +143,7 @@ pub fn construire(
         ))
         .id();
     style::bouton(commandes, bas, "Quitter", 160.0, false, ActionMenu::Quitter);
+    style::bouton(commandes, bas, "Options", 160.0, false, ActionMenu::Options);
     let jouer = style::bouton(commandes, bas, "Jouer", 320.0, true, ActionMenu::Jouer);
     commandes.entity(jouer).entry::<Node>().and_modify(|mut n| {
         n.flex_direction = FlexDirection::Column;

@@ -65,6 +65,11 @@ impl Sons {
         }
     }
 
+    /// Volumes des options.
+    pub fn regler(&mut self, volumes: bs_audio::Volumes) {
+        self.mixeur.volumes = volumes;
+    }
+
     /// Joue le son `id` (identifiant des données) ; `hauteur` multiplie la hauteur tirée.
     pub fn jouer(&mut self, id: &str, hauteur: f32, maintenant: f64) {
         if let Some((k, _, def)) = self.d.sons.get_full(id) {

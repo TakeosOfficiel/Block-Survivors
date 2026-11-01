@@ -176,6 +176,7 @@ pub fn recevoir(
     mut retours: ResMut<Retours>,
     mut secousse: ResMut<Secousse>,
     effets: Res<Effets>,
+    options: Res<crate::options::Options>,
 ) {
     let d = jeu.partie.d;
     if effets.vitrine {
@@ -198,8 +199,16 @@ pub fn recevoir(
                 z,
                 valeur,
                 style,
-            } => retours.chiffres.ajouter(Vec3::new(x, y, z), valeur, style),
-            Evenement::Secousse(force) => secousse.ajouter(force),
+            } => {
+                if options.chiffres_degats {
+                    retours.chiffres.ajouter(Vec3::new(x, y, z), valeur, style);
+                }
+            }
+            Evenement::Secousse(force) => {
+                if options.secousses {
+                    secousse.ajouter(force);
+                }
+            }
             Evenement::Son { .. }
             | Evenement::Geste(_)
             | Evenement::Effet { .. }

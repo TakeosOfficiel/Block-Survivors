@@ -14,7 +14,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 2. Monde et rendu | fait : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres), 2d-2 (particules, chiffres de dégâts, barres de vie, secousse), 2d-3 (visuels des armes), 2d-4 (vent, ombres du soleil, lumière des blocs) |
 | 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
 | 4. Sauvegardes et profils | fait : 4a à 4i (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques des quatre classes, Collection, profil du joueur, amis) |
-| 5. Menus | en cours : 5a (menu principal, lancement, retour au menu), 5b (Talents), 5c (Collection), 5d (Profil), 5e (Profils) |
+| 5. Menus | en cours : 5a (menu principal, lancement, retour au menu), 5b (Talents), 5c (Collection), 5d (Profil), 5e (Profils), 5f (Options) |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -1080,3 +1080,16 @@ mode sans fin.
   l'accueil : pas besoin de relancer le jeu comme dans la version TS.
 - Essais : `BS_MENU=profils`. Vérifié aux clics et au clavier (création, export,
   suppression confirmée de l'actif).
+
+### 5f : Options (faites)
+
+- `bs-rendu/src/options/` : les options du joueur (`block-survivors.options`, même format
+  que la version TS ; les options pas encore reprises, compteur de dégâts, vue F5, effets
+  des alliés, sont réécrites telles quelles). Chaque changement est appliqué et enregistré
+  aussitôt : volumes des sons, compteur de FPS (coin haut droit), secousses de l'écran,
+  ombres (non, oui, oui fines : carte d'ombre 4096), chiffres des dégâts.
+- Panneau par-dessus le menu principal (bouton « Options ») et la pause : curseurs de
+  volume (clic ou glissé, pas de 5 %), bascules, « Terminé » ou Échap pour fermer.
+- Reste : le vent n'est pas coupé avec les ombres (shader), et les options compteur de
+  dégâts, vue F5 et effets des alliés n'ont pas encore d'équivalent en jeu.
+- Vérifié aux clics, au menu et en pause (fichier d'options écrit, FPS affichées).

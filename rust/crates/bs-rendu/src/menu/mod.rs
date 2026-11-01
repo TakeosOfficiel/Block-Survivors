@@ -46,6 +46,8 @@ pub enum ActionMenu {
     Profils(profils::ActionProfils),
     /// Revient à l'accueil.
     Fermer,
+    /// Ouvre le panneau des options.
+    Options,
     Talent(ActionTalent),
 }
 
@@ -220,7 +222,7 @@ pub fn gerer(
     boutons: Query<(&Interaction, &ActionMenu), Changed<Interaction>>,
     mut phase: ResMut<NextState<Phase>>,
     mut sortie: MessageWriter<AppExit>,
-    mut essais: Local<u32>,
+    (mut essais, mut options): (Local<u32>, ResMut<crate::options::PanneauOptions>),
 ) {
     let mut action = boutons
         .iter()
@@ -233,7 +235,7 @@ pub fn gerer(
         *essais += 1;
     }
     let accueil = menu.page == Page::Accueil;
-    let clavier = !menu.clavier_pris && menu.saisie.is_none();
+    let clavier = !menu.clavier_pris && menu.saisie.is_none() && !options.ouvert();
     let entree = touches.any_just_pressed([KeyCode::Enter, KeyCode::NumpadEnter]);
     if auto || (accueil && entree && clavier) {
         action = Some(ActionMenu::Jouer);
@@ -287,6 +289,10 @@ pub fn gerer(
             profil::agir(&mut sauvegarde, &mut menu, a);
         }
         Some(ActionMenu::Fermer) => page = Page::Accueil,
+        Some(ActionMenu::Options) => {
+            options.ouvrir();
+            return;
+        }
         Some(ActionMenu::Talent(a)) => {
             let Page::Talents(mut etat) = page else {
                 return;

@@ -70,6 +70,8 @@ pub enum Action {
     Continuer,
     /// Retour au menu principal (la partie est abandonnée).
     Menu,
+    /// Ouvre le panneau des options (par-dessus la pause).
+    Options,
 }
 
 /// Ouvre, ferme et change d'écran selon les touches, les clics, le focus et l'issue.
@@ -89,14 +91,19 @@ pub fn gerer(
         Query<&mut TextePixel>,
         Query<&mut Visibility>,
     ),
-    (mut debut, mut phase): (Local<bool>, ResMut<NextState<crate::Phase>>),
+    (mut debut, mut phase, mut options): (
+        Local<bool>,
+        ResMut<NextState<crate::Phase>>,
+        ResMut<crate::options::PanneauOptions>,
+    ),
 ) {
     let perte_focus = focus.read().any(|f| !f.focused);
     let mut action = boutons
         .iter()
         .find(|(i, _)| **i == Interaction::Pressed)
         .map(|(_, a)| *a);
-    let echap = touches.just_pressed(KeyCode::Escape);
+    // Échap ferme d'abord les options
+    let echap = touches.just_pressed(KeyCode::Escape) && !options.ouvert();
     let entree = touches.any_just_pressed([KeyCode::Enter, KeyCode::NumpadEnter]);
     let finie = jeu.partie.etat.issue.is_some();
     let mut vue = ecrans.vue;
@@ -143,6 +150,7 @@ pub fn gerer(
             hud::alerter(&mut hud, &mut textes, ALERTE_SANS_FIN, 4.0);
             vue = Vue::Aucune;
         }
+        Some(Action::Options) => options.ouvrir(),
         Some(Action::Menu) => {
             sauvegarde.recompense = None;
             phase.set(crate::Phase::Menu);

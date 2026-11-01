@@ -30,6 +30,7 @@ mod materiau_entite;
 mod menu;
 mod mesure;
 mod modeles;
+mod options;
 mod retours;
 mod sauvegarde;
 mod simulation;
@@ -201,6 +202,7 @@ impl Plugin for PluginJeu {
                 soleil::PluginSoleil,
                 sons::PluginSons,
                 hud::PluginHud,
+                options::PluginOptions,
             ))
             .add_systems(
                 OnEnter(Phase::Menu),
@@ -288,6 +290,7 @@ impl Plugin for PluginJeu {
                     ecrans::defiler,
                     ecrans::style::survoler,
                     hud::afficher,
+                    soleil::suivre,
                 )
                     .chain()
                     .run_if(in_state(Phase::Partie)),

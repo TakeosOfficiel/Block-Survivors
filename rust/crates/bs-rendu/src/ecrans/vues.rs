@@ -183,6 +183,7 @@ pub fn pause(commandes: &mut Commands, c: &Contexte, p: &Partie) -> Entity {
         false,
         Action::Statistiques,
     );
+    style::bouton(commandes, boutons, "Options", 140.0, false, Action::Options);
     style::bouton(
         commandes,
         boutons,

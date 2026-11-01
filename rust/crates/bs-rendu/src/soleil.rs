@@ -3,7 +3,8 @@
 //! des blocs et des entités gardent leur éclairage façon Minecraft et retirent le soleil
 //! là où il est caché (`shaders/soleil.wgsl`). La carte suit la caméra (une cascade
 //! nette près du joueur, une plus large au loin) : tout le décor visible a ses ombres,
-//! même hors de l'arène. `BS_OMBRES=0` les coupe (les ombres rondes reviennent).
+//! même hors de l'arène. `BS_OMBRES=0` les coupe (les ombres rondes reviennent), comme
+//! l'option « Ombres : NON » (appliquée aussitôt, même en partie).
 
 use bevy::light::{CascadeShadowConfigBuilder, DirectionalLightShadowMap};
 use bevy::prelude::*;
@@ -35,12 +36,37 @@ impl Plugin for PluginSoleil {
     }
 }
 
+/// Marque de la lumière du soleil.
+#[derive(Component)]
+pub struct Soleil;
+
 /// La lumière du soleil, au lancement de la partie.
 pub fn creer(mut commandes: Commands, actives: Res<OmbresSoleil>) {
-    if !actives.0 {
+    if actives.0 {
+        allumer(&mut commandes);
+    }
+}
+
+/// Les options allument ou éteignent les ombres en cours de partie.
+pub fn suivre(
+    mut commandes: Commands,
+    actives: Res<OmbresSoleil>,
+    soleils: Query<Entity, With<Soleil>>,
+) {
+    if !actives.is_changed() || actives.is_added() {
         return;
     }
+    for s in &soleils {
+        commandes.entity(s).despawn();
+    }
+    if actives.0 {
+        allumer(&mut commandes);
+    }
+}
+
+fn allumer(commandes: &mut Commands) {
     commandes.spawn((
+        Soleil,
         Name::new("soleil"),
         DirectionalLight {
             shadows_enabled: true,

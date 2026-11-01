@@ -23,7 +23,9 @@ use bs_regles::evenements::Evenement;
 use bs_regles::partie::Partie;
 use bs_sauvegarde::collection::MONDES;
 use bs_sauvegarde::profil_joueur::{CHEMIN_SKIN_IMPORTE, ChoixSkin, nettoyer_pseudo};
-use bs_sauvegarde::{Bilan, Collection, ProfilJoueur, Profils, Progression, Recompense, Stockage};
+use bs_sauvegarde::{
+    Amis, Bilan, Collection, ProfilJoueur, Profils, Progression, Recompense, Stockage,
+};
 
 use crate::PartieEnCours;
 
@@ -56,6 +58,9 @@ pub struct Sauvegarde {
     pub progression: Progression,
     pub collection: Collection,
     pub profil: ProfilJoueur,
+    /// Code ami et amis (réseau : étape 6).
+    #[allow(dead_code)] // lu par la page Multijoueur (étapes 5 et 6)
+    pub amis: Amis,
     /// Récompense de la partie qui vient de finir (écran de fin).
     pub recompense: Option<Recompense>,
     /// XP totale et boss vaincus au passage en mode sans fin.
@@ -96,10 +101,13 @@ impl Sauvegarde {
         let collection = Collection::charger(profils.stockage().clone(), cle);
         let mut profil = ProfilJoueur::charger(profils.stockage().clone(), profils.cle("profil"));
         changer_profil(&mut profil);
+        let amis = Amis::charger(profils.stockage().clone(), profils.cle("amis"));
+        info!("code ami : {} ({} amis)", amis.code, amis.amis.len());
         Self {
             progression,
             collection,
             profil,
+            amis,
             recompense: None,
             depart_sans_fin: (0.0, 0),
         }

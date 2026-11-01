@@ -13,7 +13,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 1. Données et règles, sans rendu | fait : données, monde, simulation complète et robot (`bs-robot`) ; ses moyennes tombent dans la tolérance de celles du jeu TS (voir 1b) |
 | 2. Monde et rendu | fait : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres), 2d-2 (particules, chiffres de dégâts, barres de vie, secousse), 2d-3 (visuels des armes), 2d-4 (vent, ombres du soleil, lumière des blocs) |
 | 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
-| 4. Sauvegardes et profils | en cours : 4a à 4h (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques des quatre classes, Collection, profil du joueur) |
+| 4. Sauvegardes et profils | en cours : 4a à 4h (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques des quatre classes, Collection, profil du joueur, amis) |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -987,3 +987,14 @@ mode sans fin.
 - Tests : profil relu, apparence, ancienne skin « perso » et skin importée absente
   ramenées à la skin de la classe ; formats refusés, skin HD agrandie gardée à sa vraie
   taille, ancien format complété.
+
+### 4i : Amis (liste gardée)
+
+- `bs-sauvegarde/src/amis.rs` (partie gardée de `reseau/amis.ts`) : code ami du profil
+  (« ABC-DEF-GHJ », 9 signes d'un alphabet sans 0, O, 1, I, L, tiré une fois), amis
+  ajoutés (50 au plus) avec leur dernier pseudo connu. Même JSON que le jeu TS (clé
+  `amis`, version 1) : un profil importé garde ses amis et son code. Ajout refusé avec le
+  même message que le jeu TS (code invalide, propre code, déjà ami, liste pleine).
+- Présence en ligne, invitations et demandes : avec la coop par relais (étape 6).
+- Tests : codes remis en forme et tirés au hasard, liste relue, JSON du jeu TS (code
+  invalide écarté, pseudo absent).

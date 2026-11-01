@@ -11,7 +11,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | −1. Robot d'équilibrage, aléatoire à graine, pas fixe (TypeScript) | fait |
 | 0 bis. Prototype des cinq paris | fait : on continue, avec ajustements (voir la décision) ; 94 images/s mesurées sur le PC du joueur |
 | 1. Données et règles, sans rendu | fait : données, monde, simulation complète et robot (`bs-robot`) ; ses moyennes tombent dans la tolérance de celles du jeu TS (voir 1b) |
-| 2. Monde et rendu | en cours : 2a (textures vanilla, arène affichée, vraie partie) et 2b (modèles Minecraft des entités) faits ; 2c maps .schem, 2d effets à faire |
+| 2. Monde et rendu | en cours : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités) et 2c (maps .schem importées) faits ; 2d effets à faire |
 
 ---
 
@@ -478,3 +478,30 @@ vingtaine de minutes pour le robot TS dans Chromium), puis compare aux référen
 - **Capture** : `docs/captures/modeles-prairie-pc.png` (Steve en marche, épée en main).
 - **Tests** : boîtes de tous les modèles (24 sommets, UV dans la texture, triangles
   orientés vers leur normale), extrusion d'un sprite, balancement à la marche, chute.
+
+### 2c : maps Minecraft importées (`cartes/*.schem`)
+
+- **Lecture** (`bs-monde/src/minecraft/`, sans carte graphique) : NBT compressé
+  (gzip ou zlib), schématiques Sponge 1 à 3 et structures `.nbt`, panneaux ; noms de
+  blocs normalisés comme en TS. Les maps de `cartes/` (et leur `.json` de réglages)
+  sont embarquées à la compilation (`build.rs`).
+- **Modèles de blocs** : états et modèles vanilla (variantes, multipart, parents,
+  rotations d'éléments et d'état, uvlock) « cuits » en quadrilatères. Les fichiers
+  JSON sont téléchargés au fil des besoins par une seconde source d'assets, `mcj://`
+  (mêmes adresses et même cache disque que les textures, dossier `fichiers/`).
+  Coffres, lits et boîtes de shulker ont une boîte de secours.
+- **Zone jouable** : depuis le panneau « départ », remplissage des cases praticables ;
+  carte de collision (plein, liquide, toiles, blocs qui ralentissent ou blessent).
+  La simulation prend l'arène telle quelle : `Partie::avec_arene` (le générateur reste
+  pour les arènes classiques).
+- **Rendu** (`bs-rendu/src/carte_mc.rs`) : un maillage par texture, faces cachées par
+  un voisin plein et opaque ; chaque texture est classée d'après ses pixels (opaque,
+  découpée, translucide). Le matériau des blocs gagne le mélange alpha (verre teinté,
+  eau). Eau et lave animées comme les blocs du jeu ; les autres bandes montrent leur
+  première image, comme en TS.
+- **Choix** (provisoire, jusqu'au menu) : `BS_ARENE=map_mushroom` (ou l'id d'une arène
+  générée). La relance après la fin reprend la même map.
+- **Reste à faire** : balancement des plantes au vent (2d).
+- **Capture** : `docs/captures/map-champignons-pc.png`.
+- **Tests** : lecture de la map embarquée, cuisson en plusieurs passes avec des
+  fichiers factices, zone et collisions d'un bassin construit à la main.

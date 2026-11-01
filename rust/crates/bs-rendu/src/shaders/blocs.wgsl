@@ -15,7 +15,8 @@ struct ParametresBloc {
     ciel: vec4<f32>,
     // début, fin du brouillard, seuil de découpe (0 : aucune), lumineux (1)
     brouillard: vec4<f32>,
-    // images de la bande, image affichée, texture répétée (1 : uv du monde)
+    // images de la bande, image affichée, texture répétée (1 : uv du monde),
+    // alpha transmis (1 : translucide)
     animation: vec4<f32>,
 }
 
@@ -45,5 +46,9 @@ fn fragment(in: VertexOutput, @builtin(front_facing) devant: bool) -> @location(
     }
     let profondeur = -(view.view_from_world * in.world_position).z;
     let f = smoothstep(p.brouillard.x, p.brouillard.y, profondeur);
-    return vec4(mix(c.rgb * lumiere, p.ciel.rgb, f), 1.0);
+    var alpha = 1.0;
+    if p.animation.w > 0.5 {
+        alpha = c.a;
+    }
+    return vec4(mix(c.rgb * lumiere, p.ciel.rgb, f), alpha);
 }

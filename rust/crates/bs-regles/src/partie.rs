@@ -4,6 +4,7 @@
 
 use bs_commun::Mulberry;
 use bs_donnees::Donnees;
+use bs_donnees::arenes::Arene;
 use bs_monde::{CarteMonde, ChampDeFlux, generer_monde};
 
 use crate::butin::Butin;
@@ -72,8 +73,20 @@ impl Partie {
         evenements: bool,
     ) -> Self {
         let arene = &d.arenes.arenes[index_arene];
-        let monde = generer_monde(d, arene);
-        let carte = monde.carte;
+        let carte = generer_monde(d, arene).carte;
+        Self::avec_arene(d, arene, carte, index_personnage, graine, evenements)
+    }
+
+    /// Nouvelle partie dans une arène déjà construite (map Minecraft importée) avec sa
+    /// carte de collision.
+    pub fn avec_arene(
+        d: &'static Donnees,
+        arene: &'static Arene,
+        carte: CarteMonde,
+        index_personnage: usize,
+        graine: u32,
+        evenements: bool,
+    ) -> Self {
         let mut etat = EtatPartie::nouvel(d, arene, index_personnage);
         let flux = ChampDeFlux::nouveau(&carte);
         let demi_cote = arene.largeur.max(arene.profondeur) / 2.0 + 1.0;

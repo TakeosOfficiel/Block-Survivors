@@ -5,6 +5,7 @@
 //! Une source d'assets Bevy « mc:// » essaie les adresses dans l'ordre : on charge
 //! `mc://block/dirt.png` comme n'importe quel fichier. Une texture introuvable partout
 //! reste absente : chaque système prend alors sa couleur de secours (comme en TS).
+//! Même principe pour les fichiers JSON des maps importées (source « mcj », `fichiers`).
 
 use std::path::{Path, PathBuf};
 
@@ -20,17 +21,24 @@ use bevy::prelude::*;
 /// Version des textures (celle de `VERSION_MINECRAFT` dans src/config.ts).
 pub const VERSION_MINECRAFT: &str = "26.3";
 
-/// Préfixes des sources, essayés dans l'ordre (sans « https:// »).
-fn sources() -> [String; 2] {
+/// Préfixes des sources, essayés dans l'ordre (sans « https:// »), pour un dossier de
+/// `assets/minecraft` (« textures », ou vide pour les fichiers JSON).
+fn sources(dossier: &str) -> [String; 2] {
+    let suite = if dossier.is_empty() {
+        String::new()
+    } else {
+        format!("/{dossier}")
+    };
     [
         format!(
-            "raw.githubusercontent.com/InventivetalentDev/minecraft-assets/{VERSION_MINECRAFT}/assets/minecraft/textures"
+            "raw.githubusercontent.com/InventivetalentDev/minecraft-assets/{VERSION_MINECRAFT}/assets/minecraft{suite}"
         ),
-        format!("assets.mcasset.cloud/{VERSION_MINECRAFT}/assets/minecraft/textures"),
+        format!("assets.mcasset.cloud/{VERSION_MINECRAFT}/assets/minecraft{suite}"),
     ]
 }
 
-/// Lecteur de la source « mc » : cache disque, puis chaque adresse distante.
+/// Lecteur d'une source vanilla (« mc », « mcj ») : cache disque, puis chaque adresse
+/// distante.
 struct LecteurMinecraft {
     sources: [String; 2],
     cache: Option<PathBuf>,
@@ -79,8 +87,9 @@ impl AssetReader for LecteurMinecraft {
     }
 }
 
-/// Dossier du cache des textures sur PC (aucun dans le navigateur).
-fn dossier_cache() -> Option<PathBuf> {
+/// Dossier du cache sur PC (aucun dans le navigateur) : `sorte` = « textures » ou
+/// « fichiers ».
+fn dossier_cache(sorte: &str) -> Option<PathBuf> {
     if cfg!(target_arch = "wasm32") {
         return None;
     }
@@ -94,7 +103,7 @@ fn dossier_cache() -> Option<PathBuf> {
             .or_else(|| var("HOME").map(|h| h.join(".cache")))?
             .join("block-survivors")
     };
-    Some(base.join("textures").join(VERSION_MINECRAFT))
+    Some(base.join(sorte).join(VERSION_MINECRAFT))
 }
 
 fn lire_cache(dossier: &Path, chemin: &Path) -> Option<Vec<u8>> {
@@ -110,7 +119,8 @@ fn ecrire_cache(dossier: &Path, chemin: &Path, octets: &[u8]) {
     let _ = std::fs::write(fichier, octets);
 }
 
-/// Enregistre la source « mc ». À ajouter **avant** `DefaultPlugins` (avant `AssetPlugin`).
+/// Enregistre les sources « mc » (textures) et « mcj » (états et modèles de blocs, JSON).
+/// À ajouter **avant** `DefaultPlugins` (avant `AssetPlugin`).
 pub struct PluginSourceTextures;
 
 impl Plugin for PluginSourceTextures {
@@ -119,8 +129,17 @@ impl Plugin for PluginSourceTextures {
             "mc",
             AssetSourceBuilder::new(|| {
                 Box::new(LecteurMinecraft {
-                    sources: sources(),
-                    cache: dossier_cache(),
+                    sources: sources("textures"),
+                    cache: dossier_cache("textures"),
+                })
+            }),
+        )
+        .register_asset_source(
+            "mcj",
+            AssetSourceBuilder::new(|| {
+                Box::new(LecteurMinecraft {
+                    sources: sources(""),
+                    cache: dossier_cache("fichiers"),
                 })
             }),
         );

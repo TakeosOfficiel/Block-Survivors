@@ -1924,6 +1924,7 @@ dependencies = [
  "bs-monde",
  "bs-regles",
  "bs-robot",
+ "serde_json",
 ]
 
 [[package]]

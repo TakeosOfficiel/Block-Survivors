@@ -3,13 +3,16 @@
 //! (`overstep_fraction`), donc fluide à toute fréquence d'écran. Le rendu ne modifie
 //! jamais la simulation.
 //!
-//! Déroulé : chargement des textures de l'arène (écran de chargement à venir), puis
-//! construction de l'arène et partie. Tant que l'interface n'existe pas (étape 3), le
+//! Déroulé : chargement des textures de l'arène (écran de chargement à venir ; pour une
+//! map importée, d'abord ses états et modèles de blocs), puis construction de l'arène
+//! et partie. Tant que l'interface n'existe pas (étape 3), le
 //! robot choisit les cartes et conduit le joueur si personne ne touche au clavier.
 
 mod arene;
 mod camera;
+mod carte_mc;
 mod entites;
+mod fichiers;
 mod materiau;
 mod materiau_entite;
 mod mesure;
@@ -18,6 +21,8 @@ mod textures;
 
 use bevy::prelude::*;
 use bs_donnees::Donnees;
+use bs_donnees::arenes::Arene;
+use bs_monde::CarteMonde;
 use bs_monde::{MondeGenere, generer_monde};
 use bs_regles::partie::Partie;
 use bs_robot::Robot;
@@ -41,15 +46,50 @@ enum Phase {
     Partie,
 }
 
+/// D'où vient l'arène (pour relancer une partie au même endroit).
+enum SourceArene {
+    /// Arène générée : index dans les données.
+    Generee(usize),
+    /// Map Minecraft importée : définition et carte de collision.
+    Importee(&'static Arene, CarteMonde),
+}
+
 /// La partie en cours, ressource Bevy.
 #[derive(Resource)]
 pub struct PartieEnCours {
     pub partie: Partie,
     robot: Robot,
     graine: u32,
-    arene: usize,
+    source: SourceArene,
     /// Temps écoulé depuis la fin de la partie.
     fin: f32,
+}
+
+impl PartieEnCours {
+    fn nouvelle(partie: Partie, graine: u32, source: SourceArene) -> Self {
+        Self {
+            partie,
+            robot: Robot::default(),
+            graine,
+            source,
+            fin: 0.0,
+        }
+    }
+
+    /// Partie suivante, au même endroit avec le même personnage.
+    fn relancer(&mut self) {
+        let graine = self.graine.wrapping_add(1);
+        let (d, perso) = (self.partie.d, self.partie.etat.index_personnage);
+        self.partie = match &self.source {
+            SourceArene::Generee(index) => Partie::nouvelle(d, *index, perso, graine, true),
+            SourceArene::Importee(arene, carte) => {
+                Partie::avec_arene(d, arene, carte.clone(), perso, graine, true)
+            }
+        };
+        self.robot = Robot::default();
+        self.graine = graine;
+        self.fin = 0.0;
+    }
 }
 
 /// Monde généré de l'arène (blocs à afficher).
@@ -59,7 +99,9 @@ struct Monde(MondeGenere);
 /// Plugin du jeu : données, partie, arène, entités, caméra.
 pub struct PluginJeu {
     pub graine: u32,
-    pub arene: usize,
+    /// Identifiant d'une arène générée ou d'une map importée (`cartes/`) ; inconnu ou
+    /// absent : la première arène.
+    pub arene: Option<String>,
     pub personnage: usize,
 }
 
@@ -67,46 +109,67 @@ impl Plugin for PluginJeu {
     fn build(&self, app: &mut App) {
         let d: &'static Donnees =
             Box::leak(Box::new(Donnees::embarquees().expect("données du jeu")));
-        let partie = Partie::nouvelle(d, self.arene, self.personnage, self.graine, true);
-        let monde = generer_monde(d, partie.etat.arene);
-        app.insert_resource(PartieEnCours {
-            partie,
-            robot: Robot::default(),
-            graine: self.graine,
-            arene: self.arene,
-            fin: 0.0,
-        })
-        .insert_resource(Monde(monde))
-        .insert_resource(Time::<Fixed>::from_seconds(f64::from(PAS)))
-        .init_resource::<Textures>()
-        .init_resource::<camera::Cible>()
-        .init_state::<Phase>()
-        .add_plugins((
-            materiau::PluginMateriaux,
-            materiau_entite::PluginMateriauEntite,
-            mesure::PluginMesure,
-        ))
-        .add_systems(Startup, demander_textures)
-        .add_systems(
-            Update,
-            attendre_textures.run_if(in_state(Phase::Chargement)),
-        )
-        .add_systems(
-            OnEnter(Phase::Partie),
-            (construire_arene, entites::creer_entites, construire_modeles),
-        )
-        .add_systems(
-            FixedUpdate,
-            (entites::noter_positions, avancer, entites::animer)
-                .chain()
-                .run_if(in_state(Phase::Partie)),
-        )
-        .add_systems(
-            Update,
-            (entites::placer_entites, camera::suivre)
-                .chain()
-                .run_if(in_state(Phase::Partie)),
-        );
+        let id = self.arene.as_deref().unwrap_or("");
+        let carte = bs_monde::minecraft::cartes::cartes()
+            .iter()
+            .find(|c| c.id == id);
+        if let Some(carte) = carte {
+            let import = carte_mc::Import::nouvel(d, carte, self.personnage, self.graine)
+                .unwrap_or_else(|e| panic!("map {id} : {e}"));
+            app.insert_resource(import);
+        } else {
+            let index = d.arenes.arenes.iter().position(|a| a.id == id).unwrap_or(0);
+            let partie = Partie::nouvelle(d, index, self.personnage, self.graine, true);
+            let monde = generer_monde(d, partie.etat.arene);
+            app.insert_resource(PartieEnCours::nouvelle(
+                partie,
+                self.graine,
+                SourceArene::Generee(index),
+            ))
+            .insert_resource(Monde(monde));
+        }
+        app.insert_resource(Time::<Fixed>::from_seconds(f64::from(PAS)))
+            .init_resource::<Textures>()
+            .init_resource::<camera::Cible>()
+            .init_state::<Phase>()
+            .add_plugins((
+                materiau::PluginMateriaux,
+                materiau_entite::PluginMateriauEntite,
+                mesure::PluginMesure,
+                fichiers::PluginFichiers,
+            ))
+            .add_systems(Startup, demander_textures.run_if(resource_exists::<Monde>))
+            .add_systems(
+                Update,
+                (
+                    carte_mc::avancer_import,
+                    attendre_textures.run_if(resource_exists::<PartieEnCours>),
+                )
+                    .chain()
+                    .run_if(in_state(Phase::Chargement)),
+            )
+            .add_systems(
+                OnEnter(Phase::Partie),
+                (
+                    construire_arene.run_if(resource_exists::<Monde>),
+                    carte_mc::construire_carte.run_if(resource_exists::<carte_mc::CarteImportee>),
+                    creer_camera,
+                    entites::creer_entites,
+                    construire_modeles,
+                ),
+            )
+            .add_systems(
+                FixedUpdate,
+                (entites::noter_positions, avancer, entites::animer)
+                    .chain()
+                    .run_if(in_state(Phase::Partie)),
+            )
+            .add_systems(
+                Update,
+                (entites::placer_entites, camera::suivre)
+                    .chain()
+                    .run_if(in_state(Phase::Partie)),
+            );
     }
 }
 
@@ -207,6 +270,7 @@ fn construire_arene(
             parametres,
             texture: textures.obtenir(&serveur, chemin),
             double_face: croix || b.decoupe,
+            translucide: false,
         });
         let mut entite = commandes.spawn((
             Name::new(format!(
@@ -224,9 +288,17 @@ fn construire_arene(
             });
         }
     }
-    let ciel = Color::LinearRgba(LinearRgba::from_vec4(ambiance.ciel));
+}
+
+/// Caméra au-dessus du joueur, fond couleur du ciel de l'arène.
+fn creer_camera(mut commandes: Commands, jeu: Res<PartieEnCours>) {
+    let ciel = ParametresBloc::de_l_arene(jeu.partie.etat.arene).ciel;
     let j = &jeu.partie.etat.joueur;
-    camera::creer_camera(&mut commandes, Vec2::new(j.x, j.z), ciel);
+    camera::creer_camera(
+        &mut commandes,
+        Vec2::new(j.x, j.z),
+        Color::LinearRgba(LinearRgba::from_vec4(ciel)),
+    );
 }
 
 /// Un pas : le clavier (ZQSD, WASD, flèches) conduit le joueur ; sans touche, le robot.
@@ -242,15 +314,7 @@ fn avancer(
     if jeu.partie.etat.issue.is_some() {
         jeu.fin += PAS;
         if jeu.fin >= ATTENTE_RELANCE {
-            let graine = jeu.graine.wrapping_add(1);
-            let (d, arene, perso) = (jeu.partie.d, jeu.arene, jeu.partie.etat.index_personnage);
-            *jeu = PartieEnCours {
-                partie: Partie::nouvelle(d, arene, perso, graine, true),
-                robot: Robot::default(),
-                graine,
-                arene,
-                fin: 0.0,
-            };
+            jeu.relancer();
         }
         return;
     }

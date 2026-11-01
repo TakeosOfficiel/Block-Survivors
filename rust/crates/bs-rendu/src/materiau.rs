@@ -25,7 +25,8 @@ pub struct ParametresBloc {
     pub ciel: Vec4,
     /// Début, fin du brouillard, seuil de découpe (0 : aucune), lumineux (1).
     pub brouillard: Vec4,
-    /// Images de la bande, image affichée, texture répétée (1 : terrain extérieur).
+    /// Images de la bande, image affichée, texture répétée (1 : terrain extérieur),
+    /// alpha transmis (1 : matériau translucide).
     pub animation: Vec4,
 }
 
@@ -59,6 +60,9 @@ pub struct MateriauBloc {
     pub texture: Option<Handle<Image>>,
     /// Faces visibles des deux côtés (croix, feuilles, toiles).
     pub double_face: bool,
+    /// Mélange alpha (verre teinté, eau des maps importées) ; l'alpha de la texture est
+    /// alors transmis par le shader (`animation.w` à 1).
+    pub translucide: bool,
 }
 
 #[repr(C)]
@@ -76,6 +80,14 @@ impl From<&MateriauBloc> for CleMateriauBloc {
 }
 
 impl Material for MateriauBloc {
+    fn alpha_mode(&self) -> AlphaMode {
+        if self.translucide {
+            AlphaMode::Blend
+        } else {
+            AlphaMode::Opaque
+        }
+    }
+
     fn fragment_shader() -> ShaderRef {
         "embedded://bs_rendu/shaders/blocs.wgsl".into()
     }
@@ -139,7 +151,7 @@ fn animer_textures(
             n as f32,
             image_affichee as f32,
             m.parametres.animation.z,
-            0.0,
+            m.parametres.animation.w,
         );
         if m.parametres.animation != anim
             && let Some(m) = materiaux.get_mut(&a.materiau)

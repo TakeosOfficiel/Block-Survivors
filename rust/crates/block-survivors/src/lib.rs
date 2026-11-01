@@ -21,7 +21,8 @@ pub fn lancer() {
         }))
         .add_plugins(bs_rendu::PluginJeu {
             graine: 1,
-            arene: 0,
+            // Provisoire (jusqu'au menu, étape 3) : BS_ARENE=map_mushroom par exemple
+            arene: std::env::var("BS_ARENE").ok(),
             personnage: 0,
         })
         .run();

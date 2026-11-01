@@ -54,6 +54,24 @@ pub struct MaillageTexture {
     pub indices: Vec<u32>,
 }
 
+/// États de la palette qui cachent leurs voisins (et arrêtent la lumière) : cubes pleins
+/// aux textures toutes opaques.
+pub fn opaques(blocs: &[BlocCuit], textures: &[String], rendus: &[RenduTexture]) -> Vec<bool> {
+    let index_texture = |t: &str| textures.binary_search_by(|x| x.as_str().cmp(t)).ok();
+    let rendu = |t: &str| index_texture(t).map_or(RenduTexture::Opaque, |k| rendus[k]);
+    blocs
+        .iter()
+        .map(|b| {
+            b.modele_unique().is_some_and(|m| {
+                m.cube_plein
+                    && m.quads
+                        .iter()
+                        .all(|q| rendu(&q.texture) == RenduTexture::Opaque)
+            })
+        })
+        .collect()
+}
+
 /// Maillages de la schématique ; `origine` : point de la schématique placé en (0, 0, 0)
 /// dans le jeu (en blocs) ; `rendus[k]` : rendu de `textures[k]`.
 pub fn construire_maillages(
@@ -64,19 +82,7 @@ pub fn construire_maillages(
     origine: V3,
 ) -> Vec<MaillageTexture> {
     let index_texture = |t: &str| textures.binary_search_by(|x| x.as_str().cmp(t)).ok();
-    let rendu = |t: &str| index_texture(t).map_or(RenduTexture::Opaque, |k| rendus[k]);
-    // Ce que chaque état de la palette cache chez ses voisins
-    let opaque: Vec<bool> = blocs
-        .iter()
-        .map(|b| {
-            b.modele_unique().is_some_and(|m| {
-                m.cube_plein
-                    && m.quads
-                        .iter()
-                        .all(|q| rendu(&q.texture) == RenduTexture::Opaque)
-            })
-        })
-        .collect();
+    let opaque = opaques(blocs, textures, rendus);
     // Vitres, glace… : un bloc plein non opaque cache les faces d'un voisin identique
     let fusionne: Vec<bool> = blocs
         .iter()

@@ -5,6 +5,7 @@
 
 mod carte;
 mod generation;
+pub mod lumiere;
 pub mod minecraft;
 mod navigation;
 

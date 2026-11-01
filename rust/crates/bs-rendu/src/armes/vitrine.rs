@@ -1,16 +1,18 @@
 //! Vitrine des armes (`BS_VITRINE=1`, vérification visuelle et captures) : des effets
 //! lancés à tour de rôle près du joueur, et un exemplaire figé de chacun à un instant
-//! choisi, posé autour de lui.
+//! choisi, posé autour de lui. `BS_ETALAGE=melee|foudre|feu|sol` n'étale qu'un groupe.
 
 use std::f32::consts::{PI, TAU};
 
 use bevy::prelude::*;
 use bs_commun::Alea;
 use bs_regles::combat::feu::{Feu, Meteore, Tornade};
+use bs_regles::combat::sol::{CHUTE_DUREE, Chute, Nova};
 
 use super::feu::Braise;
 use super::foudre::Eclair;
 use super::melee::{Coup, Genre};
+use super::sol::{self, BlocSouleve};
 use super::{FOUDRE_DEFAUT, VisuelsArmes};
 use crate::{PAS, PartieEnCours};
 
@@ -25,7 +27,11 @@ pub struct Etalage {
     pub meteores: Vec<Meteore>,
     pub feux: Vec<Feu>,
     pub braises: Vec<Braise>,
+    pub blocs: Vec<BlocSouleve>,
+    pub chutes: Vec<Chute>,
+    pub novas: Vec<Nova>,
     minuteur: f32,
+    pose: bool,
     /// Position du joueur à la dernière image : l'étalage le suit.
     origine: Vec2,
 }
@@ -59,8 +65,64 @@ fn feu(x: f32, z: f32, temps: f32) -> Feu {
     }
 }
 
+fn chute(x: f32, z: f32, t: f32) -> Chute {
+    Chute {
+        arme: SANS_ARME,
+        x,
+        z,
+        t,
+        tombee: t >= CHUTE_DUREE,
+    }
+}
+
+fn nova(x: f32, z: f32, temps: f32, au_sol: bool) -> Nova {
+    Nova {
+        arme: SANS_ARME,
+        x,
+        z,
+        temps,
+        sol: au_sol,
+        prochain_sol: 0.0,
+        facteur: 1.0,
+    }
+}
+
 impl Etalage {
     fn poser(&mut self, alea: &mut Alea, j: Vec2, couleur: [f32; 3]) {
+        let groupe = std::env::var("BS_ETALAGE").ok();
+        let montrer = |g: &str| groupe.as_deref().is_none_or(|x| x == g);
+        if montrer("sol") {
+            self.poser_sol(alea, j);
+        }
+        self.poser_autres(alea, j, couleur, &montrer);
+    }
+
+    /// Sol : une onde de blocs soulevés, une lame qui tombe et une plantée, une nova
+    /// qui s'étend et une autre qui a gelé le sol.
+    fn poser_sol(&mut self, alea: &mut Alea, j: Vec2) {
+        for k in 0..6 {
+            let (x, z) = (j.x + 0.8 + k as f32 * 0.8, j.y + 1.0);
+            sol::soulever(&mut self.blocs, alea, x, z, 1.8);
+            let n = self.blocs.len();
+            let debut = n.saturating_sub(2);
+            for b in &mut self.blocs[debut..] {
+                b.age = (5 - k) as f32 * 0.09 + 0.04;
+            }
+        }
+        self.chutes
+            .push(chute(j.x - 5.0, j.y + 3.0, CHUTE_DUREE + 0.25));
+        self.chutes.push(chute(j.x + 3.0, j.y - 3.5, 0.3));
+        self.novas.push(nova(j.x - 3.5, j.y - 4.5, 0.3, false));
+        self.novas.push(nova(j.x + 1.5, j.y + 4.0, 1.2, true));
+    }
+
+    fn poser_autres(
+        &mut self,
+        alea: &mut Alea,
+        j: Vec2,
+        couleur: [f32; 3],
+        montrer: &dyn Fn(&str) -> bool,
+    ) {
         let fige = |genre, decalage: Vec2, portee, ouverture, age| Coup {
             genre,
             angle: PI,
@@ -70,14 +132,21 @@ impl Etalage {
             age,
             decalage,
         };
-        self.coups.extend([
-            fige(Genre::Balayage, Vec2::new(7.0, -2.0), 2.6, 2.4, 0.11),
-            fige(Genre::Heurt, Vec2::new(0.0, -6.5), 3.0, 1.6, 0.1),
-            fige(Genre::Tourbillon, Vec2::new(5.5, -7.5), 2.4, 0.0, 0.1),
-        ]);
-        let mut e = Eclair::nouveau(alea, j.x - 9.0, j.y - 2.0, 1.8, couleur);
-        e.age = 0.03;
-        self.eclairs.push(e);
+        if montrer("melee") {
+            self.coups.extend([
+                fige(Genre::Balayage, Vec2::new(7.0, -2.0), 2.6, 2.4, 0.11),
+                fige(Genre::Heurt, Vec2::new(0.0, -6.5), 3.0, 1.6, 0.1),
+                fige(Genre::Tourbillon, Vec2::new(5.5, -7.5), 2.4, 0.0, 0.1),
+            ]);
+        }
+        if montrer("foudre") {
+            let mut e = Eclair::nouveau(alea, j.x - 9.0, j.y - 2.0, 1.8, couleur);
+            e.age = 0.03;
+            self.eclairs.push(e);
+        }
+        if !montrer("feu") {
+            return;
+        }
         // Feu : tornade, météore en chute, feu au sol, impact, traînée de braises
         self.tornades.push(tornade(j.x - 4.5, j.y + 0.5));
         self.meteores.push(Meteore {
@@ -127,13 +196,26 @@ impl Etalage {
             b.x += d.x;
             b.z += d.y;
         }
+        for b in &mut self.blocs {
+            b.x += d.x;
+            b.z += d.y;
+        }
+        for c in &mut self.chutes {
+            c.x += d.x;
+            c.z += d.y;
+        }
+        for n in &mut self.novas {
+            n.x += d.x;
+            n.z += d.y;
+        }
     }
 }
 
 /// Une image de plus de la vitrine (pendant le pas fixe).
 pub fn avancer(jeu: &PartieEnCours, v: &mut VisuelsArmes) {
     let j = &jeu.partie.etat.joueur;
-    if v.etalage.coups.is_empty() {
+    if !v.etalage.pose {
+        v.etalage.pose = true;
         let couleur = v.couleur_eclair(FOUDRE_DEFAUT);
         let VisuelsArmes { etalage, alea, .. } = v;
         etalage.poser(alea, Vec2::new(j.x, j.z), couleur);

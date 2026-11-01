@@ -7,13 +7,15 @@ mod feu;
 mod foudre;
 mod lueur;
 mod melee;
+mod sol;
 mod solides;
 mod vitrine;
 
 use bevy::prelude::*;
 use bs_commun::Alea;
-use bs_donnees::Donnees;
-use bs_donnees::armes::Mecanique;
+use bs_donnees::armes::{Arme, Mecanique};
+use bs_donnees::{Donnees, StatsArme};
+use bs_regles::combat::sol::{Chute, Nova};
 use bs_regles::evenements::{EffetArme, Evenement};
 
 use crate::arene::couleur_lineaire;
@@ -29,7 +31,8 @@ use foudre::Eclair;
 pub use lueur::PluginLueur;
 use lueur::{MaillageLueur, MateriauLueur, ParametresLueur};
 use melee::{Coup, Genre};
-use solides::Solides;
+use sol::{BlocSouleve, Givre, Lame};
+use solides::{Fabrique, Piece, Solides};
 use vitrine::Etalage;
 
 /// Couleur des éclairs sans arme de foudre (vitrine).
@@ -43,7 +46,12 @@ pub struct VisuelsArmes {
     coups: Vec<Coup>,
     eclairs: Vec<Eclair>,
     braises: Vec<Braise>,
+    blocs: Vec<BlocSouleve>,
     solides: Solides,
+    /// Orientation de la caméra à la dernière image (`dessiner`, avant `placer_solides`).
+    camera: Quat,
+    /// Texture des blocs soulevés (le sol de l'arène).
+    sol: &'static str,
     alea: Alea,
     /// Sens du prochain balayage (alterné).
     sens: f32,
@@ -83,9 +91,9 @@ impl VisuelsArmes {
     }
 }
 
-/// Textures des pièces solides (blocs des météores).
+/// Textures des pièces solides (blocs, images).
 pub fn demander_textures(d: &'static Donnees, serveur: &AssetServer, t: &mut Textures) {
-    for chemin in solides::textures_meteores(d) {
+    for chemin in solides::textures(d) {
         t.demander(serveur, chemin);
     }
 }
@@ -99,12 +107,78 @@ fn zone(jeu: &PartieEnCours, arme: usize) -> f32 {
         .map_or(1.0, |a| a.stats.zone)
 }
 
-/// Texture du météore de l'arme `arme` (la première connue si elle n'y est pas).
-fn texture_meteore(jeu: &PartieEnCours, arme: usize) -> Option<&'static str> {
-    match jeu.partie.arsenal.armes.get(arme).map(|a| &a.def.mecanique) {
-        Some(Mecanique::Meteore { texture, .. }) => Some(texture.as_str()),
-        _ => solides::textures_meteores(jeu.partie.d).next(),
+/// L'arme `arme` de l'arsenal et ses stats ; hors de l'arsenal (vitrine), la première
+/// arme du genre `genre` dans les données, avec ses stats de base.
+fn definition(jeu: &PartieEnCours, arme: usize, genre: &str) -> Option<(&'static Arme, StatsArme)> {
+    match jeu.partie.arsenal.armes.get(arme) {
+        Some(a) if a.def.mecanique.nom() == genre => Some((a.def, a.stats)),
+        _ => jeu
+            .partie
+            .d
+            .armes
+            .values()
+            .find(|a| a.mecanique.nom() == genre)
+            .map(|a| (a, a.stats)),
     }
+}
+
+/// Texture du météore de l'arme `arme`.
+fn texture_meteore(jeu: &PartieEnCours, arme: usize) -> Option<&'static str> {
+    match definition(jeu, arme, "meteore").map(|(a, _)| &a.mecanique) {
+        Some(Mecanique::Meteore { texture, .. }) => Some(texture.as_str()),
+        _ => None,
+    }
+}
+
+/// Lames géantes de la simulation et de l'étalage.
+fn lames<'a>(jeu: &'a PartieEnCours, etalage: &'a [Chute]) -> impl Iterator<Item = Lame<'a>> {
+    let p = &jeu.partie;
+    p.armes
+        .sol
+        .chutes
+        .iter()
+        .chain(etalage)
+        .filter_map(move |c| {
+            let (a, s) = definition(jeu, c.arme, "chute")?;
+            let Mecanique::Chute { image, taille } = &a.mecanique else {
+                return None;
+            };
+            Some(Lame {
+                chute: c,
+                image,
+                taille: *taille,
+                zone: s.zone,
+            })
+        })
+}
+
+/// Novas de la simulation et de l'étalage.
+fn givres<'a>(jeu: &'a PartieEnCours, etalage: &'a [Nova]) -> impl Iterator<Item = Givre<'a>> {
+    let p = &jeu.partie;
+    p.armes
+        .sol
+        .novas
+        .iter()
+        .chain(etalage)
+        .filter_map(move |n| {
+            let (a, s) = definition(jeu, n.arme, "nova")?;
+            let Mecanique::Nova {
+                texture,
+                expansion,
+                duree_sol,
+                ..
+            } = &a.mecanique
+            else {
+                return None;
+            };
+            Some(Givre {
+                nova: n,
+                texture,
+                zone: s.zone,
+                expansion: *expansion,
+                duree_sol: *duree_sol,
+            })
+        })
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -126,21 +200,28 @@ pub fn construire(
         },
     });
     let lueur = MaillageLueur::nouveau(&mut commandes, &mut maillages, materiau);
+    let sol = jeu.partie.texture_sol();
     let solides = Solides::nouveaux(
         jeu.partie.d,
-        ambiance,
-        &serveur,
-        &textures,
-        &images,
-        &mut maillages,
-        &mut materiaux_entites,
+        sol,
+        &mut Fabrique {
+            ambiance,
+            serveur: &serveur,
+            textures: &textures,
+            images: &images,
+            maillages: &mut maillages,
+            materiaux: &mut materiaux_entites,
+        },
     );
     commandes.insert_resource(VisuelsArmes {
         lueur,
         coups: Vec::with_capacity(melee::CAPACITE),
         eclairs: Vec::with_capacity(foudre::CAPACITE),
         braises: Vec::with_capacity(feu::BRAISES),
+        blocs: Vec::with_capacity(sol::BLOCS),
         solides,
+        sol,
+        camera: Quat::IDENTITY,
         alea: Alea::nouveau(u64::from(jeu.graine), 13),
         sens: 1.0,
         etalage: Etalage::default(),
@@ -181,7 +262,10 @@ pub fn recevoir(jeu: Res<PartieEnCours>, mut v: ResMut<VisuelsArmes>, effets: Re
                     v.braises.push(Braise { x, z, age: 0.0 });
                 }
             }
-            EffetArme::Soulevement { .. } => {}
+            EffetArme::Soulevement { zone } => {
+                let VisuelsArmes { blocs, alea, .. } = &mut *v;
+                sol::soulever(blocs, alea, x, z, zone);
+            }
         }
     }
     if effets.vitrine {
@@ -189,7 +273,7 @@ pub fn recevoir(jeu: Res<PartieEnCours>, mut v: ResMut<VisuelsArmes>, effets: Re
     }
 }
 
-/// Blocs solides de l'image (météores en chute).
+/// Pièces solides de l'image (météores, blocs soulevés, lames, éclats de glace).
 pub fn placer_solides(
     mut commandes: Commands,
     jeu: Res<PartieEnCours>,
@@ -200,8 +284,13 @@ pub fn placer_solides(
 ) {
     let avance = fixe.overstep_fraction() * PAS;
     let t = temps.elapsed_secs();
+    let rotation = v.camera;
     let VisuelsArmes {
-        solides, etalage, ..
+        solides,
+        etalage,
+        blocs,
+        sol,
+        ..
     } = &mut *v;
     solides.commencer();
     for me in jeu
@@ -218,9 +307,32 @@ pub fn placer_solides(
         };
         if k >= 0.0 {
             let pos = feu::position_meteore(me.x, me.z, k, me.taille);
-            solides.meteore(&mut commandes, &mut q, texture, pos, me.taille, t);
+            let tf = feu::bloc_meteore(pos, me.taille, t);
+            solides.poser(&mut commandes, &mut q, texture, Piece::Cube, tf);
         }
     }
+    for b in [&*blocs, &etalage.blocs] {
+        sol::placer(
+            solides,
+            &mut commandes,
+            &mut q,
+            b,
+            sol,
+            std::iter::empty(),
+            std::iter::empty(),
+            rotation,
+        );
+    }
+    sol::placer(
+        solides,
+        &mut commandes,
+        &mut q,
+        &[],
+        sol,
+        lames(&jeu, &etalage.chutes),
+        givres(&jeu, &etalage.novas),
+        rotation,
+    );
     solides.terminer(&mut q);
 }
 
@@ -242,9 +354,11 @@ pub fn dessiner(
     let tf = camera.single().copied().unwrap_or_default();
     let (oeil, droite, haut) = (tf.translation, tf.rotation * Vec3::X, tf.rotation * Vec3::Y);
     let v = &mut *v;
+    v.camera = tf.rotation;
     melee::avancer(&mut v.coups, dt);
     foudre::avancer(&mut v.eclairs, dt);
     feu::avancer(&mut v.braises, dt);
+    sol::avancer(&mut v.blocs, dt);
     let m = &mut v.lueur;
     m.commencer();
     let e = &v.etalage;
@@ -274,5 +388,11 @@ pub fn dessiner(
     for scene in &scenes {
         feu::dessiner(m, scene, |a| zone(&jeu, a), t, oeil, droite, haut);
     }
+    for blocs in [&v.blocs, &e.blocs] {
+        let (l, g) = (std::iter::empty(), std::iter::empty());
+        sol::dessiner(m, blocs, l, g, t, oeil, droite, haut);
+    }
+    let (l, g) = (lames(&jeu, &e.chutes), givres(&jeu, &e.novas));
+    sol::dessiner(m, &[], l, g, t, oeil, droite, haut);
     m.terminer(&mut maillages, &mut visibilites);
 }

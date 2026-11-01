@@ -98,6 +98,20 @@ fn flamme(
     );
 }
 
+/// Côté d'un bloc de météore (part de la taille du météore), tournoiement (rad/s).
+const COTE_METEORE: f32 = 0.9;
+const TOURNOIEMENT: f32 = 7.0;
+
+/// Bloc du météore : à sa place, tournoyant.
+pub fn bloc_meteore(position: Vec3, taille: f32, temps: f32) -> Transform {
+    let axe = Vec3::new(1.0, 0.3, 1.0).normalize();
+    Transform {
+        translation: position,
+        rotation: Quat::from_axis_angle(axe, temps * TOURNOIEMENT),
+        scale: Vec3::splat(COTE_METEORE * taille),
+    }
+}
+
 /// Position du météore à l'instant `t` de sa chute (cible en `x`, `z`).
 pub fn position_meteore(x: f32, z: f32, t: f32, taille: f32) -> Vec3 {
     let k = (t / METEORE_DUREE).clamp(0.0, 1.0);

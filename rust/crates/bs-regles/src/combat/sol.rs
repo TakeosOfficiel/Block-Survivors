@@ -15,18 +15,18 @@ const FISSURE_RAYON_GROUPE: f32 = 2.0;
 const FISSURE_DEPART: f32 = 1.0;
 const FISSURE_ESPACEMENT: f32 = 0.8;
 const FISSURE_TAILLE_BLOC: f32 = 0.9;
-const FISSURE_DUREE_BLOC: f32 = 0.7;
+pub const FISSURE_DUREE_BLOC: f32 = 0.7;
 const FISSURE_IMMUNITE: f32 = 0.45;
 
 const CHUTE_CAPACITE: usize = 6;
-const CHUTE_DUREE: f32 = 0.4;
-const CHUTE_TENUE: f32 = 0.4;
-const CHUTE_FONDU: f32 = 0.3;
+pub const CHUTE_DUREE: f32 = 0.4;
+pub const CHUTE_TENUE: f32 = 0.4;
+pub const CHUTE_FONDU: f32 = 0.3;
 const CHUTE_DECALAGE: f32 = 0.25;
 
 const NOVA_CAPACITE: usize = 4;
 const NOVA_IMMUNITE: f32 = 0.6;
-const NOVA_ECLATS_RESTENT: f32 = 0.35;
+pub const NOVA_ECLATS_RESTENT: f32 = 0.35;
 const NOVA_PERIODE_SOL: f32 = 0.25;
 
 /// Onde qui avance en ligne droite et soulève le sol tous les `FISSURE_ESPACEMENT` blocs.
@@ -45,23 +45,23 @@ struct Fissure {
 }
 
 #[derive(Debug, Clone, Copy)]
-struct Chute {
-    arme: usize,
-    x: f32,
-    z: f32,
-    t: f32,
-    tombee: bool,
+pub struct Chute {
+    pub arme: usize,
+    pub x: f32,
+    pub z: f32,
+    pub t: f32,
+    pub tombee: bool,
 }
 
 #[derive(Debug, Clone, Copy)]
-struct Nova {
-    arme: usize,
-    x: f32,
-    z: f32,
-    temps: f32,
-    sol: bool,
-    prochain_sol: f32,
-    facteur: f32,
+pub struct Nova {
+    pub arme: usize,
+    pub x: f32,
+    pub z: f32,
+    pub temps: f32,
+    pub sol: bool,
+    pub prochain_sol: f32,
+    pub facteur: f32,
 }
 
 #[derive(Debug, Clone)]
@@ -69,8 +69,8 @@ pub struct ArmesSol {
     fissures: Vec<Fissure>,
     /// Âge des blocs soulevés (visuels).
     blocs: Vec<f32>,
-    chutes: Vec<Chute>,
-    novas: Vec<Nova>,
+    pub chutes: Vec<Chute>,
+    pub novas: Vec<Nova>,
 }
 
 impl Default for ArmesSol {

@@ -48,12 +48,22 @@ struct Ricochet {
     touches: [u32; RICOCHET_TOUCHES],
     nb_touches: usize,
     vie: f32,
+    /// Direction du dernier déplacement (affichage seulement).
+    dir_x: f32,
+    dir_z: f32,
 }
 
 #[derive(Debug, Clone)]
 pub struct ArmesTraque {
     orbes: Vec<Orbe>,
     ricochets: Vec<Ricochet>,
+}
+
+impl ArmesTraque {
+    /// Flèches ricocheuses en vol, pour l'affichage : (x, z, direction x, direction z).
+    pub fn ricochets(&self) -> impl Iterator<Item = [f32; 4]> + '_ {
+        self.ricochets.iter().map(|f| [f.x, f.z, f.dir_x, f.dir_z])
+    }
 }
 
 impl Default for ArmesTraque {
@@ -217,6 +227,8 @@ impl Partie {
                 touches: [0; RICOCHET_TOUCHES],
                 nb_touches: 0,
                 vie: RICOCHET_VIE_MAX,
+                dir_x: 0.0,
+                dir_z: 1.0,
             });
         }
         true
@@ -315,6 +327,8 @@ impl Partie {
             }
             f.x += dir_x * pas;
             f.z += dir_z * pas;
+            f.dir_x = dir_x;
+            f.dir_z = dir_z;
             self.armes.traque.ricochets[i] = f;
         }
     }

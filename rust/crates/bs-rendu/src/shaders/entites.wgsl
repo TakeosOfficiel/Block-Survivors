@@ -2,6 +2,9 @@
 // que les blocs, découpe nette des pixels transparents, faces visibles des deux côtés
 // (rendu « entity cutout no cull » du jeu) et surcouche de couleur par instance
 // (rouge de blessure, blanc du creeper) lue dans le MeshTag de l'entité.
+// Effets (projectiles, orbes, ombres) : non éclairés (`brouillard.w`), teinte
+// multipliée au lieu de la surcouche (`animation.y`), translucides avec une opacité
+// (`animation.w`, `animation.z`).
 
 #import bevy_pbr::mesh_functions
 #import bevy_pbr::mesh_view_bindings::view
@@ -14,6 +17,7 @@ struct ParametresBloc {
     ciel: vec4<f32>,
     // début, fin du brouillard, seuil de découpe, lumineux
     brouillard: vec4<f32>,
+    // inutilisé, teinte multipliée (1), opacité, translucide (1)
     animation: vec4<f32>,
 }
 
@@ -71,9 +75,19 @@ fn fragment(in: Sortie, @builtin(front_facing) devant: bool) -> @location(0) vec
     if !devant {
         n = -n;
     }
-    let lumiere = p.ambiante.rgb + p.soleil.rgb * max(dot(n, p.direction.xyz), 0.0);
-    let couleur = mix(c.rgb * lumiere, in.surcouche.rgb, in.surcouche.a);
+    var lumiere = p.ambiante.rgb + p.soleil.rgb * max(dot(n, p.direction.xyz), 0.0);
+    if p.brouillard.w > 0.5 {
+        lumiere = vec3(1.0);
+    }
+    var couleur = mix(c.rgb * lumiere, in.surcouche.rgb, in.surcouche.a);
+    if p.animation.y > 0.5 {
+        couleur = c.rgb * lumiere * in.surcouche.rgb;
+    }
     let profondeur = -(view.view_from_world * in.monde).z;
     let f = smoothstep(p.brouillard.x, p.brouillard.y, profondeur);
-    return vec4(mix(couleur, p.ciel.rgb, f), 1.0);
+    var alpha = 1.0;
+    if p.animation.w > 0.5 {
+        alpha = c.a * p.animation.z;
+    }
+    return vec4(mix(couleur, p.ciel.rgb, f), alpha);
 }

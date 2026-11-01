@@ -10,13 +10,17 @@
 //! animations sont retrouvées par identifiant, dans des tables dont la capacité est
 //! réservée une fois pour toutes.
 
+use std::f32::consts::PI;
+
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use bs_donnees::Donnees;
 use bs_donnees::entites::Comportement;
 use bs_regles::ennemis::{DUREE_MORT, Ennemi};
 use bs_regles::evenements::Evenement;
+use bs_regles::ramassage::Coffre;
 
+use crate::effets::{Effets, Ombres};
 use crate::modeles::Rendus;
 use crate::modeles::animation::{
     EtatAnimation, angle_chute, calculer_rotations, hauteur_flottement,
@@ -26,6 +30,8 @@ use crate::{PAS, PartieEnCours};
 
 /// Durée de la chute du joueur mort (config.ts `joueur.dureeMort`).
 const DUREE_MORT_JOUEUR: f32 = 0.6;
+/// Coffre retourné : son dessous (le couvercle du modèle) à 14 px du sol.
+const HAUTEUR_COFFRE: f32 = 14.0 / 16.0;
 /// Teinte rouge d'un coup reçu (config.ts `blessure`).
 const BLESSURE: [f32; 3] = [1.0, 0.0, 0.0];
 const FORCE_BLESSURE: f32 = 0.35;
@@ -198,8 +204,11 @@ pub fn placer_entites(
     mut rendus: ResMut<Rendus>,
     temps: Res<Time<Fixed>>,
     mut cible: ResMut<crate::camera::Cible>,
+    mut ombres: ResMut<Ombres>,
+    effets: Res<Effets>,
     mut q: Composants,
 ) {
+    ombres.0.clear();
     let t = temps.overstep_fraction();
     let p = &jeu.partie;
     let temps_jeu = p.etat.temps_jeu as f32;
@@ -226,6 +235,10 @@ pub fn placer_entites(
     let touche = j.invulnerabilite > anim.invulnerabilite - DUREE_BLESSURE;
     pose.surcouche = if j.mort || touche { rouge() } else { [0.0; 4] };
     r.ajouter(&mut commandes, &mut q);
+    let rayon = p.d.personnages.personnages[p.etat.index_personnage]
+        .apparence
+        .rayon_ombre;
+    ombres.0.push([ici.x, ici.y, rayon]);
 
     // Ennemis
     for e in p.ennemis.actifs() {
@@ -274,7 +287,9 @@ pub fn placer_entites(
         if e.blessure > 0.0 || mort {
             pose.surcouche = rouge();
         }
+        let rayon = e.def.apparence.rayon_ombre * pose.echelle_xz / ech;
         r.ajouter(&mut commandes, &mut q);
+        ombres.0.push([pos.x, pos.y, rayon]);
     }
 
     // Alliés
@@ -302,6 +317,40 @@ pub fn placer_entites(
         pose.echelle_xz = 1.0;
         pose.echelle_y = 1.0;
         pose.surcouche = if a.blessure > 0.0 { rouge() } else { [0.0; 4] };
+        r.ajouter(&mut commandes, &mut q);
+        ombres.0.push([pos.x, pos.y, a.def.apparence.rayon_ombre]);
+    }
+
+    // Coffres : retournés (loquet en −Z), le couvercle se lève en douceur
+    let duree = p.d.coffres.regles.duree_ouverture;
+    let n = p.d.coffres.coffres.len();
+    // Vitrine : chaque type de coffre, qui s'ouvre et se referme
+    let vitrine = (0..if effets.vitrine { n } else { 0 }).map(|k| Coffre {
+        index_type: k,
+        x: j.x + (k as f32 - (n as f32 - 1.0) / 2.0) * 1.5,
+        z: j.z + 7.5,
+        angle: 0.0,
+        ouvert: Some(temps_jeu % (duree * 4.0)),
+    });
+    for c in p.ramassables.coffres.pool.iter().copied().chain(vitrine) {
+        let r = rendus.coffre(c.index_type);
+        let prog = c.ouvert.map_or(0.0, |o| (o / duree).min(1.0));
+        let ouverture = -(1.0 - (1.0 - prog) * (1.0 - prog)) * PI * 0.45;
+        for (k, partie) in r.modele.parties.iter().enumerate() {
+            let x = if matches!(partie.nom, "couvercle" | "loquet") {
+                ouverture
+            } else {
+                0.0
+            };
+            r.pose.rotations[k] = Vec3::new(x, 0.0, 0.0);
+        }
+        let pose = &mut r.pose;
+        pose.position = Vec3::new(c.x, HAUTEUR_COFFRE, c.z);
+        pose.angle = c.angle + PI;
+        pose.inclinaison = 0.0;
+        pose.echelle_xz = 1.0;
+        pose.echelle_y = -1.0;
+        pose.surcouche = [0.0; 4];
         r.ajouter(&mut commandes, &mut q);
     }
 

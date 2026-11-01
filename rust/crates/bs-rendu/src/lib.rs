@@ -11,6 +11,7 @@
 mod arene;
 mod camera;
 mod carte_mc;
+mod effets;
 mod entites;
 mod fichiers;
 mod materiau;
@@ -131,6 +132,7 @@ impl Plugin for PluginJeu {
         app.insert_resource(Time::<Fixed>::from_seconds(f64::from(PAS)))
             .init_resource::<Textures>()
             .init_resource::<camera::Cible>()
+            .init_resource::<effets::Ombres>()
             .init_state::<Phase>()
             .add_plugins((
                 materiau::PluginMateriaux,
@@ -156,6 +158,7 @@ impl Plugin for PluginJeu {
                     creer_camera,
                     entites::creer_entites,
                     construire_modeles,
+                    effets::construire,
                 ),
             )
             .add_systems(
@@ -166,7 +169,7 @@ impl Plugin for PluginJeu {
             )
             .add_systems(
                 Update,
-                (entites::placer_entites, camera::suivre)
+                (entites::placer_entites, camera::suivre, effets::placer)
                     .chain()
                     .run_if(in_state(Phase::Partie)),
             );
@@ -193,6 +196,7 @@ fn demander_textures(
     }
     let perso = jeu.partie.etat.index_personnage;
     modeles::demander_textures(d, perso, &serveur, &mut textures);
+    effets::demander_textures(d, &serveur, &mut textures);
 }
 
 /// Modèles des entités (textures déjà chargées).

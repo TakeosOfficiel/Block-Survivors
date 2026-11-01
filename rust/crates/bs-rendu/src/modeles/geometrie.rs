@@ -22,7 +22,13 @@ pub struct Maillage {
 impl Maillage {
     /// Coins en tour (un sens ou l'autre) : les triangles sont orientés pour que leur
     /// face avant regarde du côté de `normale`.
-    fn quad(&mut self, coins: [Vec3; 4], normale: Vec3, uvs: [[f32; 2]; 4], couleur: [f32; 4]) {
+    pub(crate) fn quad(
+        &mut self,
+        coins: [Vec3; 4],
+        normale: Vec3,
+        uvs: [[f32; 2]; 4],
+        couleur: [f32; 4],
+    ) {
         let b = self.positions.len() as u32;
         let direct = (coins[1] - coins[0])
             .cross(coins[2] - coins[0])

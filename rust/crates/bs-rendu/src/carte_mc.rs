@@ -106,6 +106,7 @@ pub fn avancer_import(
         textures.demander(&serveur, t);
     }
     modeles::demander_textures(d, import.personnage, &serveur, &mut textures);
+    crate::effets::demander_textures(d, &serveur, &mut textures);
     commandes.insert_resource(PartieEnCours::nouvelle(
         partie,
         import.graine,

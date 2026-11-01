@@ -1,7 +1,8 @@
 //! Matériau des entités (shader `shaders/entites.wgsl`) : l'ambiance de l'arène comme
 //! les blocs, découpe, deux faces, et la surcouche de couleur de chaque instance
 //! rangée dans son `MeshTag` (les instances d'un même maillage restent groupées en un
-//! seul appel de dessin).
+//! seul appel de dessin). Sert aussi aux effets (projectiles, orbes, ombres) : voir
+//! les options du shader.
 
 use bevy::asset::embedded_asset;
 use bevy::mesh::MeshTag;
@@ -28,6 +29,15 @@ pub struct MateriauEntite {
 }
 
 impl Material for MateriauEntite {
+    /// Translucide si `animation.w` vaut 1 (ombres) ; sinon opaque découpé.
+    fn alpha_mode(&self) -> AlphaMode {
+        if self.parametres.animation.w > 0.5 {
+            AlphaMode::Blend
+        } else {
+            AlphaMode::Opaque
+        }
+    }
+
     fn vertex_shader() -> ShaderRef {
         SHADER.into()
     }

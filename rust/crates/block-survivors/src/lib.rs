@@ -21,9 +21,13 @@ pub fn lancer() {
         }))
         .add_plugins(bs_rendu::PluginJeu {
             graine: 1,
-            // Provisoire (jusqu'au menu, étape 3) : BS_ARENE=map_mushroom par exemple
+            // Provisoire (jusqu'au menu, étape 3) : BS_ARENE=map_mushroom,
+            // BS_PERSONNAGE=1 par exemple
             arene: std::env::var("BS_ARENE").ok(),
-            personnage: 0,
+            personnage: std::env::var("BS_PERSONNAGE")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(0),
         })
         .run();
 }

@@ -1,8 +1,8 @@
 //! Modèles Minecraft des entités : compilation (`compilation`), animation
 //! (`animation`), géométrie (`geometrie`) et rendu instancié (`rendu`).
 //!
-//! `Rendus` tient un rendu par apparence : le personnage joué, chaque type d'ennemi
-//! puis chaque type d'allié, dans l'ordre des tables de données.
+//! `Rendus` tient un rendu par apparence : le personnage joué, chaque type d'ennemi,
+//! chaque type d'allié puis chaque coffre, dans l'ordre des tables de données.
 
 pub mod animation;
 pub mod compilation;
@@ -35,6 +35,7 @@ pub fn apparences(
     std::iter::once(joueur)
         .chain(d.ennemis.values().map(|e| &e.apparence))
         .chain(d.allies.allies.values().map(|a| &a.apparence))
+        .chain(d.coffres.coffres.values().map(|c| &c.apparence))
 }
 
 /// Textures de toutes les apparences (skins et objets tenus).
@@ -56,6 +57,7 @@ pub fn demander_textures(
 pub struct Rendus {
     pub liste: Vec<RenduModele>,
     nombre_ennemis: usize,
+    nombre_allies: usize,
 }
 
 impl Rendus {
@@ -69,6 +71,10 @@ impl Rendus {
 
     pub fn allie(&mut self, type_allie: usize) -> &mut RenduModele {
         &mut self.liste[1 + self.nombre_ennemis + type_allie]
+    }
+
+    pub fn coffre(&mut self, type_coffre: usize) -> &mut RenduModele {
+        &mut self.liste[1 + self.nombre_ennemis + self.nombre_allies + type_coffre]
     }
 
     /// Modèle compilé (sans emprunt mutable).
@@ -136,6 +142,7 @@ impl Rendus {
         Self {
             liste,
             nombre_ennemis: d.ennemis.len(),
+            nombre_allies: d.allies.allies.len(),
         }
     }
 }

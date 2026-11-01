@@ -11,7 +11,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | −1. Robot d'équilibrage, aléatoire à graine, pas fixe (TypeScript) | fait |
 | 0 bis. Prototype des cinq paris | fait : on continue, avec ajustements (voir la décision) ; 94 images/s mesurées sur le PC du joueur |
 | 1. Données et règles, sans rendu | fait : données, monde, simulation complète et robot (`bs-robot`) ; ses moyennes tombent dans la tolérance de celles du jeu TS (voir 1b) |
-| 2. Monde et rendu | en cours : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités) et 2c (maps .schem importées) faits ; 2d effets à faire |
+| 2. Monde et rendu | en cours : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées) et 2d-1 (projectiles, orbes, objets, coffres, ombres) faits ; 2d-2 à 2d-4 à faire |
 
 ---
 
@@ -505,3 +505,36 @@ vingtaine de minutes pour le robot TS dans Chromium), puis compare aux référen
 - **Capture** : `docs/captures/map-champignons-pc.png`.
 - **Tests** : lecture de la map embarquée, cuisson en plusieurs passes avec des
   fichiers factices, zone et collisions d'un bassin construit à la main.
+
+### 2d : effets (en quatre parties)
+
+2d-1 projectiles, orbes, objets, coffres, ombres ; 2d-2 particules, chiffres de
+dégâts, barres de vie, secousse ; 2d-3 visuels des armes (météores, tornades, pluies,
+failles, foudre, orbes arcaniques, pièges, novas, invocations) ; 2d-4 lumières, vent,
+herbe, caméra F5.
+
+#### 2d-1 : projectiles, orbes, objets, coffres, ombres (fait)
+
+- **Lots** (`bs-rendu/src/effets/`) : un maillage et un matériau par type d'objet,
+  une entité par instance, réutilisée et cachée quand elle ne sert pas (l'équivalent
+  d'un `InstancedMesh`). Aucune allocation par image une fois le record atteint.
+- **Projectiles** : les 8 types, avec leurs formes (flèche en croix, icône en relief,
+  modèle couché dans le sens du vol, boule de feu face à la caméra). La fusée reçoit
+  sa skin peinte d'après les pixels de l'item, comme en TS. Projectiles du joueur et
+  des ennemis, flèches ricocheuses, armes en orbite ; position prolongée de la
+  fraction de pas écoulée (mouvement fluide).
+- **Orbes d'XP** : atlas vanilla, une taille par palier, couleur qui pulse (teinte
+  multipliée par instance), toujours face à la caméra, non éclairées.
+- **Objets au sol** : icône en relief qui tourne et flotte ; un tas d'émeraudes
+  grossit avec sa valeur.
+- **Coffres** : modèle retourné, couvercle et loquet qui se lèvent à l'ouverture.
+  Les prix au-dessus viendront avec l'interface (étape 3).
+- **Ombres** : disque `misc/shadow` translucide (opacité 0,45) sous le joueur, les
+  ennemis (suivent leur gonflement) et les alliés.
+- **Matériau des entités** : gagne le mode non éclairé, la teinte multipliée et la
+  transparence (mélange alpha).
+- **Vitrine** (vérification visuelle) : `BS_VITRINE=1` pose un exemplaire de chaque
+  projectile, palier d'orbe, objet et coffre devant le joueur. `BS_PERSONNAGE=n`
+  choisit le personnage (provisoire, jusqu'au menu).
+- **Capture** : `docs/captures/vitrine-objets-pc.png` (map champignons).
+- **Tests** : rectangles d'UV, disque de secours, skin de la fusée, flèche en croix.

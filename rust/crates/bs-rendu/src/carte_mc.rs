@@ -111,7 +111,6 @@ pub fn avancer_import(
     for t in &liste {
         textures.demander(&serveur, t);
     }
-    modeles::demander_textures(d, import.personnage, &serveur, &mut textures);
     crate::effets::demander_textures(d, &serveur, &mut textures);
     let jeu = PartieEnCours::nouvelle(
         partie,
@@ -119,6 +118,7 @@ pub fn avancer_import(
         SourceArene::Importee(arene, ai.carte),
         import.talents.take().unwrap_or_default(),
     );
+    modeles::demander_textures(d, jeu.apparence_joueur(), &serveur, &mut textures);
     crate::retours::demander_textures(&jeu, &serveur, &mut textures);
     crate::armes::demander_textures(d, &serveur, &mut textures);
     commandes.insert_resource(jeu);

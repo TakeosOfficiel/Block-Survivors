@@ -28,6 +28,7 @@ mod modeles;
 mod retours;
 mod sauvegarde;
 mod simulation;
+mod skins;
 mod soleil;
 mod sons;
 mod textures;
@@ -110,6 +111,14 @@ impl PartieEnCours {
         }
     }
 
+    /// Apparence du personnage joué : celle du profil, ou celle de la classe.
+    fn apparence_joueur(&self) -> &'static bs_donnees::Apparence {
+        let d = self.partie.d;
+        self.depart.apparence.unwrap_or_else(|| {
+            &d.personnages.personnages[self.partie.etat.index_personnage].apparence
+        })
+    }
+
     /// Partie suivante, au même endroit avec le même personnage.
     fn relancer(&mut self) {
         let graine = self.graine.wrapping_add(1);
@@ -186,7 +195,14 @@ impl Plugin for PluginJeu {
                 sons::PluginSons,
                 hud::PluginHud,
             ))
-            .add_systems(Startup, demander_textures.run_if(resource_exists::<Monde>))
+            .add_systems(
+                Startup,
+                (
+                    sauvegarde::inserer_skin,
+                    demander_textures.run_if(resource_exists::<Monde>),
+                )
+                    .chain(),
+            )
             .add_systems(
                 Update,
                 (
@@ -212,6 +228,7 @@ impl Plugin for PluginJeu {
                     armes::construire,
                     dessins::creer,
                     hud::construire,
+                    hud::etiquette::creer,
                 ),
             )
             .add_systems(
@@ -234,6 +251,7 @@ impl Plugin for PluginJeu {
                 (
                     entites::placer_entites,
                     camera::suivre,
+                    hud::etiquette::placer,
                     effets::placer,
                     retours::dessiner,
                     armes::dessiner,
@@ -252,7 +270,6 @@ impl Plugin for PluginJeu {
     }
 }
 
-/// Toutes les textures des blocs de l'arène (et de son terrain extérieur).
 /// Textures de l'armure de la Collection portée.
 fn demander_armure(
     serveur: Res<AssetServer>,
@@ -267,6 +284,7 @@ fn demander_armure(
     }
 }
 
+/// Toutes les textures des blocs de l'arène (et de son terrain extérieur).
 fn demander_textures(
     serveur: Res<AssetServer>,
     mut textures: ResMut<Textures>,
@@ -284,8 +302,7 @@ fn demander_textures(
             textures.demander(&serveur, chemin);
         }
     }
-    let perso = jeu.partie.etat.index_personnage;
-    modeles::demander_textures(d, perso, &serveur, &mut textures);
+    modeles::demander_textures(d, jeu.apparence_joueur(), &serveur, &mut textures);
     effets::demander_textures(d, &serveur, &mut textures);
     retours::demander_textures(&jeu, &serveur, &mut textures);
     armes::demander_textures(d, &serveur, &mut textures);
@@ -305,7 +322,7 @@ fn construire_modeles(
     let p = &jeu.partie;
     commandes.insert_resource(modeles::Rendus::construire(
         p.d,
-        p.etat.index_personnage,
+        jeu.apparence_joueur(),
         &sauvegarde.collection.portees(),
         ParametresBloc::de_l_arene(p.etat.arene),
         &serveur,

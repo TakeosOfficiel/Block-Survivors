@@ -1813,6 +1813,7 @@ dependencies = [
 name = "bs-rendu"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "bevy",
  "bs-audio",
  "bs-commun",
@@ -1821,6 +1822,7 @@ dependencies = [
  "bs-regles",
  "bs-robot",
  "bs-sauvegarde",
+ "image",
  "serde_json",
 ]
 

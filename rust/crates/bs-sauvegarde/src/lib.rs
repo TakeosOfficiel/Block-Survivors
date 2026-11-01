@@ -4,16 +4,19 @@
 //! - `profils` : plusieurs profils par installation, chacun sous ses propres clés ;
 //! - `progression` : maîtrise des classes, talents achetés, records, déblocages ;
 //! - `collection` : pièces d'armure gagnées et portées, objets de coffre découverts ;
+//! - `profil_joueur` : pseudo et skin du joueur ;
 //! - `bssave` : fichiers `.bssave` chiffrés (export et import d'un profil).
 
 mod bssave;
 pub mod collection;
+pub mod profil_joueur;
 pub mod profils;
 pub mod progression;
 pub mod stockage;
 
 pub use bssave::{DONNEES_PROFIL, Erreur, Profil, chiffrer, dechiffrer, exporter, importer};
 pub use collection::Collection;
+pub use profil_joueur::ProfilJoueur;
 pub use profils::Profils;
 pub use progression::{Bilan, EtatMaitrise, Progression, Recompense, RefusAchat};
 pub use stockage::Stockage;

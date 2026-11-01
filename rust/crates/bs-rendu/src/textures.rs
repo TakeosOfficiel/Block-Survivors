@@ -170,6 +170,8 @@ impl Plugin for PluginSourceTextures {
 #[derive(Resource, Default)]
 pub struct Textures {
     poignees: HashMap<String, Handle<Image>>,
+    /// Images faites par le jeu (skin importée), prêtes sans chargement.
+    inserees: HashMap<String, Handle<Image>>,
 }
 
 /// Où en est le chargement.
@@ -182,8 +184,14 @@ pub struct Avancement {
 
 impl Textures {
     /// Lance le chargement de `chemin` (une seule fois par chemin). Pixels nets.
+    /// Image faite par le jeu, donnée sous ce chemin (remplace un chargement).
+    pub fn inserer(&mut self, chemin: &str, image: Handle<Image>) {
+        self.poignees.remove(chemin);
+        self.inserees.insert(chemin.to_owned(), image);
+    }
+
     pub fn demander(&mut self, serveur: &AssetServer, chemin: &str) {
-        if self.poignees.contains_key(chemin) {
+        if self.poignees.contains_key(chemin) || self.inserees.contains_key(chemin) {
             return;
         }
         let poignee = serveur.load_with_settings(
@@ -217,16 +225,20 @@ impl Textures {
 
     /// Chargement fini, réussi ou non (texture inconnue : faux).
     pub fn termine(&self, serveur: &AssetServer, chemin: &str) -> bool {
-        self.poignees.get(chemin).is_some_and(|p| {
-            matches!(
-                serveur.load_state(p),
-                LoadState::Loaded | LoadState::Failed(_)
-            )
-        })
+        self.inserees.contains_key(chemin)
+            || self.poignees.get(chemin).is_some_and(|p| {
+                matches!(
+                    serveur.load_state(p),
+                    LoadState::Loaded | LoadState::Failed(_)
+                )
+            })
     }
 
     /// Texture chargée, ou `None` si elle manque (couleur de secours).
     pub fn obtenir(&self, serveur: &AssetServer, chemin: &str) -> Option<Handle<Image>> {
+        if let Some(i) = self.inserees.get(chemin) {
+            return Some(i.clone());
+        }
         let p = self.poignees.get(chemin)?;
         matches!(serveur.load_state(p), LoadState::Loaded).then(|| p.clone())
     }

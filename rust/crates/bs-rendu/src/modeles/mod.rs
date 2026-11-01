@@ -29,12 +29,12 @@ const SECOURS_PAR_DEFAUT: u32 = 0x808080;
 /// Seuil de découpe des skins (pixels transparents percés).
 const DECOUPE: f32 = 0.5;
 
-/// Toutes les apparences à afficher, dans l'ordre des rendus.
+/// Toutes les apparences à afficher, dans l'ordre des rendus ; `joueur` : celle du
+/// personnage joué (classe, ou skin du profil).
 pub fn apparences(
     d: &'static Donnees,
-    personnage: usize,
+    joueur: &'static Apparence,
 ) -> impl Iterator<Item = &'static Apparence> {
-    let joueur = &d.personnages.personnages[personnage].apparence;
     std::iter::once(joueur)
         .chain(d.ennemis.values().map(|e| &e.apparence))
         .chain(d.allies.allies.values().map(|a| &a.apparence))
@@ -45,11 +45,11 @@ pub fn apparences(
 /// Textures de toutes les apparences (skins et objets tenus).
 pub fn demander_textures(
     d: &'static Donnees,
-    personnage: usize,
+    joueur: &'static Apparence,
     serveur: &AssetServer,
     t: &mut Textures,
 ) {
-    for a in apparences(d, personnage) {
+    for a in apparences(d, joueur) {
         t.demander(serveur, &a.skin);
         if let Some(o) = &a.objet_en_main {
             t.demander(serveur, o);
@@ -113,7 +113,7 @@ impl Rendus {
     #[allow(clippy::too_many_arguments)]
     pub fn construire(
         d: &'static Donnees,
-        personnage: usize,
+        joueur: &'static Apparence,
         portees: &[Option<Monde>; 7],
         ambiance: ParametresBloc,
         serveur: &AssetServer,
@@ -125,7 +125,7 @@ impl Rendus {
         let mut parametres = ambiance;
         parametres.brouillard.z = DECOUPE;
         parametres.brouillard.w = 0.0;
-        let mut liste: Vec<RenduModele> = apparences(d, personnage)
+        let mut liste: Vec<RenduModele> = apparences(d, joueur)
             .map(|a| {
                 let skin = textures.obtenir(serveur, &a.skin);
                 let objet = objet_tenu(

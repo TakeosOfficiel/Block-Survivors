@@ -8,27 +8,33 @@
 //! profil actif (lisible par la version TypeScript). Les menus des profils viendront à
 //! l'étape 5.
 //!
+//! `BS_SKIN=<fichier.png>` importe une skin dans le profil (ramenée au format du jeu,
+//! voir `skins`) et la choisit ; `BS_PSEUDO=<pseudo>` change le pseudo.
+//!
 //! La Collection (armures, objets découverts) donne ses bonus au départ de chaque partie
 //! et retient aussitôt les pièces gagnées sur les boss et les objets pris.
 
 use bevy::prelude::*;
-use bs_donnees::Donnees;
 use bs_donnees::arenes::Monde;
 use bs_donnees::equipement::Piece;
 use bs_donnees::progression::BonusTalents;
+use bs_donnees::{Apparence, Donnees};
 use bs_regles::evenements::Evenement;
 use bs_regles::partie::Partie;
 use bs_sauvegarde::collection::MONDES;
-use bs_sauvegarde::{Bilan, Collection, Profils, Progression, Recompense, Stockage};
+use bs_sauvegarde::profil_joueur::{CHEMIN_SKIN_IMPORTE, ChoixSkin, nettoyer_pseudo};
+use bs_sauvegarde::{Bilan, Collection, ProfilJoueur, Profils, Progression, Recompense, Stockage};
 
 use crate::PartieEnCours;
 
 /// Ce que le profil apporte à chaque partie : talents (et bonus d'armure portée), pièces
-/// d'armure déjà possédées (jamais retirées sur un boss).
+/// d'armure déjà possédées (jamais retirées sur un boss), apparence du personnage joué
+/// (`None` : celle de la classe).
 #[derive(Debug, Clone, Default)]
 pub struct Depart {
     pub talents: BonusTalents,
     pub armures: Vec<(Monde, Piece)>,
+    pub apparence: Option<&'static Apparence>,
 }
 
 impl Depart {
@@ -49,6 +55,7 @@ impl Depart {
 pub struct Sauvegarde {
     pub progression: Progression,
     pub collection: Collection,
+    pub profil: ProfilJoueur,
     /// Récompense de la partie qui vient de finir (écran de fin).
     pub recompense: Option<Recompense>,
     /// XP totale et boss vaincus au passage en mode sans fin.
@@ -87,9 +94,12 @@ impl Sauvegarde {
         let progression = Progression::charger(d, profils.stockage().clone(), cle);
         let cle = profils.cle("collection");
         let collection = Collection::charger(profils.stockage().clone(), cle);
+        let mut profil = ProfilJoueur::charger(profils.stockage().clone(), profils.cle("profil"));
+        changer_profil(&mut profil);
         Self {
             progression,
             collection,
+            profil,
             recompense: None,
             depart_sans_fin: (0.0, 0),
         }
@@ -111,7 +121,33 @@ impl Sauvegarde {
                 armures.push((monde, piece));
             }
         }
-        Depart { talents, armures }
+        // Skin du profil : même classe, autre modèle et autre skin
+        let apparence = self.profil.apparence().map(|a| {
+            let classe = &d.personnages.personnages[personnage].apparence;
+            let a = Apparence {
+                modele: a.modele.to_owned(),
+                skin: a.skin,
+                ..classe.clone()
+            };
+            &*Box::leak(Box::new(a))
+        });
+        Depart {
+            talents,
+            armures,
+            apparence,
+        }
+    }
+
+    /// Image de la skin importée, si le profil la porte.
+    pub fn skin_importee(&self) -> Option<Image> {
+        if self.profil.skin != ChoixSkin::Importe {
+            return None;
+        }
+        let image = crate::skins::image_skin(self.profil.skin_importe.as_deref()?);
+        if image.is_none() {
+            warn!("skin importée illisible : skin de la classe");
+        }
+        image
     }
 
     /// Enregistre la partie finie ; sa récompense est gardée pour l'écran de fin.
@@ -168,6 +204,46 @@ pub fn noter_collection(mut jeu: ResMut<PartieEnCours>, mut sauvegarde: ResMut<S
             }
             _ => {}
         }
+    }
+}
+
+/// `BS_SKIN` et `BS_PSEUDO` (en attendant l'écran du profil, étape 5).
+fn changer_profil(profil: &mut ProfilJoueur) {
+    let mut change = false;
+    if let Ok(pseudo) = std::env::var("BS_PSEUDO") {
+        profil.pseudo = nettoyer_pseudo(&pseudo);
+        change = true;
+    }
+    if let Some(chemin) = std::env::var_os("BS_SKIN") {
+        let lu = std::fs::read(&chemin).map_err(|e| e.to_string());
+        match lu.and_then(|o| crate::skins::normaliser(&o)) {
+            Ok(s) => {
+                info!(
+                    "skin {} importée ({} px{})",
+                    chemin.display(),
+                    s.taille,
+                    if s.reduite { ", réduite" } else { "" }
+                );
+                profil.skin_importe = Some(s.adresse);
+                profil.skin = ChoixSkin::Importe;
+                change = true;
+            }
+            Err(e) => warn!("{} : {e}", chemin.display()),
+        }
+    }
+    if change {
+        profil.enregistrer();
+    }
+}
+
+/// Skin importée du profil, donnée aux textures sous son chemin (avant les demandes).
+pub fn inserer_skin(
+    sauvegarde: Res<Sauvegarde>,
+    mut textures: ResMut<crate::textures::Textures>,
+    mut images: ResMut<Assets<Image>>,
+) {
+    if let Some(image) = sauvegarde.skin_importee() {
+        textures.inserer(CHEMIN_SKIN_IMPORTE, images.add(image));
     }
 }
 

@@ -8,6 +8,7 @@ mod affichage;
 mod barres;
 mod capacites;
 mod coeurs;
+pub mod etiquette;
 pub mod police;
 
 pub use affichage::{afficher, alerter, recevoir};

@@ -13,7 +13,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 1. Données et règles, sans rendu | fait : données, monde, simulation complète et robot (`bs-robot`) ; ses moyennes tombent dans la tolérance de celles du jeu TS (voir 1b) |
 | 2. Monde et rendu | fait : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres), 2d-2 (particules, chiffres de dégâts, barres de vie, secousse), 2d-3 (visuels des armes), 2d-4 (vent, ombres du soleil, lumière des blocs) |
 | 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
-| 4. Sauvegardes et profils | en cours : 4a à 4f (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques des quatre classes) |
+| 4. Sauvegardes et profils | en cours : 4a à 4h (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques des quatre classes, Collection, profil du joueur) |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -939,3 +939,51 @@ mode sans fin.
   Les créatures des talents ont leur rendu à la suite des coffres.
 - Test : `invocateur_talents` (21 talents, un peu plus d'une minute : alpha, crocs,
   ravageur, Lune de sang au-delà du quota, dégâts crédités aux loups).
+
+### 4g : Collection (faite)
+
+- `bs-sauvegarde/src/collection.rs` (port de `progression/collection.ts`) : pièces
+  possédées (« monde:pièce »), pièce portée à chaque emplacement (une pièce portée doit être
+  possédée), objets d'équipement découverts. Même JSON que le jeu TS (`collection`, version
+  1). Une pièce gagnée est portée si son emplacement est libre. Bonus : chaque pièce portée,
+  plus l'ensemble si les 7 pièces portées viennent du même monde. Avancée d'un monde
+  (pièces et objets découverts) pour l'écran de la Collection de l'étape 5.
+- Départ d'une partie (`bs-rendu/src/sauvegarde.rs`, `Depart`) : bonus de l'armure portée
+  cumulés aux talents, pièces déjà possédées de ce monde jamais tirées sur un boss
+  (`Partie::posseder`).
+- Butin des boss (`bs-regles/src/butin.rs`) : événement `ButinBoss` (une ou deux pièces),
+  son et gerbe « totem » sur le joueur, message « Butin du boss : X et Y ! » pendant 4 s.
+  La pièce entre aussitôt dans la Collection (enregistrée) et compte dès la partie
+  suivante. Objet d'équipement pris (nouvel objet ou remplacement) : événement
+  `Decouverte`, inscrit dans la Collection.
+- Armure dessinée sur le héros (`bs-rendu/src/modeles/armure.rs`, port de
+  `modeles/armure.ts`) : un modèle par pièce visible, posé comme le joueur (mêmes
+  rotations, partie par partie, par le nom). Textures : planches du jeu
+  (`entity/equipment/humanoid(_leggings)/<matériau>`), cuir teint (multiplié par la teinte
+  puis calque `_overlay`), bouclier et cape dessinés aux couleurs du monde. L'armure est
+  celle portée au lancement : le choix des pièces viendra avec les menus (étape 5).
+- Tests : `collection.rs` (pièce gagnée portée, relue, ensemble complet, pièce non
+  possédée refusée), `butin.rs` (200 parties : jamais une pièce possédée ni deux fois la
+  même), planches du bouclier et de la cape, cuir teint.
+
+### 4h : Profil du joueur (fait)
+
+- `bs-sauvegarde/src/profil_joueur.rs` (port de `profil.ts`) : pseudo (16 caractères,
+  espaces nettoyés, pseudo au hasard), skin (celle de la classe, une des 9 skins par
+  défaut du jeu en bras larges ou fins, ou la skin importée). Même JSON que le jeu TS (clé
+  `profil`). L'apparence ne change que le modèle (`humanoide` ou `humanoide_fin`) et la
+  skin : la classe garde ses statistiques, ses armes et son objet en main.
+- Skins importées (`bs-rendu/src/skins.rs`, port de `skinsImportees.ts`) : patron carré
+  64×64 ou HD (128 à 1024), taille voisine remise à la taille HD la plus proche, ancien
+  format 64×32 converti (membres gauches = droits en miroir). Une skin HD qui n'est
+  qu'une skin agrandie est gardée à sa vraie taille ; une skin trop lourde est réduite de
+  moitié jusqu'à tenir. Gardée en PNG dans une data URL, comme le jeu TS, et donnée aux
+  textures sous `profil/skin` au lancement (`Textures::inserer`).
+- En attendant l'écran du profil (étape 5) : `BS_SKIN=<fichier.png>` importe et choisit
+  une skin, `BS_PSEUDO=<pseudo>` change le pseudo (tous deux enregistrés).
+- Étiquette du pseudo (`bs-rendu/src/hud/etiquette.rs`) : texte blanc en police pixel sur
+  fond noir translucide, 0,35 bloc au-dessus de la tête, taille qui suit le zoom par
+  pixels de police entiers, cachée à la mort.
+- Tests : profil relu, apparence, ancienne skin « perso » et skin importée absente
+  ramenées à la skin de la classe ; formats refusés, skin HD agrandie gardée à sa vraie
+  taille, ancien format complété.

@@ -17,6 +17,9 @@ serde_json = { version = "1", features = ["preserve_order"] }
 bs-robot.workspace = true
 bs-audio.workspace = true
 bs-sauvegarde.workspace = true
+# Skins importées : lecture et écriture PNG, data URL
+image = { version = "0.25", default-features = false, features = ["png"] }
+base64 = "0.22"
 
 [lints]
 workspace = true

@@ -42,7 +42,6 @@ pub struct ModeleCompile {
     /// Index de la partie qui tient l'objet.
     pub main: Option<usize>,
     /// Sommet du modèle en pose de base (blocs).
-    #[allow(dead_code, reason = "chiffres de dégâts et barres (étape 2d)")]
     pub hauteur: f32,
 }
 

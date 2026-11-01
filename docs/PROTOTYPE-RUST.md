@@ -650,3 +650,20 @@ invocations.
   A_FAIRE.md, absente de la version TS.
 - **Test** : l'herbe d'une petite schématique ondule depuis son pied, la pierre non.
 
+##### 2d-4b : ombres du soleil (fait)
+
+- **Soleil** (`bs-rendu/src/soleil.rs`) : une lumière directionnelle Bevy, utilisée
+  seulement pour sa carte d'ombres (4096², deux cascades qui suivent la caméra : nette
+  près du joueur, plus large au loin). Tout le décor visible a ses ombres, y compris
+  hors de l'arène (la version TS s'arrêtait à 6 blocs autour, voir A_FAIRE.md).
+- **Shaders** : l'éclairage façon Minecraft ne change pas ; le terme du soleil est
+  retiré là où il est caché (`shaders/soleil.wgsl`), bords adoucis (filtre gaussien).
+- **Passe d'ombre maison** (`shaders/ombres.wgsl`) : les feuilles, fleurs et skins
+  découpées projettent leur vraie silhouette, les plantes gardent leur balancement
+  dans l'ombre ; l'eau, le verre, les lueurs des armes et les effets non éclairés
+  (chiffres, barres de vie, orbes) n'en projettent pas.
+- **Ombres rondes** : cachées quand le soleil est actif, comme en TS.
+  `BS_OMBRES=0` coupe le soleil (en attendant les options, étape 4).
+- **Captures** : `docs/captures/ombres-soleil-pc.png`,
+  `docs/captures/ombres-soleil-map-pc.png`.
+

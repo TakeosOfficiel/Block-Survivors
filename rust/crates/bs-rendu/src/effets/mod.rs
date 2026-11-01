@@ -19,6 +19,7 @@ use bs_regles::combat::tours;
 
 use crate::materiau_entite::tag_surcouche;
 use crate::modeles::rendu::Composants;
+use crate::soleil::OmbresSoleil;
 use crate::{PAS, PartieEnCours};
 pub(crate) use construction::pixels;
 pub use construction::{construire, demander_textures};
@@ -63,6 +64,7 @@ pub fn placer(
     jeu: Res<PartieEnCours>,
     mut effets: ResMut<Effets>,
     ombres: Res<Ombres>,
+    soleil: Res<OmbresSoleil>,
     temps: Res<Time<Fixed>>,
     camera: Query<&GlobalTransform, With<Camera3d>>,
     mut q: Composants,
@@ -236,9 +238,10 @@ pub fn placer(
         l.terminer(&mut q);
     }
 
-    // Ombres rondes au sol
+    // Ombres rondes au sol (sauf si le soleil projette les vraies)
     lot_ombres.commencer();
-    for &[x, z, rayon] in &ombres.0 {
+    let rondes = if soleil.0 { &[][..] } else { &ombres.0[..] };
+    for &[x, z, rayon] in rondes {
         let tf = Transform {
             translation: Vec3::new(x, HAUTEUR_OMBRE, z),
             scale: Vec3::new(rayon * 2.0, 1.0, rayon * 2.0),

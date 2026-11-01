@@ -10,6 +10,7 @@
 #import bevy_pbr::mesh_functions
 #import bevy_pbr::mesh_view_bindings::view
 #import bevy_pbr::view_transformations::position_world_to_clip
+#import bs_rendu::soleil::ombre_soleil
 
 struct ParametresBloc {
     ambiante: vec4<f32>,
@@ -80,7 +81,8 @@ fn fragment(in: Sortie, @builtin(front_facing) devant: bool) -> @location(0) vec
     if !devant {
         n = -n;
     }
-    var lumiere = p.ambiante.rgb + p.soleil.rgb * max(dot(n, p.direction.xyz), 0.0);
+    let ombre = ombre_soleil(in.monde, n);
+    var lumiere = p.ambiante.rgb + p.soleil.rgb * max(dot(n, p.direction.xyz), 0.0) * ombre;
     if p.brouillard.w > 0.5 {
         lumiere = vec3(1.0);
     }

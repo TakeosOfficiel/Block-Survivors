@@ -1,9 +1,10 @@
 //! Caméra de jeu, vue de dessus (src/moteur/camera.ts) : inclinée, elle suit le joueur
 //! avec un lissage et se règle à la molette ; secousses demandées par la simulation
-//! (explosions, impacts). La vue à la 3e personne (F5) viendra en 2d-4.
+//! (explosions, impacts). Bords des ombres du soleil adoucis (filtre gaussien).
 
 use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::input::mouse::MouseWheel;
+use bevy::light::ShadowFilteringMethod;
 use bevy::prelude::*;
 use bs_commun::maths::facteur_lissage;
 
@@ -84,6 +85,7 @@ pub fn creer_camera(commandes: &mut Commands, depart: Vec2, ciel: Color) {
         },
         // Couleurs telles quelles, comme le rendu three.js (pas de tonemapping)
         Tonemapping::None,
+        ShadowFilteringMethod::Gaussian,
         Projection::Perspective(PerspectiveProjection {
             fov: CHAMP_DEG.to_radians(),
             near: 0.1,

@@ -10,13 +10,13 @@ use bevy::prelude::*;
 use bevy::render::render_resource::{
     AsBindGroup, RenderPipelineDescriptor, ShaderType, SpecializedMeshPipelineError, VertexFormat,
 };
-use bevy::shader::ShaderRef;
+use bevy::shader::{ShaderDefVal, ShaderRef, load_shader_library};
 use bs_donnees::arenes::Arene;
 
 use crate::arene::couleur_lineaire;
 
 /// Lumière de l'ombrage façon Minecraft (src/config.ts, `rendu.directionSoleil`).
-const DIRECTION_SOLEIL: Vec3 = Vec3::new(0.3, 1.0, 0.5);
+pub const DIRECTION_SOLEIL: Vec3 = Vec3::new(0.3, 1.0, 0.5);
 
 /// Vent de chaque sommet : centre x, pied y, centre z du bloc, mode (0 : immobile,
 /// 1 : feuillage, 2 : plante).
@@ -24,6 +24,25 @@ pub const ATTRIBUTE_VENT: MeshVertexAttribute =
     MeshVertexAttribute::new("Vent", 0x6273_7665, VertexFormat::Float32x4);
 
 const SHADER: &str = "embedded://bs_rendu/shaders/blocs.wgsl";
+/// Passe d'ombre des blocs et des entités (`shaders/ombres.wgsl`).
+pub const SHADER_OMBRES: &str = "embedded://bs_rendu/shaders/ombres.wgsl";
+
+/// Passe d'ombre (et non rendu) : définie par Bevy pour les shaders de prépasse.
+pub fn passe_d_ombre(descriptor: &RenderPipelineDescriptor) -> bool {
+    descriptor
+        .vertex
+        .shader_defs
+        .iter()
+        .any(|d| matches!(d, ShaderDefVal::Bool(n, true) if n == "PREPASS_PIPELINE"))
+}
+
+/// Option `nom` des shaders de sommets et de fragments.
+pub fn definir(descriptor: &mut RenderPipelineDescriptor, nom: &str) {
+    descriptor.vertex.shader_defs.push(nom.into());
+    if let Some(f) = descriptor.fragment.as_mut() {
+        f.shader_defs.push(nom.into());
+    }
+}
 
 #[derive(Clone, Copy, Debug, Default, ShaderType)]
 pub struct ParametresBloc {
@@ -88,9 +107,12 @@ impl From<&MateriauBloc> for CleMateriauBloc {
 }
 
 impl Material for MateriauBloc {
+    /// Découpe : `Mask`, pour que la passe d'ombre découpe aussi (feuilles, fleurs).
     fn alpha_mode(&self) -> AlphaMode {
         if self.translucide {
             AlphaMode::Blend
+        } else if self.parametres.brouillard.z > 0.0 {
+            AlphaMode::Mask(self.parametres.brouillard.z)
         } else {
             AlphaMode::Opaque
         }
@@ -98,6 +120,14 @@ impl Material for MateriauBloc {
 
     fn vertex_shader() -> ShaderRef {
         SHADER.into()
+    }
+
+    fn prepass_vertex_shader() -> ShaderRef {
+        SHADER_OMBRES.into()
+    }
+
+    fn prepass_fragment_shader() -> ShaderRef {
+        SHADER_OMBRES.into()
     }
 
     fn fragment_shader() -> ShaderRef {
@@ -110,6 +140,19 @@ impl Material for MateriauBloc {
         layout: &MeshVertexBufferLayoutRef,
         key: MaterialPipelineKey<Self>,
     ) -> Result<(), SpecializedMeshPipelineError> {
+        if key.bind_group_data.double_face {
+            descriptor.primitive.cull_mode = None;
+        }
+        if passe_d_ombre(descriptor) {
+            let attributs = [
+                Mesh::ATTRIBUTE_POSITION.at_shader_location(0),
+                Mesh::ATTRIBUTE_UV_0.at_shader_location(2),
+                ATTRIBUTE_VENT.at_shader_location(6),
+            ];
+            descriptor.vertex.buffers = vec![layout.0.get_layout(&attributs)?];
+            definir(descriptor, "BLOC");
+            return Ok(());
+        }
         let attributs: [VertexAttributeDescriptor; 5] = [
             Mesh::ATTRIBUTE_POSITION.at_shader_location(0),
             Mesh::ATTRIBUTE_NORMAL.at_shader_location(1),
@@ -118,9 +161,6 @@ impl Material for MateriauBloc {
             ATTRIBUTE_VENT.at_shader_location(6),
         ];
         descriptor.vertex.buffers = vec![layout.0.get_layout(&attributs)?];
-        if key.bind_group_data.double_face {
-            descriptor.primitive.cull_mode = None;
-        }
         Ok(())
     }
 }
@@ -138,6 +178,9 @@ pub struct PluginMateriaux;
 impl Plugin for PluginMateriaux {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "shaders/blocs.wgsl");
+        embedded_asset!(app, "shaders/ombres.wgsl");
+        load_shader_library!(app, "shaders/vent.wgsl");
+        load_shader_library!(app, "shaders/soleil.wgsl");
         app.add_plugins(MaterialPlugin::<MateriauBloc>::default())
             .add_systems(Update, animer_textures);
     }

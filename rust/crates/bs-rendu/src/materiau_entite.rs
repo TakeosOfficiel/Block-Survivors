@@ -14,7 +14,7 @@ use bevy::render::render_resource::{
 };
 use bevy::shader::ShaderRef;
 
-use crate::materiau::ParametresBloc;
+use crate::materiau::{ParametresBloc, SHADER_OMBRES, passe_d_ombre};
 
 const SHADER: &str = "embedded://bs_rendu/shaders/entites.wgsl";
 
@@ -29,13 +29,24 @@ pub struct MateriauEntite {
 }
 
 impl Material for MateriauEntite {
-    /// Translucide si `animation.w` vaut 1 (ombres) ; sinon opaque découpé.
+    /// Translucide si `animation.w` vaut 1 (ombres rondes) ; sinon découpé (`Mask` :
+    /// la passe d'ombre découpe aussi).
     fn alpha_mode(&self) -> AlphaMode {
         if self.parametres.animation.w > 0.5 {
             AlphaMode::Blend
+        } else if self.parametres.brouillard.z > 0.0 {
+            AlphaMode::Mask(self.parametres.brouillard.z)
         } else {
             AlphaMode::Opaque
         }
+    }
+
+    fn prepass_vertex_shader() -> ShaderRef {
+        SHADER_OMBRES.into()
+    }
+
+    fn prepass_fragment_shader() -> ShaderRef {
+        SHADER_OMBRES.into()
     }
 
     fn vertex_shader() -> ShaderRef {
@@ -52,6 +63,15 @@ impl Material for MateriauEntite {
         layout: &MeshVertexBufferLayoutRef,
         _key: MaterialPipelineKey<Self>,
     ) -> Result<(), SpecializedMeshPipelineError> {
+        descriptor.primitive.cull_mode = None;
+        if passe_d_ombre(descriptor) {
+            let attributs = [
+                Mesh::ATTRIBUTE_POSITION.at_shader_location(0),
+                Mesh::ATTRIBUTE_UV_0.at_shader_location(2),
+            ];
+            descriptor.vertex.buffers = vec![layout.0.get_layout(&attributs)?];
+            return Ok(());
+        }
         let attributs: [VertexAttributeDescriptor; 4] = [
             Mesh::ATTRIBUTE_POSITION.at_shader_location(0),
             Mesh::ATTRIBUTE_NORMAL.at_shader_location(1),
@@ -59,7 +79,6 @@ impl Material for MateriauEntite {
             Mesh::ATTRIBUTE_COLOR.at_shader_location(5),
         ];
         descriptor.vertex.buffers = vec![layout.0.get_layout(&attributs)?];
-        descriptor.primitive.cull_mode = None;
         Ok(())
     }
 }

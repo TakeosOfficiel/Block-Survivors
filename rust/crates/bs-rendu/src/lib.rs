@@ -20,6 +20,7 @@ mod materiau_entite;
 mod mesure;
 mod modeles;
 mod retours;
+mod soleil;
 mod textures;
 
 use bevy::prelude::*;
@@ -144,6 +145,7 @@ impl Plugin for PluginJeu {
                 armes::PluginLueur,
                 mesure::PluginMesure,
                 fichiers::PluginFichiers,
+                soleil::PluginSoleil,
             ))
             .add_systems(Startup, demander_textures.run_if(resource_exists::<Monde>))
             .add_systems(
@@ -161,6 +163,7 @@ impl Plugin for PluginJeu {
                     construire_arene.run_if(resource_exists::<Monde>),
                     carte_mc::construire_carte.run_if(resource_exists::<carte_mc::CarteImportee>),
                     creer_camera,
+                    soleil::creer,
                     entites::creer_entites,
                     construire_modeles,
                     effets::construire,

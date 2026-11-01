@@ -47,6 +47,15 @@ impl Material for MateriauLueur {
         AlphaMode::Add
     }
 
+    /// De la lumière : aucune ombre.
+    fn enable_prepass() -> bool {
+        false
+    }
+
+    fn enable_shadows() -> bool {
+        false
+    }
+
     fn vertex_shader() -> ShaderRef {
         SHADER.into()
     }

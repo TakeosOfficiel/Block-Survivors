@@ -14,7 +14,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 2. Monde et rendu | fait : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres), 2d-2 (particules, chiffres de dégâts, barres de vie, secousse), 2d-3 (visuels des armes), 2d-4 (vent, ombres du soleil, lumière des blocs) |
 | 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
 | 4. Sauvegardes et profils | fait : 4a à 4i (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques des quatre classes, Collection, profil du joueur, amis) |
-| 5. Menus | en cours : 5a (menu principal, lancement, retour au menu), 5b (Talents), 5c (Collection) |
+| 5. Menus | en cours : 5a (menu principal, lancement, retour au menu), 5b (Talents), 5c (Collection), 5d (Profil) |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -980,8 +980,9 @@ mode sans fin.
   qu'une skin agrandie est gardée à sa vraie taille ; une skin trop lourde est réduite de
   moitié jusqu'à tenir. Gardée en PNG dans une data URL, comme le jeu TS, et donnée aux
   textures sous `profil/skin` au lancement (`Textures::inserer`).
-- En attendant l'écran du profil (étape 5) : `BS_SKIN=<fichier.png>` importe et choisit
-  une skin, `BS_PSEUDO=<pseudo>` change le pseudo (tous deux enregistrés).
+- Pour les essais : `BS_SKIN=<fichier.png>` importe et choisit une skin,
+  `BS_PSEUDO=<pseudo>` change le pseudo (tous deux enregistrés ; la page Profil, 5d, fait
+  la même chose à la souris).
 - Étiquette du pseudo (`bs-rendu/src/hud/etiquette.rs`) : texte blanc en police pixel sur
   fond noir translucide, 0,35 bloc au-dessus de la tête, taille qui suit le zoom par
   pixels de police entiers, cachée à la mort.
@@ -1052,3 +1053,17 @@ mode sans fin.
   première entrée au menu ou au chargement, et servent à toutes les parties.
 - Le choix des pièces portées viendra avec la page Profil (comme dans le jeu TS).
 - Essais : `BS_MENU=collection`. Vérifié aux clics (onglets), avec une Collection remplie.
+
+### 5d : Profil (fait)
+
+- `bs-rendu/src/menu/profil/` : skins à gauche (celle de la classe, les 10 du jeu, la
+  skin importée), avec le visage découpé dans la texture ; bras fins ou larges ; pseudo
+  au centre (clic, saisie au clavier, Entrée valide, Échap annule, nettoyé comme dans le
+  jeu TS) ; pièces d'armure portées à droite (« — » ou une des 4 pièces du monde, éteinte
+  tant qu'elle n'est pas gagnée). Glisser un PNG sur la fenêtre importe la skin (même
+  traitement que `BS_SKIN`). Tout est enregistré aussitôt.
+- Aperçu 3D (`menu/apercu.rs`) : le menu a une caméra 3D sous sa caméra 2D ; sur la page
+  Profil, le héros (skin, objet tenu, armure portée) tourne lentement au centre. Il est
+  construit par `Rendus::heros` (le même code que les modèles en partie) une fois ses
+  textures chargées, et refait quand la skin ou l'armure change.
+- Essais : `BS_MENU=profil`. Vérifié aux clics (skin, casque, cape) et au clavier (pseudo).

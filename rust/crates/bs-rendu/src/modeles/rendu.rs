@@ -119,6 +119,11 @@ impl RenduModele {
         }
     }
 
+    /// Entités racines des instances créées.
+    pub fn racines(&self) -> impl Iterator<Item = Entity> + '_ {
+        self.instances.iter().map(|i| i.racine)
+    }
+
     pub fn commencer(&mut self) {
         self.utilisees = 0;
     }

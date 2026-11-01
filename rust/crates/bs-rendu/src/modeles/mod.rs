@@ -122,10 +122,49 @@ impl Rendus {
         maillages: &mut Assets<Mesh>,
         materiaux: &mut Assets<MateriauEntite>,
     ) -> Self {
+        let tous = apparences(d, joueur);
+        let a = (serveur, textures);
+        Self::depuis(d, tous, portees, ambiance, a, images, maillages, materiaux)
+    }
+
+    /// Le héros seul et son armure (aperçu du menu).
+    #[allow(clippy::too_many_arguments)]
+    pub fn heros(
+        d: &'static Donnees,
+        joueur: &'static Apparence,
+        portees: &[Option<Monde>; 7],
+        ambiance: ParametresBloc,
+        serveur: &AssetServer,
+        textures: &Textures,
+        images: &mut Assets<Image>,
+        maillages: &mut Assets<Mesh>,
+        materiaux: &mut Assets<MateriauEntite>,
+    ) -> Self {
+        let seul = std::iter::once(joueur);
+        let a = (serveur, textures);
+        Self::depuis(d, seul, portees, ambiance, a, images, maillages, materiaux)
+    }
+
+    /// Entités racines de toutes les instances créées.
+    pub fn racines(&self) -> impl Iterator<Item = Entity> + '_ {
+        self.liste.iter().flat_map(RenduModele::racines)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn depuis(
+        d: &'static Donnees,
+        apparences: impl Iterator<Item = &'static Apparence>,
+        portees: &[Option<Monde>; 7],
+        ambiance: ParametresBloc,
+        (serveur, textures): (&AssetServer, &Textures),
+        images: &mut Assets<Image>,
+        maillages: &mut Assets<Mesh>,
+        materiaux: &mut Assets<MateriauEntite>,
+    ) -> Self {
         let mut parametres = ambiance;
         parametres.brouillard.z = DECOUPE;
         parametres.brouillard.w = 0.0;
-        let mut liste: Vec<RenduModele> = apparences(d, joueur)
+        let mut liste: Vec<RenduModele> = apparences
             .map(|a| {
                 let skin = textures.obtenir(serveur, &a.skin);
                 let objet = objet_tenu(

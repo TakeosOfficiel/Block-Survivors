@@ -218,7 +218,7 @@ pub fn noter_collection(mut jeu: ResMut<PartieEnCours>, mut sauvegarde: ResMut<S
     }
 }
 
-/// `BS_SKIN` et `BS_PSEUDO` (en attendant l'écran du profil, étape 5).
+/// `BS_SKIN` et `BS_PSEUDO` (essais ; la page Profil fait de même à la souris).
 fn changer_profil(profil: &mut ProfilJoueur) {
     let mut change = false;
     if let Ok(pseudo) = std::env::var("BS_PSEUDO") {

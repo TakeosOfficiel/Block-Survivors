@@ -243,6 +243,14 @@ fn heros(
         false,
         ActionMenu::Collection,
     );
+    style::bouton(
+        commandes,
+        col,
+        "Profil",
+        200.0,
+        false,
+        ActionMenu::OuvrirProfil,
+    );
 }
 
 fn arenes(

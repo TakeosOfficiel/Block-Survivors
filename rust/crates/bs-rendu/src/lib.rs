@@ -187,6 +187,7 @@ impl Plugin for PluginJeu {
             .init_resource::<retours::Barres>()
             .init_resource::<camera::Secousse>()
             .init_resource::<ecrans::Ecrans>()
+            .init_resource::<menu::apercu::Apercu>()
             .insert_resource(ecran_cartes::EcranCartes::nouveau(
                 std::env::var_os("BS_CARTES").is_some(),
             ))
@@ -206,13 +207,18 @@ impl Plugin for PluginJeu {
                 (
                     lancement::nettoyer,
                     dessins::creer.run_if(not(resource_exists::<dessins::Dessins>)),
+                    sauvegarde::inserer_skin,
                     menu::entrer,
                 )
                     .chain(),
             )
             .add_systems(
                 Update,
-                (menu::gerer, ecrans::style::survoler).run_if(in_state(Phase::Menu)),
+                (
+                    (menu::profil::saisir, menu::gerer, menu::apercu::animer).chain(),
+                    ecrans::style::survoler,
+                )
+                    .run_if(in_state(Phase::Menu)),
             )
             .add_systems(OnExit(Phase::Menu), menu::sortir)
             .add_systems(

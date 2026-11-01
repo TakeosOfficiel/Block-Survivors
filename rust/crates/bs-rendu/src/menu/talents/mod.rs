@@ -20,7 +20,7 @@ use crate::sauvegarde::Sauvegarde;
 pub(super) const JAUNE: Color = Color::srgb_u8(0xff, 0xff, 0x55);
 pub(super) const ORANGE: Color = Color::srgb_u8(0xe0, 0xb0, 0x40);
 pub(super) const LARGEUR_FICHE: f32 = 420.0;
-pub(super) const CHOISI: Teinte = Teinte {
+pub(in crate::menu) const CHOISI: Teinte = Teinte {
     bord: OR,
     fond: Color::srgba_u8(60, 45, 10, 153),
 };

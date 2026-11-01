@@ -4,7 +4,8 @@
 // (rouge de blessure, blanc du creeper) lue dans le MeshTag de l'entité.
 // Effets (projectiles, orbes, ombres) : non éclairés (`brouillard.w`), teinte
 // multipliée au lieu de la surcouche (`animation.y`), translucides avec une opacité
-// (`animation.w`, `animation.z`).
+// (`animation.w`, `animation.z`), toujours devant le décor (`animation.x` : chiffres
+// de dégâts, barres de vie).
 
 #import bevy_pbr::mesh_functions
 #import bevy_pbr::mesh_view_bindings::view
@@ -17,7 +18,7 @@ struct ParametresBloc {
     ciel: vec4<f32>,
     // début, fin du brouillard, seuil de découpe, lumineux
     brouillard: vec4<f32>,
-    // inutilisé, teinte multipliée (1), opacité, translucide (1)
+    // devant le décor (1), teinte multipliée (1), opacité, translucide (1)
     animation: vec4<f32>,
 }
 
@@ -58,6 +59,10 @@ fn vertex(s: Sommet) -> Sortie {
     let monde_depuis_local = mesh_functions::get_world_from_local(s.instance);
     o.monde = mesh_functions::mesh_position_local_to_world(monde_depuis_local, vec4(s.position, 1.0));
     o.position = position_world_to_clip(o.monde.xyz);
+    if p.animation.x > 0.5 {
+        // Profondeur inversée : z = w, sur le plan proche, devant tout
+        o.position.z = o.position.w;
+    }
     o.normale = mesh_functions::mesh_normal_local_to_world(s.normale, s.instance);
     o.uv = s.uv;
     o.couleur = s.couleur;

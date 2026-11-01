@@ -63,6 +63,21 @@ pub struct Partie {
 }
 
 impl Partie {
+    /// Côté du bloc du sol de l'arène (son extérieur, sinon la terre) : éclats des
+    /// éboulis.
+    pub fn texture_sol(&self) -> &'static str {
+        let d = self.d;
+        let bloc = self
+            .etat
+            .arene
+            .exterieur
+            .as_ref()
+            .map_or("dirt", |e| e.bloc.as_str());
+        d.blocs
+            .get(bloc)
+            .map_or("block/dirt", |b| b.faces.cotes.as_str())
+    }
+
     /// Nouvelle partie dans l'arène `index_arene` avec le personnage `index_personnage`.
     /// `evenements` : enregistrer les retours visuels et sonores (inutile pour le robot).
     pub fn nouvelle(

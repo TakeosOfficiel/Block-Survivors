@@ -26,10 +26,13 @@ use crate::modeles::animation::{
     EtatAnimation, angle_chute, calculer_rotations, hauteur_flottement,
 };
 use crate::modeles::rendu::Composants;
+use crate::retours::Barres;
 use crate::{PAS, PartieEnCours};
 
 /// Durée de la chute du joueur mort (config.ts `joueur.dureeMort`).
 const DUREE_MORT_JOUEUR: f32 = 0.6;
+/// Barre de vie des mini-boss : longueur × celle des alliés (config.ts).
+const BARRE_MINI_BOSS: f32 = 2.0;
 /// Coffre retourné : son dessous (le couvercle du modèle) à 14 px du sol.
 const HAUTEUR_COFFRE: f32 = 14.0 / 16.0;
 /// Teinte rouge d'un coup reçu (config.ts `blessure`).
@@ -205,10 +208,12 @@ pub fn placer_entites(
     temps: Res<Time<Fixed>>,
     mut cible: ResMut<crate::camera::Cible>,
     mut ombres: ResMut<Ombres>,
+    mut barres: ResMut<Barres>,
     effets: Res<Effets>,
     mut q: Composants,
 ) {
     ombres.0.clear();
+    barres.0.clear();
     let t = temps.overstep_fraction();
     let p = &jeu.partie;
     let temps_jeu = p.etat.temps_jeu as f32;
@@ -288,6 +293,13 @@ pub fn placer_entites(
             pose.surcouche = rouge();
         }
         let rayon = e.def.apparence.rayon_ombre * pose.echelle_xz / ech;
+        // Mini-boss : sa barre de vie au-dessus de la tête, toujours visible
+        if e.def.mini_boss && !mort {
+            let y = pose.position.y + r.modele.hauteur * ech + 0.3;
+            barres
+                .0
+                .push([pos.x, y, pos.y, e.pv / e.pv_max, BARRE_MINI_BOSS]);
+        }
         r.ajouter(&mut commandes, &mut q);
         ombres.0.push([pos.x, pos.y, rayon]);
     }
@@ -319,6 +331,11 @@ pub fn placer_entites(
         pose.surcouche = if a.blessure > 0.0 { rouge() } else { [0.0; 4] };
         r.ajouter(&mut commandes, &mut q);
         ombres.0.push([pos.x, pos.y, a.def.apparence.rayon_ombre]);
+        // Barre de vie dès la première blessure
+        if a.pv < a.pv_max {
+            let y = y + r.modele.hauteur + 0.35;
+            barres.0.push([pos.x, y, pos.y, a.pv / a.pv_max, 1.0]);
+        }
     }
 
     // Coffres : retournés (loquet en −Z), le couvercle se lève en douceur

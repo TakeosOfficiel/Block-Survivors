@@ -20,6 +20,7 @@ use bs_regles::combat::tours;
 use crate::materiau_entite::tag_surcouche;
 use crate::modeles::rendu::Composants;
 use crate::{PAS, PartieEnCours};
+pub(crate) use construction::pixels;
 pub use construction::{construire, demander_textures};
 pub use lot::Lot;
 

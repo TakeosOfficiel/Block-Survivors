@@ -308,7 +308,7 @@ impl Partie {
             let (ox, oz) = (o.x, o.z);
             self.ramassables.objets.swap_remove(i);
             self.ev.son("manger");
-            self.ev.gerbe("ramassage", ox, 0.8, oz);
+            self.ev.gerbe_icone("ramassage", &def.icone, ox, 0.8, oz);
         }
     }
 

@@ -13,9 +13,11 @@ pub enum StyleChiffre {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Evenement {
-    /// Gerbe de particules (identifiant de donnees/particules.ron) en (x, y, z).
+    /// Gerbe de particules (identifiant de donnees/particules.ron) en (x, y, z) ;
+    /// `icone` : image dont les particules « morceau » sont des éclats.
     Gerbe {
         gerbe: &'static str,
+        icone: Option<&'static str>,
         x: f32,
         y: f32,
         z: f32,
@@ -63,7 +65,31 @@ impl Evenements {
 
     #[inline]
     pub fn gerbe(&mut self, gerbe: &'static str, x: f32, y: f32, z: f32) {
-        self.pousser(Evenement::Gerbe { gerbe, x, y, z });
+        self.pousser(Evenement::Gerbe {
+            gerbe,
+            icone: None,
+            x,
+            y,
+            z,
+        });
+    }
+
+    /// Gerbe dont les morceaux sont des éclats de `icone` (éboulis, miettes).
+    pub fn gerbe_icone(
+        &mut self,
+        gerbe: &'static str,
+        icone: &'static str,
+        x: f32,
+        y: f32,
+        z: f32,
+    ) {
+        self.pousser(Evenement::Gerbe {
+            gerbe,
+            icone: Some(icone),
+            x,
+            y,
+            z,
+        });
     }
 
     #[inline]

@@ -11,7 +11,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | −1. Robot d'équilibrage, aléatoire à graine, pas fixe (TypeScript) | fait |
 | 0 bis. Prototype des cinq paris | fait : on continue, avec ajustements (voir la décision) ; 94 images/s mesurées sur le PC du joueur |
 | 1. Données et règles, sans rendu | fait : données, monde, simulation complète et robot (`bs-robot`) ; ses moyennes tombent dans la tolérance de celles du jeu TS (voir 1b) |
-| 2. Monde et rendu | en cours : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées) et 2d-1 (projectiles, orbes, objets, coffres, ombres) faits ; 2d-2 à 2d-4 à faire |
+| 2. Monde et rendu | en cours : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres) et 2d-2 (particules, chiffres de dégâts, barres de vie, secousse) faits ; 2d-3 et 2d-4 à faire |
 
 ---
 
@@ -538,3 +538,25 @@ herbe, caméra F5.
   choisit le personnage (provisoire, jusqu'au menu).
 - **Capture** : `docs/captures/vitrine-objets-pc.png` (map champignons).
 - **Tests** : rectangles d'UV, disque de secours, skin de la fusée, flèche en croix.
+
+#### 2d-2 : particules, chiffres de dégâts, barres de vie, secousse (fait)
+
+- **Retours** (`bs-rendu/src/retours/`) : après chaque pas, les événements de la
+  simulation (gerbes, dégâts, secousses) sont recueillis ; ils vivent et se dessinent
+  à chaque image. Particules, chiffres et barres sont chacun un seul maillage réécrit
+  à chaque image (un appel de dessin, tampons réutilisés, aucune allocation une fois
+  le record atteint).
+- **Particules** : toutes les sortes et gerbes de `particules.ts`, pool de 1024,
+  carrés face à la caméra lus dans un atlas construit à l'entrée en partie. Les éclats
+  (« morceau ») prennent l'icône donnée par la simulation : objet ramassé, bloc du sol
+  pour les éboulis, texture du météore, de la nova ou du piège.
+- **Chiffres de dégâts** : blancs, dorés et plus gros avec un « pop » (critique),
+  orange (feu) ou verts (poison) ; police pixel du jeu avec son ombre portée ; montée,
+  dérive et fondu ; toujours devant le décor.
+- **Barres de vie** : mini-boss et alliés blessés, du rouge au vert, devant le décor.
+- **Secousse** de la caméra : bruit fait de sinus, qui décroît.
+- **Matériau des entités** : nouveau mode « devant » (toujours visible).
+- **Vitrine** : `BS_VITRINE=1` montre aussi chaque gerbe, chaque style de chiffre et
+  deux barres.
+- **Capture** : `docs/captures/vitrine-retours-pc.png`.
+- **Tests** : atlas de la police, nombre de chiffres.

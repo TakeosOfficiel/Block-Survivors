@@ -205,7 +205,11 @@ impl Partie {
         });
         // Graine des buissons (visuelle)
         self.alea.tirer();
-        self.ev.gerbe("ronces", jx, 0.3, jz);
+        let image = match &self.arsenal.armes[i].def.mecanique {
+            Mecanique::Piege { image, .. } => image.as_str(),
+            _ => "block/sweet_berry_bush_stage3",
+        };
+        self.ev.gerbe_icone("ronces", image, jx, 0.3, jz);
         true
     }
 

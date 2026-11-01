@@ -185,7 +185,8 @@ impl Partie {
                 self.alea.tirer();
             }
         }
-        self.ev.gerbe("eboulis", x, 0.4, z);
+        self.ev
+            .gerbe_icone("eboulis", self.texture_sol(), x, 0.4, z);
         let mut tampon = [0u32; 64];
         let n = self.ennemis.chercher(x, z, s.zone / 2.0, &mut tampon);
         for &e in &tampon[..n] {
@@ -236,7 +237,8 @@ impl Partie {
                     self.toucher(e as usize, arme.index, &s, c.x, c.z, s.recul, 1.0);
                 }
                 self.ev.gerbe("impactLame", c.x, 0.3, c.z);
-                self.ev.gerbe("eboulis", c.x, 0.3, c.z);
+                self.ev
+                    .gerbe_icone("eboulis", self.texture_sol(), c.x, 0.3, c.z);
                 self.ev.son("lame_colossale");
                 self.ev.secousse(0.35);
             }
@@ -300,7 +302,11 @@ impl Partie {
                     }
                     self.toucher(e, arme.index, &s, n.x, n.z, s.recul, n.facteur);
                     let (ex, ez) = (self.ennemis.pool[e].x, self.ennemis.pool[e].z);
-                    self.ev.gerbe("gel", ex, 0.8, ez);
+                    let texture = match &arme.def.mecanique {
+                        Mecanique::Nova { texture, .. } => texture.as_str(),
+                        _ => "block/packed_ice",
+                    };
+                    self.ev.gerbe_icone("gel", texture, ex, 0.8, ez);
                 }
             } else if n.sol {
                 n.prochain_sol -= dt;

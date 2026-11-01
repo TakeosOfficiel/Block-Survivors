@@ -55,7 +55,10 @@ fn image(pixels: Vec<u8>, cote: u32) -> Image {
 }
 
 /// Pixels RGBA d'une texture chargée.
-fn pixels<'a>(images: &'a Assets<Image>, h: &Option<Handle<Image>>) -> Option<(&'a [u8], usize)> {
+pub(crate) fn pixels<'a>(
+    images: &'a Assets<Image>,
+    h: &Option<Handle<Image>>,
+) -> Option<(&'a [u8], usize)> {
     let i = images.get(h.as_ref()?)?;
     let (l, ht) = (i.width() as usize, i.height() as usize);
     let px = i.data.as_deref()?;

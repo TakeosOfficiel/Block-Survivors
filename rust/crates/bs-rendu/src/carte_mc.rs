@@ -107,11 +107,13 @@ pub fn avancer_import(
     }
     modeles::demander_textures(d, import.personnage, &serveur, &mut textures);
     crate::effets::demander_textures(d, &serveur, &mut textures);
-    commandes.insert_resource(PartieEnCours::nouvelle(
+    let jeu = PartieEnCours::nouvelle(
         partie,
         import.graine,
         SourceArene::Importee(arene, ai.carte),
-    ));
+    );
+    crate::retours::demander_textures(&jeu, &serveur, &mut textures);
+    commandes.insert_resource(jeu);
     commandes.insert_resource(CarteImportee {
         schematique: s,
         blocs,

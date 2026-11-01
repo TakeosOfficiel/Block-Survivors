@@ -232,7 +232,11 @@ impl Partie {
                 self.toucher(e as usize, arme.index, &s, m.x, m.z, s.recul, m.facteur);
             }
             self.ev.gerbe("impactMeteore", m.x, 0.4, m.z);
-            self.ev.gerbe("eboulis", m.x, 0.4, m.z);
+            let texture = match &arme.def.mecanique {
+                Mecanique::Meteore { texture, .. } => texture.as_str(),
+                _ => "block/magma",
+            };
+            self.ev.gerbe_icone("eboulis", texture, m.x, 0.4, m.z);
             self.ev.son_hauteur("explosion", 0.8);
             self.ev.secousse(0.3);
             if self.armes.feu.feux.len() < METEORE_CAPACITE {

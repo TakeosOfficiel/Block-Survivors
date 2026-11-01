@@ -18,6 +18,7 @@ mod materiau;
 mod materiau_entite;
 mod mesure;
 mod modeles;
+mod retours;
 mod textures;
 
 use bevy::prelude::*;
@@ -133,6 +134,8 @@ impl Plugin for PluginJeu {
             .init_resource::<Textures>()
             .init_resource::<camera::Cible>()
             .init_resource::<effets::Ombres>()
+            .init_resource::<retours::Barres>()
+            .init_resource::<camera::Secousse>()
             .init_state::<Phase>()
             .add_plugins((
                 materiau::PluginMateriaux,
@@ -159,17 +162,28 @@ impl Plugin for PluginJeu {
                     entites::creer_entites,
                     construire_modeles,
                     effets::construire,
+                    retours::construire,
                 ),
             )
             .add_systems(
                 FixedUpdate,
-                (entites::noter_positions, avancer, entites::animer)
+                (
+                    entites::noter_positions,
+                    avancer,
+                    entites::animer,
+                    retours::recevoir,
+                )
                     .chain()
                     .run_if(in_state(Phase::Partie)),
             )
             .add_systems(
                 Update,
-                (entites::placer_entites, camera::suivre, effets::placer)
+                (
+                    entites::placer_entites,
+                    camera::suivre,
+                    effets::placer,
+                    retours::dessiner,
+                )
                     .chain()
                     .run_if(in_state(Phase::Partie)),
             );
@@ -197,6 +211,7 @@ fn demander_textures(
     let perso = jeu.partie.etat.index_personnage;
     modeles::demander_textures(d, perso, &serveur, &mut textures);
     effets::demander_textures(d, &serveur, &mut textures);
+    retours::demander_textures(&jeu, &serveur, &mut textures);
 }
 
 /// Modèles des entités (textures déjà chargées).

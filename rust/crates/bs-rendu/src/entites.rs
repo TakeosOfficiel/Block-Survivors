@@ -1,75 +1,104 @@
-//! Entités affichées (provisoires) : le joueur et les ennemis en personnages cubiques,
-//! en attendant les modèles Minecraft (étape 2b). Une entité Bevy par place du pool
-//! d'ennemis, cachée quand la place est libre : aucune création pendant la partie.
+//! Entités affichées : joueur, ennemis et alliés en modèles Minecraft (`modeles`).
 //!
-//! Les places du pool bougent (un mort est remplacé par le dernier) : la position
-//! précédente de chaque ennemi est retrouvée par son identifiant, dans une table dont la
-//! capacité est réservée une fois pour toutes.
+//! `FixedUpdate` : avant chaque pas, les positions courantes deviennent les précédentes
+//! (`noter_positions`) ; après le pas, les animations avancent (`animer`, gestes
+//! d'attaque lus dans les événements). `Update` : chaque entité est posée entre ses deux
+//! dernières positions (`placer_entites`), avec chute à la mort, gonflement du creeper
+//! et teintes d'état (src/entites/ennemis.ts, joueur.ts, invocations.ts).
+//!
+//! Les places des pools bougent (un mort est remplacé par le dernier) : positions et
+//! animations sont retrouvées par identifiant, dans des tables dont la capacité est
+//! réservée une fois pour toutes.
 
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
+use bs_donnees::Donnees;
+use bs_donnees::entites::Comportement;
+use bs_regles::ennemis::{DUREE_MORT, Ennemi};
+use bs_regles::evenements::Evenement;
 
-use crate::PartieEnCours;
-use crate::modeles::personnage;
+use crate::modeles::Rendus;
+use crate::modeles::animation::{
+    EtatAnimation, angle_chute, calculer_rotations, hauteur_flottement,
+};
+use crate::modeles::rendu::Composants;
+use crate::{PAS, PartieEnCours};
 
-/// Couleurs des ennemis selon leur type (provisoire).
-const PALETTE: [u32; 6] = [0x4c8a3a, 0x8f8f8f, 0x3a5f8a, 0x7a3a8a, 0xa8743a, 0x2e2e2e];
-
-#[derive(Component)]
-pub struct JoueurAffiche;
-
-/// Place du pool d'ennemis affichée par cette entité.
-#[derive(Component)]
-pub struct EnnemiAffiche(usize);
+/// Durée de la chute du joueur mort (config.ts `joueur.dureeMort`).
+const DUREE_MORT_JOUEUR: f32 = 0.6;
+/// Teinte rouge d'un coup reçu (config.ts `blessure`).
+const BLESSURE: [f32; 3] = [1.0, 0.0, 0.0];
+const FORCE_BLESSURE: f32 = 0.35;
+/// Fenêtre de teinte rouge du joueur après un coup (s).
+const DUREE_BLESSURE: f32 = 0.3;
+/// Clignotement blanc du creeper (config.ts `flash`).
+const FLASH: [f32; 3] = [1.0, 1.0, 1.0];
+const FORCE_FLASH: f32 = 0.7;
+/// Gonflement du creeper au bout de sa mèche (config.ts `ennemis`).
+const GONFLEMENT_LARGEUR: f32 = 0.4;
+const GONFLEMENT_HAUTEUR: f32 = 0.1;
+/// Capacité réservée des tables d'alliés.
+const CAPACITE_ALLIES: usize = 64;
 
 /// Positions au pas précédent (pour l'interpolation).
 #[derive(Resource)]
 pub struct Precedentes {
     joueur: Vec2,
     ennemis: HashMap<u32, Vec2>,
-    /// Matériau de chaque couleur de la palette.
-    couleurs: Vec<Handle<StandardMaterial>>,
+    allies: HashMap<u32, Vec2>,
 }
 
-pub fn creer_entites(
-    mut commandes: Commands,
-    jeu: Res<PartieEnCours>,
-    mut maillages: ResMut<Assets<Mesh>>,
-    mut materiaux: ResMut<Assets<StandardMaterial>>,
-) {
+/// Teinte d'un état (couleur, force), lue une fois dans les données.
+type Teinte = Option<([f32; 3], f32)>;
+
+/// État d'animation de chaque entité.
+#[derive(Resource)]
+pub struct Animations {
+    joueur: EtatAnimation,
+    ennemis: HashMap<u32, EtatAnimation>,
+    allies: HashMap<u32, EtatAnimation>,
+    /// Graine de la partie animée (une nouvelle partie remet tout à zéro).
+    graine: u32,
+    /// Numéro du pas, pour oublier les entités disparues.
+    pas: u32,
+    brulure: Teinte,
+    poison: Teinte,
+    saignement: Teinte,
+    ralenti: Teinte,
+    invulnerabilite: f32,
+}
+
+/// Décalage d'animation stable dérivé de l'identifiant (les foules ne marchent pas au pas).
+fn decalage(id: u32) -> f32 {
+    (id.wrapping_mul(2_654_435_761) >> 8) as f32 / (1u32 << 24) as f32
+}
+
+fn teinte(d: &Donnees, cle: &str) -> Teinte {
+    let e = d.regles.etats.get(cle)?;
+    Some((e.couleur?, e.force.unwrap_or(0.0)))
+}
+
+pub fn creer_entites(mut commandes: Commands, jeu: Res<PartieEnCours>) {
     let p = &jeu.partie;
-    let corps = maillages.add(personnage());
-    let couleurs: Vec<_> = PALETTE
-        .iter()
-        .map(|&hex| {
-            materiaux.add(Color::srgb_u8(
-                (hex >> 16) as u8,
-                (hex >> 8) as u8,
-                hex as u8,
-            ))
-        })
-        .collect();
-    commandes.spawn((
-        JoueurAffiche,
-        Mesh3d(corps.clone()),
-        MeshMaterial3d(materiaux.add(Color::srgb(0.2, 0.55, 0.85))),
-        Transform::default(),
-    ));
+    let d = p.d;
     let capacite = p.ennemis.pool.len();
-    for k in 0..capacite {
-        commandes.spawn((
-            EnnemiAffiche(k),
-            Mesh3d(corps.clone()),
-            MeshMaterial3d(couleurs[k % couleurs.len()].clone()),
-            Transform::default(),
-            Visibility::Hidden,
-        ));
-    }
     let j = &p.etat.joueur;
     commandes.insert_resource(Precedentes {
         joueur: Vec2::new(j.x, j.z),
         ennemis: HashMap::with_capacity(capacite),
-        couleurs,
+        allies: HashMap::with_capacity(CAPACITE_ALLIES),
+    });
+    commandes.insert_resource(Animations {
+        joueur: EtatAnimation::nouveau(0.0),
+        ennemis: HashMap::with_capacity(capacite),
+        allies: HashMap::with_capacity(CAPACITE_ALLIES),
+        graine: jeu.graine,
+        pas: 0,
+        brulure: teinte(d, "brulure"),
+        poison: teinte(d, "poison"),
+        saignement: teinte(d, "saignement"),
+        ralenti: teinte(d, "ralenti"),
+        invulnerabilite: d.regles.joueur.invulnerabilite,
     });
 }
 
@@ -81,46 +110,202 @@ pub fn noter_positions(jeu: Res<PartieEnCours>, mut prec: ResMut<Precedentes>) {
     for e in p.ennemis.actifs() {
         prec.ennemis.insert(e.id, Vec2::new(e.x, e.z));
     }
+    prec.allies.clear();
+    for a in &p.armes.invocations.pool {
+        prec.allies.insert(a.id, Vec2::new(a.x, a.z));
+    }
 }
 
+/// Après chaque pas : animations (marche, repos, gestes d'attaque).
+pub fn animer(jeu: Res<PartieEnCours>, rendus: Res<Rendus>, mut anim: ResMut<Animations>) {
+    let p = &jeu.partie;
+    let a = &mut *anim;
+    if a.graine != jeu.graine {
+        a.graine = jeu.graine;
+        a.joueur = EtatAnimation::nouveau(0.0);
+        a.ennemis.clear();
+        a.allies.clear();
+    }
+    a.pas = a.pas.wrapping_add(1);
+    let pas = a.pas;
+    let j = &p.etat.joueur;
+    let mj = rendus.modele_joueur();
+    a.joueur.avancer(mj, PAS, Vec2::new(j.vx, j.vz).length());
+    for e in p.ennemis.actifs() {
+        let m = rendus.modele_ennemi(e.index_type);
+        let etat = a
+            .ennemis
+            .entry(e.id)
+            .or_insert_with(|| EtatAnimation::nouveau(decalage(e.id)));
+        etat.vu = pas;
+        etat.avancer(m, PAS, e.vitesse_sol / e.def.echelle.unwrap_or(1.0));
+    }
+    a.ennemis.retain(|_, e| e.vu == pas);
+    for al in &p.armes.invocations.pool {
+        let m = rendus.modele_allie(al.type_allie);
+        let etat = a
+            .allies
+            .entry(al.id)
+            .or_insert_with(|| EtatAnimation::nouveau(decalage(al.id)));
+        etat.vu = pas;
+        etat.avancer(m, PAS, al.vitesse_sol);
+    }
+    a.allies.retain(|_, e| e.vu == pas);
+    for ev in &p.ev.liste {
+        let Evenement::Geste(qui) = ev else { continue };
+        match qui {
+            None => a.joueur.declencher_attaque(mj),
+            Some(id) => {
+                let Some(al) = p.armes.invocations.pool.iter().find(|x| x.id == *id) else {
+                    continue;
+                };
+                if let Some(etat) = a.allies.get_mut(id) {
+                    etat.declencher_attaque(rendus.modele_allie(al.type_allie));
+                }
+            }
+        }
+    }
+}
+
+/// Surcouche d'un ennemi vivant : premier état actif (brûlure pulsée, poison,
+/// saignement, ralenti), sinon rien.
+fn surcouche_etat(a: &Animations, e: &Ennemi, temps: f32) -> [f32; 4] {
+    let pulse = 0.75 + 0.25 * (temps * 23.0 + e.id as f32).sin();
+    let choix = [
+        (e.brulure.cumuls > 0.0, a.brulure, pulse),
+        (e.poison.cumuls > 0.0, a.poison, 1.0),
+        (e.saignement.cumuls > 0.0, a.saignement, 1.0),
+        (e.ralenti_temps > 0.0 || e.enracine > 0.0, a.ralenti, 1.0),
+    ];
+    for (actif, t, facteur) in choix {
+        if let (true, Some((c, f))) = (actif, t) {
+            return [c[0], c[1], c[2], f * facteur];
+        }
+    }
+    [0.0; 4]
+}
+
+fn rouge() -> [f32; 4] {
+    [BLESSURE[0], BLESSURE[1], BLESSURE[2], FORCE_BLESSURE]
+}
+
+#[allow(clippy::too_many_arguments)]
 pub fn placer_entites(
+    mut commandes: Commands,
     jeu: Res<PartieEnCours>,
     prec: Res<Precedentes>,
+    anim: Res<Animations>,
+    mut rendus: ResMut<Rendus>,
     temps: Res<Time<Fixed>>,
     mut cible: ResMut<crate::camera::Cible>,
-    mut joueur: Query<&mut Transform, (With<JoueurAffiche>, Without<EnnemiAffiche>)>,
-    mut ennemis: Query<(
-        &EnnemiAffiche,
-        &mut Transform,
-        &mut Visibility,
-        &mut MeshMaterial3d<StandardMaterial>,
-    )>,
+    mut q: Composants,
 ) {
     let t = temps.overstep_fraction();
     let p = &jeu.partie;
+    let temps_jeu = p.etat.temps_jeu as f32;
+    for r in &mut rendus.liste {
+        r.commencer();
+    }
+
+    // Joueur
     let j = &p.etat.joueur;
     let ici = prec.joueur.lerp(Vec2::new(j.x, j.z), t);
     cible.0 = ici;
-    for mut tr in &mut joueur {
-        tr.translation = Vec3::new(ici.x, 0.0, ici.y);
-        tr.rotation = Quat::from_rotation_y(j.angle);
-    }
-    let actifs = p.ennemis.actifs();
-    for (EnnemiAffiche(k), mut tr, mut vis, mut materiau) in &mut ennemis {
-        let Some(e) = actifs.get(*k).filter(|e| e.mort < 0.0) else {
-            vis.set_if_neq(Visibility::Hidden);
+    let r = rendus.joueur();
+    calculer_rotations(&r.modele, &anim.joueur, &mut r.pose.rotations);
+    let pose = &mut r.pose;
+    pose.position = Vec3::new(ici.x, hauteur_flottement(&r.modele, &anim.joueur), ici.y);
+    pose.angle = j.angle;
+    pose.inclinaison = if j.mort {
+        angle_chute(j.temps_mort, DUREE_MORT_JOUEUR)
+    } else {
+        0.0
+    };
+    pose.echelle_xz = 1.0;
+    pose.echelle_y = 1.0;
+    let touche = j.invulnerabilite > anim.invulnerabilite - DUREE_BLESSURE;
+    pose.surcouche = if j.mort || touche { rouge() } else { [0.0; 4] };
+    r.ajouter(&mut commandes, &mut q);
+
+    // Ennemis
+    for e in p.ennemis.actifs() {
+        let Some(etat) = anim.ennemis.get(&e.id) else {
             continue;
         };
-        vis.set_if_neq(Visibility::Inherited);
         let maintenant = Vec2::new(e.x, e.z);
-        let avant = prec.ennemis.get(&e.id).copied().unwrap_or(maintenant);
-        let pos = avant.lerp(maintenant, t);
-        tr.translation = Vec3::new(pos.x, 0.0, pos.y);
-        tr.rotation = Quat::from_rotation_y(e.angle);
-        tr.scale = Vec3::splat(e.def.echelle.unwrap_or(1.0));
-        let couleur = &prec.couleurs[e.index_type % prec.couleurs.len()];
-        if materiau.0 != *couleur {
-            materiau.0 = couleur.clone();
+        let pos = prec
+            .ennemis
+            .get(&e.id)
+            .copied()
+            .unwrap_or(maintenant)
+            .lerp(maintenant, t);
+        let ech = e.def.echelle.unwrap_or(1.0);
+        let r = rendus.ennemi(e.index_type);
+        calculer_rotations(&r.modele, etat, &mut r.pose.rotations);
+        let pose = &mut r.pose;
+        pose.position = Vec3::new(pos.x, hauteur_flottement(&r.modele, etat) * ech, pos.y);
+        pose.angle = e.angle;
+        let mort = e.mort >= 0.0;
+        pose.inclinaison = if mort {
+            angle_chute(e.mort, DUREE_MORT)
+        } else {
+            0.0
+        };
+        pose.echelle_xz = ech;
+        pose.echelle_y = ech;
+        pose.surcouche = if mort {
+            [0.0; 4]
+        } else {
+            surcouche_etat(&anim, e, temps_jeu)
+        };
+        if let Comportement::Explosif { duree, .. } = &e.def.comportement
+            && e.meche > 0.0
+        {
+            let prog = (e.meche / duree).min(1.0);
+            let tremblement = 1.0 + (prog * 100.0).sin() * prog * 0.01;
+            let gonf = prog * prog * prog;
+            pose.echelle_xz = ech * (1.0 + gonf * GONFLEMENT_LARGEUR) * tremblement;
+            pose.echelle_y = ech * (1.0 + gonf * GONFLEMENT_HAUTEUR) / tremblement;
+            if (prog * 10.0).floor() as i32 % 2 == 1 {
+                let f = FORCE_FLASH * prog.clamp(0.5, 1.0);
+                pose.surcouche = [FLASH[0], FLASH[1], FLASH[2], f];
+            }
         }
+        if e.blessure > 0.0 || mort {
+            pose.surcouche = rouge();
+        }
+        r.ajouter(&mut commandes, &mut q);
+    }
+
+    // Alliés
+    for a in &p.armes.invocations.pool {
+        let Some(etat) = anim.allies.get(&a.id) else {
+            continue;
+        };
+        let maintenant = Vec2::new(a.x, a.z);
+        let pos = prec
+            .allies
+            .get(&a.id)
+            .copied()
+            .unwrap_or(maintenant)
+            .lerp(maintenant, t);
+        let r = rendus.allie(a.type_allie);
+        calculer_rotations(&r.modele, etat, &mut r.pose.rotations);
+        let pose = &mut r.pose;
+        let y = match a.def.vol {
+            Some(v) => v + (a.vie * 4.0).sin() * 0.12,
+            None => hauteur_flottement(&r.modele, etat),
+        };
+        pose.position = Vec3::new(pos.x, y, pos.y);
+        pose.angle = a.angle;
+        pose.inclinaison = 0.0;
+        pose.echelle_xz = 1.0;
+        pose.echelle_y = 1.0;
+        pose.surcouche = if a.blessure > 0.0 { rouge() } else { [0.0; 4] };
+        r.ajouter(&mut commandes, &mut q);
+    }
+
+    for r in &mut rendus.liste {
+        r.terminer(&mut q);
     }
 }

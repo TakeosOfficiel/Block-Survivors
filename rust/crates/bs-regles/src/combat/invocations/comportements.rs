@@ -109,6 +109,7 @@ impl Partie {
                 Nature::Allie,
             );
             self.ev.son(&a.def.son_coup);
+            self.ev.geste(Some(a.id));
             self.armes.invocations.pool[i].minuterie = a.def.cadence_coups;
         }
     }

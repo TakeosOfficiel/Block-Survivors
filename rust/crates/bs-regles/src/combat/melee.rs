@@ -65,6 +65,7 @@ impl Partie {
             }
         }
         self.etat.joueur.angle = angle;
+        self.ev.geste(None);
         let images =
             matches!(&arme.def.mecanique, Mecanique::Balayage { effet, .. } if !effet.is_empty());
         if !images {
@@ -143,6 +144,7 @@ impl Partie {
             );
         }
         self.etat.joueur.angle = angle;
+        self.ev.geste(None);
         let devant = s.zone * 0.5;
         self.ev.gerbe(
             "heurt",
@@ -205,6 +207,7 @@ impl Partie {
             }
             self.ev.son_hauteur("balayage", 1.1);
             self.etat.joueur.angle = t.temps * TOURBILLON_ROTATION;
+            self.ev.geste(None);
         }
         if t.coups_restants == 0 && t.prochain_coup <= 0.0 {
             t.arme = None;

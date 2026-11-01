@@ -11,6 +11,7 @@ mod arene;
 mod camera;
 mod entites;
 mod materiau;
+mod materiau_entite;
 mod mesure;
 mod modeles;
 mod textures;
@@ -29,7 +30,7 @@ use crate::materiau::{AnimationTexture, MateriauBloc, ParametresBloc};
 use crate::textures::Textures;
 
 /// Pas fixe de la simulation (s).
-const PAS: f32 = 1.0 / 60.0;
+pub(crate) const PAS: f32 = 1.0 / 60.0;
 /// Attente après la fin d'une partie avant d'en relancer une (s).
 const ATTENTE_RELANCE: f32 = 3.0;
 
@@ -80,7 +81,11 @@ impl Plugin for PluginJeu {
         .init_resource::<Textures>()
         .init_resource::<camera::Cible>()
         .init_state::<Phase>()
-        .add_plugins((materiau::PluginMateriaux, mesure::PluginMesure))
+        .add_plugins((
+            materiau::PluginMateriaux,
+            materiau_entite::PluginMateriauEntite,
+            mesure::PluginMesure,
+        ))
         .add_systems(Startup, demander_textures)
         .add_systems(
             Update,
@@ -88,11 +93,11 @@ impl Plugin for PluginJeu {
         )
         .add_systems(
             OnEnter(Phase::Partie),
-            (construire_arene, entites::creer_entites),
+            (construire_arene, entites::creer_entites, construire_modeles),
         )
         .add_systems(
             FixedUpdate,
-            (entites::noter_positions, avancer)
+            (entites::noter_positions, avancer, entites::animer)
                 .chain()
                 .run_if(in_state(Phase::Partie)),
         )
@@ -123,6 +128,31 @@ fn demander_textures(
             textures.demander(&serveur, chemin);
         }
     }
+    let perso = jeu.partie.etat.index_personnage;
+    modeles::demander_textures(d, perso, &serveur, &mut textures);
+}
+
+/// Modèles des entités (textures déjà chargées).
+fn construire_modeles(
+    mut commandes: Commands,
+    serveur: Res<AssetServer>,
+    textures: Res<Textures>,
+    jeu: Res<PartieEnCours>,
+    images: Res<Assets<Image>>,
+    mut maillages: ResMut<Assets<Mesh>>,
+    mut materiaux: ResMut<Assets<materiau_entite::MateriauEntite>>,
+) {
+    let p = &jeu.partie;
+    commandes.insert_resource(modeles::Rendus::construire(
+        p.d,
+        p.etat.index_personnage,
+        ParametresBloc::de_l_arene(p.etat.arene),
+        &serveur,
+        &textures,
+        &images,
+        &mut maillages,
+        &mut materiaux,
+    ));
 }
 
 fn attendre_textures(
@@ -197,18 +227,6 @@ fn construire_arene(
     let ciel = Color::LinearRgba(LinearRgba::from_vec4(ambiance.ciel));
     let j = &jeu.partie.etat.joueur;
     camera::creer_camera(&mut commandes, Vec2::new(j.x, j.z), ciel);
-    // Lumière des entités provisoires (StandardMaterial), en attendant leurs modèles
-    commandes.spawn((
-        DirectionalLight {
-            illuminance: 6000.0,
-            ..default()
-        },
-        Transform::from_xyz(3.0, 10.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
-    ));
-    commandes.insert_resource(GlobalAmbientLight {
-        brightness: 600.0,
-        ..default()
-    });
 }
 
 /// Un pas : le clavier (ZQSD, WASD, flèches) conduit le joueur ; sans touche, le robot.
@@ -219,6 +237,8 @@ fn avancer(
     mut mesure: ResMut<Mesure>,
 ) {
     let debut = bevy::platform::time::Instant::now();
+    // Les événements du pas précédent ont été lus par `entites::animer`
+    jeu.partie.ev.vider();
     if jeu.partie.etat.issue.is_some() {
         jeu.fin += PAS;
         if jeu.fin >= ATTENTE_RELANCE {
@@ -247,6 +267,5 @@ fn avancer(
     } else {
         robot.avancer(partie);
     }
-    partie.ev.vider();
     mesure.ajouter_pas(debut.elapsed());
 }

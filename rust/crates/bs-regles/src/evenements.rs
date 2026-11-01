@@ -34,6 +34,8 @@ pub enum Evenement {
     },
     /// Intensité ajoutée à la secousse de la caméra (0 à 1).
     Secousse(f32),
+    /// Geste d'attaque du modèle : le joueur (`None`) ou l'allié de cet identifiant.
+    Geste(Option<u32>),
 }
 
 /// Tampon des événements d'un pas (capacité gardée d'un pas à l'autre).
@@ -80,6 +82,11 @@ impl Evenements {
     #[inline]
     pub fn secousse(&mut self, force: f32) {
         self.pousser(Evenement::Secousse(force));
+    }
+
+    /// Geste d'attaque du joueur (`None`) ou d'un allié.
+    pub fn geste(&mut self, allie: Option<u32>) {
+        self.pousser(Evenement::Geste(allie));
     }
 
     pub fn vider(&mut self) {

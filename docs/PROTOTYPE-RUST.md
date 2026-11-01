@@ -11,7 +11,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | −1. Robot d'équilibrage, aléatoire à graine, pas fixe (TypeScript) | fait |
 | 0 bis. Prototype des cinq paris | fait : on continue, avec ajustements (voir la décision) ; 94 images/s mesurées sur le PC du joueur |
 | 1. Données et règles, sans rendu | fait : données, monde, simulation complète et robot (`bs-robot`) ; ses moyennes tombent dans la tolérance de celles du jeu TS (voir 1b) |
-| 2. Monde et rendu | en cours : 2a (textures vanilla, arène affichée, vraie partie) fait ; 2b modèles d'entités, 2c maps .schem, 2d effets à faire |
+| 2. Monde et rendu | en cours : 2a (textures vanilla, arène affichée, vraie partie) et 2b (modèles Minecraft des entités) faits ; 2c maps .schem, 2d effets à faire |
 
 ---
 
@@ -440,8 +440,7 @@ vingtaine de minutes pour le robot TS dans Chromium), puis compare aux référen
   `src/config.ts`).
 - **Partie.** La vraie simulation (`bs-regles`) tourne à 60 pas/s ; ZQSD/WASD ou les
   flèches conduisent le joueur, sinon le robot joue (et choisit les cartes, en
-  attendant l'interface de l'étape 3). Joueur et ennemis sont encore des personnages
-  cubiques (modèles Minecraft : 2b). Relance automatique 3 s après la fin.
+  attendant l'interface de l'étape 3). Relance automatique 3 s après la fin.
 - **Capture** (PC sans carte graphique, lavapipe) : `docs/captures/arene-prairie-pc.png`.
   Simulation : environ 30 µs par pas.
 - **Tests** : faces cachées entre blocs et dans un liquide, hauteur de l'eau, damier
@@ -449,3 +448,33 @@ vingtaine de minutes pour le robot TS dans Chromium), puis compare aux référen
 - **Développement local** : `CARGO_PROFILE_DEV_DEBUG=0` évite de remplir le disque
   (les infos de débogage de Bevy dépassaient 20 Go).
 
+
+### 2b : modèles Minecraft des entités
+
+- **Modèles** (`bs-rendu/src/modeles/`) : compilés depuis `donnees/modeles.ron`
+  (`compilation.rs`), une boîte par partie avec le patron de skin Minecraft
+  (`geometrie.rs`, faces et UV comme `THREE.BoxGeometry`, membres en miroir,
+  gonflement), skins vanilla téléchargés comme les blocs ; sans skin, couleurs de
+  secours par partie.
+- **Objet tenu** : sprite de l'objet extrudé d'un pixel d'épaisseur (rebords colorés
+  pixel par pixel), accroché à la main du modèle.
+- **Animation** (`animation.rs`, comme `src/modeles/animation.ts`) : balancement des
+  membres selon la vitesse au sol, bras au repos, tournoiement, flottement, chute sur
+  le côté à la mort. Le geste d'attaque est déclenché par un nouvel événement de la
+  simulation, `Evenement::Geste` (joueur ou allié de mêlée), lu après chaque pas.
+- **Instanciation** : une entité Bevy par partie et par instance, enfants d'une
+  racine ; toutes les instances d'un modèle partagent maillages et matériau, donc Bevy
+  les dessine en un appel par partie. Les instances ne sont créées qu'au premier
+  dépassement du record, puis cachées ou réutilisées : rien n'est détruit en partie.
+- **Matériau des entités** (`shaders/entites.wgsl`) : même éclairage et brouillard
+  que les blocs ; la surcouche (rouge des coups, clignotement du creeper, teintes de
+  brûlure, poison, saignement, ralenti) est passée par instance dans le `MeshTag`
+  (r, g, b, force sur 4 octets), sans matériau par entité.
+- **Poses** (`entites.rs`) : positions interpolées entre deux pas, gonflement et
+  tremblement du creeper au bout de sa mèche, alliés volants qui ondulent, rouge du
+  joueur touché ou mort.
+- **Reste à faire** : armures et capes (attendent les profils, étape 4) ; ombres,
+  particules et chiffres de dégâts (2d).
+- **Capture** : `docs/captures/modeles-prairie-pc.png` (Steve en marche, épée en main).
+- **Tests** : boîtes de tous les modèles (24 sommets, UV dans la texture, triangles
+  orientés vers leur normale), extrusion d'un sprite, balancement à la marche, chute.

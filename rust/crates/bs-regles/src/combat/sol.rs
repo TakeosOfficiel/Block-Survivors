@@ -119,6 +119,7 @@ impl Partie {
             }
         }
         self.etat.joueur.angle = angle;
+        self.ev.geste(None);
         self.ev.secousse(0.15);
         true
     }

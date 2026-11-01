@@ -11,7 +11,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | −1. Robot d'équilibrage, aléatoire à graine, pas fixe (TypeScript) | fait |
 | 0 bis. Prototype des cinq paris | fait : on continue, avec ajustements (voir la décision) ; 94 images/s mesurées sur le PC du joueur |
 | 1. Données et règles, sans rendu | fait : données, monde, simulation complète et robot (`bs-robot`) ; ses moyennes tombent dans la tolérance de celles du jeu TS (voir 1b) |
-| 2. Monde et rendu | en cours : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres) et 2d-2 (particules, chiffres de dégâts, barres de vie, secousse) faits ; 2d-3 et 2d-4 à faire |
+| 2. Monde et rendu | en cours : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres) et 2d-2 (particules, chiffres de dégâts, barres de vie, secousse) faits ; 2d-3a (lueurs, mêlée, foudre) fait ; 2d-3b, 2d-3c et 2d-4 à faire |
 
 ---
 
@@ -511,7 +511,7 @@ vingtaine de minutes pour le robot TS dans Chromium), puis compare aux référen
 2d-1 projectiles, orbes, objets, coffres, ombres ; 2d-2 particules, chiffres de
 dégâts, barres de vie, secousse ; 2d-3 visuels des armes (météores, tornades, pluies,
 failles, foudre, orbes arcaniques, pièges, novas, invocations) ; 2d-4 lumières, vent,
-herbe, caméra F5.
+herbe. La caméra F5 est abandonnée (décision du propriétaire).
 
 #### 2d-1 : projectiles, orbes, objets, coffres, ombres (fait)
 
@@ -560,3 +560,33 @@ herbe, caméra F5.
   deux barres.
 - **Capture** : `docs/captures/vitrine-retours-pc.png`.
 - **Tests** : atlas de la police, nombre de chiffres.
+
+#### 2d-3 : visuels des armes (en trois parties)
+
+Décision du propriétaire : les compétences restent celles du jeu, mais leurs visuels
+sont refaits, plus propres et plus poussés, sans recopier la version TS (images
+vanilla collées). 2d-3a lueurs, mêlée, foudre ; 2d-3b feu (tornade, météore, feu au
+sol) ; 2d-3c sol (fissures, chute, nova), pluie, pièges, orbes arcaniques,
+invocations.
+
+##### 2d-3a : lueurs, mêlée, foudre (fait)
+
+- **Simulation** : nouvel événement `Evenement::Effet { arme, effet, x, z }`
+  (`EffetArme` : balayage, heurt, tourbillon, éclair, soulèvement, brûlure). La
+  simulation dit quoi et où ; l'affichage choisit l'allure. Rien ne change l'état ni
+  l'aléa.
+- **Matériau « lueur »** (`bs-rendu/src/armes/lueur.rs`, `shaders/lueur.wgsl`) :
+  formes lumineuses calculées par le shader (disque doux, faisceau à cœur blanc,
+  anneau, flamme en bruit animé, traînée d'arc, étincelle), mélange additif,
+  extinction dans le brouillard. Toutes les lueurs des armes forment un seul maillage
+  réécrit à chaque image : un appel de dessin, pools de taille fixe.
+- **Balayage** : croissant bleu acier qui balaie l'arc d'un bord à l'autre (aller
+  rapide puis fondu), fil blanc sur le tranchant ; sens alterné d'un coup à l'autre.
+- **Tourbillon** : lame qui fait le tour du joueur à chaque coup.
+- **Coup de bouclier** : onde dorée en arc qui s'étend jusqu'à la portée, éventail
+  lumineux derrière elle.
+- **Foudre** : tracé brisé tombé du ciel, deux ramifications, scintillement, éclair
+  de lumière au sol, onde jusqu'au bord de la zone touchée, étincelle ; couleur de
+  l'arme.
+- **Vitrine** : `BS_VITRINE=1` montre aussi un exemplaire figé de chaque effet.
+- **Capture** : `docs/captures/vitrine-armes-melee-foudre-pc.png`.

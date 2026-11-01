@@ -10,6 +10,7 @@ use bs_donnees::armes::Mecanique;
 use super::arme::ArmeEquipee;
 use super::tours;
 use crate::ennemis::Nature;
+use crate::evenements::EffetArme;
 use crate::partie::Partie;
 
 /// Un ennemi plus proche que ça (blocs) est touché quel que soit l'angle.
@@ -26,7 +27,8 @@ const TOURBILLON_DECLENCHEMENT: f32 = 1.3;
 pub struct Tourbillon {
     /// Position de l'arme dans l'arsenal (ses statistiques sont lues à chaque coup).
     pub arme: Option<usize>,
-    temps: f32,
+    /// Depuis le lancement (s).
+    pub temps: f32,
     prochain_coup: f32,
     coups_restants: u32,
 }
@@ -66,6 +68,16 @@ impl Partie {
         }
         self.etat.joueur.angle = angle;
         self.ev.geste(None);
+        self.ev.effet(
+            arme.index,
+            EffetArme::Balayage {
+                angle,
+                portee: s.zone,
+                ouverture: angle_arc,
+            },
+            jx,
+            jz,
+        );
         let images =
             matches!(&arme.def.mecanique, Mecanique::Balayage { effet, .. } if !effet.is_empty());
         if !images {
@@ -145,6 +157,16 @@ impl Partie {
         }
         self.etat.joueur.angle = angle;
         self.ev.geste(None);
+        self.ev.effet(
+            arme.index,
+            EffetArme::Heurt {
+                angle,
+                portee: s.zone,
+                ouverture: angle_cone,
+            },
+            jx,
+            jz,
+        );
         let devant = s.zone * 0.5;
         self.ev.gerbe(
             "heurt",
@@ -206,6 +228,14 @@ impl Partie {
                 );
             }
             self.ev.son_hauteur("balayage", 1.1);
+            self.ev.effet(
+                arme.index,
+                EffetArme::Tourbillon {
+                    portee: arme.stats.zone,
+                },
+                jx,
+                jz,
+            );
             self.etat.joueur.angle = t.temps * TOURBILLON_ROTATION;
             self.ev.geste(None);
         }

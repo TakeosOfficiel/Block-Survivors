@@ -7,6 +7,7 @@ use bs_donnees::armes::Mecanique;
 use super::arme::ArmeEquipee;
 use super::tours;
 use crate::ennemis::Nature;
+use crate::evenements::EffetArme;
 use crate::partie::Partie;
 
 /// Éclairs affichés à la fois, segments par éclair, durée d'affichage (s).
@@ -57,6 +58,8 @@ impl Partie {
                 );
             }
             self.creer_eclair();
+            self.ev
+                .effet(arme.index, EffetArme::Eclair { zone: s.zone }, x, z);
             self.ev.gerbe("impactFoudre", x, 0.3, z);
         }
         frappe

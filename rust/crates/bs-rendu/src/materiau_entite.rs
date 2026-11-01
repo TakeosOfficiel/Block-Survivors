@@ -75,6 +75,8 @@ pub struct PluginMateriauEntite;
 impl Plugin for PluginMateriauEntite {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "shaders/entites.wgsl");
+        // Shader des lueurs des armes (`armes::lueur`), rangé avec les autres
+        embedded_asset!(app, "shaders/lueur.wgsl");
         app.add_plugins(MaterialPlugin::<MateriauEntite>::default());
     }
 }

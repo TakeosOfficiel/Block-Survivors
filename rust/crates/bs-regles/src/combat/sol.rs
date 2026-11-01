@@ -6,6 +6,7 @@ use bs_commun::maths::{atan2, cos, sin};
 use bs_donnees::armes::Mecanique;
 
 use super::tours;
+use crate::evenements::EffetArme;
 use crate::partie::Partie;
 
 const FISSURE_CAPACITE: usize = 12;
@@ -187,6 +188,8 @@ impl Partie {
         }
         self.ev
             .gerbe_icone("eboulis", self.texture_sol(), x, 0.4, z);
+        self.ev
+            .effet(arme.index, EffetArme::Soulevement { zone: s.zone }, x, z);
         let mut tampon = [0u32; 64];
         let n = self.ennemis.chercher(x, z, s.zone / 2.0, &mut tampon);
         for &e in &tampon[..n] {

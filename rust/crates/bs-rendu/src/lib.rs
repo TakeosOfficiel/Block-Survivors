@@ -9,6 +9,7 @@
 //! robot choisit les cartes et conduit le joueur si personne ne touche au clavier.
 
 mod arene;
+mod armes;
 mod camera;
 mod carte_mc;
 mod effets;
@@ -140,6 +141,7 @@ impl Plugin for PluginJeu {
             .add_plugins((
                 materiau::PluginMateriaux,
                 materiau_entite::PluginMateriauEntite,
+                armes::PluginLueur,
                 mesure::PluginMesure,
                 fichiers::PluginFichiers,
             ))
@@ -163,6 +165,7 @@ impl Plugin for PluginJeu {
                     construire_modeles,
                     effets::construire,
                     retours::construire,
+                    armes::construire,
                 ),
             )
             .add_systems(
@@ -172,6 +175,7 @@ impl Plugin for PluginJeu {
                     avancer,
                     entites::animer,
                     retours::recevoir,
+                    armes::recevoir,
                 )
                     .chain()
                     .run_if(in_state(Phase::Partie)),
@@ -183,6 +187,7 @@ impl Plugin for PluginJeu {
                     camera::suivre,
                     effets::placer,
                     retours::dessiner,
+                    armes::dessiner,
                 )
                     .chain()
                     .run_if(in_state(Phase::Partie)),

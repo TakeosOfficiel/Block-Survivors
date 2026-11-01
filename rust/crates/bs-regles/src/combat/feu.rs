@@ -8,6 +8,7 @@ use bs_donnees::armes::Mecanique;
 
 use super::tours;
 use crate::ennemis::Nature;
+use crate::evenements::EffetArme;
 use crate::partie::Partie;
 
 const TORNADE_CAPACITE: usize = 6;
@@ -157,6 +158,7 @@ impl Partie {
                 t.depuis_trace = 0.0;
                 if self.armes.feu.traces.len() < TRACE_CAPACITE {
                     self.armes.feu.traces.push(0.0);
+                    self.ev.effet(t.arme, EffetArme::Brulure, t.x, t.z);
                     // Position, taille et rotation de la trace
                     for _ in 0..4 {
                         self.alea.tirer();

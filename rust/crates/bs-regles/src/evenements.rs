@@ -11,6 +11,32 @@ pub enum StyleChiffre {
     Poison,
 }
 
+/// Effet visuel ponctuel d'une arme : la simulation dit quoi et où, l'affichage
+/// choisit l'allure. Les angles suivent `atan2(dx, dz)`.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum EffetArme {
+    /// Arc frappé devant le joueur.
+    Balayage {
+        angle: f32,
+        portee: f32,
+        ouverture: f32,
+    },
+    /// Coup de bouclier en cône.
+    Heurt {
+        angle: f32,
+        portee: f32,
+        ouverture: f32,
+    },
+    /// Un coup du tourbillon tout autour du joueur.
+    Tourbillon { portee: f32 },
+    /// Éclair tombé du ciel, de rayon d'impact `zone`.
+    Eclair { zone: f32 },
+    /// Bloc de sol soulevé par une fissure, de largeur `zone`.
+    Soulevement { zone: f32 },
+    /// Trace brûlée laissée par une tornade.
+    Brulure,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Evenement {
     /// Gerbe de particules (identifiant de donnees/particules.ron) en (x, y, z) ;
@@ -38,6 +64,13 @@ pub enum Evenement {
     Secousse(f32),
     /// Geste d'attaque du modèle : le joueur (`None`) ou l'allié de cet identifiant.
     Geste(Option<u32>),
+    /// Effet de l'arme `arme` (position dans l'arsenal) en (x, z).
+    Effet {
+        arme: usize,
+        effet: EffetArme,
+        x: f32,
+        z: f32,
+    },
 }
 
 /// Tampon des événements d'un pas (capacité gardée d'un pas à l'autre).
@@ -113,6 +146,11 @@ impl Evenements {
     /// Geste d'attaque du joueur (`None`) ou d'un allié.
     pub fn geste(&mut self, allie: Option<u32>) {
         self.pousser(Evenement::Geste(allie));
+    }
+
+    #[inline]
+    pub fn effet(&mut self, arme: usize, effet: EffetArme, x: f32, z: f32) {
+        self.pousser(Evenement::Effet { arme, effet, x, z });
     }
 
     pub fn vider(&mut self) {

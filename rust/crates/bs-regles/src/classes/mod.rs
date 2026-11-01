@@ -1,11 +1,13 @@
 //! Socle des mécaniques propres des talents de classe (src/combat/talents/talents.ts) :
 //! mouvements du joueur (temps immobile, distance parcourue), soins plafonnés, coups
 //! « en réaction » qui ne relancent pas les talents, cercles de particules, ordres aux
-//! systèmes d'armes (Séisme). Chaque classe a son état et ses mécaniques (guerrier/, archere/) ;
+//! systèmes d'armes (Séisme, Zéro absolu, Écho). Chaque classe a son état et ses mécaniques
+//! (guerrier/, archere/, mage/) ;
 //! leurs rangs sont lus une fois, au début de la partie.
 
 pub mod archere;
 pub mod guerrier;
+pub mod mage;
 
 use bs_commun::maths::{cos, longueur, sin};
 use bs_donnees::armes::FamilleArme;
@@ -15,6 +17,7 @@ use crate::partie::Partie;
 
 pub use archere::Archere;
 pub use guerrier::Guerrier;
+pub use mage::Mage;
 
 /// Vitesse (blocs/s) sous laquelle le joueur compte comme immobile.
 const SEUIL_MOUVEMENT: f32 = 0.5;
@@ -47,8 +50,13 @@ pub struct Classes {
     pub portee_fleche_geante: f32,
     /// Cette volée part aussi vers l'arrière (Vent arrière).
     pub volee_arriere: bool,
+    /// La prochaine Nova de glace gèle (Zéro absolu).
+    pub nova_gel: bool,
+    /// Le sort déclenché est la répétition de l'Écho arcanique (dégâts réduits).
+    pub echo: bool,
     pub guerrier: Option<Guerrier>,
     pub archere: Option<Archere>,
+    pub mage: Option<Mage>,
 }
 
 impl Partie {

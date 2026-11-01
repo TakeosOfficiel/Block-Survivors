@@ -1,7 +1,8 @@
 //! Armes de feu à effet de zone : tornades qui avancent vers les ennemis et météores qui
 //! tombent sur un groupe puis laissent du feu au sol (port de tornades.ts, meteores.ts).
 //! Les traces de brûlure des tornades sont visuelles mais tirent dans l'aléa : on garde
-//! leur compte.
+//! leur compte. Talents du Mage lus ici : Pluie de feu, Lave en fusion, Tempête de feu
+//! (un météore tombé dans une tornade la change en tornade de magma).
 
 use bs_commun::maths::{atan2, cos, longueur, sin};
 use bs_donnees::armes::Mecanique;
@@ -25,6 +26,20 @@ const METEORE_CAPACITE: usize = 18;
 pub const METEORE_DUREE: f32 = 0.6;
 const METEORE_TIC: f32 = 0.5;
 const METEORE_DECALAGE: f32 = 0.3;
+/// Pluie de feu : petits météores autour du groupe (nombre, part des dégâts, taille,
+/// écart en blocs, décalage en s).
+const PLUIE_NOMBRE: u32 = 3;
+const PLUIE_DEGATS: f32 = 0.6;
+const PLUIE_TAILLE: f32 = 0.65;
+const PLUIE_ECART: f32 = 1.8;
+const PLUIE_DECALAGE: f32 = 0.12;
+/// Lave en fusion : durée en plus (s) et part de dégâts en plus du feu au sol.
+const LAVE_DUREE: f32 = 2.0;
+const LAVE_DEGATS: f32 = 0.2;
+/// Tempête de feu : zone en plus (part), durée en plus (s), marge de détection (blocs).
+const MAGMA_ZONE: f32 = 0.5;
+const MAGMA_DUREE: f32 = 2.0;
+const MAGMA_MARGE: f32 = 0.5;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Tornade {
@@ -37,6 +52,8 @@ pub struct Tornade {
     pub temps: f32,
     pub prochain_coup: f32,
     pub facteur: f32,
+    /// Tornade de magma (Tempête de feu) : zone et durée en plus.
+    pub magma: bool,
     pub zone: f32,
     pub duree: f32,
     pub depuis_trace: f32,
@@ -109,6 +126,7 @@ impl Partie {
                 temps: 0.0,
                 prochain_coup: 0.0,
                 facteur: self.talent_facteur_declenchement(),
+                magma: false,
                 zone: 1.0,
                 duree: s.duree,
                 // Première brûlure dès l'apparition
@@ -194,24 +212,75 @@ impl Partie {
         let s = self.arsenal.armes[i].stats;
         let (jx, jz) = (self.etat.joueur.x, self.etat.joueur.z);
         let facteur = self.talent_facteur_declenchement();
+        let pluie = self.talents.rang("pluie_feu") > 0;
         let mut lance = false;
         for k in 0..tours(s.nombre) {
             let Some((x, z)) = self.plus_gros_groupe(jx, jz, s.portee, s.zone) else {
                 break;
             };
-            if self.armes.feu.meteores.len() < METEORE_CAPACITE {
-                self.armes.feu.meteores.push(Meteore {
-                    arme: i,
-                    x,
-                    z,
-                    t: -(k as f32) * METEORE_DECALAGE,
-                    facteur,
-                    taille: 1.0,
-                });
-                lance = true;
+            if !pluie {
+                let depart = -(k as f32) * METEORE_DECALAGE;
+                lance = self.lancer_meteore(i, (x, z), depart, facteur, 1.0) || lance;
+                continue;
+            }
+            // Pluie de feu : 3 météores plus petits autour du groupe
+            for q in 0..PLUIE_NOMBRE {
+                let a = (self.alea.tirer() * std::f64::consts::TAU) as f32;
+                let r = if q == 0 {
+                    0.0
+                } else {
+                    PLUIE_ECART * (0.6 + self.alea.tirer() as f32 * 0.4)
+                };
+                let depart = -((k * PLUIE_NOMBRE + q) as f32) * PLUIE_DECALAGE;
+                let point = (x + sin(a) * r, z + cos(a) * r);
+                let f = facteur * PLUIE_DEGATS;
+                lance = self.lancer_meteore(i, point, depart, f, PLUIE_TAILLE) || lance;
             }
         }
         lance
+    }
+
+    fn lancer_meteore(
+        &mut self,
+        arme: usize,
+        (x, z): (f32, f32),
+        depart: f32,
+        facteur: f32,
+        taille: f32,
+    ) -> bool {
+        if self.armes.feu.meteores.len() >= METEORE_CAPACITE {
+            return false;
+        }
+        self.armes.feu.meteores.push(Meteore {
+            arme,
+            x,
+            z,
+            t: depart,
+            facteur,
+            taille,
+        });
+        true
+    }
+
+    /// Tempête de feu : les tornades touchées par un météore en (x, z) deviennent des
+    /// tornades de magma.
+    fn renforcer_tornades(&mut self, x: f32, z: f32) {
+        for k in 0..self.armes.feu.tornades.len() {
+            let t = self.armes.feu.tornades[k];
+            if t.magma {
+                continue;
+            }
+            let rayon = self.arsenal.armes[t.arme].stats.zone * t.zone + MAGMA_MARGE;
+            if (t.x - x) * (t.x - x) + (t.z - z) * (t.z - z) > rayon * rayon {
+                continue;
+            }
+            let t = &mut self.armes.feu.tornades[k];
+            t.magma = true;
+            t.zone *= 1.0 + MAGMA_ZONE;
+            t.duree += MAGMA_DUREE;
+            let (tx, tz) = (t.x, t.z);
+            self.ev.gerbe("impactMeteore", tx, 1.0, tz);
+        }
     }
 
     pub fn maj_meteores(&mut self, dt: f32) {
@@ -234,6 +303,9 @@ impl Partie {
             for &e in &tampon[..n] {
                 self.toucher(e as usize, arme.index, &s, m.x, m.z, s.recul, m.facteur);
             }
+            if self.talents.rang("tempete_feu") > 0 {
+                self.renforcer_tornades(m.x, m.z);
+            }
             self.ev.gerbe("impactMeteore", m.x, 0.4, m.z);
             let texture = match &arme.def.mecanique {
                 Mecanique::Meteore { texture, .. } => texture.as_str(),
@@ -245,15 +317,17 @@ impl Partie {
             if self.armes.feu.feux.len() < METEORE_CAPACITE {
                 // Graine des flammes (visuelle)
                 self.alea.tirer();
+                // Lave en fusion : le feu au sol dure plus et brûle plus fort
+                let lave = self.talents.rang("lave_fusion") > 0;
                 self.armes.feu.feux.push(Feu {
                     arme: m.arme,
                     x: m.x,
                     z: m.z,
                     temps: 0.0,
                     prochain_tic: METEORE_TIC,
-                    facteur: m.facteur,
+                    facteur: m.facteur * if lave { 1.0 + LAVE_DEGATS } else { 1.0 },
                     zone: m.taille,
-                    duree: s.duree,
+                    duree: s.duree + if lave { LAVE_DUREE } else { 0.0 },
                 });
             }
             self.armes.feu.meteores.swap_remove(i);

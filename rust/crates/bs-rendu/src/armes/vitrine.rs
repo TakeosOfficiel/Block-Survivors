@@ -54,6 +54,7 @@ fn tornade(x: f32, z: f32) -> Tornade {
         temps: 1.0,
         prochain_coup: 0.0,
         facteur: 1.0,
+        magma: false,
         zone: 1.5,
         duree: f32::MAX,
         depuis_trace: 0.0,
@@ -92,6 +93,7 @@ fn nova(x: f32, z: f32, temps: f32, au_sol: bool) -> Nova {
         sol: au_sol,
         prochain_sol: 0.0,
         facteur: 1.0,
+        gel: false,
     }
 }
 

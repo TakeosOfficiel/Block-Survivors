@@ -174,7 +174,7 @@ pub fn recevoir(jeu: Res<PartieEnCours>, mut v: ResMut<VisuelsArmes>, effets: Re
                 v.coup(Genre::Tourbillon, angle, portee, 0.0);
             }
             EffetArme::Eclair { zone } => {
-                let couleur = match p.arsenal.armes.get(arme).map(|a| &a.def.mecanique) {
+                let couleur = match p.d.armes.get_index(arme).map(|(_, a)| &a.mecanique) {
                     Some(Mecanique::Foudre { couleur }) => *couleur,
                     _ => FOUDRE_DEFAUT,
                 };

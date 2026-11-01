@@ -162,8 +162,9 @@ impl Partie {
         }
     }
 
-    /// Déclenche l'arme `i` de l'arsenal ; faux si elle n'a rien trouvé à frapper.
-    fn declencher(&mut self, i: usize) -> bool {
+    /// Déclenche l'arme `i` de l'arsenal ; faux si elle n'a rien trouvé à frapper (aussi
+    /// appelé par l'Écho arcanique).
+    pub(crate) fn declencher(&mut self, i: usize) -> bool {
         let arme = self.arsenal.armes[i];
         let (jx, jz) = (self.etat.joueur.x, self.etat.joueur.z);
         let s = arme.stats;

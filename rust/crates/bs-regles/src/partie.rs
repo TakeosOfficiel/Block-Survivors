@@ -124,6 +124,9 @@ impl Partie {
         if classe == "archer" {
             talents.classes.archere = Some(crate::classes::Archere::nouvelle(d));
         }
+        if classe == "mage" {
+            talents.classes.mage = Some(crate::classes::Mage::nouveau(d));
+        }
         let mut partie = Self {
             d,
             c: Catalogue::nouveau(d),

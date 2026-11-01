@@ -67,7 +67,7 @@ pub enum Evenement {
     /// Annonce d'un boss (bandeau d'alerte) : bientôt là pendant `duree` s, ou arrivé
     /// (`duree` nulle).
     AnnonceBoss { nom: &'static str, duree: f32 },
-    /// Effet de l'arme `arme` (position dans l'arsenal) en (x, z).
+    /// Effet de l'arme `arme` (index dans le catalogue des armes) en (x, z).
     Effet {
         arme: usize,
         effet: EffetArme,

@@ -1,6 +1,7 @@
 //! Armes qui frappent le sol : onde de choc (fissures), lame colossale qui tombe du ciel
 //! (chutes) et nova de glace (port de fissures.ts, chutes.ts, novas.ts). Les blocs
-//! soulevés sont visuels, mais tirent dans l'aléa : on garde leur compte.
+//! soulevés sont visuels, mais tirent dans l'aléa : on garde leur compte. Talent du Mage
+//! lu ici : Zéro absolu (nova gelante, plus forte, qui enracine).
 
 use bs_commun::maths::{atan2, cos, sin};
 use bs_donnees::armes::Mecanique;
@@ -29,6 +30,8 @@ const NOVA_CAPACITE: usize = 4;
 const NOVA_IMMUNITE: f32 = 0.6;
 pub const NOVA_ECLATS_RESTENT: f32 = 0.35;
 const NOVA_PERIODE_SOL: f32 = 0.25;
+/// Zéro absolu : dégâts multipliés et enracinement (s) de la nova gelante.
+const ZERO_ABSOLU: (f32, f32) = (2.0, 1.0);
 
 /// Onde qui avance en ligne droite et soulève le sol tous les `FISSURE_ESPACEMENT` blocs.
 #[derive(Debug, Clone, Copy)]
@@ -63,6 +66,8 @@ pub struct Nova {
     pub sol: bool,
     pub prochain_sol: f32,
     pub facteur: f32,
+    /// Nova gelante (Zéro absolu).
+    pub gel: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -292,6 +297,7 @@ impl Partie {
         }
         // Graine de l'ondulation des éclats (visuelle)
         self.alea.tirer();
+        let gel = self.talents.classes.nova_gel;
         self.armes.sol.novas.push(Nova {
             arme: i,
             x: jx,
@@ -299,7 +305,8 @@ impl Partie {
             temps: 0.0,
             sol: arme.rang as f32 >= sol_au_rang,
             prochain_sol: 0.0,
-            facteur: self.talent_facteur_declenchement(),
+            facteur: self.talent_facteur_declenchement() * if gel { ZERO_ABSOLU.0 } else { 1.0 },
+            gel,
         });
         true
     }
@@ -331,6 +338,9 @@ impl Partie {
                         continue;
                     }
                     self.toucher(e, arme.index, &s, n.x, n.z, s.recul, n.facteur);
+                    if n.gel {
+                        self.enraciner(e, ZERO_ABSOLU.1);
+                    }
                     let (ex, ez) = (self.ennemis.pool[e].x, self.ennemis.pool[e].z);
                     let texture = match &arme.def.mecanique {
                         Mecanique::Nova { texture, .. } => texture.as_str(),

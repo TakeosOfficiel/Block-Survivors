@@ -1,6 +1,7 @@
 //! Armes qui poursuivent leur cible : orbes arcaniques (tournent, puis foncent) et
 //! flèches ricocheuses (port de orbesArcaniques.ts, ricochets.ts), dont les flèches
-//! spectrales de l'Œil de l'aigle (réactions, sans rebond).
+//! spectrales de l'Œil de l'aigle (réactions, sans rebond). Talents du Mage lus ici :
+//! Orbes givrées (ralentissent) et Flux arcanique (l'orbe repart une fois).
 //! Le jeu TS garde une référence vers l'ennemi visé ; ici on garde son index et son
 //! identifiant, et on le retrouve s'il a changé de place dans le pool.
 
@@ -16,6 +17,9 @@ const ORBES_VOL_MAX: f32 = 3.0;
 const ORBES_VITESSE_ORBITE: f32 = 3.0;
 const ORBES_RAYON_CONTACT: f32 = 0.45;
 const ORBES_DELAI_CONTACT: f32 = 0.5;
+/// Orbes givrées : ralenti (part) et durée (s) ; Flux arcanique : part des dégâts par rang.
+const ORBES_GIVREES: (f32, f32) = (0.3, 1.0);
+const FLUX_ARCANIQUE: [f32; 2] = [0.5, 0.8];
 
 const RICOCHET_CAPACITE: usize = 24;
 const RICOCHET_REBONDS_MAX: f32 = 6.0;
@@ -39,6 +43,8 @@ pub struct Orbe {
     pub lance: bool,
     cible: Cible,
     pub facteur: f32,
+    /// Déjà repartie vers un autre ennemi (Flux arcanique).
+    revenu: bool,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -77,6 +83,7 @@ impl Orbe {
             lance,
             cible: None,
             facteur: 1.0,
+            revenu: false,
         }
     }
 }
@@ -135,6 +142,7 @@ impl Partie {
                 lance: false,
                 cible: None,
                 facteur: self.talent_facteur_declenchement(),
+                revenu: false,
             });
         }
         true
@@ -212,7 +220,22 @@ impl Partie {
             let d = longueur(dx, dz);
             if d <= e.def.rayon + ORBES_RAYON_CONTACT {
                 self.toucher(c, arme.index, &s, o.x, o.z, s.recul, o.facteur);
+                if self.talents.rang("orbes_givrees") > 0 {
+                    self.ralentir(c, ORBES_GIVREES.0, ORBES_GIVREES.1);
+                }
                 self.ev.gerbe("impactArcane", o.x, 1.0, o.z);
+                // Flux arcanique : l'orbe repart une fois vers un autre ennemi, plus faible
+                let flux =
+                    crate::classes::valeur(self.talents.rang("flux_arcanique"), &FLUX_ARCANIQUE);
+                if flux > 0.0 && !o.revenu {
+                    o.revenu = true;
+                    o.facteur *= flux;
+                    if let Some(c) = self.ennemi_au_hasard(o.x, o.z, s.portee) {
+                        o.cible = self.viser(Some(c));
+                        self.armes.traque.orbes[i] = o;
+                        continue;
+                    }
+                }
                 self.armes.traque.orbes.swap_remove(i);
                 continue;
             }

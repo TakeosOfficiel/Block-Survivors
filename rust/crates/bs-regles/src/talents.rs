@@ -81,6 +81,7 @@ impl Partie {
         let j = &self.etat.joueur;
         let mut m =
             self.guerrier_multiplicateur(i, arme) * self.archere_multiplicateur(i, arme, nature);
+        m *= self.mage_multiplicateur(arme, nature);
         for &(effet, facteur) in &self.talents.effets {
             if let EffetObjet::Bastion { seuil, bonus } = *effet
                 && j.pv < seuil * j.pv_max
@@ -90,8 +91,8 @@ impl Partie {
         }
         m
     }
-    pub fn talent_bonus_critique(&self, _i: usize, _arme: usize, _nature: Nature) -> f32 {
-        0.0
+    pub fn talent_bonus_critique(&self, i: usize, _arme: usize, _nature: Nature) -> f32 {
+        self.mage_bonus_critique(i)
     }
     pub fn talent_facteur_critique(
         &self,
@@ -100,7 +101,8 @@ impl Partie {
         _nature: Nature,
         base: f32,
     ) -> f32 {
-        self.guerrier_facteur_critique(i, base)
+        let base = self.guerrier_facteur_critique(i, base);
+        self.mage_facteur_critique(i, base)
     }
 
     /// Coup porté par une arme ou un allié : état de l'éveil, Venin, coup qui enflamme.
@@ -132,6 +134,7 @@ impl Partie {
         }
         self.guerrier_apres_coup(i, arme, critique, nature);
         self.archere_apres_coup(i, degats, arme, critique, nature);
+        self.mage_apres_coup(i, arme, critique, nature);
         if nature != Nature::Arme || !self.ennemis.pool[i].vivant() {
             return;
         }
@@ -149,6 +152,7 @@ impl Partie {
         // La classe compte aussi les ennemis tués par une réaction
         self.guerrier_sur_mort(arme);
         self.archere_sur_mort(i);
+        self.mage_sur_mort(i);
         if self.talents.en_reaction {
             return;
         }
@@ -193,20 +197,26 @@ impl Partie {
     }
     /// Multiplicateur des dégâts de l'arme qui se déclenche (talents « au déclenchement »).
     pub fn talent_facteur_declenchement(&self) -> f32 {
-        1.0
+        if self.talents.classes.echo {
+            crate::classes::mage::ECHO_PART
+        } else {
+            1.0
+        }
     }
     /// Juste avant et après le déclenchement de l'arme `i` de l'arsenal.
     pub fn talent_avant_declenchement(&mut self, i: usize) {
         self.guerrier_avant_declenchement(i);
         self.archere_avant_declenchement(i);
+        self.mage_avant_declenchement(i);
     }
     pub fn talent_apres_declenchement(&mut self, i: usize, declenchee: bool) {
         self.guerrier_apres_declenchement(i, declenchee);
         self.archere_apres_declenchement(i, declenchee);
+        self.mage_apres_declenchement(i, declenchee);
     }
     /// Multiplicateur du délai entre deux déclenchements de l'arme `arme` (au mieux −50 %).
     pub fn talent_delai(&mut self, arme: usize) -> f32 {
-        let delai = self.guerrier_delai(arme) * self.archere_delai(arme);
+        let delai = self.guerrier_delai(arme) * self.archere_delai(arme) * self.mage_delai(arme);
         self.d.regles.plafonds.delai_min.max(delai)
     }
     pub fn talent_vitesse(&self) -> f32 {
@@ -219,7 +229,7 @@ impl Partie {
         self.guerrier_armure()
     }
     pub fn talent_eviter_mort(&mut self) -> bool {
-        self.guerrier_eviter_mort()
+        self.guerrier_eviter_mort() || self.mage_eviter_mort()
     }
 
     /// Coup reçu : réactions de la classe, puis Cœur de magma (gros coup : nova de feu
@@ -269,6 +279,7 @@ impl Partie {
         }
         self.guerrier_maj(dt);
         self.archere_maj(dt);
+        self.mage_maj(dt);
         if self.talents.recharge_magma > 0.0 {
             self.talents.recharge_magma -= dt;
         }

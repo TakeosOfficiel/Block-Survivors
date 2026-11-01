@@ -294,3 +294,60 @@ fn archere_talents() {
     }
     assert!(p.etat.stats.degats_par_arme[arc] > 0.0);
 }
+
+#[test]
+fn mage_talents() {
+    use bs_donnees::progression::BonusTalents;
+    let d = donnees();
+    let mage = d.personnages.personnages.get_index_of("mage").unwrap();
+    let mut p = Partie::nouvelle(d, 0, mage, 11, false);
+    assert!(p.talents.classes.mage.is_some());
+    let b = BonusTalents {
+        mecaniques: vec![
+            ("coeur_blaze", 1),
+            ("cendres_protectrices", 1),
+            ("propagation", 2),
+            ("brasier", 1),
+            ("fournaise", 1),
+            ("embrasement", 1),
+            ("phenix", 1),
+            ("resonance", 1),
+            ("haute_tension", 2),
+            ("conduction", 2),
+            ("orbes_givrees", 1),
+            ("flux_arcanique", 2),
+            ("surcharge", 2),
+            ("acceleration", 2),
+            ("tempete_orage", 1),
+            ("echo_arcanique", 1),
+            ("zero_absolu", 1),
+            ("lave_fusion", 1),
+            ("tempete_feu", 1),
+            ("pluie_feu", 1),
+        ],
+        ..Default::default()
+    };
+    p.appliquer_talents(&b);
+    // Écho arcanique : le facteur de déclenchement vaut 1 hors répétition
+    assert_eq!(p.talent_facteur_declenchement(), 1.0);
+    // Une minute avec tous les sorts : rien ne casse, l'orage tombe
+    p.joueur.invincible = true;
+    for id in [
+        "eclairs",
+        "nova_glace",
+        "meteore",
+        "tornade_feu",
+        "orbes_arcaniques",
+    ] {
+        p.ameliorer_arme(d.armes.get_index_of(id).unwrap());
+    }
+    for _ in 0..(60.0 / PAS_SIMULATION) as u32 {
+        p.pas(PAS_SIMULATION);
+    }
+    let eclairs = d.armes.get_index_of("eclairs").unwrap();
+    assert!(p.etat.stats.degats_par_arme[eclairs] > 0.0);
+    // Phénix : sauve une seule fois, à 40 % des PV
+    assert!(p.talent_eviter_mort());
+    assert_eq!(p.etat.joueur.pv, (p.etat.joueur.pv_max * 0.4).ceil());
+    assert!(!p.talent_eviter_mort());
+}

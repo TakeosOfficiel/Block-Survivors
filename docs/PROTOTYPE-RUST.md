@@ -13,7 +13,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 1. Données et règles, sans rendu | fait : données, monde, simulation complète et robot (`bs-robot`) ; ses moyennes tombent dans la tolérance de celles du jeu TS (voir 1b) |
 | 2. Monde et rendu | fait : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres), 2d-2 (particules, chiffres de dégâts, barres de vie, secousse), 2d-3 (visuels des armes), 2d-4 (vent, ombres du soleil, lumière des blocs) |
 | 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
-| 4. Sauvegardes et profils | en cours : 4a à 4d (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques du Guerrier et de l'Archère) |
+| 4. Sauvegardes et profils | en cours : 4a à 4e (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques du Guerrier, de l'Archère et du Mage) |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -898,3 +898,23 @@ mode sans fin.
   mécaniques de l'Archère, au même moment qu'avant (même sans le talent).
 - Test : `archere_talents` (cumuls de poison, Pas du chasseur, Concentration, une minute
   de jeu avec 14 talents).
+
+### 4e : mécaniques des talents du Mage (faites)
+
+- `bs-regles/src/classes/mage/mod.rs` (état, déclenchements, Embrasement, Tempête
+  d'orage, Écho) et `mage/coups.rs` (coups portés, ennemis tués, Phénix), port de
+  `mage.ts`. Les 20 mécaniques sont portées :
+  - Pyromancien : Cœur de blaze, Cendres protectrices, Propagation, Brasier, Fournaise,
+    Embrasement, Phénix ;
+  - Arcaniste : Résonance, Surcharge, Accélération, Tempête d'orage, Écho arcanique (le
+    sort est relancé par `declencher`, dégâts × 0,6 par `talent_facteur_declenchement`),
+    Zéro absolu (`Classes::nova_gel`) ;
+  - lues par les systèmes d'armes : Pluie de feu, Lave en fusion et Tempête de feu
+    (feu.rs : la tornade touchée par un météore devient une tornade de magma), Haute
+    tension et Conduction (arcs de foudre, foudre.rs), Orbes givrées et Flux arcanique
+    (traque.rs), Zéro absolu (nova gelante, sol.rs).
+- Les arcs de foudre tirent 33 fois l'aléa (3 par point), comme `creerArc` en TS.
+- Le temps du dernier sort est gardé en `f32`, comme le `Float32Array` du jeu TS.
+- Correction : la couleur des éclairs affichés venait de la mauvaise arme (index de
+  l'arsenal au lieu du catalogue).
+- Test : `mage_talents` (20 talents, une minute avec tous les sorts, Phénix).

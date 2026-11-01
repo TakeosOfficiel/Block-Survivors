@@ -235,6 +235,14 @@ fn heros(
         texte(commandes, col, &t, GRIS, 1.5);
     }
     style::bouton(commandes, col, "Talents", 200.0, false, ActionMenu::Talents);
+    style::bouton(
+        commandes,
+        col,
+        "Collection",
+        200.0,
+        false,
+        ActionMenu::Collection,
+    );
 }
 
 fn arenes(

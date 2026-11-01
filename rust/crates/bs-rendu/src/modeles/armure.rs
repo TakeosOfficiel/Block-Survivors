@@ -46,7 +46,7 @@ pub fn modele(piece: Piece) -> Option<&'static str> {
     }
 }
 
-fn materiau(m: Materiau) -> &'static str {
+pub(crate) fn materiau(m: Materiau) -> &'static str {
     match m {
         Materiau::Leather => "leather",
         Materiau::Chainmail => "chainmail",

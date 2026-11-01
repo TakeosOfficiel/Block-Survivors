@@ -22,6 +22,7 @@ mod effets;
 mod entites;
 mod fichiers;
 mod hud;
+mod icones_armures;
 mod lancement;
 mod lumiere;
 mod materiau;
@@ -202,7 +203,12 @@ impl Plugin for PluginJeu {
             ))
             .add_systems(
                 OnEnter(Phase::Menu),
-                (lancement::nettoyer, menu::entrer).chain(),
+                (
+                    lancement::nettoyer,
+                    dessins::creer.run_if(not(resource_exists::<dessins::Dessins>)),
+                    menu::entrer,
+                )
+                    .chain(),
             )
             .add_systems(
                 Update,
@@ -213,6 +219,7 @@ impl Plugin for PluginJeu {
                 OnEnter(Phase::Chargement),
                 (
                     sauvegarde::inserer_skin,
+                    dessins::creer.run_if(not(resource_exists::<dessins::Dessins>)),
                     demander_textures.run_if(resource_exists::<Monde>),
                 )
                     .chain(),
@@ -240,7 +247,6 @@ impl Plugin for PluginJeu {
                     effets::construire,
                     retours::construire,
                     armes::construire,
-                    dessins::creer,
                     hud::construire,
                     hud::etiquette::creer,
                 ),

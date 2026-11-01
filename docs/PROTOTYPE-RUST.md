@@ -14,7 +14,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 2. Monde et rendu | fait : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres), 2d-2 (particules, chiffres de dégâts, barres de vie, secousse), 2d-3 (visuels des armes), 2d-4 (vent, ombres du soleil, lumière des blocs) |
 | 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
 | 4. Sauvegardes et profils | fait : 4a à 4i (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques des quatre classes, Collection, profil du joueur, amis) |
-| 5. Menus | en cours : 5a (menu principal, lancement, retour au menu), 5b (Talents) |
+| 5. Menus | en cours : 5a (menu principal, lancement, retour au menu), 5b (Talents), 5c (Collection) |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -1038,3 +1038,17 @@ mode sans fin.
   refaite à chaque clic (hors de la boucle de jeu). Textes à gauche : `TextePixel::a_gauche`.
 - Essais : `BS_MENU=talents` ouvre la page à l'entrée. Vérifié aux vrais clics (xdotool
   sous Xvfb) : choix d'un talent, achat, points et paliers mis à jour, sauvegarde écrite.
+
+### 5c : Collection (faite)
+
+- `bs-rendu/src/menu/collection.rs` : un onglet par monde (avancée en %), barre de
+  progression, armure du monde (pièces gagnées avec leur bonus, ou grisées avec le boss
+  qui les lâche), bonus d'ensemble (vert quand complet), bagues et amulettes du monde
+  (« ??? » et rareté tant qu'elles ne sont pas trouvées), puis celles de tous les mondes.
+  Ouverte sur le monde de l'arène choisie ; bouton « Collection » de l'accueil.
+- Icônes (`bs-rendu/src/icones_armures.rs`) : bouclier, cape et talisman dessinés aux
+  couleurs du monde ; casque, plastron, jambières, bottes : icônes du jeu, cuir multiplié
+  par la teinte du monde sous son calque. Les dessins (`Dessins`) sont faits une fois, à la
+  première entrée au menu ou au chargement, et servent à toutes les parties.
+- Le choix des pièces portées viendra avec la page Profil (comme dans le jeu TS).
+- Essais : `BS_MENU=collection`. Vérifié aux clics (onglets), avec une Collection remplie.

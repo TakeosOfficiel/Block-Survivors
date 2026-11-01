@@ -1,13 +1,14 @@
 //! Menu principal (phase `Menu`, src/ui/ecranMenu.ts) : choix de la classe et de
 //! l'arène (gardé dans le profil), « Jouer » (ou Entrée) prépare la partie choisie et
-//! passe au chargement, « Quitter » ferme le jeu. Ses pages (Talents…) remplacent
+//! passe au chargement, « Quitter » ferme le jeu. Ses pages (Talents, Collection…) remplacent
 //! l'accueil ; Échap ou « Retour » y ramène. Le menu a sa propre caméra 2D ; tout ce
 //! qu'il crée porte `ElementMenu` et disparaît à sa sortie. Chaque changement refait la
 //! page affichée en entier (hors de la boucle de jeu).
 //!
 //! Essais : `BS_JOUER=n` lance la partie choisie aux n premières entrées au menu ;
-//! `BS_MENU=talents` ouvre la page des Talents à l'entrée.
+//! `BS_MENU=talents` (ou `collection`) ouvre cette page à l'entrée.
 
+mod collection;
 mod talents;
 mod vue;
 
@@ -15,6 +16,7 @@ use bevy::app::AppExit;
 use bevy::prelude::*;
 
 use crate::Phase;
+use crate::dessins::Dessins;
 use crate::lancement::{self, ChoixPartie, DonneesJeu, PartiePreparee};
 use crate::sauvegarde::Sauvegarde;
 use crate::textures::Textures;
@@ -29,6 +31,10 @@ pub enum ActionMenu {
     Quitter,
     /// Ouvre la page des Talents.
     Talents,
+    /// Ouvre la Collection.
+    Collection,
+    /// Onglet de la Collection.
+    Monde(usize),
     /// Revient à l'accueil.
     Fermer,
     Talent(ActionTalent),
@@ -39,6 +45,8 @@ pub enum ActionMenu {
 enum Page {
     Accueil,
     Talents(EtatTalents),
+    /// Collection, sur un monde.
+    Collection(usize),
 }
 
 /// Marque de tout ce que le menu crée.
@@ -57,6 +65,7 @@ pub struct Menu {
 pub struct Icones<'a> {
     pub serveur: &'a AssetServer,
     pub textures: &'a mut Textures,
+    pub dessins: &'a Dessins,
 }
 
 impl Icones<'_> {
@@ -82,6 +91,10 @@ fn construire(
                 etat,
             };
             talents::construire(commandes, &c, ic)
+        }
+        Page::Collection(k) => {
+            let dessins = ic.dessins;
+            collection::construire(commandes, (dj, sauvegarde, dessins), ic, k)
         }
     };
     commandes.entity(racine).insert(ElementMenu);
@@ -109,16 +122,19 @@ pub fn entrer(
     sauvegarde: Res<Sauvegarde>,
     serveur: Res<AssetServer>,
     mut textures: ResMut<Textures>,
+    dessins: Res<Dessins>,
 ) {
     let choix = lancement::choix_memorise(&dj, &sauvegarde);
     let page = match std::env::var("BS_MENU").as_deref() {
         Ok("talents") => page_talents(&dj, &sauvegarde, choix.personnage),
+        Ok("collection") => Page::Collection(collection::monde_de_l_arene(&dj, choix.arene)),
         _ => Page::Accueil,
     };
     commandes.spawn((Name::new("caméra du menu"), Camera2d, ElementMenu));
     let mut ic = Icones {
         serveur: &serveur,
         textures: &mut textures,
+        dessins: &dessins,
     };
     let racine = construire(&mut commandes, &dj, &sauvegarde, &mut ic, choix, page);
     commandes.insert_resource(Menu {
@@ -135,7 +151,7 @@ pub fn gerer(
     mut menu: ResMut<Menu>,
     dj: Res<DonneesJeu>,
     mut sauvegarde: ResMut<Sauvegarde>,
-    (serveur, mut textures): (Res<AssetServer>, ResMut<Textures>),
+    (serveur, mut textures, dessins): (Res<AssetServer>, ResMut<Textures>, Res<Dessins>),
     touches: Res<ButtonInput<KeyCode>>,
     boutons: Query<(&Interaction, &ActionMenu), Changed<Interaction>>,
     mut phase: ResMut<NextState<Phase>>,
@@ -165,6 +181,10 @@ pub fn gerer(
         Some(ActionMenu::Classe(k)) => choix.personnage = k,
         Some(ActionMenu::Arene(k)) => choix.arene = k,
         Some(ActionMenu::Talents) => page = page_talents(&dj, &sauvegarde, choix.personnage),
+        Some(ActionMenu::Collection) => {
+            page = Page::Collection(collection::monde_de_l_arene(&dj, choix.arene));
+        }
+        Some(ActionMenu::Monde(k)) => page = Page::Collection(k),
         Some(ActionMenu::Fermer) => page = Page::Accueil,
         Some(ActionMenu::Talent(a)) => {
             let Page::Talents(mut etat) = page else {
@@ -199,6 +219,7 @@ pub fn gerer(
     let mut ic = Icones {
         serveur: &serveur,
         textures: &mut textures,
+        dessins: &dessins,
     };
     let racine = construire(&mut commandes, &dj, &sauvegarde, &mut ic, choix, page);
     *menu = Menu {

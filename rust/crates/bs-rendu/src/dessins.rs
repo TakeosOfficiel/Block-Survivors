@@ -9,57 +9,74 @@ use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bs_donnees::Donnees;
 use bs_donnees::equipement::{FormeIcone, IconeObjet, Metal};
 
-const TAILLE: usize = 16;
-const CONTOUR: u32 = 0x1a1206;
+pub(crate) const TAILLE: usize = 16;
+pub(crate) const CONTOUR: u32 = 0x1a1206;
 /// Côté du losange (impair : un trait de 1 pixel passe par sa rangée du milieu).
 pub const COTE_JOYAU: usize = 13;
 
-/// Images dessinées : icône de chaque objet d'équipement, losange.
+/// Images dessinées au lancement : icône de chaque objet d'équipement, pièces dessinées
+/// des armures, losange.
 #[derive(Resource)]
 pub struct Dessins {
     pub objets: Vec<Handle<Image>>,
+    /// Bouclier, cape et talisman de chaque armure de monde (ordre des données).
+    pub armures: Vec<[Handle<Image>; 3]>,
     pub joyau: Handle<Image>,
 }
 
 pub fn creer(
     mut commandes: Commands,
     mut images: ResMut<Assets<Image>>,
-    jeu: Res<crate::PartieEnCours>,
+    dj: Res<crate::lancement::DonneesJeu>,
 ) {
-    let d: &Donnees = jeu.partie.d;
-    let mut ajouter = |cote: usize, px: Vec<u32>| {
-        let rgba = px
-            .iter()
-            .flat_map(|&c| {
-                if c == u32::MAX {
-                    [0; 4]
-                } else {
-                    [(c >> 16) as u8, (c >> 8) as u8, c as u8, 255]
-                }
-            })
-            .collect();
-        let mut image = Image::new(
-            Extent3d {
-                width: cote as u32,
-                height: cote as u32,
-                depth_or_array_layers: 1,
-            },
-            TextureDimension::D2,
-            rgba,
-            TextureFormat::Rgba8UnormSrgb,
-            RenderAssetUsages::RENDER_WORLD,
-        );
-        image.sampler = ImageSampler::nearest();
-        images.add(image)
-    };
+    let d: &Donnees = dj.d;
     let objets = d
         .equipement
         .objets
         .values()
-        .map(|o| ajouter(TAILLE, icone_objet(&o.icone)))
+        .map(|o| image(&mut images, TAILLE, &icone_objet(&o.icone)))
         .collect();
-    let joyau = ajouter(COTE_JOYAU, joyau());
-    commandes.insert_resource(Dessins { objets, joyau });
+    let armures = d
+        .armures
+        .armures
+        .values()
+        .map(|a| {
+            crate::icones_armures::dessiner(&a.couleurs).map(|px| image(&mut images, TAILLE, &px))
+        })
+        .collect();
+    let joyau = image(&mut images, COTE_JOYAU, &joyau());
+    commandes.insert_resource(Dessins {
+        objets,
+        armures,
+        joyau,
+    });
+}
+
+/// Image carrée de `cote` pixels 0xRRGGBB (u32::MAX : transparent).
+fn image(images: &mut Assets<Image>, cote: usize, px: &[u32]) -> Handle<Image> {
+    let rgba = px
+        .iter()
+        .flat_map(|&c| {
+            if c == u32::MAX {
+                [0; 4]
+            } else {
+                [(c >> 16) as u8, (c >> 8) as u8, c as u8, 255]
+            }
+        })
+        .collect();
+    let mut image = Image::new(
+        Extent3d {
+            width: cote as u32,
+            height: cote as u32,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        rgba,
+        TextureFormat::Rgba8UnormSrgb,
+        RenderAssetUsages::RENDER_WORLD,
+    );
+    image.sampler = ImageSampler::nearest();
+    images.add(image)
 }
 
 /// Mélange deux couleurs 0xRRGGBB.
@@ -73,7 +90,7 @@ fn melanger(couleur: u32, vers: u32, part: f32) -> u32 {
 }
 
 /// Grille 16 × 16 (u32::MAX : transparent), puis contour sombre autour du dessin.
-fn icone_objet(icone: &IconeObjet) -> Vec<u32> {
+pub(crate) fn icone_objet(icone: &IconeObjet) -> Vec<u32> {
     const VIDE: u32 = u32::MAX;
     let mut grille = vec![VIDE; TAILLE * TAILLE];
     let mut poser = |x: i32, y: i32, c: u32| {

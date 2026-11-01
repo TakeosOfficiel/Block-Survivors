@@ -118,6 +118,9 @@ fn cartes_et_coffres() {
         while p.etat.niveaux_en_attente > 0 {
             p.etat.niveaux_en_attente -= 1;
             let carte = p.tirer_cartes()[0];
+            for a in p.cartes.proposees.clone() {
+                verifier(&p.decrire_amelioration(a));
+            }
             p.appliquer_amelioration(carte);
             niveaux += 1;
         }
@@ -125,10 +128,16 @@ fn cartes_et_coffres() {
             let ender = p.etat.choix_coffre.ender > 0;
             let ouverts = p.ramassables.coffres.payants_ouverts;
             let mut choix = p.tirer_equipement(ender, ouverts)[0];
+            for c in p.equipement.proposees.clone() {
+                verifier(&p.decrire_equipement(c));
+            }
             if let ChoixEquipement::Objet(o) = choix
                 && p.remplacement_necessaire(o)
             {
                 choix = p.cartes_remplacement(o)[0];
+                for c in p.equipement.proposees.clone() {
+                    verifier(&p.decrire_equipement(c));
+                }
             }
             p.appliquer_equipement(choix);
             objets += 1;
@@ -148,4 +157,10 @@ fn cartes_et_coffres() {
     );
     assert!(niveaux > 5, "le joueur doit monter de niveau");
     assert!(p.arsenal.armes.len() > 1 || p.passifs.possedes.len() > 1);
+}
+
+/// Une carte décrite a un nom, une étiquette et une description.
+fn verifier(c: &bs_regles::textes::Carte) {
+    assert!(!c.nom.is_empty() && !c.etiquette.is_empty(), "{c:?}");
+    assert!(!c.description.is_empty(), "{c:?}");
 }

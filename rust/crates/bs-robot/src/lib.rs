@@ -264,12 +264,7 @@ impl Robot {
 }
 
 fn degats_totaux(p: &Partie) -> f64 {
-    p.etat
-        .stats
-        .degats_par_arme
-        .iter()
-        .map(|&d| d)
-        .sum()
+    p.etat.stats.degats_par_arme.iter().sum()
 }
 
 /// Première carte de meilleure note.

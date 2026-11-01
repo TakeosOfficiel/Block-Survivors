@@ -12,6 +12,7 @@
 use bs_donnees::armes::{EtatEveil, Eveil, FamilleArme, TypeEtat};
 use bs_donnees::equipement::EffetObjet;
 
+use crate::classes::Classes;
 use crate::combat::arme::BonusArmeCumule;
 use crate::ennemis::Nature;
 use crate::partie::Partie;
@@ -34,7 +35,9 @@ pub struct Talents {
     /// État infligé par l'éveil de chaque arme (par index d'arme).
     etats_eveils: Vec<Option<&'static EtatEveil>>,
     /// Dégâts causés par un talent ou un objet en cours : ils ne relancent rien.
-    en_reaction: bool,
+    pub(crate) en_reaction: bool,
+    /// Mécaniques propres de la classe jouée (classes/).
+    pub classes: Classes,
     /// Classe jouée : l'Archère (tirage du Venin).
     archere: bool,
     /// Effets propres des objets portés et facteur de leur niveau (rempli par l'équipement).
@@ -52,6 +55,7 @@ impl Talents {
             mecaniques: Vec::new(),
             etats_eveils: vec![None; armes],
             en_reaction: false,
+            classes: Classes::default(),
             archere,
             effets: Vec::with_capacity(EFFETS_MAX),
             cloche: 0.0,
@@ -76,9 +80,9 @@ impl Talents {
 
 impl Partie {
     /// Multiplicateur de dégâts contre l'ennemi `i` (Amulette du bastion).
-    pub fn talent_multiplicateur(&self, _i: usize, _arme: Option<usize>, _nature: Nature) -> f32 {
+    pub fn talent_multiplicateur(&self, i: usize, arme: Option<usize>, _nature: Nature) -> f32 {
         let j = &self.etat.joueur;
-        let mut m = 1.0;
+        let mut m = self.guerrier_multiplicateur(i, arme);
         for &(effet, facteur) in &self.talents.effets {
             if let EffetObjet::Bastion { seuil, bonus } = *effet
                 && j.pv < seuil * j.pv_max
@@ -93,12 +97,12 @@ impl Partie {
     }
     pub fn talent_facteur_critique(
         &self,
-        _i: usize,
+        i: usize,
         _arme: Option<usize>,
         _nature: Nature,
         base: f32,
     ) -> f32 {
-        base
+        self.guerrier_facteur_critique(i, base)
     }
 
     /// Coup porté par une arme ou un allié : état de l'éveil, Venin, coup qui enflamme.
@@ -107,7 +111,7 @@ impl Partie {
         i: usize,
         _degats: f32,
         arme: Option<usize>,
-        _critique: bool,
+        critique: bool,
         nature: Nature,
     ) {
         if self.talents.en_reaction {
@@ -128,6 +132,7 @@ impl Partie {
                 TypeEtat::Etourdi => self.etourdir(i, etat.valeur),
             }
         }
+        self.guerrier_apres_coup(i, arme, critique, nature);
         if nature != Nature::Arme || !self.ennemis.pool[i].vivant() {
             return;
         }
@@ -145,7 +150,9 @@ impl Partie {
     }
 
     /// Ennemi tué : éclat de diamant (Cœur du filon), spores (Amulette de spores).
-    pub fn talent_sur_mort(&mut self, i: usize, _arme: Option<usize>, _nature: Nature) {
+    pub fn talent_sur_mort(&mut self, i: usize, arme: Option<usize>, _nature: Nature) {
+        // La classe compte aussi les ennemis tués par une réaction
+        self.guerrier_sur_mort(arme);
         if self.talents.en_reaction {
             return;
         }
@@ -182,31 +189,43 @@ impl Partie {
         }
     }
 
-    pub fn talent_sur_impact_mur(&mut self, _i: usize) {}
+    pub fn talent_sur_impact_mur(&mut self, i: usize) {
+        self.guerrier_sur_impact_mur(i);
+    }
     pub fn talent_sur_sortie_piege(&mut self, _i: usize) {}
     /// Multiplicateur des dégâts de l'arme qui se déclenche (talents « au déclenchement »).
     pub fn talent_facteur_declenchement(&self) -> f32 {
         1.0
     }
-    /// Multiplicateur du délai entre deux déclenchements de l'arme `_arme`.
-    pub fn talent_delai(&self, _arme: usize) -> f32 {
-        self.d.regles.plafonds.delai_min.max(1.0)
+    /// Juste avant et après le déclenchement de l'arme `i` de l'arsenal.
+    pub fn talent_avant_declenchement(&mut self, i: usize) {
+        self.guerrier_avant_declenchement(i);
+    }
+    pub fn talent_apres_declenchement(&mut self, i: usize, declenchee: bool) {
+        self.guerrier_apres_declenchement(i, declenchee);
+    }
+    /// Multiplicateur du délai entre deux déclenchements de l'arme `arme` (au mieux −50 %).
+    pub fn talent_delai(&mut self, arme: usize) -> f32 {
+        let delai = self.guerrier_delai(arme);
+        self.d.regles.plafonds.delai_min.max(delai)
     }
     pub fn talent_vitesse(&self) -> f32 {
         1.0
     }
-    pub fn talent_degats_recus(&mut self, degats: f32, _boss: bool) -> f32 {
-        degats
+    pub fn talent_degats_recus(&mut self, degats: f32, boss: bool) -> f32 {
+        self.guerrier_degats_recus(degats, boss)
     }
     pub fn talent_armure(&self) -> f32 {
-        0.0
+        self.guerrier_armure()
     }
     pub fn talent_eviter_mort(&mut self) -> bool {
-        false
+        self.guerrier_eviter_mort()
     }
 
-    /// Gros coup reçu : nova de feu et protection (Cœur de magma).
-    pub fn talent_apres_coup_recu(&mut self, subis: f32, _evites: f32) {
+    /// Coup reçu : réactions de la classe, puis Cœur de magma (gros coup : nova de feu
+    /// et protection).
+    pub fn talent_apres_coup_recu(&mut self, subis: f32, evites: f32) {
+        self.guerrier_apres_coup_recu(evites);
         if self.talents.recharge_magma > 0.0 {
             return;
         }
@@ -241,11 +260,14 @@ impl Partie {
         }
     }
 
-    /// Effets périodiques des objets (cloche, couronne), juste après l'arsenal.
+    /// Mécaniques de la classe, puis effets périodiques des objets (cloche, couronne),
+    /// juste après l'arsenal.
     pub fn maj_talents(&mut self, dt: f32) {
+        self.maj_socle_classes(dt);
         if self.etat.joueur.mort || self.etat.issue.is_some() {
             return;
         }
+        self.guerrier_maj(dt);
         if self.talents.recharge_magma > 0.0 {
             self.talents.recharge_magma -= dt;
         }

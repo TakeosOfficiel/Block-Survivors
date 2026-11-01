@@ -6,6 +6,7 @@ use bs_commun::maths::{atan2, cos, sin};
 use bs_donnees::armes::Mecanique;
 
 use super::tours;
+use crate::classes::{guerrier, valeur};
 use crate::evenements::EffetArme;
 use crate::partie::Partie;
 
@@ -103,26 +104,52 @@ impl Partie {
             return false;
         };
         let angle = atan2(gx - jx, gz - jz);
-        for k in 0..tours(s.nombre) {
-            let a = angle + (k as f32 - (s.nombre - 1.0) / 2.0) * ecart;
-            if self.armes.sol.fissures.len() < FISSURE_CAPACITE {
-                self.armes.sol.fissures.push(Fissure {
-                    arme: i,
-                    x: jx,
-                    z: jz,
-                    dir_x: sin(a),
-                    dir_z: cos(a),
-                    avance: 0.0,
-                    prochain: FISSURE_DEPART,
-                    attente: 0.0,
-                    facteur: 1.0,
-                });
+        // Séisme : 6 fissures en étoile au lieu de l'éventail
+        let circulaire = self.talents.classes.onde_circulaire;
+        let nombre = if circulaire {
+            guerrier::DIRECTIONS_SEISME
+        } else {
+            s.nombre
+        };
+        let replique = valeur(self.talents.rang("repliques"), &guerrier::REPLIQUES);
+        for k in 0..tours(nombre) {
+            let a = if circulaire {
+                angle + k as f32 / nombre * std::f32::consts::TAU
+            } else {
+                angle + (k as f32 - (nombre - 1.0) / 2.0) * ecart
+            };
+            self.lancer_fissure(i, (jx, jz), a, 0.0, 1.0);
+            if replique > 0.0 {
+                self.lancer_fissure(i, (jx, jz), a, guerrier::REPLIQUE_DELAI, replique);
             }
         }
         self.etat.joueur.angle = angle;
         self.ev.geste(None);
         self.ev.secousse(0.15);
         true
+    }
+
+    fn lancer_fissure(
+        &mut self,
+        arme: usize,
+        (x, z): (f32, f32),
+        a: f32,
+        attente: f32,
+        facteur: f32,
+    ) {
+        if self.armes.sol.fissures.len() < FISSURE_CAPACITE {
+            self.armes.sol.fissures.push(Fissure {
+                arme,
+                x,
+                z,
+                dir_x: sin(a),
+                dir_z: cos(a),
+                avance: 0.0,
+                prochain: FISSURE_DEPART,
+                attente,
+                facteur,
+            });
+        }
     }
 
     pub fn maj_fissures(&mut self, dt: f32) {

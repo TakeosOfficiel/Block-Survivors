@@ -28,6 +28,10 @@ impl Partie {
         }
         self.recalculer_armes();
         self.talents.mecaniques.clone_from(&b.mecaniques);
+        let rangs = crate::classes::guerrier::Rangs::lire(&self.talents);
+        if let Some(g) = self.talents.classes.guerrier.as_mut() {
+            g.r = rangs;
+        }
         for id in &b.armes {
             if let Some(i) = d.armes.get_index_of(*id) {
                 self.ameliorer_arme(i);

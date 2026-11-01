@@ -213,3 +213,37 @@ fn talents_appliques() {
         assert!(apres.stats.degats > degats);
     }
 }
+
+#[test]
+fn guerrier_defense() {
+    use bs_donnees::progression::BonusTalents;
+    let d = donnees();
+    let mut p = Partie::nouvelle(d, 0, 0, 5, false);
+    assert!(
+        p.talents.classes.guerrier.is_some(),
+        "personnage 0 = guerrier"
+    );
+    let b = BonusTalents {
+        mecaniques: vec![
+            ("inebranlable", 1),
+            ("tenir_la_ligne", 2),
+            ("peau_de_fer", 2),
+            ("dernier_rempart", 1),
+        ],
+        ..Default::default()
+    };
+    p.appliquer_talents(&b);
+    // Boss : −10 % ; immobile depuis 1 s : −20 %
+    assert!((p.talent_degats_recus(10.0, true) - 9.0).abs() < 1e-4);
+    p.talents.classes.temps_immobile = 1.0;
+    assert!((p.talent_degats_recus(10.0, false) - 8.0).abs() < 1e-4);
+    // Peau de fer : +2 d'armure sous la moitié des PV
+    assert_eq!(p.talent_armure(), 0.0);
+    p.etat.joueur.pv = p.etat.joueur.pv_max * 0.4;
+    assert_eq!(p.talent_armure(), 2.0);
+    // Dernier rempart : sauve une seule fois
+    assert!(p.talent_eviter_mort());
+    assert_eq!(p.etat.joueur.pv, 1.0);
+    assert!(p.etat.joueur.protection >= 3.0);
+    assert!(!p.talent_eviter_mort());
+}

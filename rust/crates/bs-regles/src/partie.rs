@@ -111,11 +111,17 @@ impl Partie {
         etat.modificateurs = passifs.calculer(d, None);
         etat.joueur.pv_max += etat.modificateurs.pv_max;
         etat.joueur.pv = etat.joueur.pv_max;
-        let archere = d
+        let classe = d
             .personnages
             .personnages
             .get_index(index_personnage)
-            .is_some_and(|(id, _)| id == "archer");
+            .map_or("", |(id, _)| id.as_str());
+        let archere = classe == "archer";
+        let mut talents = Talents::nouveaux(d.armes.len(), archere);
+        talents.classes.dernier = (etat.joueur.x, etat.joueur.z);
+        if classe == "guerrier" {
+            talents.classes.guerrier = Some(crate::classes::Guerrier::nouveau(d));
+        }
         let mut partie = Self {
             d,
             c: Catalogue::nouveau(d),
@@ -136,7 +142,7 @@ impl Partie {
             ramassables: Ramassables::nouveaux(d),
             passifs,
             arsenal: Arsenal::nouveau(),
-            talents: Talents::nouveaux(d.armes.len(), archere),
+            talents,
             cartes: Cartes::nouvelles(d),
             equipement: Equipement::nouveau(d),
             butin: Butin::default(),

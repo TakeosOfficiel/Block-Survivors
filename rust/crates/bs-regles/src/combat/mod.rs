@@ -142,7 +142,9 @@ impl Partie {
             if minuterie > 0.0 {
                 continue;
             }
+            self.talent_avant_declenchement(i);
             let declenchee = self.declencher(i);
+            self.talent_apres_declenchement(i, declenchee);
             let arme = self.arsenal.armes[i];
             self.arsenal.armes[i].minuterie = if declenchee {
                 arme.stats.cadence * self.talent_delai(arme.index)

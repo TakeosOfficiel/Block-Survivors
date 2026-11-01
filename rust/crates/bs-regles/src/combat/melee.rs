@@ -143,7 +143,7 @@ impl Partie {
             self.toucher(e, arme.index, &s, jx, jz, s.recul, 1.0);
             self.interrompre(e);
         }
-        if arme.rang as f32 >= renvoi {
+        if arme.rang as f32 >= renvoi || self.talents.rang("contre_coup") > 0 {
             let portee = s.zone + HEURT_PORTEE_RENVOI;
             self.renvoyer_projectiles(
                 jx,

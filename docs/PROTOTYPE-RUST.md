@@ -13,7 +13,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 1. Données et règles, sans rendu | fait : données, monde, simulation complète et robot (`bs-robot`) ; ses moyennes tombent dans la tolérance de celles du jeu TS (voir 1b) |
 | 2. Monde et rendu | fait : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres), 2d-2 (particules, chiffres de dégâts, barres de vie, secousse), 2d-3 (visuels des armes), 2d-4 (vent, ombres du soleil, lumière des blocs) |
 | 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
-| 4. Sauvegardes et profils | en cours : 4a, 4b (stockage, profils, maîtrise, records, `.bssave`, talents appliqués) |
+| 4. Sauvegardes et profils | en cours : 4a, 4b, 4c (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques du Guerrier) |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -860,3 +860,23 @@ mode sans fin.
 - Les mécaniques propres (87 dans `mecaniques_pretes`) ont leur rang, mais leurs effets
   restent neutres. Elles seront portées classe par classe aux étapes 4c à 4f : Guerrier,
   Archère, Mage, Invocateur.
+
+### 4c : mécaniques des talents du Guerrier (faites)
+
+- Socle commun (`bs-regles/src/classes/mod.rs`), comme dans `talents.ts` : temps immobile
+  et de marche, distance parcourue, soins plafonnés par la régénération, coups « en
+  réaction » (ils ne relancent pas les talents), dégâts de zone, cercles de particules.
+- Guerrier (`bs-regles/src/classes/guerrier/`, port de `guerrier.ts`). Les rangs sont lus
+  une fois, après `appliquer_talents`. Les 23 mécaniques sont portées :
+  - Gladiateur (`mod.rs`) : Enchaînement, Frénésie, Champion de l'arène, Fureur,
+    Bourreau, Élan critique, Saignée, Lame lourde, Soif de combat, Fureur du gladiateur,
+    Exécution ;
+  - Gardien (`gardien.rs`) : Posture défensive, Épines, Ronces d'acier, Rempart,
+    Inébranlable, Peau de fer, Tenir la ligne, Contre-attaque du bastion, Dernier
+    rempart ;
+  - Onde de choc (`combat/sol.rs`) : Répliques (2e fissure 0,5 s après) et Séisme
+    (6 directions toutes les 3 ondes) ; Contre-coup (`combat/melee.rs`) : le Heurt de
+    bouclier renvoie les projectiles dès le rang 1.
+- Crochets ajoutés au combat : avant et après chaque déclenchement d'arme, délai
+  modifié par les talents (Enchaînement, Frénésie, Élan).
+- Test : `guerrier_defense` (Inébranlable, Tenir la ligne, Peau de fer, Dernier rempart).

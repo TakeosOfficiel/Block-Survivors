@@ -12,6 +12,7 @@ mod prototype;
 pub mod butin;
 pub mod cartes;
 pub mod catalogue;
+pub mod classes;
 pub mod combat;
 pub mod directeurs;
 pub mod ennemis;

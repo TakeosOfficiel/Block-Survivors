@@ -204,6 +204,16 @@ impl Textures {
         self.poignees.insert(chemin.to_owned(), poignee);
     }
 
+    /// Poignée de `chemin`, chargée au besoin (l'image s'affiche quand elle arrive).
+    pub fn poignee(&mut self, serveur: &AssetServer, chemin: &str) -> Handle<Image> {
+        self.demander(serveur, chemin);
+        self.inserees
+            .get(chemin)
+            .or_else(|| self.poignees.get(chemin))
+            .cloned()
+            .unwrap_or_default()
+    }
+
     pub fn avancement(&self, serveur: &AssetServer) -> Avancement {
         let mut a = Avancement {
             faites: 0,

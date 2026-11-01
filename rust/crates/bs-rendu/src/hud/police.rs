@@ -76,6 +76,8 @@ pub struct TextePixel {
     pub taille: f32,
     /// Largeur maximale en pixels d'écran : coupé entre les mots, lignes centrées.
     pub largeur_max: Option<f32>,
+    /// Lignes calées à gauche (sinon centrées).
+    pub a_gauche: bool,
 }
 
 /// Image propre au texte (réécrite à chaque changement).
@@ -90,12 +92,19 @@ impl TextePixel {
             bord: Bord::Ombre,
             taille,
             largeur_max: None,
+            a_gauche: false,
         }
     }
 
     /// Texte coupé à `largeur` pixels d'écran, lignes centrées.
     pub fn bloc(mut self, largeur: f32) -> Self {
         self.largeur_max = Some(largeur);
+        self
+    }
+
+    /// Lignes calées à gauche.
+    pub fn a_gauche(mut self) -> Self {
+        self.a_gauche = true;
         self
     }
 
@@ -289,7 +298,7 @@ impl Police {
         texte: &str,
         couleur: [u8; 3],
         bord: Bord,
-        max: Option<i32>,
+        (max, a_gauche): (Option<i32>, bool),
     ) -> (u32, u32, Vec<u8>) {
         let mut lignes = Vec::new();
         self.couper(texte, max, &mut lignes);
@@ -321,7 +330,10 @@ impl Police {
         // Deux passes : le bord d'abord, puis le texte par-dessus
         for passe in 0..2 {
             for (k, ligne) in lignes.iter().enumerate() {
-                let mut x = marge + (l - extra - largeurs[k]) / 2;
+                let mut x = marge;
+                if !a_gauche {
+                    x += (l - extra - largeurs[k]) / 2;
+                }
                 let y0 = marge + dessus + k as i32 * interligne;
                 for c in ligne.chars() {
                     if let Some(g) = self.glyphes.get(&c) {
@@ -377,7 +389,7 @@ pub fn dessiner(
         let c = t.couleur.to_srgba();
         let couleur = [c.red, c.green, c.blue].map(|v| (v * 255.0).round() as u8);
         let max = t.largeur_max.map(|m| (m / t.taille) as i32);
-        let (l, h, px) = police.dessiner(&t.texte, couleur, t.bord, max);
+        let (l, h, px) = police.dessiner(&t.texte, couleur, t.bord, (max, t.a_gauche));
         let mut nouvelle = Image::new(
             Extent3d {
                 width: l,

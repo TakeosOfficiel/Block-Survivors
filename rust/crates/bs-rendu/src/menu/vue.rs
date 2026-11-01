@@ -15,7 +15,7 @@ use crate::hud::police::TextePixel;
 use crate::lancement::{ChoixPartie, DonneesJeu};
 use crate::sauvegarde::Sauvegarde;
 
-const FOND: Color = Color::srgb_u8(0x14, 0x17, 0x1f);
+pub(super) const FOND: Color = Color::srgb_u8(0x14, 0x17, 0x1f);
 const LARGEUR_COTE: f32 = 320.0;
 const JAUNE: Color = Color::srgb_u8(0xff, 0xe0, 0x66);
 const ROUGE_VERROU: Color = Color::srgb_u8(0xd0, 0x80, 0x70);
@@ -234,6 +234,7 @@ fn heros(
         let t = format!("Talents : {} ({rangs} rang{s})", a.nom);
         texte(commandes, col, &t, GRIS, 1.5);
     }
+    style::bouton(commandes, col, "Talents", 200.0, false, ActionMenu::Talents);
 }
 
 fn arenes(

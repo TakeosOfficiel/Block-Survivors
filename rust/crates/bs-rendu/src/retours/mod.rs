@@ -147,6 +147,7 @@ pub fn construire(
         materiaux.add(MateriauEntite {
             parametres,
             texture,
+            lumiere: None,
         })
     };
     let m_particules = materiau(decoupe, Some(tex_particules));

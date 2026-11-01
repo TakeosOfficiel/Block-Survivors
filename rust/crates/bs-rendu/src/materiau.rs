@@ -55,6 +55,10 @@ pub struct ParametresBloc {
     /// Images de la bande, image affichée, texture répétée (1 : terrain extérieur),
     /// alpha transmis (1 : matériau translucide).
     pub animation: Vec4,
+    /// Lumière des blocs (`lumiere`) : coin de la boîte dans le monde, active (1).
+    pub volume: Vec4,
+    /// Taille de la boîte (blocs).
+    pub taille: Vec4,
 }
 
 impl ParametresBloc {
@@ -72,6 +76,8 @@ impl ParametresBloc {
             ciel: rgb(a.ciel, 1.0),
             brouillard: Vec4::new(a.brouillard.debut, a.brouillard.fin, 0.0, 0.0),
             animation: Vec4::new(1.0, 0.0, 0.0, 0.0),
+            volume: Vec4::ZERO,
+            taille: Vec4::ONE,
         }
     }
 }
@@ -85,6 +91,10 @@ pub struct MateriauBloc {
     #[texture(1)]
     #[sampler(2)]
     pub texture: Option<Handle<Image>>,
+    /// Niveaux de lumière des blocs (texture 3D, voir `lumiere`) ; posée après coup.
+    #[texture(3, dimension = "3d")]
+    #[sampler(4)]
+    pub lumiere: Option<Handle<Image>>,
     /// Faces visibles des deux côtés (croix, feuilles, toiles).
     pub double_face: bool,
     /// Mélange alpha (verre teinté, eau des maps importées) ; l'alpha de la texture est
@@ -181,6 +191,7 @@ impl Plugin for PluginMateriaux {
         embedded_asset!(app, "shaders/ombres.wgsl");
         load_shader_library!(app, "shaders/vent.wgsl");
         load_shader_library!(app, "shaders/soleil.wgsl");
+        load_shader_library!(app, "shaders/lumiere.wgsl");
         app.add_plugins(MaterialPlugin::<MateriauBloc>::default())
             .add_systems(Update, animer_textures);
     }

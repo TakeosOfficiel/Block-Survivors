@@ -10,6 +10,7 @@
 #import bevy_pbr::mesh_functions
 #import bevy_pbr::mesh_view_bindings::view
 #import bevy_pbr::view_transformations::position_world_to_clip
+#import bs_rendu::lumiere::lumiere_blocs
 #import bs_rendu::soleil::ombre_soleil
 
 struct ParametresBloc {
@@ -21,11 +22,16 @@ struct ParametresBloc {
     brouillard: vec4<f32>,
     // devant le décor (1), teinte multipliée (1), opacité, translucide (1)
     animation: vec4<f32>,
+    // lumière des blocs : coin de la boîte, active (1) ; taille de la boîte
+    volume: vec4<f32>,
+    taille: vec4<f32>,
 }
 
 @group(#{MATERIAL_BIND_GROUP}) @binding(0) var<uniform> p: ParametresBloc;
 @group(#{MATERIAL_BIND_GROUP}) @binding(1) var texture_skin: texture_2d<f32>;
 @group(#{MATERIAL_BIND_GROUP}) @binding(2) var echantillonneur: sampler;
+@group(#{MATERIAL_BIND_GROUP}) @binding(3) var niveaux: texture_3d<f32>;
+@group(#{MATERIAL_BIND_GROUP}) @binding(4) var lissage: sampler;
 
 struct Sommet {
     @builtin(instance_index) instance: u32,
@@ -82,7 +88,8 @@ fn fragment(in: Sortie, @builtin(front_facing) devant: bool) -> @location(0) vec
         n = -n;
     }
     let ombre = ombre_soleil(in.monde, n);
-    var lumiere = p.ambiante.rgb + p.soleil.rgb * max(dot(n, p.direction.xyz), 0.0) * ombre;
+    var lumiere = p.ambiante.rgb + p.soleil.rgb * max(dot(n, p.direction.xyz), 0.0) * ombre
+        + lumiere_blocs(niveaux, lissage, p.volume, p.taille, in.monde.xyz, n);
     if p.brouillard.w > 0.5 {
         lumiere = vec3(1.0);
     }

@@ -15,6 +15,7 @@ mod carte_mc;
 mod effets;
 mod entites;
 mod fichiers;
+mod lumiere;
 mod materiau;
 mod materiau_entite;
 mod mesure;
@@ -195,7 +196,8 @@ impl Plugin for PluginJeu {
                 )
                     .chain()
                     .run_if(in_state(Phase::Partie)),
-            );
+            )
+            .add_systems(PostUpdate, lumiere::distribuer);
     }
 }
 
@@ -272,9 +274,12 @@ fn construire_arene(
     monde: Res<Monde>,
     mut maillages: ResMut<Assets<Mesh>>,
     mut materiaux: ResMut<Assets<MateriauBloc>>,
+    mut images: ResMut<Assets<Image>>,
 ) {
     let d = jeu.partie.d;
     let def = jeu.partie.etat.arene;
+    let lumiere = bs_monde::lumiere::volume_du_monde(d, &monde.0);
+    lumiere::inserer(&mut commandes, &mut images, &lumiere, Vec3::ZERO);
     let ambiance = ParametresBloc::de_l_arene(def);
     let a_texture = |chemin: &str| textures.obtenir(&serveur, chemin).is_some();
     let mut liste = maillages_arene(d, &monde.0, a_texture);
@@ -298,6 +303,7 @@ fn construire_arene(
         let materiau = materiaux.add(MateriauBloc {
             parametres,
             texture: textures.obtenir(&serveur, chemin),
+            lumiere: None,
             double_face: croix || b.decoupe,
             translucide: false,
         });

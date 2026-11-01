@@ -132,6 +132,7 @@ impl Rendus {
                 let materiau = materiaux.add(MateriauEntite {
                     parametres,
                     texture: skin,
+                    lumiere: None,
                 });
                 let objet = objet_tenu(
                     a, &modele, serveur, textures, images, maillages, materiaux, parametres,
@@ -179,6 +180,7 @@ fn objet_tenu(
         materiau: materiaux.add(MateriauEntite {
             parametres,
             texture: Some(poignee),
+            lumiere: None,
         }),
         local,
     })

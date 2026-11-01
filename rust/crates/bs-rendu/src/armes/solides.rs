@@ -96,6 +96,7 @@ impl Fabrique<'_> {
             self.materiaux.add(MateriauEntite {
                 parametres,
                 texture,
+                lumiere: None,
             }),
         )
     }

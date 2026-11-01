@@ -19,6 +19,8 @@ struct ParametresBloc {
     ciel: vec4<f32>,
     brouillard: vec4<f32>,
     animation: vec4<f32>,
+    volume: vec4<f32>,
+    taille: vec4<f32>,
 }
 
 @group(#{MATERIAL_BIND_GROUP}) @binding(0) var<uniform> p: ParametresBloc;

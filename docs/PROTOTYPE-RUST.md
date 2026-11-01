@@ -634,7 +634,7 @@ invocations.
   captures `docs/captures/vitrine-armes-sol-pc.png`,
   `docs/captures/vitrine-armes-pose-pc.png`, `docs/captures/vitrine-armes-arcanes-pc.png`.
 
-#### 2d-4 : lumières, vent, herbe (en cours)
+#### 2d-4 : lumières, vent, herbe (fait)
 
 ##### 2d-4a : vent (fait)
 
@@ -666,4 +666,20 @@ invocations.
   `BS_OMBRES=0` coupe le soleil (en attendant les options, étape 4).
 - **Captures** : `docs/captures/ombres-soleil-pc.png`,
   `docs/captures/ombres-soleil-map-pc.png`.
+
+##### 2d-4c : lumière des blocs (fait)
+
+- **Propagation** (`bs-monde/src/lumiere.rs`) : comme dans Minecraft, chaque source
+  (torche 14, lanterne, lave, glowstone 15, lanterne des âmes 10, magma 3, bougies et
+  lampes allumées…) éclaire bloc par bloc, un niveau de moins par pas ; les cubes
+  pleins opaques l'arrêtent (pas de lumière à travers les murs : les caves restent
+  sombres). Calculée une fois au chargement, pour l'arène générée comme pour une map
+  importée (`maillage::opaques` dit ce qui arrête la lumière).
+- **Rendu** (`bs-rendu/src/lumiere.rs`, `shaders/lumiere.wgsl`) : une texture 3D d'un
+  texel par bloc, lissée entre blocs, donnée à chaque matériau de blocs et d'entités à
+  sa création. Les shaders lisent le niveau de l'air devant la surface, suivent la
+  courbe de luminosité de Minecraft et ajoutent une lumière chaude : le sol rougeoie
+  autour de la lave, les monstres s'éclairent en passant près d'une torche.
+- Sans source dans l'arène (plaine…), rien n'est envoyé ni calculé dans les shaders.
+- **Capture** : `docs/captures/lumiere-blocs-nether-pc.png`.
 

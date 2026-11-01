@@ -26,6 +26,10 @@ pub struct MateriauEntite {
     #[texture(1)]
     #[sampler(2)]
     pub texture: Option<Handle<Image>>,
+    /// Niveaux de lumière des blocs (texture 3D, voir `lumiere`) ; posée après coup.
+    #[texture(3, dimension = "3d")]
+    #[sampler(4)]
+    pub lumiere: Option<Handle<Image>>,
 }
 
 impl Material for MateriauEntite {

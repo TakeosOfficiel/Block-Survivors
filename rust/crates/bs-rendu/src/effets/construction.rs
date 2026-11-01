@@ -97,6 +97,7 @@ pub fn construire(
             materiaux.add(MateriauEntite {
                 parametres,
                 texture,
+                lumiere: None,
             }),
         )
     };

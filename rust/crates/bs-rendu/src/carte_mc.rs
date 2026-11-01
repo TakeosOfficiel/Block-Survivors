@@ -8,8 +8,11 @@ use bevy::mesh::{Indices, PrimitiveTopology};
 use bevy::prelude::*;
 use bs_donnees::Donnees;
 use bs_donnees::arenes::Arene;
+use bs_monde::lumiere::volume_de_schematique;
 use bs_monde::minecraft::cartes::{Carte, definition, importer};
-use bs_monde::minecraft::maillage::{MaillageTexture, RenduTexture, classer, construire_maillages};
+use bs_monde::minecraft::maillage::{
+    MaillageTexture, RenduTexture, classer, construire_maillages, opaques,
+};
 use bs_monde::minecraft::modeles::{BlocCuit, cuire, textures as textures_blocs};
 use bs_monde::minecraft::schematique::{Schematique, lire_schematique};
 use bs_regles::partie::Partie;
@@ -129,7 +132,7 @@ pub fn construire_carte(
     mut commandes: Commands,
     serveur: Res<AssetServer>,
     textures: Res<Textures>,
-    images: Res<Assets<Image>>,
+    mut images: ResMut<Assets<Image>>,
     jeu: Res<PartieEnCours>,
     carte: Res<CarteImportee>,
     mut maillages: ResMut<Assets<Mesh>>,
@@ -177,6 +180,7 @@ pub fn construire_carte(
         let materiau = materiaux.add(MateriauBloc {
             parametres,
             texture: poignees[m.texture].clone(),
+            lumiere: None,
             double_face: rendu != RenduTexture::Opaque,
             translucide: rendu == RenduTexture::Translucide,
         });
@@ -200,6 +204,21 @@ pub fn construire_carte(
             });
         }
     }
+    eclairer(&mut commandes, &mut images, &carte, &rendus);
+}
+
+/// Lumière des blocs de la map (la case (0, 0, 0) de la schématique a son coin en
+/// `-origine` dans le monde).
+fn eclairer(
+    commandes: &mut Commands,
+    images: &mut Assets<Image>,
+    carte: &CarteImportee,
+    rendus: &[RenduTexture],
+) {
+    let opaque = opaques(&carte.blocs, &carte.textures, rendus);
+    let v = volume_de_schematique(&carte.schematique, &carte.blocs, &opaque);
+    let o = carte.origine;
+    crate::lumiere::inserer(commandes, images, &v, -Vec3::new(o[0], o[1], o[2]));
 }
 
 /// Maillage Bevy d'une texture de la map (teintes en couleurs de sommets).

@@ -687,3 +687,24 @@ invocations.
 - Sans source dans l'arène (plaine…), rien n'est envoyé ni calculé dans les shaders.
 - **Capture** : `docs/captures/lumiere-blocs-nether-pc.png`.
 
+
+## Étape 3 : jouable en solo
+
+En quatre parties : 3a sons, 3b HUD, 3c écrans de cartes, 3d pause, fin, bilan et
+mode sans fin.
+
+### 3a : sons (fait)
+
+- `bs-audio` (réécrit) : `Mixeur` sur kira (sortie cpal, décodage ogg/vorbis). Il reprend
+  src/audio/sons.ts : volume = général × catégorie × son ; hauteur tirée au hasard dans
+  l'intervalle du son, multipliée par celle de l'événement et bornée à 0,25 à 4 ;
+  `intervalle_min` entre deux lectures ; `simultanes` voix au plus (la plus ancienne est
+  coupée). Volumes par défaut : 0,7 général et 1 par catégorie.
+- Source d'assets « mcs » (`textures.rs`) : serveur de ressources de Mojang
+  (`<2 caractères>/<empreinte>`), avec un cache disque dans `~/.cache/block-survivors/sons`.
+- `bs-rendu/src/sons.rs` : chargeur `.ogg` qui décode une seule fois, puis demande de tous
+  les sons au démarrage. Après chaque pas, `Evenement::Son` est joué. Un son pas encore
+  arrivé reste muet.
+- Sans sortie son (CI, xvfb), rien n'est téléchargé et la partie reste muette.
+  `BS_SON=0` coupe le son. Vérifié : les 71 sons se téléchargent et se décodent sans
+  erreur.

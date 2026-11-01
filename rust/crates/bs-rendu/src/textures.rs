@@ -5,7 +5,8 @@
 //! Une source d'assets Bevy « mc:// » essaie les adresses dans l'ordre : on charge
 //! `mc://block/dirt.png` comme n'importe quel fichier. Une texture introuvable partout
 //! reste absente : chaque système prend alors sa couleur de secours (comme en TS).
-//! Même principe pour les fichiers JSON des maps importées (source « mcj », `fichiers`).
+//! Même principe pour les fichiers JSON des maps importées (source « mcj », `fichiers`)
+//! et pour les sons (source « mcs », serveur de ressources de Mojang, `sons`).
 
 use std::path::{Path, PathBuf};
 
@@ -20,6 +21,10 @@ use bevy::prelude::*;
 
 /// Version des textures (celle de `VERSION_MINECRAFT` dans src/config.ts).
 pub const VERSION_MINECRAFT: &str = "26.3";
+
+/// Serveur de ressources de Mojang (src/config.ts `SOURCES_SONS`) : `<2 premiers
+/// caractères de l'empreinte>/<empreinte>`.
+const SOURCE_SONS: &str = "resources.download.minecraft.net";
 
 /// Préfixes des sources, essayés dans l'ordre (sans « https:// »), pour un dossier de
 /// `assets/minecraft` (« textures », ou vide pour les fichiers JSON).
@@ -40,8 +45,10 @@ fn sources(dossier: &str) -> [String; 2] {
 /// Lecteur d'une source vanilla (« mc », « mcj ») : cache disque, puis chaque adresse
 /// distante.
 struct LecteurMinecraft {
-    sources: [String; 2],
+    sources: Vec<String>,
     cache: Option<PathBuf>,
+    /// Adresses distantes sans l'extension du chemin (sons : rangés par empreinte).
+    sans_extension: bool,
 }
 
 impl AssetReader for LecteurMinecraft {
@@ -51,7 +58,11 @@ impl AssetReader for LecteurMinecraft {
         }
         let mut erreur = AssetReaderError::NotFound(chemin.to_path_buf());
         for source in &self.sources {
-            let adresse = Path::new(source).join(chemin);
+            let adresse = if self.sans_extension {
+                Path::new(source).join(chemin.with_extension(""))
+            } else {
+                Path::new(source).join(chemin)
+            };
             match WebAssetReader::Https.read(&adresse).await {
                 Ok(mut lecteur) => {
                     let mut octets = Vec::new();
@@ -87,8 +98,7 @@ impl AssetReader for LecteurMinecraft {
     }
 }
 
-/// Dossier du cache : `sorte` = « textures » ou
-/// « fichiers ».
+/// Dossier du cache : `sorte` = « textures », « fichiers » ou « sons ».
 fn dossier_cache(sorte: &str) -> Option<PathBuf> {
     let var = |nom: &str| std::env::var_os(nom).map(PathBuf::from);
     let base = if cfg!(windows) {
@@ -116,7 +126,8 @@ fn ecrire_cache(dossier: &Path, chemin: &Path, octets: &[u8]) {
     let _ = std::fs::write(fichier, octets);
 }
 
-/// Enregistre les sources « mc » (textures) et « mcj » (états et modèles de blocs, JSON).
+/// Enregistre les sources « mc » (textures), « mcj » (états et modèles de blocs, JSON) et
+/// « mcs » (sons).
 /// À ajouter **avant** `DefaultPlugins` (avant `AssetPlugin`).
 pub struct PluginSourceTextures;
 
@@ -126,8 +137,9 @@ impl Plugin for PluginSourceTextures {
             "mc",
             AssetSourceBuilder::new(|| {
                 Box::new(LecteurMinecraft {
-                    sources: sources("textures"),
+                    sources: sources("textures").into(),
                     cache: dossier_cache("textures"),
+                    sans_extension: false,
                 })
             }),
         )
@@ -135,8 +147,19 @@ impl Plugin for PluginSourceTextures {
             "mcj",
             AssetSourceBuilder::new(|| {
                 Box::new(LecteurMinecraft {
-                    sources: sources(""),
+                    sources: sources("").into(),
                     cache: dossier_cache("fichiers"),
+                    sans_extension: false,
+                })
+            }),
+        )
+        .register_asset_source(
+            "mcs",
+            AssetSourceBuilder::new(|| {
+                Box::new(LecteurMinecraft {
+                    sources: vec![SOURCE_SONS.to_owned()],
+                    cache: dossier_cache("sons"),
+                    sans_extension: true,
                 })
             }),
         );

@@ -1814,6 +1814,7 @@ name = "bs-rendu"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bs-audio",
  "bs-commun",
  "bs-donnees",
  "bs-monde",

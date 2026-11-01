@@ -22,6 +22,7 @@ mod mesure;
 mod modeles;
 mod retours;
 mod soleil;
+mod sons;
 mod textures;
 
 use bevy::prelude::*;
@@ -114,6 +115,7 @@ impl Plugin for PluginJeu {
     fn build(&self, app: &mut App) {
         let d: &'static Donnees =
             Box::leak(Box::new(Donnees::embarquees().expect("données du jeu")));
+        app.insert_non_send_resource(sons::Sons::nouveaux(d));
         let id = self.arene.as_deref().unwrap_or("");
         let carte = bs_monde::minecraft::cartes::cartes()
             .iter()
@@ -147,6 +149,7 @@ impl Plugin for PluginJeu {
                 mesure::PluginMesure,
                 fichiers::PluginFichiers,
                 soleil::PluginSoleil,
+                sons::PluginSons,
             ))
             .add_systems(Startup, demander_textures.run_if(resource_exists::<Monde>))
             .add_systems(
@@ -180,6 +183,7 @@ impl Plugin for PluginJeu {
                     entites::animer,
                     retours::recevoir,
                     armes::recevoir,
+                    sons::jouer,
                 )
                     .chain()
                     .run_if(in_state(Phase::Partie)),

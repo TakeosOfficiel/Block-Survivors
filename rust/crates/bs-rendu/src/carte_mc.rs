@@ -16,7 +16,7 @@ use bs_regles::partie::Partie;
 
 use crate::arene::couleur_lineaire;
 use crate::fichiers::{Fichiers, Json};
-use crate::materiau::{AnimationTexture, MateriauBloc, ParametresBloc};
+use crate::materiau::{ATTRIBUTE_VENT, AnimationTexture, MateriauBloc, ParametresBloc};
 use crate::textures::Textures;
 use crate::{PartieEnCours, SourceArene, modeles};
 
@@ -213,5 +213,6 @@ fn en_mesh(m: &MaillageTexture) -> Mesh {
     .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, m.normales.clone())
     .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, m.uvs.clone())
     .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, couleurs)
+    .with_inserted_attribute(ATTRIBUTE_VENT, m.vents.clone())
     .with_inserted_indices(Indices::U32(m.indices.clone()))
 }

@@ -633,3 +633,20 @@ invocations.
 - **Vitrine** : `BS_ETALAGE=melee|foudre|feu|sol|pose|arcanes` n'étale qu'un groupe ;
   captures `docs/captures/vitrine-armes-sol-pc.png`,
   `docs/captures/vitrine-armes-pose-pc.png`, `docs/captures/vitrine-armes-arcanes-pc.png`.
+
+#### 2d-4 : lumières, vent, herbe (en cours)
+
+##### 2d-4a : vent (fait)
+
+- **Shader des blocs** : il a maintenant son propre shader de sommets. Chaque sommet
+  porte son vent (`ATTRIBUTE_VENT` : centre du bloc, pied, mode). Le feuillage frémit,
+  le sommet des herbes et des fleurs se balance depuis leur pied, comme
+  src/monde/vegetation.ts (mêmes direction, vitesse et amplitudes). En plus : des
+  rafales lentes balaient l'arène en larges bandes, et le sommet d'une plante qui
+  penche s'abaisse un peu.
+- **Maps importées** : même vent, bloc par bloc (`bs_monde::minecraft::vent` :
+  feuilles, herbes, fleurs, pousses, cultures, lianes ; moitié haute d'une grande
+  plante balancée depuis le pied du bloc du dessous). C'était une demande de
+  A_FAIRE.md, absente de la version TS.
+- **Test** : l'herbe d'une petite schématique ondule depuis son pied, la pierre non.
+

@@ -10,6 +10,7 @@ pub mod modeles;
 pub mod nbt;
 pub mod proprietes;
 pub mod schematique;
+pub mod vent;
 pub mod zone;
 
 #[cfg(test)]

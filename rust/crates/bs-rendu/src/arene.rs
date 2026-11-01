@@ -15,8 +15,11 @@ use bevy::prelude::*;
 use bs_commun::hachage3;
 use bs_donnees::Donnees;
 use bs_donnees::arenes::Arene;
-use bs_donnees::blocs::{Bloc, FormeBloc};
+use bs_donnees::blocs::{Bloc, FormeBloc, Ondulation};
 use bs_monde::MondeGenere;
+use bs_monde::minecraft::vent::{VENT_FEUILLAGE, VENT_PLANTE};
+
+use crate::materiau::ATTRIBUTE_VENT;
 
 /// Un liquide est un cube abaissé de 2 pixels, comme en jeu.
 const HAUTEUR_LIQUIDE: f32 = 14.0 / 16.0;
@@ -61,6 +64,8 @@ pub struct MaillageBloc {
     pub uvs: Vec<[f32; 2]>,
     /// Couleur (linéaire) multipliée à la texture : teinte, ou damier de secours.
     pub couleurs: Vec<[f32; 4]>,
+    /// Vent : centre x, pied y, centre z, mode (`bs_monde::minecraft::vent`).
+    pub vents: Vec<[f32; 4]>,
     pub indices: Vec<u32>,
 }
 
@@ -78,18 +83,27 @@ impl MaillageBloc {
         .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, self.normales.clone())
         .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, self.uvs.clone())
         .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, self.couleurs.clone())
+        .with_inserted_attribute(ATTRIBUTE_VENT, self.vents.clone())
         .with_inserted_indices(Indices::U32(self.indices.clone()))
     }
 
     /// Ajoute un quadrilatère (sommets dans l'ordre des UV : haut-gauche, haut-droite,
     /// bas-droite, bas-gauche, vus de face).
-    fn quad(&mut self, coins: [Vec3; 4], normale: Vec3, couleur: [f32; 4], uvs: [[f32; 2]; 4]) {
+    fn quad(
+        &mut self,
+        coins: [Vec3; 4],
+        normale: Vec3,
+        couleur: [f32; 4],
+        uvs: [[f32; 2]; 4],
+        vent: [f32; 4],
+    ) {
         let base = self.positions.len() as u32;
         for (c, uv) in coins.iter().zip(uvs) {
             self.positions.push(c.to_array());
             self.normales.push(normale.to_array());
             self.uvs.push(uv);
             self.couleurs.push(couleur);
+            self.vents.push(vent);
         }
         self.indices
             .extend([base, base + 3, base + 2, base, base + 2, base + 1]);
@@ -184,6 +198,11 @@ pub fn maillages_arene(
         let index = d.blocs.get_index_of(id.as_str()).expect("bloc validé");
         let b = &d.blocs[index];
         let forme = b.forme.unwrap_or(FormeBloc::Cube);
+        let mode = match b.ondule {
+            Some(Ondulation::Feuillage) => VENT_FEUILLAGE,
+            Some(Ondulation::Plante) => VENT_PLANTE,
+            None => 0.0,
+        };
         // Même liquide autour : face commune invisible
         let memes: HashSet<IVec3> = if forme == FormeBloc::Liquide {
             positions.iter().map(|p| case(*p)).collect()
@@ -216,6 +235,7 @@ pub fn maillages_arene(
                     0
                 };
                 let rotation = Quat::from_rotation_y(quarts as f32 * std::f32::consts::FRAC_PI_2);
+                let vent = [centre.x, centre.y - 0.5, centre.z, mode];
                 let mut couleur = teinte;
                 if !texture && (c.x + c.y + c.z) & 1 == 0 {
                     for k in &mut couleur[..3] {
@@ -223,7 +243,7 @@ pub fn maillages_arene(
                     }
                 }
                 if forme == FormeBloc::Croix {
-                    ajouter_croix(&mut m, centre, rotation, couleur);
+                    ajouter_croix(&mut m, centre, rotation, couleur, vent);
                     continue;
                 }
                 // Liquide : abaissé, posé sur le bas de sa case
@@ -242,7 +262,7 @@ pub fn maillages_arene(
                         let k = rotation * Vec3::new(k.x, k.y * echelle, k.z);
                         centre + k + Vec3::Y * decalage
                     });
-                    m.quad(coins, normale, couleur, UV_PLEIN);
+                    m.quad(coins, normale, couleur, UV_PLEIN, vent);
                 }
             }
             if !m.indices.is_empty() {
@@ -254,7 +274,13 @@ pub fn maillages_arene(
 }
 
 /// Deux plans verticaux croisés en diagonale du bloc (fleurs, herbes, toiles).
-fn ajouter_croix(m: &mut MaillageBloc, centre: Vec3, rotation: Quat, couleur: [f32; 4]) {
+fn ajouter_croix(
+    m: &mut MaillageBloc,
+    centre: Vec3,
+    rotation: Quat,
+    couleur: [f32; 4],
+    vent: [f32; 4],
+) {
     let d = DEMI_CROIX;
     let plans = [
         [
@@ -277,6 +303,7 @@ fn ajouter_croix(m: &mut MaillageBloc, centre: Vec3, rotation: Quat, couleur: [f
             normale,
             couleur,
             UV_PLEIN,
+            vent,
         );
     }
 }
@@ -322,7 +349,7 @@ pub fn maillage_exterieur(
             Vec3::new(x0, 0.0, z1),
         ];
         let uvs = coins.map(|c| [c.x, c.z]);
-        m.quad(coins, Vec3::Y, couleur, uvs);
+        m.quad(coins, Vec3::Y, couleur, uvs, [0.0; 4]);
     }
     Some(m)
 }

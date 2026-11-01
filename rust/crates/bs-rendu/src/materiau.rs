@@ -1,13 +1,14 @@
 //! Matériau des blocs (shader `shaders/blocs.wgsl`) : éclairage, brouillard et ciel de
 //! l'arène (comme `appliquerAmbiance` de src/moteur/rendu.ts), textures animées en bande
-//! (eau, lave : on avance l'image affichée), découpe nette et faces doubles.
+//! (eau, lave : on avance l'image affichée), découpe nette et faces doubles, feuillage
+//! et plantes qui ondulent au vent (attribut `ATTRIBUTE_VENT`, src/monde/vegetation.ts).
 
 use bevy::asset::embedded_asset;
-use bevy::mesh::MeshVertexBufferLayoutRef;
+use bevy::mesh::{MeshVertexAttribute, MeshVertexBufferLayoutRef, VertexAttributeDescriptor};
 use bevy::pbr::{MaterialPipeline, MaterialPipelineKey};
 use bevy::prelude::*;
 use bevy::render::render_resource::{
-    AsBindGroup, RenderPipelineDescriptor, ShaderType, SpecializedMeshPipelineError,
+    AsBindGroup, RenderPipelineDescriptor, ShaderType, SpecializedMeshPipelineError, VertexFormat,
 };
 use bevy::shader::ShaderRef;
 use bs_donnees::arenes::Arene;
@@ -16,6 +17,13 @@ use crate::arene::couleur_lineaire;
 
 /// Lumière de l'ombrage façon Minecraft (src/config.ts, `rendu.directionSoleil`).
 const DIRECTION_SOLEIL: Vec3 = Vec3::new(0.3, 1.0, 0.5);
+
+/// Vent de chaque sommet : centre x, pied y, centre z du bloc, mode (0 : immobile,
+/// 1 : feuillage, 2 : plante).
+pub const ATTRIBUTE_VENT: MeshVertexAttribute =
+    MeshVertexAttribute::new("Vent", 0x6273_7665, VertexFormat::Float32x4);
+
+const SHADER: &str = "embedded://bs_rendu/shaders/blocs.wgsl";
 
 #[derive(Clone, Copy, Debug, Default, ShaderType)]
 pub struct ParametresBloc {
@@ -88,16 +96,28 @@ impl Material for MateriauBloc {
         }
     }
 
+    fn vertex_shader() -> ShaderRef {
+        SHADER.into()
+    }
+
     fn fragment_shader() -> ShaderRef {
-        "embedded://bs_rendu/shaders/blocs.wgsl".into()
+        SHADER.into()
     }
 
     fn specialize(
         _pipeline: &MaterialPipeline,
         descriptor: &mut RenderPipelineDescriptor,
-        _layout: &MeshVertexBufferLayoutRef,
+        layout: &MeshVertexBufferLayoutRef,
         key: MaterialPipelineKey<Self>,
     ) -> Result<(), SpecializedMeshPipelineError> {
+        let attributs: [VertexAttributeDescriptor; 5] = [
+            Mesh::ATTRIBUTE_POSITION.at_shader_location(0),
+            Mesh::ATTRIBUTE_NORMAL.at_shader_location(1),
+            Mesh::ATTRIBUTE_UV_0.at_shader_location(2),
+            Mesh::ATTRIBUTE_COLOR.at_shader_location(5),
+            ATTRIBUTE_VENT.at_shader_location(6),
+        ];
+        descriptor.vertex.buffers = vec![layout.0.get_layout(&attributs)?];
         if key.bind_group_data.double_face {
             descriptor.primitive.cull_mode = None;
         }

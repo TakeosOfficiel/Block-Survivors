@@ -7,6 +7,7 @@ use super::cuisson::{Direction, ModeleCuit, Quad, V3};
 use super::modeles::{BlocCuit, Liquide, TEXTURE_EAU, TEXTURE_LAVE, Variante};
 use super::proprietes::{liquide_affiche, teinte_de};
 use super::schematique::Schematique;
+use super::vent::{VENT_AUCUN, mode_vent, vent_du_bloc};
 
 /// Rendu d'une texture, d'après ses pixels : opaque, découpée (feuilles, plantes) ou
 /// translucide (verre teinté, eau).
@@ -48,6 +49,8 @@ pub struct MaillageTexture {
     pub uvs: Vec<[f32; 2]>,
     /// Teinte 0xRRGGBB (blanc : aucune).
     pub couleurs: Vec<u32>,
+    /// Vent : centre x, pied y, centre z, mode (voir `vent`).
+    pub vents: Vec<[f32; 4]>,
     pub indices: Vec<u32>,
 }
 
@@ -79,6 +82,7 @@ pub fn construire_maillages(
         .iter()
         .map(|b| b.modele_unique().is_some_and(|m| m.cube_plein) && !b.nom.ends_with("_leaves"))
         .collect();
+    let modes: Vec<f32> = blocs.iter().map(mode_vent).collect();
     let liquides: Vec<Option<Liquide>> = blocs.iter().map(liquide_affiche).collect();
     let teintes: Vec<u32> = blocs
         .iter()
@@ -121,6 +125,7 @@ pub fn construire_maillages(
                     y as f32 - origine[1],
                     z as f32 - origine[2],
                 ];
+                let vent = vent_du_bloc(b, modes[i as usize], o);
                 for partie in &b.parties {
                     let modele = choisir(partie, x, y, z);
                     for q in &modele.quads {
@@ -140,6 +145,7 @@ pub fn construire_maillages(
                             q,
                             o,
                             couleur,
+                            vent,
                             rendus[k] != RenduTexture::Opaque,
                         );
                     }
@@ -175,6 +181,7 @@ pub fn construire_maillages(
                         &quad_liquide(d, haut, texture),
                         o,
                         couleur,
+                        [0.0, 0.0, 0.0, VENT_AUCUN],
                         false,
                     );
                 }
@@ -204,7 +211,7 @@ fn choisir(partie: &[Variante], x: i32, y: i32, z: i32) -> &ModeleCuit {
     &partie[partie.len() - 1].modele
 }
 
-fn ajouter(m: &mut MaillageTexture, q: &Quad, o: V3, couleur: u32, decoller: bool) {
+fn ajouter(m: &mut MaillageTexture, q: &Quad, o: V3, couleur: u32, vent: [f32; 4], decoller: bool) {
     let base = m.positions.len() as u32;
     let n = q.normale;
     // Face découpée posée sur le bord du bloc (calque d'herbe…) : décollée d'un cheveu
@@ -222,6 +229,7 @@ fn ajouter(m: &mut MaillageTexture, q: &Quad, o: V3, couleur: u32, decoller: boo
         m.normales.push(if q.ombre { n } else { [0.0, 1.0, 0.0] });
         m.uvs.push([q.uv[c][0] / 16.0, q.uv[c][1] / 16.0]);
         m.couleurs.push(couleur);
+        m.vents.push(vent);
     }
     // Coins TL, TR, BR, BL vus de face : deux triangles dans le sens direct
     m.indices

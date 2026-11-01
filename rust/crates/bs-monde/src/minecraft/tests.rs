@@ -11,6 +11,7 @@ use super::cuisson::Direction;
 use super::maillage::{RenduTexture, construire_maillages};
 use super::modeles::{Fichier, SourceFichiers, cuire, textures};
 use super::schematique::{Panneau, Schematique, lire_schematique};
+use super::vent::{VENT_AUCUN, VENT_PLANTE};
 use crate::carte::{BLOQUE_MARCHE, BLOQUE_TIR};
 
 /// Fichiers vanilla minimaux : pierre (cube plein), escalier (variantes tournées),
@@ -219,5 +220,19 @@ fn zone_jouable_et_carte_de_collision() {
         pierre.normales.iter().all(|n| n[1] > -0.5),
         "le dessous n'est jamais vu"
     );
-    assert!(m.iter().any(|m| tex[m.texture] == "block/short_grass"));
+    // Vent : l'herbe se balance depuis le pied de son bloc, la pierre ne bouge pas
+    let herbe = m
+        .iter()
+        .find(|m| tex[m.texture] == "block/short_grass")
+        .expect("herbe");
+    assert_eq!(herbe.vents.len(), herbe.positions.len());
+    assert!(herbe.vents.iter().all(|v| v[3] == VENT_PLANTE));
+    assert!(
+        herbe
+            .vents
+            .iter()
+            .zip(&herbe.positions)
+            .all(|(v, p)| p[1] >= v[1] && (p[0] - v[0]).abs() <= 0.5)
+    );
+    assert!(pierre.vents.iter().all(|v| v[3] == VENT_AUCUN));
 }

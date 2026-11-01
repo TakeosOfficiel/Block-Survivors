@@ -9,6 +9,7 @@ use bs_donnees::armes::{FamilleArme, Mecanique};
 use bs_donnees::entites::Projectile as DefinitionProjectile;
 
 use super::arme::ArmeEquipee;
+use crate::classes::valeur;
 use crate::ennemis::Nature;
 use crate::partie::Partie;
 
@@ -18,6 +19,12 @@ const PAS_COLLISION: f32 = 0.25;
 const RAYON_DECOR: f32 = 0.1;
 /// Part des dégâts perdue par ennemi traversé (flèches).
 const PERTE_TRAVERSEE: f32 = 0.25;
+/// Perforation nette : perte par rang, et rang qui donne une perforation de plus.
+const PERFORATION_NETTE: [f32; 2] = [0.12, 0.0];
+const PERFORATION_NETTE_RANG: u32 = 2;
+/// Visée stable : distance parcourue (blocs) et bonus de dégâts au-delà.
+const VISEE_DISTANCE: f32 = 8.0;
+const VISEE_BONUS: f32 = 0.15;
 /// Le trident disparaît à cette distance du joueur (blocs).
 const DISTANCE_RETOUR: f32 = 0.7;
 /// s de brûlure des tirs qui enflamment (blazes alliés).
@@ -58,6 +65,8 @@ pub struct ProjectileJoueur {
     pub restants: f32,
     /// Part des dégâts perdue à chaque ennemi traversé.
     pub perte: f32,
+    /// Visée stable : plus de dégâts au-delà d'une distance.
+    pub visee: bool,
     /// Rayon d'explosion (0 = n'explose pas).
     pub zone: f32,
     pub gerbe: &'static str,
@@ -156,6 +165,14 @@ impl Partie {
                 eclats = ECLATS_NOMBRE;
             }
         }
+        let nette = self.talents.rang("perforation_nette");
+        let perte = match (fleche, nette) {
+            (false, _) => 0.0,
+            (true, 0) => PERTE_TRAVERSEE,
+            (true, r) => valeur(r, &PERFORATION_NETTE),
+        };
+        let perforation_nette = fleche && nette >= PERFORATION_NETTE_RANG;
+        let visee = self.est_arme(arme.index, "arc") && self.talents.rang("visee_stable") > 0;
         self.armes.projectiles.pool.push(ProjectileJoueur {
             def,
             arme: arme.index,
@@ -171,11 +188,12 @@ impl Partie {
             degats: s.degats * self.talent_facteur_declenchement(),
             recul: s.recul,
             restants: if mode == ModeProjectile::Ligne {
-                s.perforation.max(1.0)
+                s.perforation.max(1.0) + if perforation_nette { 1.0 } else { 0.0 }
             } else {
                 f32::INFINITY
             },
-            perte: if fleche { PERTE_TRAVERSEE } else { 0.0 },
+            perte,
+            visee,
             zone: if explose { s.zone } else { 0.0 },
             gerbe,
             son_explosion: son,
@@ -185,6 +203,39 @@ impl Partie {
             touches: [0; MAX_TOUCHES],
             nb_touches: 0,
         });
+    }
+
+    /// Projectile spécial d'un talent (flèche géante de la Puissance) : traverse tout,
+    /// avec ses propres dégâts et sa portée.
+    pub(crate) fn lancer_special(
+        &mut self,
+        arme: &ArmeEquipee,
+        projectile: &str,
+        (dir_x, dir_z): (f32, f32),
+        degats: f32,
+        portee: f32,
+    ) {
+        let avant = self.armes.projectiles.pool.len();
+        self.lancer(
+            arme,
+            projectile,
+            ModeProjectile::Traversant,
+            dir_x,
+            dir_z,
+            false,
+        );
+        let Some(def) = self.d.projectiles.get(projectile) else {
+            return;
+        };
+        if self.armes.projectiles.pool.len() > avant
+            && let Some(p) = self.armes.projectiles.pool.last_mut()
+        {
+            p.degats = degats;
+            p.portee = portee;
+            p.vitesse = def.vitesse;
+            p.perte = 0.0;
+            p.visee = false;
+        }
     }
 
     pub fn maj_projectiles_joueur(&mut self, dt: f32) {
@@ -241,9 +292,14 @@ impl Partie {
                         detruit = true;
                         break;
                     }
+                    let degats = if p.visee && p.parcouru > VISEE_DISTANCE {
+                        p.degats * (1.0 + VISEE_BONUS)
+                    } else {
+                        p.degats
+                    };
                     self.blesser(
                         e,
-                        p.degats,
+                        degats,
                         p.x - p.dir_x,
                         p.z - p.dir_z,
                         p.recul,

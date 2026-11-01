@@ -1,5 +1,6 @@
 //! Armes qui poursuivent leur cible : orbes arcaniques (tournent, puis foncent) et
-//! flèches ricocheuses (port de orbesArcaniques.ts, ricochets.ts, sans les talents).
+//! flèches ricocheuses (port de orbesArcaniques.ts, ricochets.ts), dont les flèches
+//! spectrales de l'Œil de l'aigle (réactions, sans rebond).
 //! Le jeu TS garde une référence vers l'ennemi visé ; ici on garde son index et son
 //! identifiant, et on le retrouve s'il a changé de place dans le pool.
 
@@ -20,6 +21,9 @@ const RICOCHET_CAPACITE: usize = 24;
 const RICOCHET_REBONDS_MAX: f32 = 6.0;
 const RICOCHET_VIE_MAX: f32 = 4.0;
 const RICOCHET_TOUCHES: usize = 8;
+/// Distance de rebond d'une flèche de talent, et bonus du Tir rebondissant (blocs).
+const RICOCHET_REBOND_TALENT: f32 = 4.0;
+const TIR_REBONDISSANT: f32 = 2.0;
 
 /// Ennemi visé : index dans le pool et identifiant.
 type Cible = Option<(usize, u32)>;
@@ -51,6 +55,8 @@ struct Ricochet {
     /// Direction du dernier déplacement (affichage seulement).
     dir_x: f32,
     dir_z: f32,
+    /// Flèche d'un talent (Œil de l'aigle) : réaction, vitesse de la flèche spectrale.
+    reaction: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -245,9 +251,33 @@ impl Partie {
                 vie: RICOCHET_VIE_MAX,
                 dir_x: 0.0,
                 dir_z: 1.0,
+                reaction: false,
             });
         }
         true
+    }
+
+    /// Flèche spectrale d'un talent qui part de (x, z) vers l'ennemi `cible` (Œil de
+    /// l'aigle) ; `arme` : position de l'arme dans l'arsenal.
+    pub(crate) fn ricocher(&mut self, arme: usize, x: f32, z: f32, cible: usize, degats: f32) {
+        if self.armes.traque.ricochets.len() >= RICOCHET_CAPACITE {
+            return;
+        }
+        let cible = self.viser(Some(cible));
+        self.armes.traque.ricochets.push(Ricochet {
+            arme,
+            x,
+            z,
+            cible,
+            degats,
+            rebonds: 0.0,
+            touches: [0; RICOCHET_TOUCHES],
+            nb_touches: 0,
+            vie: RICOCHET_VIE_MAX,
+            dir_x: 0.0,
+            dir_z: 1.0,
+            reaction: true,
+        });
     }
 
     /// Ennemi le plus proche à moins de `rayon` que la flèche n'a pas encore touché.
@@ -277,19 +307,25 @@ impl Partie {
             let mut f = self.armes.traque.ricochets[i];
             let arme = self.arsenal.armes[f.arme];
             f.vie -= dt;
-            let Mecanique::Ricochet {
-                perte,
-                distance_rebond,
-                ..
-            } = arme.def.mecanique
-            else {
-                self.armes.traque.ricochets.swap_remove(i);
-                continue;
+            let ricochet = match arme.def.mecanique {
+                Mecanique::Ricochet {
+                    perte,
+                    distance_rebond,
+                    ..
+                } => Some((perte, distance_rebond)),
+                _ => None,
             };
-            if f.vie <= 0.0 {
+            if (ricochet.is_none() && !f.reaction) || f.vie <= 0.0 {
                 self.armes.traque.ricochets.swap_remove(i);
                 continue;
             }
+            let (perte, distance_rebond) = ricochet.unwrap_or((0.0, RICOCHET_REBOND_TALENT));
+            let distance_rebond = distance_rebond
+                + if self.talents.rang("tir_rebondissant") > 0 {
+                    TIR_REBONDISSANT
+                } else {
+                    0.0
+                };
             let c = match self.retrouver(f.cible) {
                 Some(c) => c,
                 None => {
@@ -306,21 +342,34 @@ impl Partie {
             let d = longueur(dx, dz);
             let d = if d == 0.0 { 1e-6 } else { d };
             let (dir_x, dir_z) = (dx / d, dz / d);
-            let pas = arme.stats.vitesse * dt;
+            let vitesse = if ricochet.is_some() {
+                arme.stats.vitesse
+            } else {
+                self.d
+                    .projectiles
+                    .get("fleche_spectrale")
+                    .map_or(arme.stats.vitesse, |p| p.vitesse)
+            };
+            let pas = vitesse * dt;
             if d <= pas + e.def.rayon {
                 f.x = e.x;
                 f.z = e.z;
                 let id = e.id;
                 let recul = arme.stats.recul;
-                self.blesser(
-                    c,
-                    f.degats,
-                    f.x - dir_x,
-                    f.z - dir_z,
-                    recul,
-                    Some(arme.index),
-                    Nature::Arme,
-                );
+                let (sx, sz) = (f.x - dir_x, f.z - dir_z);
+                if f.reaction {
+                    self.blesser_reaction(
+                        c,
+                        f.degats,
+                        sx,
+                        sz,
+                        recul,
+                        Some(arme.index),
+                        Nature::Arme,
+                    );
+                } else {
+                    self.blesser(c, f.degats, sx, sz, recul, Some(arme.index), Nature::Arme);
+                }
                 if f.nb_touches < RICOCHET_TOUCHES {
                     f.touches[f.nb_touches] = id;
                     f.nb_touches += 1;

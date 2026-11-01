@@ -13,7 +13,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 1. Données et règles, sans rendu | fait : données, monde, simulation complète et robot (`bs-robot`) ; ses moyennes tombent dans la tolérance de celles du jeu TS (voir 1b) |
 | 2. Monde et rendu | fait : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres), 2d-2 (particules, chiffres de dégâts, barres de vie, secousse), 2d-3 (visuels des armes), 2d-4 (vent, ombres du soleil, lumière des blocs) |
 | 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
-| 4. Sauvegardes et profils | en cours : 4a, 4b, 4c (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques du Guerrier) |
+| 4. Sauvegardes et profils | en cours : 4a à 4d (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques du Guerrier et de l'Archère) |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -880,3 +880,21 @@ mode sans fin.
 - Crochets ajoutés au combat : avant et après chaque déclenchement d'arme, délai
   modifié par les talents (Enchaînement, Frénésie, Élan).
 - Test : `guerrier_defense` (Inébranlable, Tenir la ligne, Peau de fer, Dernier rempart).
+
+### 4d : mécaniques des talents de l'Archère (faites)
+
+- `bs-regles/src/classes/archere.rs` (état, mouvement, déclenchements) et
+  `archere/coups.rs` (coups portés, ennemis tués, pièges), port de `archer.ts`. Les
+  23 mécaniques sont portées :
+  - Élite : Premier sang, Marque du chasseur, Point faible, Concentration, Puissance
+    (flèche géante après 12 tirs), Œil de l'aigle (flèche spectrale vers l'ennemi le plus
+    éloigné, sans rebond), Exécutrice ;
+  - Rôdeuse : Pas du chasseur, Venin, Venin concentré, Venin virulent, Contagion, Nuage
+    toxique, Course chargée, Second vent, Vent arrière, Piège à loups ;
+  - lues par les systèmes d'armes : Visée stable et Perforation nette (projectiles.rs),
+    Tir groupé et Vent arrière (volée de l'arsenal), Tir rebondissant (traque.rs), Ronces
+    collantes et Ronces venimeuses (pièges, pose.rs).
+- Le drapeau `archere` des talents disparaît : le tirage du Venin se fait dans les
+  mécaniques de l'Archère, au même moment qu'avant (même sans le talent).
+- Test : `archere_talents` (cumuls de poison, Pas du chasseur, Concentration, une minute
+  de jeu avec 14 talents).

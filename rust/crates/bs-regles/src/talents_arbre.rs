@@ -32,6 +32,10 @@ impl Partie {
         if let Some(g) = self.talents.classes.guerrier.as_mut() {
             g.r = rangs;
         }
+        let rangs = crate::classes::archere::Rangs::lire(&self.talents);
+        if let Some(a) = self.talents.classes.archere.as_mut() {
+            a.r = rangs;
+        }
         for id in &b.armes {
             if let Some(i) = d.armes.get_index_of(*id) {
                 self.ameliorer_arme(i);

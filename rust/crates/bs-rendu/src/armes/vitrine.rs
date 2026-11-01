@@ -159,6 +159,7 @@ impl Etalage {
             z: j.y + 4.3,
             temps: 1.0,
             prochain_tic: 0.42,
+            propagation: 0.0,
         });
     }
 

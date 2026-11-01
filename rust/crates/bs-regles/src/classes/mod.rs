@@ -1,9 +1,10 @@
 //! Socle des mécaniques propres des talents de classe (src/combat/talents/talents.ts) :
 //! mouvements du joueur (temps immobile, distance parcourue), soins plafonnés, coups
 //! « en réaction » qui ne relancent pas les talents, cercles de particules, ordres aux
-//! systèmes d'armes (Séisme). Chaque classe a son état et ses mécaniques (guerrier.rs) ;
+//! systèmes d'armes (Séisme). Chaque classe a son état et ses mécaniques (guerrier/, archere/) ;
 //! leurs rangs sont lus une fois, au début de la partie.
 
+pub mod archere;
 pub mod guerrier;
 
 use bs_commun::maths::{cos, longueur, sin};
@@ -12,6 +13,7 @@ use bs_donnees::armes::FamilleArme;
 use crate::ennemis::Nature;
 use crate::partie::Partie;
 
+pub use archere::Archere;
 pub use guerrier::Guerrier;
 
 /// Vitesse (blocs/s) sous laquelle le joueur compte comme immobile.
@@ -39,7 +41,14 @@ pub struct Classes {
     minuterie_soins: f32,
     /// La prochaine Onde de choc part dans 6 directions (Séisme).
     pub onde_circulaire: bool,
+    /// Dégâts de la flèche géante que tire ce coup de l'Arc (Puissance ; 0 : aucune), et
+    /// sa portée.
+    pub fleche_geante: f32,
+    pub portee_fleche_geante: f32,
+    /// Cette volée part aussi vers l'arrière (Vent arrière).
+    pub volee_arriere: bool,
     pub guerrier: Option<Guerrier>,
+    pub archere: Option<Archere>,
 }
 
 impl Partie {
@@ -62,6 +71,11 @@ impl Partie {
             c.minuterie_soins += 1.0;
             c.soins_seconde = 0.0;
         }
+    }
+
+    /// L'arme d'index `arme` a l'identifiant `id`.
+    pub(crate) fn est_arme(&self, arme: usize, id: &str) -> bool {
+        self.d.armes.get_index(arme).is_some_and(|(n, _)| n == id)
     }
 
     /// Famille de l'arme d'index `arme`.

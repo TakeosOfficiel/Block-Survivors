@@ -116,11 +116,13 @@ impl Partie {
             .personnages
             .get_index(index_personnage)
             .map_or("", |(id, _)| id.as_str());
-        let archere = classe == "archer";
-        let mut talents = Talents::nouveaux(d.armes.len(), archere);
+        let mut talents = Talents::nouveaux(d.armes.len());
         talents.classes.dernier = (etat.joueur.x, etat.joueur.z);
         if classe == "guerrier" {
             talents.classes.guerrier = Some(crate::classes::Guerrier::nouveau(d));
+        }
+        if classe == "archer" {
+            talents.classes.archere = Some(crate::classes::Archere::nouvelle(d));
         }
         let mut partie = Self {
             d,

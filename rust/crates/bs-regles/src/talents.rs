@@ -2,14 +2,14 @@
 //! et objets.ts) : état infligé par l'éveil de chaque arme, effets propres de l'équipement
 //! (cloche, couronne, bastion, filon, spores, magma) et coup qui enflamme.
 //!
-//! Les parties du robot partent d'une sauvegarde vierge : les arbres de talents de classe
-//! sont au rang 0, où leurs mécaniques sont neutres. Une partie du joueur reçoit les
-//! effets de son arbre actif par `Partie::appliquer_talents` (talents_classe.rs). Seule exception : le Venin de
-//! l'Archère tire dans l'aléa à chaque coup de flèche, même sans le talent ; on garde ce
-//! tirage. Les dégâts des talents et des objets sont des « réactions » : ils ne relancent
-//! ni les talents ni les objets.
+//! Chaque crochet appelle les mécaniques de la classe jouée (classes/), neutres sans le
+//! talent : les parties du robot partent d'une sauvegarde vierge. Une partie du joueur
+//! reçoit les effets de son arbre actif par `Partie::appliquer_talents` (talents_arbre.rs).
+//! Seule exception : le Venin de l'Archère tire dans l'aléa à chaque coup de flèche, même
+//! sans le talent. Les dégâts des talents et des objets sont des « réactions » : ils ne
+//! relancent ni les talents ni les objets.
 
-use bs_donnees::armes::{EtatEveil, Eveil, FamilleArme, TypeEtat};
+use bs_donnees::armes::{EtatEveil, Eveil, TypeEtat};
 use bs_donnees::equipement::EffetObjet;
 
 use crate::classes::Classes;
@@ -38,8 +38,6 @@ pub struct Talents {
     pub(crate) en_reaction: bool,
     /// Mécaniques propres de la classe jouée (classes/).
     pub classes: Classes,
-    /// Classe jouée : l'Archère (tirage du Venin).
-    archere: bool,
     /// Effets propres des objets portés et facteur de leur niveau (rempli par l'équipement).
     pub effets: Vec<(&'static EffetObjet, f32)>,
     /// s depuis la dernière cloche, la dernière couronne ; s avant le prochain Cœur de magma.
@@ -49,14 +47,13 @@ pub struct Talents {
 }
 
 impl Talents {
-    pub fn nouveaux(armes: usize, archere: bool) -> Self {
+    pub fn nouveaux(armes: usize) -> Self {
         Self {
             armes: vec![BonusArmeCumule::default(); armes],
             mecaniques: Vec::new(),
             etats_eveils: vec![None; armes],
             en_reaction: false,
             classes: Classes::default(),
-            archere,
             effets: Vec::with_capacity(EFFETS_MAX),
             cloche: 0.0,
             couronne: 0.0,
@@ -80,9 +77,10 @@ impl Talents {
 
 impl Partie {
     /// Multiplicateur de dégâts contre l'ennemi `i` (Amulette du bastion).
-    pub fn talent_multiplicateur(&self, i: usize, arme: Option<usize>, _nature: Nature) -> f32 {
+    pub fn talent_multiplicateur(&self, i: usize, arme: Option<usize>, nature: Nature) -> f32 {
         let j = &self.etat.joueur;
-        let mut m = self.guerrier_multiplicateur(i, arme);
+        let mut m =
+            self.guerrier_multiplicateur(i, arme) * self.archere_multiplicateur(i, arme, nature);
         for &(effet, facteur) in &self.talents.effets {
             if let EffetObjet::Bastion { seuil, bonus } = *effet
                 && j.pv < seuil * j.pv_max
@@ -109,7 +107,7 @@ impl Partie {
     pub fn talent_apres_coup(
         &mut self,
         i: usize,
-        _degats: f32,
+        degats: f32,
         arme: Option<usize>,
         critique: bool,
         nature: Nature,
@@ -133,12 +131,9 @@ impl Partie {
             }
         }
         self.guerrier_apres_coup(i, arme, critique, nature);
+        self.archere_apres_coup(i, degats, arme, critique, nature);
         if nature != Nature::Arme || !self.ennemis.pool[i].vivant() {
             return;
-        }
-        // Venin (rang 0 : le tirage a lieu, jamais le poison)
-        if self.talents.archere && self.d.armes[a].famille == Some(FamilleArme::Projectile) {
-            self.alea.tirer();
         }
         // Coup qui enflamme (Bague de magma, garnitures du Nether)
         let chance = self.etat.modificateurs.chance_brulure;
@@ -153,6 +148,7 @@ impl Partie {
     pub fn talent_sur_mort(&mut self, i: usize, arme: Option<usize>, _nature: Nature) {
         // La classe compte aussi les ennemis tués par une réaction
         self.guerrier_sur_mort(arme);
+        self.archere_sur_mort(i);
         if self.talents.en_reaction {
             return;
         }
@@ -192,7 +188,9 @@ impl Partie {
     pub fn talent_sur_impact_mur(&mut self, i: usize) {
         self.guerrier_sur_impact_mur(i);
     }
-    pub fn talent_sur_sortie_piege(&mut self, _i: usize) {}
+    pub fn talent_sur_sortie_piege(&mut self, i: usize) {
+        self.archere_sur_sortie_piege(i);
+    }
     /// Multiplicateur des dégâts de l'arme qui se déclenche (talents « au déclenchement »).
     pub fn talent_facteur_declenchement(&self) -> f32 {
         1.0
@@ -200,17 +198,19 @@ impl Partie {
     /// Juste avant et après le déclenchement de l'arme `i` de l'arsenal.
     pub fn talent_avant_declenchement(&mut self, i: usize) {
         self.guerrier_avant_declenchement(i);
+        self.archere_avant_declenchement(i);
     }
     pub fn talent_apres_declenchement(&mut self, i: usize, declenchee: bool) {
         self.guerrier_apres_declenchement(i, declenchee);
+        self.archere_apres_declenchement(i, declenchee);
     }
     /// Multiplicateur du délai entre deux déclenchements de l'arme `arme` (au mieux −50 %).
     pub fn talent_delai(&mut self, arme: usize) -> f32 {
-        let delai = self.guerrier_delai(arme);
+        let delai = self.guerrier_delai(arme) * self.archere_delai(arme);
         self.d.regles.plafonds.delai_min.max(delai)
     }
     pub fn talent_vitesse(&self) -> f32 {
-        1.0
+        self.archere_vitesse()
     }
     pub fn talent_degats_recus(&mut self, degats: f32, boss: bool) -> f32 {
         self.guerrier_degats_recus(degats, boss)
@@ -268,6 +268,7 @@ impl Partie {
             return;
         }
         self.guerrier_maj(dt);
+        self.archere_maj(dt);
         if self.talents.recharge_magma > 0.0 {
             self.talents.recharge_magma -= dt;
         }

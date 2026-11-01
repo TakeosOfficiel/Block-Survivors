@@ -6,6 +6,7 @@ use bs_commun::maths::{cos, sin};
 use bs_donnees::armes::Mecanique;
 
 use super::tours;
+use crate::classes::valeur;
 use crate::ennemis::Nature;
 use crate::partie::Partie;
 
@@ -23,6 +24,9 @@ const PIEGE_CAPACITE: usize = 12;
 const PIEGE_RECHERCHE: f32 = 12.0;
 const PIEGE_ENRACINEMENT: f32 = 0.5;
 const PIEGE_DELAI_ENRACINEMENT: f32 = 3.0;
+/// Talents : enracinement à l'entrée (s, par rang), propagation du poison (s).
+const RONCES_COLLANTES: [f32; 2] = [0.5, 1.0];
+const PERIODE_PROPAGATION: f32 = 1.0;
 
 #[derive(Debug, Clone, Copy)]
 pub struct ZonePluie {
@@ -52,6 +56,8 @@ pub struct Piege {
     pub z: f32,
     pub temps: f32,
     pub prochain_tic: f32,
+    /// s avant la prochaine propagation du poison (Ronces venimeuses).
+    pub propagation: f32,
 }
 
 #[derive(Debug, Clone)]
@@ -202,6 +208,7 @@ impl Partie {
             z: jz,
             temps: 0.0,
             prochain_tic: 0.0,
+            propagation: 0.0,
         });
         // Graine des buissons (visuelle)
         self.alea.tirer();
@@ -216,6 +223,9 @@ impl Partie {
     pub fn maj_pieges(&mut self, dt: f32) {
         let temps = self.etat.temps_jeu;
         let mut tampon = [0u32; 128];
+        let collantes = valeur(self.talents.rang("ronces_collantes"), &RONCES_COLLANTES);
+        let venimeuses = self.talents.rang("ronces_venimeuses") > 0;
+        let max_poison = self.talent_cumuls_poison();
         let mut i = self.armes.posees.pieges.len();
         while i > 0 {
             i -= 1;
@@ -223,6 +233,7 @@ impl Partie {
             let arme = self.arsenal.armes[p.arme];
             let s = arme.stats;
             p.temps += dt;
+            p.propagation -= dt;
             let Mecanique::Piege {
                 intervalle,
                 enracine_au_rang,
@@ -244,11 +255,24 @@ impl Partie {
             p.prochain_tic += intervalle;
             self.armes.posees.pieges[i] = p;
             let n = self.ennemis.chercher(p.x, p.z, s.zone, &mut tampon);
+            let mut source: Option<usize> = None;
             for &e in &tampon[..n] {
                 let e = e as usize;
                 let en = &mut self.ennemis.pool[e];
+                // Pris jusqu'au prochain passage ; à l'entrée, les Ronces collantes enracinent
                 en.piege = temps + f64::from(intervalle * 1.5);
-                en.dans_piege = true;
+                if !en.dans_piege {
+                    en.dans_piege = true;
+                    if collantes > 0.0 {
+                        self.enraciner(e, collantes);
+                    }
+                }
+                let cumuls = self.ennemis.pool[e].poison.cumuls;
+                if cumuls > 0.0
+                    && source.is_none_or(|k| cumuls > self.ennemis.pool[k].poison.cumuls)
+                {
+                    source = Some(e);
+                }
                 self.blesser(e, s.degats, p.x, p.z, 0.0, Some(arme.index), Nature::Arme);
                 self.ralentir(e, s.ralenti, intervalle * 1.5);
                 if arme.rang as f32 >= enracine_au_rang
@@ -257,6 +281,22 @@ impl Partie {
                     self.enraciner(e, PIEGE_ENRACINEMENT);
                     self.ennemis.pool[e].immunites[arme.index] =
                         (temps + f64::from(PIEGE_DELAI_ENRACINEMENT)) as f32;
+                }
+            }
+            // Ronces venimeuses : une fois par seconde, le poison passe aux autres
+            if venimeuses
+                && p.propagation <= 0.0
+                && let Some(k) = source
+            {
+                p.propagation = PERIODE_PROPAGATION;
+                self.armes.posees.pieges[i] = p;
+                let poison = self.ennemis.pool[k].poison;
+                let dps = poison.degats_par_seconde / (1.0 + self.etat.modificateurs.degats_poison);
+                for &e in &tampon[..n] {
+                    let e = e as usize;
+                    if e != k && self.ennemis.pool[e].vivant() {
+                        self.empoisonner_max(e, 1.0, dps, poison.temps, poison.arme, max_poison);
+                    }
                 }
             }
         }

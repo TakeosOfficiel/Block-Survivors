@@ -29,6 +29,8 @@ use traque::ArmesTraque;
 
 /// s avant de réessayer une arme qui n'a trouvé aucune cible.
 const NOUVEL_ESSAI: f32 = 0.2;
+/// Tir groupé : la Salve resserre son cône.
+const TIR_GROUPE: f32 = 0.7;
 /// Pas de nouvelle vague d'alliés avant `PAUSE` s après le départ de la précédente.
 pub const PAUSE_INVOCATIONS: f32 = 3.0;
 
@@ -188,9 +190,29 @@ impl Partie {
                     Mecanique::Retour { .. } => ModeProjectile::Traversant,
                     _ => ModeProjectile::Ligne,
                 };
-                for k in 0..tours(s.nombre) {
-                    let a = base + (k as f32 - (s.nombre - 1.0) / 2.0) * dispersion;
-                    self.lancer(&arme, projectile, mode, sin(a), cos(a), false);
+                // Puissance (talent) : cette flèche de l'Arc devient une flèche géante
+                let c = &self.talents.classes;
+                if c.fleche_geante > 0.0 && self.est_arme(arme.index, "arc") {
+                    let (degats, portee) = (c.fleche_geante, c.portee_fleche_geante);
+                    let dir = (sin(base), cos(base));
+                    self.lancer_special(&arme, "fleche_geante", dir, degats, portee);
+                    return true;
+                }
+                // Tir groupé : cône de la Salve resserré ; Vent arrière : aussi vers l'arrière
+                let dispersion =
+                    if self.est_arme(arme.index, "salve") && self.talents.rang("tir_groupe") > 0 {
+                        dispersion * TIR_GROUPE
+                    } else {
+                        *dispersion
+                    };
+                let sens = if c.volee_arriere { 2 } else { 1 };
+                for v in 0..sens {
+                    for k in 0..tours(s.nombre) {
+                        let a = base
+                            + v as f32 * std::f32::consts::PI
+                            + (k as f32 - (s.nombre - 1.0) / 2.0) * dispersion;
+                        self.lancer(&arme, projectile, mode, sin(a), cos(a), false);
+                    }
                 }
                 true
             }

@@ -247,3 +247,50 @@ fn guerrier_defense() {
     assert!(p.etat.joueur.protection >= 3.0);
     assert!(!p.talent_eviter_mort());
 }
+
+#[test]
+fn archere_talents() {
+    use bs_donnees::progression::BonusTalents;
+    let d = donnees();
+    let archere = d.personnages.personnages.get_index_of("archer").unwrap();
+    let mut p = Partie::nouvelle(d, 0, archere, 7, false);
+    assert!(p.talents.classes.archere.is_some());
+    let max = p.talent_cumuls_poison();
+    let b = BonusTalents {
+        mecaniques: vec![
+            ("pas_chasseur", 1),
+            ("concentration", 2),
+            ("venin", 2),
+            ("venin_concentre", 1),
+            ("contagion", 2),
+            ("nuage_toxique", 1),
+            ("marque_chasseur", 2),
+            ("premier_sang", 2),
+            ("oeil_aigle", 1),
+            ("executrice", 1),
+            ("puissance", 1),
+            ("course_chargee", 2),
+            ("perforation_nette", 2),
+            ("visee_stable", 1),
+        ],
+        ..Default::default()
+    };
+    p.appliquer_talents(&b);
+    // Venin concentré : 3 cumuls au plus
+    assert_eq!(p.talent_cumuls_poison(), 3.0);
+    assert_ne!(max, 3.0);
+    // Pas du chasseur : +10 % après 2 s de marche
+    assert_eq!(p.talent_vitesse(), 1.0);
+    p.talents.classes.temps_mouvement = 2.0;
+    assert!((p.talent_vitesse() - 1.1).abs() < 1e-6);
+    // Concentration : armes de tir −15 % de délai à l'arrêt
+    let arc = d.armes.get_index_of("arc").unwrap();
+    p.talents.classes.temps_immobile = 1.0;
+    assert!((p.talent_delai(arc) - 0.85).abs() < 1e-6);
+    // Une minute de jeu avec tous ces talents : rien ne casse
+    let pas = (60.0 / PAS_SIMULATION) as u32;
+    for _ in 0..pas {
+        p.pas(PAS_SIMULATION);
+    }
+    assert!(p.etat.stats.degats_par_arme[arc] > 0.0);
+}

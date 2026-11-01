@@ -1,15 +1,16 @@
 //! Menu principal (phase `Menu`, src/ui/ecranMenu.ts) : choix de la classe et de
 //! l'arène (gardé dans le profil), « Jouer » (ou Entrée) prépare la partie choisie et
-//! passe au chargement, « Quitter » ferme le jeu. Ses pages (Talents, Collection, Profil, Profils…) remplacent
+//! passe au chargement, « Quitter » ferme le jeu. Ses pages (Talents, Collection, Profil, Profils, Nouveautés) remplacent
 //! l'accueil ; Échap ou « Retour » y ramène. Le menu a sa caméra 2D, et une caméra 3D dessous pour l'aperçu du héros ; tout ce
 //! qu'il crée porte `ElementMenu` et disparaît à sa sortie. Chaque changement refait la
 //! page affichée en entier (hors de la boucle de jeu).
 //!
 //! Essais : `BS_JOUER=n` lance la partie choisie aux n premières entrées au menu ;
-//! `BS_MENU=talents` (ou `collection`, `profil`, `profils`) ouvre cette page à l'entrée.
+//! `BS_MENU=talents` (ou `collection`, `profil`, `profils`, `nouveautes`) ouvre cette page à l'entrée.
 
 pub mod apercu;
 mod collection;
+mod nouveautes;
 pub mod profil;
 mod profils;
 mod talents;
@@ -48,6 +49,8 @@ pub enum ActionMenu {
     Fermer,
     /// Ouvre le panneau des options.
     Options,
+    /// Ouvre les Nouveautés.
+    Nouveautes,
     Talent(ActionTalent),
 }
 
@@ -61,6 +64,7 @@ enum Page {
     Profil,
     /// Profils ; celui dont la suppression attend confirmation.
     Profils(Option<usize>),
+    Nouveautes,
 }
 
 /// Marque de tout ce que le menu crée.
@@ -134,6 +138,7 @@ fn construire(
             profil::construire(commandes, (dj, sauvegarde, dessins), ic, etat)
         }
         Page::Profils(_) => profils::construire(commandes, dj, sauvegarde, menu),
+        Page::Nouveautes => nouveautes::construire(commandes),
     };
     commandes.entity(racine).insert(ElementMenu);
     racine
@@ -170,6 +175,7 @@ pub fn entrer(
         Ok("collection") => Page::Collection(collection::monde_de_l_arene(&dj, choix.arene)),
         Ok("profil") => Page::Profil,
         Ok("profils") => Page::Profils(None),
+        Ok("nouveautes") => Page::Nouveautes,
         _ => Page::Accueil,
     };
     apercu::camera(&mut commandes, vue::FOND);
@@ -289,6 +295,10 @@ pub fn gerer(
             profil::agir(&mut sauvegarde, &mut menu, a);
         }
         Some(ActionMenu::Fermer) => page = Page::Accueil,
+        Some(ActionMenu::Nouveautes) => {
+            nouveautes::marquer_lues(sauvegarde.profils.stockage());
+            page = Page::Nouveautes;
+        }
         Some(ActionMenu::Options) => {
             options.ouvrir();
             return;

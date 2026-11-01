@@ -260,6 +260,28 @@ fn heros(
         false,
         ActionMenu::OuvrirProfils,
     );
+    let nouveau = super::nouveautes::a_lire(sauvegarde.profils.stockage());
+    let b = style::bouton(
+        commandes,
+        col,
+        "Nouveautés",
+        200.0,
+        false,
+        ActionMenu::Nouveautes,
+    );
+    if nouveau {
+        // Pastille « Nouveau ! » : nouveautés de cette version pas encore lues
+        commandes.spawn((
+            TextePixel::nouveau("Nouveau !", OR_CLAIR, 1.5).contour(),
+            Node {
+                position_type: PositionType::Absolute,
+                left: Val::Px(206.0),
+                top: Val::Px(12.0),
+                ..default()
+            },
+            ChildOf(b),
+        ));
+    }
 }
 
 fn arenes(

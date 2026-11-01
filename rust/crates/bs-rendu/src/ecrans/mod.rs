@@ -9,7 +9,7 @@
 
 mod bilan;
 pub mod style;
-mod vues;
+pub(crate) mod vues;
 
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;

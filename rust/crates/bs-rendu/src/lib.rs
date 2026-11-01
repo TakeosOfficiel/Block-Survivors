@@ -217,7 +217,13 @@ impl Plugin for PluginJeu {
             .add_systems(
                 Update,
                 (
-                    (menu::profil::saisir, menu::gerer, menu::apercu::animer).chain(),
+                    (
+                        menu::profil::saisir,
+                        menu::gerer,
+                        menu::apercu::animer,
+                        ecrans::defiler,
+                    )
+                        .chain(),
                     ecrans::style::survoler,
                 )
                     .run_if(in_state(Phase::Menu)),

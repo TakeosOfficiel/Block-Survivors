@@ -11,13 +11,13 @@ use crate::partie::Partie;
 
 const PLUIE_ZONES: usize = 8;
 const PLUIE_FLECHES: usize = 320;
-const PLUIE_CHUTE: f32 = 0.3;
-const PLUIE_PLANTEE: f32 = 2.2;
-const PLUIE_ENFONCEMENT: f32 = 0.4;
+pub const PLUIE_CHUTE: f32 = 0.3;
+pub const PLUIE_PLANTEE: f32 = 2.2;
+pub const PLUIE_ENFONCEMENT: f32 = 0.4;
 const PLUIE_RAYON_IMPACT: f32 = 0.9;
 /// Le cercle au sol reste puis s'efface (s) : la zone vit jusque-là.
-const PLUIE_CERCLE_RESTE: f32 = 1.2;
-const PLUIE_CERCLE_FONDU: f32 = 0.6;
+pub const PLUIE_CERCLE_RESTE: f32 = 1.2;
+pub const PLUIE_CERCLE_FONDU: f32 = 0.6;
 
 const PIEGE_CAPACITE: usize = 12;
 const PIEGE_RECHERCHE: f32 = 12.0;
@@ -25,40 +25,40 @@ const PIEGE_ENRACINEMENT: f32 = 0.5;
 const PIEGE_DELAI_ENRACINEMENT: f32 = 3.0;
 
 #[derive(Debug, Clone, Copy)]
-struct ZonePluie {
+pub struct ZonePluie {
     /// Position de l'arme dans l'arsenal.
-    arme: usize,
-    x: f32,
-    z: f32,
-    rayon: f32,
-    duree: f32,
-    temps: f32,
-    prochaine_fleche: f32,
+    pub arme: usize,
+    pub x: f32,
+    pub z: f32,
+    pub rayon: f32,
+    pub duree: f32,
+    pub temps: f32,
+    pub prochaine_fleche: f32,
 }
 
 #[derive(Debug, Clone, Copy)]
-struct FlecheTombante {
-    arme: usize,
-    x: f32,
-    z: f32,
-    age: f32,
-    touche: bool,
+pub struct FlecheTombante {
+    pub arme: usize,
+    pub x: f32,
+    pub z: f32,
+    pub age: f32,
+    pub touche: bool,
 }
 
 #[derive(Debug, Clone, Copy)]
-struct Piege {
-    arme: usize,
-    x: f32,
-    z: f32,
-    temps: f32,
-    prochain_tic: f32,
+pub struct Piege {
+    pub arme: usize,
+    pub x: f32,
+    pub z: f32,
+    pub temps: f32,
+    pub prochain_tic: f32,
 }
 
 #[derive(Debug, Clone)]
 pub struct ArmesPosees {
-    zones: Vec<ZonePluie>,
-    fleches: Vec<FlecheTombante>,
-    pieges: Vec<Piege>,
+    pub zones: Vec<ZonePluie>,
+    pub fleches: Vec<FlecheTombante>,
+    pub pieges: Vec<Piege>,
 }
 
 impl Default for ArmesPosees {

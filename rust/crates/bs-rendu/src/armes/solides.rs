@@ -37,6 +37,7 @@ fn besoins(d: &'static Donnees) -> impl Iterator<Item = Besoin> {
             Mecanique::Chute { image, .. } => (Some((image, Piece::Image, false)), None),
             Mecanique::Orbes { texture, .. } => (Some((texture, Piece::Cube, true)), None),
             Mecanique::Piege { image, .. } => (Some((image, Piece::Image, false)), None),
+            Mecanique::Pluie { .. } => (Some((&a.icone, Piece::Image, false)), None),
             _ => (None, None),
         };
         un.into_iter().chain(deux)

@@ -7,8 +7,11 @@ use std::f32::consts::{PI, TAU};
 use bevy::prelude::*;
 use bs_commun::Alea;
 use bs_regles::combat::feu::{Feu, Meteore, Tornade};
+use bs_regles::combat::pose::{FlecheTombante, PLUIE_CHUTE, Piege, ZonePluie};
 use bs_regles::combat::sol::{CHUTE_DUREE, Chute, Nova};
+use bs_regles::combat::traque::Orbe;
 
+use super::arcanes::Apparition;
 use super::feu::Braise;
 use super::foudre::Eclair;
 use super::melee::{Coup, Genre};
@@ -30,6 +33,11 @@ pub struct Etalage {
     pub blocs: Vec<BlocSouleve>,
     pub chutes: Vec<Chute>,
     pub novas: Vec<Nova>,
+    pub zones: Vec<ZonePluie>,
+    pub fleches: Vec<FlecheTombante>,
+    pub pieges: Vec<Piege>,
+    pub orbes: Vec<Orbe>,
+    pub apparitions: Vec<Apparition>,
     minuteur: f32,
     pose: bool,
     /// Position du joueur à la dernière image : l'étalage le suit.
@@ -94,6 +102,12 @@ impl Etalage {
         if montrer("sol") {
             self.poser_sol(alea, j);
         }
+        if montrer("pose") {
+            self.poser_pose(alea, j);
+        }
+        if montrer("arcanes") {
+            self.poser_arcanes(j);
+        }
         self.poser_autres(alea, j, couleur, &montrer);
     }
 
@@ -114,6 +128,55 @@ impl Etalage {
         self.chutes.push(chute(j.x + 3.0, j.y - 3.5, 0.3));
         self.novas.push(nova(j.x - 3.5, j.y - 4.5, 0.3, false));
         self.novas.push(nova(j.x + 1.5, j.y + 4.0, 1.2, true));
+    }
+
+    /// Pluie de flèches (en chute et plantées), piège qui vient de mordre.
+    fn poser_pose(&mut self, alea: &mut Alea, j: Vec2) {
+        let (cx, cz) = (j.x - 4.0, j.y + 2.5);
+        self.zones.push(ZonePluie {
+            arme: SANS_ARME,
+            x: cx,
+            z: cz,
+            rayon: 2.5,
+            duree: f32::MAX,
+            temps: 1.0,
+            prochaine_fleche: 0.0,
+        });
+        for k in 0..16 {
+            let a = alea.unite() * TAU;
+            let r = 2.3 * alea.unite().sqrt();
+            self.fleches.push(FlecheTombante {
+                arme: SANS_ARME,
+                x: cx + a.sin() * r,
+                z: cz + a.cos() * r,
+                age: k as f32 * 0.06,
+                touche: k as f32 * 0.06 >= PLUIE_CHUTE,
+            });
+        }
+        self.pieges.push(Piege {
+            arme: SANS_ARME,
+            x: j.x + 2.0,
+            z: j.y + 4.3,
+            temps: 1.0,
+            prochain_tic: 0.42,
+        });
+    }
+
+    /// Orbes (en orbite autour du joueur, voir `avancer`) et apparitions d'alliés.
+    fn poser_arcanes(&mut self, j: Vec2) {
+        for k in 0..5 {
+            let a = k as f32 * TAU / 5.0;
+            self.orbes
+                .push(Orbe::figee(SANS_ARME, j.x, j.y, a, 0.0, false));
+        }
+        self.orbes
+            .push(Orbe::figee(SANS_ARME, j.x, j.y, 0.123, 0.0, true));
+        let apparition = |x: f32, z: f32, age: f32, depart: bool| Apparition { x, z, age, depart };
+        self.apparitions.extend([
+            apparition(j.x - 4.5, j.y + 2.5, 0.15, false),
+            apparition(j.x + 3.0, j.y + 3.5, 0.4, false),
+            apparition(j.x - 3.5, j.y - 4.0, 0.12, true),
+        ]);
     }
 
     fn poser_autres(
@@ -208,6 +271,22 @@ impl Etalage {
             n.x += d.x;
             n.z += d.y;
         }
+        for z in &mut self.zones {
+            z.x += d.x;
+            z.z += d.y;
+        }
+        for f in &mut self.fleches {
+            f.x += d.x;
+            f.z += d.y;
+        }
+        for p in &mut self.pieges {
+            p.x += d.x;
+            p.z += d.y;
+        }
+        for a in &mut self.apparitions {
+            a.x += d.x;
+            a.z += d.y;
+        }
     }
 }
 
@@ -222,6 +301,17 @@ pub fn avancer(jeu: &PartieEnCours, v: &mut VisuelsArmes) {
         etalage.origine = Vec2::new(j.x, j.z);
     }
     v.etalage.suivre(Vec2::new(j.x, j.z));
+    // Orbes : en orbite autour du joueur ; la lancée file sur un grand cercle
+    for o in &mut v.etalage.orbes {
+        o.temps += PAS;
+        let (a, r) = if o.lance {
+            (o.temps * 1.6, 5.5)
+        } else {
+            (o.angle + o.temps * 3.0, 2.2)
+        };
+        o.x = j.x + a.sin() * r;
+        o.z = j.z + a.cos() * r;
+    }
     v.etalage.minuteur -= PAS;
     if v.etalage.minuteur > 0.0 {
         return;

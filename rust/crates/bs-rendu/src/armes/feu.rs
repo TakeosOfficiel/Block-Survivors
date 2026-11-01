@@ -9,6 +9,7 @@ use bevy::prelude::*;
 use bs_regles::combat::feu::{Feu, METEORE_DUREE, Meteore, Tornade};
 
 use super::lueur::{Forme, MaillageLueur};
+use super::outils::{au_sol, hachage, rgba};
 
 /// Braises : capacité, durée de vie (s), rayon (blocs).
 pub const BRAISES: usize = 160;
@@ -50,29 +51,13 @@ pub fn avancer(braises: &mut Vec<Braise>, dt: f32) {
     });
 }
 
-fn rgba(c: [f32; 3], a: f32) -> [f32; 4] {
-    [c[0], c[1], c[2], a]
-}
-
 fn melange(a: [f32; 3], b: [f32; 3], t: f32) -> [f32; 3] {
     [0, 1, 2].map(|i| a[i] + (b[i] - a[i]) * t)
-}
-
-/// Hasard fixe tiré d'une position (les flammes d'un feu restent à leur place).
-fn hachage(x: f32, z: f32, k: u32) -> f32 {
-    let h = (x * 12.9898 + z * 78.233 + k as f32 * 37.719).sin() * 43_758.547;
-    h - h.floor()
 }
 
 /// Fondu d'entrée et de sortie d'un effet de durée `duree`.
 fn fondu(temps: f32, duree: f32) -> f32 {
     (temps / APPARITION).min(1.0) * ((duree - temps) / DISPARITION).clamp(0.0, 1.0)
-}
-
-/// Disque à plat sur le sol.
-fn au_sol(m: &mut MaillageLueur, x: f32, z: f32, r: f32, c: [f32; 4], forme: Forme, reglage: f32) {
-    let centre = Vec3::new(x, 0.05, z);
-    m.carre(centre, Vec3::X * r, Vec3::Z * r, c, forme, reglage);
 }
 
 /// Flamme posée en (x, z), tournée vers l'écran.

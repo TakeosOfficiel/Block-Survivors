@@ -11,7 +11,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | −1. Robot d'équilibrage, aléatoire à graine, pas fixe (TypeScript) | fait |
 | 0 bis. Prototype des cinq paris | fait : on continue, avec ajustements (voir la décision) ; 94 images/s mesurées sur le PC du joueur |
 | 1. Données et règles, sans rendu | fait : données, monde, simulation complète et robot (`bs-robot`) ; ses moyennes tombent dans la tolérance de celles du jeu TS (voir 1b) |
-| 2. Monde et rendu | en cours : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres) et 2d-2 (particules, chiffres de dégâts, barres de vie, secousse) faits ; 2d-3a (lueurs, mêlée, foudre) et 2d-3b (feu) faits ; 2d-3c et 2d-4 à faire |
+| 2. Monde et rendu | en cours : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres) et 2d-2 (particules, chiffres de dégâts, barres de vie, secousse) faits ; 2d-3 (visuels des armes : lueurs, mêlée, foudre, feu, sol, armes posées, orbes, invocations) fait ; 2d-4 à faire |
 
 ---
 
@@ -606,3 +606,30 @@ invocations.
   à l'apparition, éclair de lumière et onde.
 - **Vitrine** : l'étalage suit le joueur ; capture
   `docs/captures/vitrine-armes-feu-pc.png`.
+
+##### 2d-3c : sol, armes posées, orbes, invocations (fait)
+
+- **Simulation** : lames, novas, zones de pluie, flèches, pièges et orbes lisibles par
+  l'affichage (champs publics, `Orbe::figee` pour la vitrine). Rien ne change l'état.
+- **Pièces solides** (`armes/solides.rs`) : un lot par texture et par genre, blocs
+  (météores, sol de l'arène, éclats de glace, améthyste) ou images dressées (lame,
+  flèches, buissons) ; textures lues dans les définitions des armes.
+- **Onde de choc** : vrais blocs du sol qui jaillissent en basculant, rebondissent
+  puis rentrent ; onde de poussière.
+- **Lame colossale** : cible qui se resserre, l'épée (image de l'arme) tombe pointe
+  en bas avec un sillage, se plante ; éclair, onde, fissures lumineuses en étoile qui
+  refroidissent, puis elle s'enfonce.
+- **Nova de glace** : anneau qui s'étend, éclats de glace (blocs de la texture de
+  l'arme) qui jaillissent au passage de l'anneau, reflets ; sol gelé pâle et
+  scintillant au rang voulu.
+- **Pluie de flèches** : cercle de visée cerné de tirets qui tournent ; flèches qui
+  tombent en traits de lumière, éclat à l'impact, puis plantées et qui s'enfoncent.
+- **Piège de ronces** : buissons en croix qui poussent, cercle d'épines qui pulse et
+  jaillit à chaque morsure, baies qui luisent.
+- **Orbes arcaniques** : bloc d'améthyste qui tournoie dans un halo, cœur
+  scintillant, sillage qui suit le trajet récent (orbite puis course).
+- **Invocations** : un allié arrive dans une colonne de lumière sur un cercle runique
+  (étoile à six branches qui tourne, étincelles en spirale), part dans une bouffée.
+- **Vitrine** : `BS_ETALAGE=melee|foudre|feu|sol|pose|arcanes` n'étale qu'un groupe ;
+  captures `docs/captures/vitrine-armes-sol-pc.png`,
+  `docs/captures/vitrine-armes-pose-pc.png`, `docs/captures/vitrine-armes-arcanes-pc.png`.

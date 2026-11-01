@@ -25,16 +25,16 @@ const RICOCHET_TOUCHES: usize = 8;
 type Cible = Option<(usize, u32)>;
 
 #[derive(Debug, Clone, Copy)]
-struct Orbe {
+pub struct Orbe {
     /// Position de l'arme dans l'arsenal.
-    arme: usize,
-    x: f32,
-    z: f32,
-    angle: f32,
-    temps: f32,
-    lance: bool,
+    pub arme: usize,
+    pub x: f32,
+    pub z: f32,
+    pub angle: f32,
+    pub temps: f32,
+    pub lance: bool,
     cible: Cible,
-    facteur: f32,
+    pub facteur: f32,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -55,8 +55,24 @@ struct Ricochet {
 
 #[derive(Debug, Clone)]
 pub struct ArmesTraque {
-    orbes: Vec<Orbe>,
+    pub orbes: Vec<Orbe>,
     ricochets: Vec<Ricochet>,
+}
+
+impl Orbe {
+    /// Orbe sans cible, pour l'affichage (vitrine).
+    pub fn figee(arme: usize, x: f32, z: f32, angle: f32, temps: f32, lance: bool) -> Self {
+        Self {
+            arme,
+            x,
+            z,
+            angle,
+            temps,
+            lance,
+            cible: None,
+            facteur: 1.0,
+        }
+    }
 }
 
 impl ArmesTraque {

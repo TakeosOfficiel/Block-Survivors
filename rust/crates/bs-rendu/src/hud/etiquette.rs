@@ -48,22 +48,25 @@ pub fn creer(mut commandes: Commands, sauvegarde: Res<crate::sauvegarde::Sauvega
 pub fn placer(
     jeu: Res<PartieEnCours>,
     rendus: Option<Res<Rendus>>,
-    camera: Query<(&Camera, &GlobalTransform), With<CameraJeu>>,
+    camera: Query<(&Camera, &Transform), With<CameraJeu>>,
     ui: Res<UiScale>,
     mut etiquettes: Query<(&Etiquette, &mut Node, &mut Visibility, &ComputedNode)>,
     mut textes: Query<&mut TextePixel>,
 ) {
-    let (Some(rendus), Ok((camera, gt))) = (rendus, camera.single()) else {
+    let (Some(rendus), Ok((camera, t))) = (rendus, camera.single()) else {
         return;
     };
+    // Transform de cette image (la GlobalTransform n'est à jour qu'après PostUpdate :
+    // l'étiquette traînerait d'une image derrière le joueur)
+    let gt = GlobalTransform::from(*t);
     for (e, mut noeud, mut visible, calcule) in &mut etiquettes {
         let r = &rendus.liste[0];
         let p = r.pose.position;
         let tete = Vec3::new(p.x, p.y + r.modele.hauteur + MARGE, p.z);
         let haut = tete + Vec3::Y * HAUTEUR_TEXTE;
         let ecran = (
-            camera.world_to_viewport(gt, tete),
-            camera.world_to_viewport(gt, haut),
+            camera.world_to_viewport(&gt, tete),
+            camera.world_to_viewport(&gt, haut),
         );
         let (Ok(bas), Ok(sommet)) = ecran else {
             visible.set_if_neq(Visibility::Hidden);

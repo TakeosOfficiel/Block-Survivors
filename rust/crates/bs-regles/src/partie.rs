@@ -6,6 +6,7 @@ use bs_commun::Mulberry;
 use bs_donnees::Donnees;
 use bs_monde::{CarteMonde, ChampDeFlux, generer_monde};
 
+use crate::butin::Butin;
 use crate::cartes::Cartes;
 use crate::catalogue::Catalogue;
 use crate::combat::{Arsenal, SystemesArmes};
@@ -47,6 +48,8 @@ pub struct Partie {
     pub cartes: Cartes,
     /// Bagues et amulette portées.
     pub equipement: Equipement,
+    /// Pièces d'armure gagnées sur les boss.
+    pub butin: Butin,
     /// États des systèmes d'armes (projectiles, orbites, éclairs…).
     pub armes: SystemesArmes,
     pub directeur: DirecteurApparitions,
@@ -108,6 +111,7 @@ impl Partie {
             talents: Talents::nouveaux(d.armes.len(), archere),
             cartes: Cartes::nouvelles(d),
             equipement: Equipement::nouveau(d),
+            butin: Butin::default(),
             armes: SystemesArmes::nouveaux(d),
             directeur: DirecteurApparitions::default(),
             directeur_boss: DirecteurBoss::nouveau(SorteBoss::Boss, &d.regles.boss),
@@ -136,6 +140,7 @@ impl Partie {
         self.maj_directeurs_boss();
         // Reconstruit aussi la grille utilisée par les armes
         self.maj_ennemis(dt);
+        self.recompenser_boss();
         self.maj_arsenal(dt);
         self.maj_talents(dt);
         self.maj_orbes(dt);

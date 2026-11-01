@@ -1,0 +1,18 @@
+[package]
+name = "bs-robot"
+description = "Robot d'équilibrage : joue des parties seul, sans rendu, et compare ses statistiques à celles de la version TypeScript"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+bs-commun.workspace = true
+bs-donnees.workspace = true
+bs-regles.workspace = true
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+indexmap = { version = "2", features = ["serde"] }
+
+[lints]
+workspace = true

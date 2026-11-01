@@ -1919,6 +1919,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "bs-robot"
+version = "0.1.0"
+dependencies = [
+ "bs-commun",
+ "bs-donnees",
+ "bs-regles",
+ "indexmap",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "bs-sauvegarde"
 version = "0.1.0"
 dependencies = [

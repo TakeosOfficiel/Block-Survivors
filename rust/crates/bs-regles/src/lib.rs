@@ -9,6 +9,7 @@
 
 mod prototype;
 
+pub mod butin;
 pub mod cartes;
 pub mod catalogue;
 pub mod combat;

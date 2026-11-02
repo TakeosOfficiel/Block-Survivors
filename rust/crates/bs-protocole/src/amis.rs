@@ -188,9 +188,9 @@ impl TrameAmi<'_> {
 /// La même trame, refaite suivre par le relais : `Publier` devient `Presence`, `Poster`
 /// devient `Courrier` (seul le premier octet change). `None` pour les autres.
 pub fn faire_suivre(trame: &[u8]) -> Option<Vec<u8>> {
-    let genre = match trame.first()? {
-        &PUBLIER => PRESENCE,
-        &POSTER => COURRIER,
+    let genre = match *trame.first()? {
+        PUBLIER => PRESENCE,
+        POSTER => COURRIER,
         _ => return None,
     };
     let mut o = trame.to_vec();

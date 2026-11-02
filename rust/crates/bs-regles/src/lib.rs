@@ -16,6 +16,7 @@ pub mod classes;
 pub mod combat;
 pub mod directeurs;
 pub mod ennemis;
+pub mod equipe;
 pub mod equipement;
 pub mod etat;
 pub mod evenements;

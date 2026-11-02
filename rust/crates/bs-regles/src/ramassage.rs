@@ -205,15 +205,17 @@ impl Partie {
     }
 
     pub fn maj_orbes(&mut self, dt: f32) {
-        let j = &self.etat.joueur;
-        if j.mort {
-            return;
-        }
-        let (jx, jz) = (j.x, j.z);
         let rayon = self.d.regles.joueur.collecte * self.etat.modificateurs.collecte;
         let mut i = self.ramassables.orbes.len();
         while i > 0 {
             i -= 1;
+            let (ox, oz) = (self.ramassables.orbes[i].x, self.ramassables.orbes[i].z);
+            // Vers le plus proche joueur debout (seul : le joueur, s'il vit)
+            let Some(k) = self.plus_proche_joueur(ox, oz) else {
+                return;
+            };
+            let j = self.etat_joueur(k);
+            let (jx, jz) = (j.x, j.z);
             let o = &mut self.ramassables.orbes[i];
             let (dx, dz) = (jx - o.x, jz - o.z);
             let d = longueur(dx, dz);
@@ -263,17 +265,23 @@ impl Partie {
     }
 
     pub fn maj_objets(&mut self, dt: f32) {
-        if self.etat.joueur.mort {
-            return;
-        }
         let portee = self.d.regles.joueur.rayon_ramassage;
         let collecte = self.d.regles.joueur.collecte * self.etat.modificateurs.collecte;
         let mut i = self.ramassables.objets.len();
         while i > 0 {
             i -= 1;
+            let (ox, oz) = (self.ramassables.objets[i].x, self.ramassables.objets[i].z);
+            // Au plus proche joueur debout (seul : le joueur, s'il vit)
+            let Some(k) = self.plus_proche_joueur(ox, oz) else {
+                return;
+            };
+            let j = if k == 0 {
+                &mut self.etat.joueur
+            } else {
+                &mut self.equipe.membres[k - 1].etat_joueur
+            };
             let o = &mut self.ramassables.objets[i];
             let def = &self.d.objets[o.index_type];
-            let j = &mut self.etat.joueur;
             let (dx, dz) = (j.x - o.x, j.z - o.z);
             let d = longueur(dx, dz);
             let m = &self.etat.modificateurs;
@@ -383,11 +391,19 @@ impl Partie {
                 }
                 continue;
             }
-            let a_portee = (jx - c.x) * (jx - c.x) + (jz - c.z) * (jz - c.z)
-                <= r.rayon_ouverture * r.rayon_ouverture;
-            if mort || !a_portee {
+            let a_portee = if self.equipe.membres.is_empty() {
+                !mort
+                    && (jx - c.x) * (jx - c.x) + (jz - c.z) * (jz - c.z)
+                        <= r.rayon_ouverture * r.rayon_ouverture
+            } else {
+                let (x, z) = (c.x, c.z);
+                self.joueur_a_portee(x, z, r.rayon_ouverture)
+            };
+            if !a_portee {
                 continue;
             }
+            let coffres = &mut self.ramassables.coffres;
+            let c = &mut coffres.pool[i];
             // Le prix est le même pour tous les coffres payants, il monte à chaque ouverture
             let prix = if def.payant {
                 (r.prix.base + r.prix.increment * coffres.payants_ouverts as f32) as u32

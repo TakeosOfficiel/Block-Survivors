@@ -450,7 +450,7 @@ impl Partie {
         self.ennemis.reconstruire_grille();
     }
 
-    /// Explosion (creeper) : dégâts au joueur décroissants avec la distance.
+    /// Explosion (creeper) : dégâts aux joueurs décroissants avec la distance.
     fn exploser(&mut self, i: usize) {
         let e = &self.ennemis.pool[i];
         let Comportement::Explosif { rayon, degats, .. } = e.def.comportement else {
@@ -460,10 +460,12 @@ impl Partie {
         self.ev.gerbe("explosion", x, 0.8, z);
         self.ev.son("explosion");
         self.ev.secousse(0.45);
-        let j = &self.etat.joueur;
-        let distance = bs_commun::maths::longueur(j.x - x, j.z - z);
-        if distance < rayon {
-            self.blesser_joueur(libm::ceilf(degats * (1.0 - distance / rayon)), boss);
+        for k in 0..self.nombre_joueurs() {
+            let j = self.etat_joueur(k);
+            let distance = bs_commun::maths::longueur(j.x - x, j.z - z);
+            if distance < rayon {
+                self.blesser_joueur_k(k, libm::ceilf(degats * (1.0 - distance / rayon)), boss);
+            }
         }
         self.blesser_allies_zone(x, z, rayon, degats);
     }

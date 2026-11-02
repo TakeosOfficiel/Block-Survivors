@@ -62,7 +62,7 @@ impl DirecteurBoss {
 
 impl Partie {
     pub fn maj_directeur(&mut self, dt: f32) {
-        if self.etat.issue.is_some() || self.etat.joueur.mort {
+        if self.etat.issue.is_some() || self.equipe_vaincue() {
             return;
         }
         let a = &self.d.regles.apparitions;
@@ -155,7 +155,7 @@ impl Partie {
             {
                 continue;
             }
-            if !self.vue.est_visible(x, z, 2.0) {
+            if !self.vue.est_visible(x, z, 2.0) && !self.vu_par_un_autre(x, z, 2.0) {
                 return Some((x, z));
             }
             if distance > meilleure {
@@ -213,7 +213,7 @@ impl Partie {
 
     fn maj_directeur_boss(&mut self, sorte: SorteBoss) {
         let c = self.calendrier(sorte);
-        if self.etat.joueur.mort
+        if self.equipe_vaincue()
             || self.etat.issue.is_some()
             || self.boss_termine(sorte)
             || self.liste_boss(sorte).is_empty()
@@ -280,8 +280,9 @@ impl Partie {
             if self.carte.bloque_marche(cx, cz) || !self.flux.atteignable(&self.carte, cx, cz) {
                 continue;
             }
-            let cache =
-                longueur(cx - jx, cz - jz) > distance_min && !self.vue.est_visible(cx, cz, 3.0);
+            let cache = longueur(cx - jx, cz - jz) > distance_min
+                && !self.vue.est_visible(cx, cz, 3.0)
+                && !self.vu_par_un_autre(cx, cz, 3.0);
             if cache || essai >= 48 {
                 x = cx;
                 z = cz;

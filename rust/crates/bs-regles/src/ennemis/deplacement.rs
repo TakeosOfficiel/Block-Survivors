@@ -136,11 +136,12 @@ fn appliquer_comportement(e: &mut Ennemi, dt: f32, v: &Vers, rayon_joueur: f32) 
 impl Partie {
     pub(super) fn deplacer(&mut self, index: usize, dt: f32) {
         let rayon_joueur = self.d.regles.joueur.rayon;
-        let (jx, jz, j_mort) = (
-            self.etat.joueur.x,
-            self.etat.joueur.z,
-            self.etat.joueur.mort,
-        );
+        // Le plus proche joueur debout (seul : le joueur) ; personne, il s'arrête
+        let (ex, ez) = (self.ennemis.pool[index].x, self.ennemis.pool[index].z);
+        let vise = self.plus_proche_joueur(ex, ez);
+        let j = self.etat_joueur(vise.unwrap_or(0));
+        let (jx, jz, j_mort) = (j.x, j.z, vise.is_none());
+        let vise = vise.unwrap_or(0);
         let e = &mut self.ennemis.pool[index];
         let def = e.def;
         if e.minuterie > 0.0 {
@@ -181,8 +182,13 @@ impl Partie {
             chemin_x: dx,
             chemin_z: dz,
         };
+        let flux = if vise == 0 {
+            &self.flux
+        } else {
+            &self.equipe.membres[vise - 1].flux
+        };
         if !e.voit_joueur
-            && let Some((cx, cz)) = self.flux.direction(&self.carte, e.x, e.z)
+            && let Some((cx, cz)) = flux.direction(&self.carte, e.x, e.z)
         {
             v.chemin_x = cx;
             v.chemin_z = cz;
@@ -229,7 +235,7 @@ impl Partie {
                 let boss = def.boss.is_some();
                 match cible {
                     Cible::Joueur => {
-                        self.blesser_joueur(degats, boss);
+                        self.blesser_joueur_k(vise, degats, boss);
                     }
                     Cible::Allie(a) => self.blesser_allie(a, degats),
                 }

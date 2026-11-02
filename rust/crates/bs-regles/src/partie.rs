@@ -13,6 +13,7 @@ use crate::catalogue::Catalogue;
 use crate::combat::{Arsenal, SystemesArmes};
 use crate::directeurs::{DirecteurApparitions, DirecteurBoss, SorteBoss};
 use crate::ennemis::Ennemis;
+use crate::equipe::Equipe;
 use crate::equipement::Equipement;
 use crate::etat::{EtatPartie, Issue};
 use crate::evenements::Evenements;
@@ -59,7 +60,9 @@ pub struct Partie {
     /// Fin de partie atteinte avec un boss en vie : il faut le vaincre pour gagner.
     pub prolongation: bool,
     /// Totems déjà traités (recul des ennemis).
-    vies_traitees: u32,
+    pub(crate) vies_traitees: u32,
+    /// Les autres joueurs (coopération) ; vide en solo.
+    pub equipe: Equipe,
 }
 
 impl Partie {
@@ -102,34 +105,12 @@ impl Partie {
         graine: u32,
         evenements: bool,
     ) -> Self {
-        let mut etat = EtatPartie::nouvel(d, arene, index_personnage);
+        let etat = EtatPartie::nouvel(d, arene, index_personnage);
         let flux = ChampDeFlux::nouveau(&carte);
         let demi_cote = arene.largeur.max(arene.profondeur) / 2.0 + 1.0;
         let vue = VueCamera::nouvelle(etat.joueur.x, etat.joueur.z, 1280.0 / 720.0);
-        // Bonus permanents du personnage (sauvegarde vierge : ni talents ni Collection)
         let passifs = Passifs::nouveaux(etat.personnage.bonus);
-        etat.modificateurs = passifs.calculer(d, None);
-        etat.joueur.pv_max += etat.modificateurs.pv_max;
-        etat.joueur.pv = etat.joueur.pv_max;
-        let classe = d
-            .personnages
-            .personnages
-            .get_index(index_personnage)
-            .map_or("", |(id, _)| id.as_str());
-        let mut talents = Talents::nouveaux(d.armes.len());
-        talents.classes.dernier = (etat.joueur.x, etat.joueur.z);
-        if classe == "guerrier" {
-            talents.classes.guerrier = Some(crate::classes::Guerrier::nouveau(d));
-        }
-        if classe == "archer" {
-            talents.classes.archere = Some(crate::classes::Archere::nouvelle(d));
-        }
-        if classe == "mage" {
-            talents.classes.mage = Some(crate::classes::Mage::nouveau(d));
-        }
-        if classe == "invocateur" {
-            talents.classes.invocateur = Some(crate::classes::Invocateur::nouveau(d));
-        }
+        let talents = Talents::nouveaux(d.armes.len());
         let mut partie = Self {
             d,
             c: Catalogue::nouveau(d),
@@ -160,13 +141,44 @@ impl Partie {
             directeur_mini_boss: DirecteurBoss::nouveau(SorteBoss::MiniBoss, &d.regles.mini_boss),
             prolongation: false,
             vies_traitees: 0,
+            equipe: Equipe::nouvelle(),
         };
-        for id in &partie.etat.personnage.armes_depart {
+        partie.preparer_joueur();
+        partie
+    }
+
+    /// Bonus permanents du personnage (sauvegarde vierge : ni talents ni Collection),
+    /// mécaniques de sa classe et armes de départ du joueur en jeu.
+    pub(crate) fn preparer_joueur(&mut self) {
+        let d = self.d;
+        let etat = &mut self.etat;
+        etat.modificateurs = self.passifs.calculer(d, None);
+        etat.joueur.pv_max += etat.modificateurs.pv_max;
+        etat.joueur.pv = etat.joueur.pv_max;
+        let classe = d
+            .personnages
+            .personnages
+            .get_index(etat.index_personnage)
+            .map_or("", |(id, _)| id.as_str());
+        let talents = &mut self.talents;
+        talents.classes.dernier = (etat.joueur.x, etat.joueur.z);
+        if classe == "guerrier" {
+            talents.classes.guerrier = Some(crate::classes::Guerrier::nouveau(d));
+        }
+        if classe == "archer" {
+            talents.classes.archere = Some(crate::classes::Archere::nouvelle(d));
+        }
+        if classe == "mage" {
+            talents.classes.mage = Some(crate::classes::Mage::nouveau(d));
+        }
+        if classe == "invocateur" {
+            talents.classes.invocateur = Some(crate::classes::Invocateur::nouveau(d));
+        }
+        for id in &self.etat.personnage.armes_depart {
             if let Some(index) = d.armes.get_index_of(id) {
-                partie.ameliorer_arme(index);
+                self.ameliorer_arme(index);
             }
         }
-        partie
     }
 
     /// Un pas de simulation, dans l'ordre de `simuler` du jeu TS.
@@ -178,17 +190,45 @@ impl Partie {
         self.maj_joueur(dt);
         let (jx, jz) = (self.etat.joueur.x, self.etat.joueur.z);
         self.flux.maj(&self.carte, jx, jz);
-        self.maj_directeur(dt);
+        let seul = self.equipe.membres.is_empty();
+        if !seul {
+            self.maj_membres(dt);
+        }
+        self.maj_directeur(dt * self.equipe.facteur_apparitions);
         self.maj_directeurs_boss();
         // Reconstruit aussi la grille utilisée par les armes
         self.maj_ennemis(dt);
         self.recompenser_boss();
-        self.maj_arsenal(dt);
+        let tire = !self.equipe.choix_hote;
+        if tire {
+            self.maj_arsenal(dt);
+        }
         self.maj_talents(dt);
         self.maj_orbes(dt);
         self.maj_objets(dt);
         self.maj_coffres(dt);
-        // Systèmes d'armes, dans l'ordre du jeu TS
+        self.maj_systemes_armes(dt);
+        if !seul {
+            self.maj_armes_membres(dt);
+        }
+        self.maj_projectiles_ennemis(dt);
+        self.traiter_resurrection();
+        if !seul {
+            self.finir_pas_equipe(dt);
+        }
+    }
+
+    /// Arsenal, talents et systèmes d'armes du joueur en jeu (un autre de l'équipe).
+    pub(crate) fn maj_armes(&mut self, dt: f32, tire: bool) {
+        if tire {
+            self.maj_arsenal(dt);
+        }
+        self.maj_talents(dt);
+        self.maj_systemes_armes(dt);
+    }
+
+    /// Systèmes d'armes, dans l'ordre du jeu TS.
+    fn maj_systemes_armes(&mut self, dt: f32) {
         self.maj_projectiles_joueur(dt);
         self.maj_invocations(dt);
         self.maj_foudre(dt);
@@ -202,8 +242,6 @@ impl Partie {
         self.maj_ricochets(dt);
         self.maj_pluies(dt);
         self.maj_pieges(dt);
-        self.maj_projectiles_ennemis(dt);
-        self.traiter_resurrection();
     }
 
     /// Un pas du robot : la simulation, puis la caméra qui suit le joueur.
@@ -213,10 +251,10 @@ impl Partie {
         self.vue.suivre(jx, jz, dt);
     }
 
-    /// Défaite si le joueur est tombé ; victoire à la fin du temps, sauf boss en vie.
+    /// Défaite si toute l'équipe est tombée ; victoire à la fin du temps, sauf boss en vie.
     fn verifier_fin(&mut self) {
         let duree = self.d.regles.progression.duree_partie;
-        if self.etat.joueur.mort {
+        if self.equipe_vaincue() {
             self.etat.issue = Some(Issue::Defaite);
         } else if !self.etat.sans_fin && self.etat.temps_jeu >= f64::from(duree) {
             // Pas de victoire tant qu'un boss est en vie : il faut le vaincre
@@ -236,7 +274,7 @@ impl Partie {
     }
 
     /// Totem consommé : les ennemis proches sont repoussés.
-    fn traiter_resurrection(&mut self) {
+    pub(crate) fn traiter_resurrection(&mut self) {
         let j = &self.etat.joueur;
         if j.vies_utilisees == self.vies_traitees {
             return;

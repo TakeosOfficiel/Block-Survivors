@@ -15,6 +15,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
 | 4. Sauvegardes et profils | fait : 4a à 4i (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques des quatre classes, Collection, profil du joueur, amis) |
 | 5. Menus | en cours : 5a (menu principal, lancement, retour au menu), 5b (Talents), 5c (Collection), 5d (Profil), 5e (Profils), 5f (Options), 5g (Nouveautés), 5h (chargement), 5i (héros au menu), 5j (compteur de dégâts), 5k (vue F5) |
+| 6. Coopération | en cours : 6b (simulation à plusieurs joueurs) ; 6a (relais complet) et 6c (instantanés, client, page Multijoueur) à venir |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -1143,3 +1144,21 @@ mode sans fin.
   les ennemis apparaissent hors de son champ (`VueCamera::troisieme`, test du champ
   tourné, testé). La vue de dessus reste exactement celle d'avant (robot identique).
 - Correctif : le compteur de FPS (`Permanent`) n'est plus retiré au retour au menu.
+
+### 6b : Simulation à plusieurs joueurs (faite)
+
+- `bs-regles/equipe.rs` : l'hôte simule les autres joueurs dans sa partie (comme
+  src/reseau/hote.ts et combattant.ts). Chaque `Combattant` a son état, ses bonus,
+  son bilan, son arsenal, ses talents, son équipement, ses systèmes d'armes et son
+  champ de flux ; `Partie::echanger(k)` les échange avec ceux de la partie le temps de
+  le faire jouer (deux fois : état d'origine), donc tous les systèmes servent tels quels.
+- Les ennemis visent le plus proche joueur debout qui ne choisit pas ses cartes (son
+  champ de flux, ses coups) ; explosions et projectiles touchent tous les joueurs ;
+  orbes et objets vont au plus proche, un coffre s'ouvre près de n'importe qui ; les
+  ennemis n'apparaissent pas sous les yeux d'un joueur distant (20 blocs).
+- XP et niveau communs : chacun a ses cartes à choisir (niveaux et objets de coffre),
+  protégé et immobile pendant 20 s (+10). Un joueur à terre est relevé par un allié
+  resté 3 s près de lui (30 % des PV, 30 s pour le faire) ; défaite quand toute
+  l'équipe est à terre. Un joueur parti tombe pour de bon et n'est plus une cible.
+- Par joueur en plus : +60 % d'apparitions, +25 % de PV aux ennemis, +70 % aux boss.
+- Seul, la partie est exactement la même (robot identique) ; 4 essais à plusieurs.

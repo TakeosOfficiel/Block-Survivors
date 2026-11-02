@@ -159,11 +159,14 @@ impl Partie {
                         fini = true;
                     }
                 } else {
-                    let j = &self.etat.joueur;
-                    let (dx, dz) = (p.x - j.x, p.z - j.z);
-                    if !j.mort && dx * dx + dz * dz < portee * portee {
-                        self.blesser_joueur(p.degats, p.boss);
-                        fini = true;
+                    for k in 0..self.nombre_joueurs() {
+                        let j = self.etat_joueur(k);
+                        let (dx, dz) = (p.x - j.x, p.z - j.z);
+                        if !j.mort && dx * dx + dz * dz < portee * portee {
+                            self.blesser_joueur_k(k, p.degats, p.boss);
+                            fini = true;
+                            break;
+                        }
                     }
                 }
             }

@@ -6,10 +6,11 @@
 //!   bs-signer manifeste <dossier vpk> <voie> <série> <jours de validité> <version min coop>
 //!       lit `releases.<voie>.json` écrit par `vpk pack`, en fait le manifeste, le signe
 //!       avec la clé privée de BS_CLE_PRIVEE et l'écrit dans `<dossier>/version.json`.
+//!       Les installeurs du dossier (`*-Setup.exe`, `*.AppImage`) y sont listés aussi.
 
 use std::path::Path;
 
-use bs_maj::manifeste::{Manifeste, Paquet, cle_privee, nouvelle_cle, signer};
+use bs_maj::manifeste::{Installeur, Manifeste, Paquet, cle_privee, nouvelle_cle, signer};
 use bs_maj::source::NOM_MANIFESTE;
 use serde::Deserialize;
 
@@ -88,6 +89,7 @@ fn main() {
                         notes: a.notes_markdown,
                     })
                     .collect(),
+                installeurs: installeurs(dossier),
             };
             std::fs::write(dossier.join(NOM_MANIFESTE), signer(&m, &cle))
                 .expect("écriture du manifeste");
@@ -106,6 +108,33 @@ fn main() {
             std::process::exit(2);
         }
     }
+}
+
+/// Installeurs écrits par `vpk` dans le dossier, avec leur empreinte.
+fn installeurs(dossier: &Path) -> Vec<Installeur> {
+    use sha2::{Digest, Sha256};
+    let mut liste: Vec<Installeur> = std::fs::read_dir(dossier)
+        .expect("dossier de vpk")
+        .filter_map(|e| e.ok().map(|e| e.path()))
+        .filter_map(|p| {
+            let nom = p.file_name()?.to_str()?.to_owned();
+            if !(nom.ends_with("-Setup.exe") || nom.ends_with(".AppImage")) {
+                return None;
+            }
+            let octets = std::fs::read(&p).ok()?;
+            let sha256 = Sha256::digest(&octets)
+                .iter()
+                .map(|o| format!("{o:02x}"))
+                .collect();
+            Some(Installeur {
+                fichier: nom,
+                sha256,
+                taille: octets.len() as u64,
+            })
+        })
+        .collect();
+    liste.sort_by(|a, b| a.fichier.cmp(&b.fichier));
+    liste
 }
 
 /// « 1.2.3 » → (1, 2, 3) pour comparer (sans pré-version : le prototype n'en a pas).

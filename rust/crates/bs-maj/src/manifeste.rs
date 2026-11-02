@@ -20,6 +20,18 @@ pub struct Manifeste {
     /// Plus vieille version avec laquelle la coop reste possible.
     pub version_min_coop: String,
     pub paquets: Vec<Paquet>,
+    /// Installeurs de la version (`Setup.exe`, `.AppImage`) : la version Electron les
+    /// vérifie avant de lancer le passage. Absents des vieux manifestes.
+    #[serde(default)]
+    pub installeurs: Vec<Installeur>,
+}
+
+/// Un installeur publié avec la version.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct Installeur {
+    pub fichier: String,
+    pub sha256: String,
+    pub taille: u64,
 }
 
 /// Un fichier de la version (paquet complet ou delta), tel que `vpk` le décrit.

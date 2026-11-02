@@ -78,3 +78,25 @@ faire avant la sortie de la bêta.
 - **Bêta** : les joueurs qui cochent « Versions bêta » dans les Options. Le jeu passe alors
   au canal `<système>-beta`. En décochant, il revient à la dernière stable (seul cas où il
   accepte une version plus ancienne).
+
+## Bascule : passer les joueurs Electron à la version Rust
+
+Quand la version Rust est publiée en **stable** et qu'on veut que tout le monde y passe :
+
+1. Dans `electron/passage.cjs`, mettre `BASCULE = true` et recopier dans `CLES` les clés
+   publiques de la variable `BS_CLES_MAJ` (même ordre).
+2. Publier cette version Electron comme d'habitude (push sur `main`) : c'est la
+   **dernière**.
+3. Au lancement suivant, chez chaque joueur Electron :
+   1. l'appli lit et vérifie le manifeste Rust de son système (signature, expiration) ;
+   2. elle écrit chaque profil en `.bssave` dans `depuis-electron/` des sauvegardes Rust ;
+   3. elle télécharge l'installeur, vérifie sa taille et son SHA-256 (signés dans le
+      manifeste, liste `installeurs`), puis :
+      - sous Windows, désinstalle Electron sans effacer ses données, puis lance
+        l'installeur Rust ;
+      - sous Linux, remplace l'AppImage par celle de la version Rust.
+4. La version Rust importe ces profils à son premier lancement, et l'ancien profil actif
+   le redevient.
+
+En cas d'échec (hors ligne, manifeste refusé…), le jeu Electron s'ouvre comme d'habitude
+et réessaie au lancement suivant. Le dossier de données d'Electron n'est jamais effacé.

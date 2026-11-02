@@ -1266,6 +1266,31 @@ mode sans fin.
 
 - Manifestes à deux niveaux (clé de secours seule à pouvoir changer les clés).
 - Signature de code Windows (Authenticode).
-- Passage depuis Electron (dernière mise à jour Electron qui installe la version Rust).
 - Réglages GitHub à faire par le propriétaire : variables `BS_CLES_MAJ`, `BS_RELAIS`,
   environnement `publication` et ses secrets, serveur du relais.
+
+## Étape 8 : bêta puis bascule
+
+### 8a : profils venus d'Electron (fait)
+
+- `bs-sauvegarde::electron` : au lancement, chaque `.bssave` de `depuis-electron/` devient
+  un profil, et le profil de `actif.txt` redevient l'actif. Les fichiers importés passent
+  dans `importes/` et les refusés dans `refuses/`. Un fichier refusé faute de place reste
+  là pour une prochaine fois.
+- Au premier lancement, le premier profil importé prend la place du profil vierge (pas
+  de profil vide en trop). C'est aussi le cas pour un import depuis le menu.
+
+### 8b : passage depuis Electron (prêt, coupé)
+
+- `electron/passage.cjs`, coupé par `BASCULE` (procédure : docs/PUBLICATION-RUST.md) :
+  - manifeste Rust vérifié en Node (ed25519, expiration) ;
+  - profils lus dans le localStorage du jeu par une page vide de même origine, puis écrits
+    en `.bssave` (AES-GCM, même format que le jeu) ;
+  - installeur vérifié (SHA-256 et taille signés : le manifeste liste désormais les
+    installeurs) ;
+  - Windows : désinstallation d'Electron puis installation ; Linux : remplacement de
+    l'AppImage.
+- Vérifié hors Electron : un manifeste signé par `bs-signer` est accepté, et refusé une
+  fois falsifié ou expiré. Les `.bssave` écrits par Node sont importés par la version Rust
+  (deux profils, actif retrouvé). La lecture du localStorage par une autre page `file://`
+  a été vérifiée dans Electron 44.

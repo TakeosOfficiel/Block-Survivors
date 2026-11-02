@@ -13,6 +13,7 @@ fn manifeste(serie: u64) -> Manifeste {
         voie: "stable".into(),
         version: "0.2.0".into(),
         version_min_coop: "0.1.0".into(),
+        installeurs: Vec::new(),
         paquets: vec![Paquet {
             id: "BlockSurvivors".into(),
             version: "0.2.0".into(),

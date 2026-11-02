@@ -41,6 +41,13 @@ const LARGEUR_BARRE: f32 = 600.0;
 #[derive(Resource, Default)]
 pub struct Photos(HashMap<&'static str, Handle<Image>>);
 
+impl Photos {
+    /// Photo de l'arène si elle est déjà décodée.
+    pub fn decodee(&self, id: &str) -> Option<Handle<Image>> {
+        self.0.get(id).cloned()
+    }
+}
+
 /// Barre (largeur suivie) et libellé de l'avancement.
 #[derive(Component)]
 pub(crate) struct Remplissage;
@@ -52,7 +59,11 @@ pub(crate) struct Libelle;
 #[derive(Resource, Default)]
 pub struct Avance(f32);
 
-fn photo(images: &mut Assets<Image>, photos: &mut Photos, id: &str) -> Option<Handle<Image>> {
+pub(crate) fn photo(
+    images: &mut Assets<Image>,
+    photos: &mut Photos,
+    id: &str,
+) -> Option<Handle<Image>> {
     let (cle, octets) = PHOTOS.iter().find(|(p, _)| *p == id)?;
     if let Some(h) = photos.0.get(cle) {
         return Some(h.clone());

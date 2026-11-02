@@ -23,7 +23,7 @@ const ANGLE_INITIAL: f32 = 0.45;
 /// Radians par pixel glissé.
 const SENSIBILITE: f32 = 0.012;
 /// Place du héros sur l'accueil (sur la page Profil : l'origine).
-const POSITION_ACCUEIL: Vec3 = Vec3::new(0.0, 0.55, -4.0);
+const POSITION_ACCUEIL: Vec3 = Vec3::new(0.0, 0.45, -1.8);
 
 /// Héros affiché : ce qu'il porte, ses rendus une fois les textures arrivées.
 #[derive(Resource)]
@@ -47,14 +47,14 @@ impl Default for Apercu {
     }
 }
 
-/// Caméra 3D du menu (sous la caméra de l'interface).
-pub fn camera(commandes: &mut Commands, fond: Color) {
+/// Caméra 3D du menu (sur le fond, sous la caméra de l'interface).
+pub fn camera(commandes: &mut Commands) {
     commandes.spawn((
         Name::new("caméra de l'aperçu"),
         Camera3d::default(),
         Camera {
             order: 0,
-            clear_color: ClearColorConfig::Custom(fond),
+            clear_color: ClearColorConfig::None,
             ..default()
         },
         Tonemapping::None,

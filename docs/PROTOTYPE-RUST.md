@@ -1122,6 +1122,19 @@ mode sans fin.
   portée) tourne au centre, au-dessus du pseudo, de la maîtrise et des boutons des pages
   (deux rangées). Le fond de l'accueil est celui de la caméra 3D.
 
+### 5l : Accueil refait comme la version TS (fait)
+
+- Mise en page de `ecranMenu.ts` : logo, bandeau de maîtrise, classes à gauche (icône,
+  pastilles, bonus, cartes exclusives, talents achetés), héros de trois quarts au centre
+  (pseudo cliquable, dé), arènes en vignettes photo à droite, grand « JOUER » vert.
+- Fond : la photo de l'arène choisie, recadrée en « cover », en fondu, sous un voile en
+  dégradés ; une caméra 2D d'ordre −1 sur sa propre couche (`menu/fond.rs`). La caméra 3D
+  du héros ne vide plus l'écran.
+- Textes en Inter (licence OFL, embarquée, `polices.rs`), titres en police du jeu.
+- Skins : le drapeau « devant tout » (`animation.x`) des blocs n'est plus repris par les
+  matériaux d'entités (`ParametresBloc::pour_entites`) ; les modèles avaient perdu leur
+  profondeur et montraient leur dos.
+
 ### 5j : Compteur de dégâts en jeu (fait)
 
 - Panneau compact en haut à droite (`hud/compteur.rs`) : une ligne par arme, de la plus

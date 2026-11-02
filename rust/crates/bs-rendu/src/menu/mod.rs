@@ -10,6 +10,7 @@
 
 pub mod apercu;
 mod collection;
+pub mod fond;
 pub mod multijoueur;
 mod nouveautes;
 pub mod profil;
@@ -21,9 +22,11 @@ use bevy::app::AppExit;
 use bevy::prelude::*;
 
 use crate::Phase;
+use crate::chargement::{Photos, photo};
 use crate::coop::{Coop, MessageCoop};
 use crate::dessins::Dessins;
 use crate::lancement::{self, ChoixPartie, DonneesJeu, PartiePreparee};
+use crate::polices::PolicesMenu;
 use crate::sauvegarde::Sauvegarde;
 use crate::textures::Textures;
 use talents::{ActionTalent, EtatTalents};
@@ -43,6 +46,8 @@ pub enum ActionMenu {
     Monde(usize),
     /// Ouvre le Profil.
     OuvrirProfil,
+    /// Tire un pseudo au hasard (le dé de l'accueil).
+    PseudoAleatoire,
     Profil(profil::ActionProfil),
     /// Ouvre la page des Profils.
     OuvrirProfils,
@@ -104,6 +109,9 @@ pub struct Icones<'a> {
     pub textures: &'a mut Textures,
     pub dessins: &'a Dessins,
     pub images: &'a Assets<Image>,
+    pub polices: &'a PolicesMenu,
+    /// Photos des arènes, décodées à l'entrée au menu.
+    pub photos: &'a Photos,
 }
 
 impl Icones<'_> {
@@ -122,7 +130,7 @@ fn construire(
 ) -> Entity {
     let (choix, page) = (menu.choix, menu.page);
     let racine = match page {
-        Page::Accueil => vue::construire(commandes, dj, sauvegarde, choix),
+        Page::Accueil => vue::construire(commandes, dj, sauvegarde, ic, choix),
         Page::Talents(etat) => {
             let c = talents::Contexte {
                 dj,
@@ -175,9 +183,13 @@ pub fn entrer(
     serveur: Res<AssetServer>,
     mut textures: ResMut<Textures>,
     dessins: Res<Dessins>,
-    images: Res<Assets<Image>>,
+    (mut images, mut photos, polices): (ResMut<Assets<Image>>, ResMut<Photos>, Res<PolicesMenu>),
     (message, mut annuaire): (Res<MessageCoop>, ResMut<multijoueur::Annuaire>),
 ) {
+    // Les vignettes des arènes ont besoin de leurs photos dès la construction
+    for a in &dj.arenes {
+        photo(&mut images, &mut photos, &a.def.id);
+    }
     let choix = lancement::choix_memorise(&dj, &sauvegarde);
     let page = match std::env::var("BS_MENU").as_deref() {
         Ok("talents") => page_talents(&dj, &sauvegarde, choix.personnage),
@@ -189,10 +201,12 @@ pub fn entrer(
         _ if message.0.is_some() => Page::Multijoueur,
         _ => Page::Accueil,
     };
-    apercu::camera(&mut commandes, vue::FOND);
+    fond::creer(&mut commandes, vue::FOND);
+    apercu::camera(&mut commandes);
     commandes.spawn((
         Name::new("caméra du menu"),
         Camera2d,
+        IsDefaultUiCamera,
         Camera {
             order: 1,
             clear_color: ClearColorConfig::None,
@@ -217,6 +231,8 @@ pub fn entrer(
         textures: &mut textures,
         dessins: &dessins,
         images: &images,
+        polices: &polices,
+        photos: &photos,
     };
     if page == Page::Multijoueur {
         annuaire.actualiser();
@@ -243,6 +259,7 @@ pub fn gerer(
         Res<Dessins>,
         ResMut<Assets<Image>>,
     ),
+    (polices, photos): (Res<PolicesMenu>, Res<Photos>),
     touches: Res<ButtonInput<KeyCode>>,
     boutons: Query<(&Interaction, &ActionMenu), Changed<Interaction>>,
     mut phase: ResMut<NextState<Phase>>,
@@ -332,6 +349,9 @@ pub fn gerer(
         }
         Some(ActionMenu::Monde(k)) => page = Page::Collection(k),
         Some(ActionMenu::OuvrirProfil) => page = Page::Profil,
+        Some(ActionMenu::PseudoAleatoire) => {
+            profil::valider(&mut sauvegarde.profil, &profils::suggestion());
+        }
         Some(ActionMenu::OuvrirProfils) => {
             page = Page::Profils(None);
             menu.suggestion = profils::suggestion();
@@ -398,6 +418,8 @@ pub fn gerer(
         textures: &mut textures,
         dessins: &dessins,
         images: &images,
+        polices: &polices,
+        photos: &photos,
     };
     let multi = multijoueur::VueMulti {
         coop: coop.as_deref(),

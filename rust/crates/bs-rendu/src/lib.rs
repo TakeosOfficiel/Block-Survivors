@@ -35,6 +35,7 @@ mod menu;
 mod mesure;
 mod modeles;
 mod options;
+mod polices;
 mod retours;
 mod sauvegarde;
 mod simulation;
@@ -211,6 +212,7 @@ impl Plugin for PluginJeu {
                 sons::PluginSons,
                 hud::PluginHud,
                 options::PluginOptions,
+                polices::PluginPolices,
             ))
             .add_systems(
                 OnEnter(Phase::Menu),
@@ -245,6 +247,7 @@ impl Plugin for PluginJeu {
                     )
                         .chain(),
                     ecrans::style::survoler,
+                    (menu::fond::suivre, menu::fond::couvrir),
                 )
                     .run_if(in_state(Phase::Menu)),
             )

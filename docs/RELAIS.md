@@ -76,6 +76,13 @@ avec la clé `~/.ssh/relais-deploiement` chargée (`ssh-add`) et l'empreinte du 
 gh run download <id du run> -n bs-relais -D relais-binaire   # hors du dépôt
 rust/outils/relais/deployer.sh relais-binaire/bs-relais deploiement@5.39.102.138
 ```
+Ce serveur diffère aussi de l'installation décrite plus haut :
+- **Apache au lieu de Cloudflare Tunnel.** Apache expose le relais en HTTPS/WSS et lui
+  donne la vraie adresse des joueurs avec `RequestHeader set CF-Connecting-IP
+  "%{REMOTE_ADDR}s"`. `BS_RELAIS_DIRECT` reste donc inutile.
+- **Conteneur LXC sans nesting.** L'isolation de `bs-relais.service` échoue
+  (`226/NAMESPACE`) : le service a besoin du fichier
+  `/etc/systemd/system/bs-relais.service.d/lxc.conf`, qui n'existe que sur le serveur.
 
 Redémarrer coupe les salons en cours. Les joueurs se reconnectent seuls (place gardée
 60 s), mais les salons eux-mêmes sont perdus. On déploie donc le relais seulement quand son

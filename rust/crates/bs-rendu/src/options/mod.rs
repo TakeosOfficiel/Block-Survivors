@@ -1,7 +1,7 @@
 //! Options du joueur (src/options.ts) : volume général et de chaque famille de sons,
-//! compteur de FPS, secousses de l'écran, ombres, chiffres et compteur des dégâts. Enregistrées pour
-//! toute l'installation (« block-survivors.options », même format que le jeu TS : les
-//! options pas encore reprises, vue, effets des alliés, sont gardées
+//! compteur de FPS, secousses de l'écran, ombres, chiffres et compteur des dégâts, vue
+//! (F5). Enregistrées pour toute l'installation (« block-survivors.options », même format
+//! que le jeu TS : les options pas encore reprises, effets des alliés, sont gardées
 //! telles quelles). Chaque changement est appliqué et enregistré aussitôt. Le panneau
 //! (`panneau`) s'ouvre du menu principal et de la pause.
 
@@ -39,6 +39,8 @@ pub struct Options {
     pub chiffres_degats: bool,
     /// Compteur de dégâts en jeu (Tab).
     pub compteur_degats: bool,
+    /// Vue à la 3e personne (F5) plutôt que de dessus.
+    pub troisieme_personne: bool,
     /// Le reste du fichier (options pas encore reprises), réécrit tel quel.
     autres: serde_json::Map<String, Value>,
 }
@@ -53,6 +55,7 @@ impl Default for Options {
             ombres: 1,
             chiffres_degats: true,
             compteur_degats: true,
+            troisieme_personne: false,
             autres: serde_json::Map::new(),
         }
     }
@@ -79,6 +82,7 @@ impl Options {
         o.secousses = oui("secousses", o.secousses);
         o.chiffres_degats = oui("chiffresDegats", o.chiffres_degats);
         o.compteur_degats = oui("compteurDegats", o.compteur_degats);
+        o.troisieme_personne = lu.get("vue").and_then(Value::as_str) == Some("troisieme");
         // Avant la version 2, les ombres repartent activées
         if lu.get("version").and_then(Value::as_u64) == Some(VERSION) {
             let niveau = lu.get("shaders").and_then(Value::as_str);
@@ -94,6 +98,7 @@ impl Options {
                 "secousses",
                 "chiffresDegats",
                 "compteurDegats",
+                "vue",
                 "shaders",
                 "version",
             ];
@@ -118,6 +123,12 @@ impl Options {
         v.insert("shaders".into(), json!(NIVEAUX_OMBRES[self.ombres]));
         v.insert("chiffresDegats".into(), json!(self.chiffres_degats));
         v.insert("compteurDegats".into(), json!(self.compteur_degats));
+        let vue = if self.troisieme_personne {
+            "troisieme"
+        } else {
+            "dessus"
+        };
+        v.insert("vue".into(), json!(vue));
         v.insert("version".into(), json!(VERSION));
         Value::Object(v)
     }
@@ -192,6 +203,7 @@ fn creer_compteur(mut commandes: Commands) {
     commandes.spawn((
         Name::new("compteur de FPS"),
         CompteurFps,
+        crate::lancement::Permanent,
         TextePixel::nouveau("", Color::WHITE, 1.5).contour(),
         Node {
             position_type: PositionType::Absolute,
@@ -250,10 +262,12 @@ mod tests {
         assert_eq!(o.volume, 0.4);
         assert_eq!(o.volumes, [0.5, 1.0, 1.0, 1.0]);
         assert!(o.afficher_fps && !o.secousses && !o.chiffres_degats && !o.compteur_degats);
+        assert!(o.troisieme_personne);
         assert_eq!(o.ombres, 0);
         // Les options non reprises sont réécrites telles quelles
         let v = o.json();
         assert_eq!(v["vue"], "troisieme");
+        assert_eq!(v["effetsAllies"], true);
         assert_eq!(v["compteurDegats"], false);
         assert_eq!(v["shaders"], "aucun");
         // Version 1 : ombres réactivées

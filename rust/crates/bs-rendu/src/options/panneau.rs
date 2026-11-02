@@ -44,6 +44,7 @@ pub(super) enum Reglage {
     Ombres,
     Chiffres,
     Compteur,
+    Vue,
 }
 
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
@@ -79,6 +80,14 @@ fn libelle(o: &Options, r: Reglage) -> String {
         Reglage::Ombres => format!("Ombres : {}", LIBELLES_OMBRES[o.ombres]),
         Reglage::Chiffres => format!("Chiffres des dégâts : {}", oui(o.chiffres_degats)),
         Reglage::Compteur => format!("Compteur (Tab) : {}", oui(o.compteur_degats)),
+        Reglage::Vue => {
+            let vue = if o.troisieme_personne {
+                "3E PERSONNE"
+            } else {
+                "DE DESSUS"
+            };
+            format!("Vue (F5) : {vue}")
+        }
     }
 }
 
@@ -122,6 +131,7 @@ pub(super) fn gerer(
                 Reglage::Ombres => o.ombres = (o.ombres + 1) % LIBELLES_OMBRES.len(),
                 Reglage::Chiffres => o.chiffres_degats = !o.chiffres_degats,
                 Reglage::Compteur => o.compteur_degats = !o.compteur_degats,
+                Reglage::Vue => o.troisieme_personne = !o.troisieme_personne,
                 Reglage::Volume(_) => {}
             }
             return;
@@ -311,6 +321,7 @@ fn construire(commandes: &mut Commands, o: &Options) -> Entity {
         Reglage::Ombres,
         Reglage::Chiffres,
         Reglage::Compteur,
+        Reglage::Vue,
     ] {
         bascule(commandes, affichage, o, r);
     }

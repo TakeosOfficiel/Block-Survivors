@@ -1,7 +1,7 @@
 //! Étiquette du pseudo au-dessus du joueur (src/effets/etiquette.ts) : texte blanc en
 //! police pixel sur un fond noir translucide, toujours lisible (par-dessus le décor),
-//! cachée à la mort. Haute de 0,42 bloc à 0,35 bloc au-dessus de la tête : sa taille suit
-//! le zoom, par pixels de police entiers.
+//! cachée à la mort et à la 3e personne. Haute de 0,42 bloc à 0,35 bloc au-dessus de la
+//! tête : sa taille suit le zoom, par pixels de police entiers.
 
 use bevy::prelude::*;
 
@@ -50,6 +50,7 @@ pub fn placer(
     rendus: Option<Res<Rendus>>,
     camera: Query<(&Camera, &Transform), With<CameraJeu>>,
     ui: Res<UiScale>,
+    options: Res<crate::options::Options>,
     mut etiquettes: Query<(&Etiquette, &mut Node, &mut Visibility, &ComputedNode)>,
     mut textes: Query<&mut TextePixel>,
 ) {
@@ -72,7 +73,8 @@ pub fn placer(
             visible.set_if_neq(Visibility::Hidden);
             continue;
         };
-        let montre = !jeu.partie.etat.joueur.mort;
+        // Pas d'étiquette à la 3e personne (le joueur est juste devant la caméra)
+        let montre = !jeu.partie.etat.joueur.mort && !options.troisieme_personne;
         visible.set_if_neq(if montre {
             Visibility::Inherited
         } else {

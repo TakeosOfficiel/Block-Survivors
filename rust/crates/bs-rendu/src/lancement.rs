@@ -157,10 +157,22 @@ pub fn graine_au_hasard() -> u32 {
         .map_or(1, |t| t.subsec_nanos() ^ t.as_secs() as u32)
 }
 
+/// Entité gardée d'une partie à l'autre (compteur de FPS).
+#[derive(Component)]
+pub struct Permanent;
+
 /// Retour au menu : retire tout ce que la partie a créé.
+#[allow(clippy::type_complexity)]
 pub fn nettoyer(
     mut commandes: Commands,
-    racines: Query<Entity, (Or<(With<Transform>, With<Node>)>, Without<ChildOf>)>,
+    racines: Query<
+        Entity,
+        (
+            Or<(With<Transform>, With<Node>)>,
+            Without<ChildOf>,
+            Without<Permanent>,
+        ),
+    >,
 ) {
     for e in &racines {
         commandes.entity(e).despawn();

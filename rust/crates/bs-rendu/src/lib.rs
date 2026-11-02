@@ -288,6 +288,7 @@ impl Plugin for PluginJeu {
                 Update,
                 (
                     entites::placer_entites,
+                    camera::capturer_souris,
                     camera::suivre,
                     hud::etiquette::placer,
                     effets::placer,
@@ -306,6 +307,7 @@ impl Plugin for PluginJeu {
                     .chain()
                     .run_if(in_state(Phase::Partie)),
             )
+            .add_systems(OnExit(Phase::Partie), camera::liberer_souris)
             .add_systems(PostUpdate, lumiere::distribuer);
     }
 }

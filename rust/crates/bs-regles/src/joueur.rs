@@ -1,7 +1,7 @@
 //! Joueur : déplacement au clavier (ou au robot), collisions, régénération, coups reçus,
 //! totem d'immortalité (port de src/entites/joueur.ts, sans le rendu).
 
-use bs_commun::maths::{atan2, ecart_angle, facteur_lissage, longueur};
+use bs_commun::maths::{atan2, cos, ecart_angle, facteur_lissage, longueur, sin};
 
 use crate::partie::Partie;
 
@@ -12,12 +12,14 @@ pub const TOTEM_RAYON_RECUL: f32 = 6.0;
 pub const TOTEM_RECUL: f32 = 14.0;
 
 /// Touches de déplacement enfoncées.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct Commandes {
     pub haut: bool,
     pub bas: bool,
     pub gauche: bool,
     pub droite: bool,
+    /// Lacet de la caméra (rad) qui oriente les touches ; 0 dans la vue de dessus.
+    pub lacet: f32,
 }
 
 /// Ce qui pilote le joueur en dehors de son état (src/entites/joueur.ts).
@@ -67,6 +69,13 @@ impl Partie {
         if norme > 0.0 {
             dx /= norme;
             dz /= norme;
+        }
+        // Vue à la 3e personne : « haut » avance dans le sens où regarde la caméra
+        if c.lacet != 0.0 {
+            let (sin, cos) = (sin(c.lacet), cos(c.lacet));
+            let x = dx * cos + dz * sin;
+            dz = dz * cos - dx * sin;
+            dx = x;
         }
 
         // Vitesse : approche exponentielle de la vitesse cible

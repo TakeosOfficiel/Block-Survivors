@@ -58,11 +58,7 @@ impl AssetReader for LecteurMinecraft {
         }
         let mut erreur = AssetReaderError::NotFound(chemin.to_path_buf());
         for source in &self.sources {
-            let adresse = if self.sans_extension {
-                Path::new(source).join(chemin.with_extension(""))
-            } else {
-                Path::new(source).join(chemin)
-            };
+            let adresse = adresse(source, chemin, self.sans_extension);
             match WebAssetReader::Https.read(&adresse).await {
                 Ok(mut lecteur) => {
                     let mut octets = Vec::new();
@@ -96,6 +92,22 @@ impl AssetReader for LecteurMinecraft {
     async fn is_directory<'a>(&'a self, _chemin: &'a Path) -> Result<bool, AssetReaderError> {
         Ok(false)
     }
+}
+
+/// Adresse distante d'un chemin, toujours avec des « / » : `Path::join` mettrait un « \ »
+/// sous Windows, refusé juste après le nom du serveur (sons de Mojang).
+fn adresse(source: &str, chemin: &Path, sans_extension: bool) -> PathBuf {
+    let chemin = if sans_extension {
+        chemin.with_extension("")
+    } else {
+        chemin.to_path_buf()
+    };
+    let suite = chemin
+        .components()
+        .map(|c| c.as_os_str().to_string_lossy())
+        .collect::<Vec<_>>()
+        .join("/");
+    PathBuf::from(format!("{source}/{suite}"))
 }
 
 /// Dossier du cache : `sorte` = « textures », « fichiers » ou « sons ».
@@ -251,5 +263,23 @@ impl Textures {
         }
         let p = self.poignees.get(chemin)?;
         matches!(serveur.load_state(p), LoadState::Loaded).then(|| p.clone())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn adresse_toujours_avec_des_barres_obliques() {
+        let chemin = Path::new("c7").join("c72dc968.ogg");
+        assert_eq!(
+            adresse(SOURCE_SONS, &chemin, true).to_str(),
+            Some("resources.download.minecraft.net/c7/c72dc968")
+        );
+        assert_eq!(
+            adresse("hote/textures", &Path::new("block").join("dirt.png"), false).to_str(),
+            Some("hote/textures/block/dirt.png")
+        );
     }
 }

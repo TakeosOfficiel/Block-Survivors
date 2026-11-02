@@ -41,6 +41,7 @@ mod simulation;
 mod skins;
 mod soleil;
 mod sons;
+mod sources;
 mod textures;
 
 use bevy::prelude::*;

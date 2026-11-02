@@ -46,6 +46,8 @@ pub(super) enum Reglage {
     Compteur,
     Vue,
     Beta,
+    /// Effets des autres joueurs (coop).
+    Allies,
 }
 
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
@@ -90,6 +92,10 @@ fn libelle(o: &Options, r: Reglage) -> String {
             format!("Vue (F5) : {vue}")
         }
         Reglage::Beta => format!("Versions bêta : {}", oui(o.beta)),
+        Reglage::Allies => format!(
+            "Effets des autres joueurs (multi) : {}",
+            oui(o.effets_allies)
+        ),
     }
 }
 
@@ -135,6 +141,7 @@ pub(super) fn gerer(
                 Reglage::Compteur => o.compteur_degats = !o.compteur_degats,
                 Reglage::Vue => o.troisieme_personne = !o.troisieme_personne,
                 Reglage::Beta => o.beta = !o.beta,
+                Reglage::Allies => o.effets_allies = !o.effets_allies,
                 Reglage::Volume(_) => {}
             }
             return;
@@ -325,6 +332,7 @@ fn construire(commandes: &mut Commands, o: &Options) -> Entity {
         Reglage::Chiffres,
         Reglage::Compteur,
         Reglage::Vue,
+        Reglage::Allies,
         Reglage::Beta,
     ] {
         bascule(commandes, affichage, o, r);

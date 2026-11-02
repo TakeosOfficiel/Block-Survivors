@@ -43,6 +43,8 @@ pub struct Options {
     pub troisieme_personne: bool,
     /// Mises à jour de la voie bêta plutôt que stable.
     pub beta: bool,
+    /// Coop : armes, sorts et créatures des autres joueurs dessinés.
+    pub effets_allies: bool,
     /// Le reste du fichier (options pas encore reprises), réécrit tel quel.
     autres: serde_json::Map<String, Value>,
 }
@@ -59,6 +61,7 @@ impl Default for Options {
             compteur_degats: true,
             troisieme_personne: false,
             beta: false,
+            effets_allies: true,
             autres: serde_json::Map::new(),
         }
     }
@@ -86,6 +89,7 @@ impl Options {
         o.chiffres_degats = oui("chiffresDegats", o.chiffres_degats);
         o.compteur_degats = oui("compteurDegats", o.compteur_degats);
         o.beta = oui("voieBeta", o.beta);
+        o.effets_allies = oui("effetsAllies", o.effets_allies);
         o.troisieme_personne = lu.get("vue").and_then(Value::as_str) == Some("troisieme");
         // Avant la version 2, les ombres repartent activées
         if lu.get("version").and_then(Value::as_u64) == Some(VERSION) {
@@ -104,6 +108,7 @@ impl Options {
                 "compteurDegats",
                 "vue",
                 "voieBeta",
+                "effetsAllies",
                 "shaders",
                 "version",
             ];
@@ -128,6 +133,7 @@ impl Options {
         v.insert("shaders".into(), json!(NIVEAUX_OMBRES[self.ombres]));
         v.insert("chiffresDegats".into(), json!(self.chiffres_degats));
         v.insert("compteurDegats".into(), json!(self.compteur_degats));
+        v.insert("effetsAllies".into(), json!(self.effets_allies));
         let vue = if self.troisieme_personne {
             "troisieme"
         } else {
@@ -262,18 +268,18 @@ mod tests {
             "volume": 0.4, "volumes": {"joueur": 0.5, "armes": 2.0},
             "afficherFps": true, "secousses": false, "shaders": "aucun",
             "chiffresDegats": false, "compteurDegats": false, "vue": "troisieme",
-            "effetsAllies": true, "version": 2
+            "effetsAllies": false, "version": 2
         });
         let o = Options::lire(Some(lu));
         assert_eq!(o.volume, 0.4);
         assert_eq!(o.volumes, [0.5, 1.0, 1.0, 1.0]);
         assert!(o.afficher_fps && !o.secousses && !o.chiffres_degats && !o.compteur_degats);
-        assert!(o.troisieme_personne);
+        assert!(o.troisieme_personne && !o.effets_allies);
         assert_eq!(o.ombres, 0);
         // Les options non reprises sont réécrites telles quelles
         let v = o.json();
         assert_eq!(v["vue"], "troisieme");
-        assert_eq!(v["effetsAllies"], true);
+        assert_eq!(v["effetsAllies"], false);
         assert_eq!(v["compteurDegats"], false);
         assert_eq!(v["shaders"], "aucun");
         // Version 1 : ombres réactivées

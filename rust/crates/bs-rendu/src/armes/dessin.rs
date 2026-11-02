@@ -8,6 +8,8 @@ use super::vues::{fleches, givres, lames, orbes, pluies, ronces, texture_meteore
 use super::{VisuelsArmes, arcanes, feu, foudre, melee, posees, sol};
 use crate::camera::Cible;
 use crate::modeles::rendu::Composants;
+use crate::options::Options;
+use crate::sources::sources;
 use crate::{PAS, PartieEnCours};
 
 /// Pièces solides de l'image (météores, blocs soulevés, lames, éclats de glace).
@@ -17,8 +19,10 @@ pub fn placer_solides(
     temps: Res<Time>,
     fixe: Res<Time<Fixed>>,
     mut v: ResMut<VisuelsArmes>,
+    options: Res<Options>,
     mut q: Composants,
 ) {
+    let allies = options.effets_allies;
     let avance = fixe.overstep_fraction() * PAS;
     let t = temps.elapsed_secs();
     let rotation = v.camera;
@@ -30,16 +34,18 @@ pub fn placer_solides(
         ..
     } = &mut *v;
     solides.commencer();
-    for me in jeu
-        .partie
-        .armes
-        .feu
-        .meteores
-        .iter()
-        .chain(&etalage.meteores)
-    {
+    let meteores = sources(&jeu.partie, allies)
+        .flat_map(|s| {
+            s.armes
+                .feu
+                .meteores
+                .iter()
+                .map(move |m| (Some(s.arsenal), m))
+        })
+        .chain(etalage.meteores.iter().map(|m| (None, m)));
+    for (arsenal, me) in meteores {
         let k = me.t + avance;
-        let Some(texture) = texture_meteore(&jeu, me.arme) else {
+        let Some(texture) = texture_meteore(&jeu, arsenal, me.arme) else {
             continue;
         };
         if k >= 0.0 {
@@ -66,20 +72,20 @@ pub fn placer_solides(
         &mut q,
         &[],
         sol,
-        lames(&jeu, &etalage.chutes),
-        givres(&jeu, &etalage.novas),
+        lames(&jeu, allies, &etalage.chutes),
+        givres(&jeu, allies, &etalage.novas),
         rotation,
     );
     let (f, r) = (
-        fleches(&jeu, &etalage.fleches),
-        ronces(&jeu, &etalage.pieges),
+        fleches(&jeu, allies, &etalage.fleches),
+        ronces(&jeu, allies, &etalage.pieges),
     );
     posees::placer(solides, &mut commandes, &mut q, f, r, rotation);
     arcanes::placer_orbes(
         solides,
         &mut commandes,
         &mut q,
-        orbes(&jeu, &etalage.orbes),
+        orbes(&jeu, allies, &etalage.orbes),
         t,
     );
     solides.terminer(&mut q);
@@ -94,9 +100,11 @@ pub fn dessiner(
     mut v: ResMut<VisuelsArmes>,
     cible: Res<Cible>,
     camera: Query<&Transform, With<Camera3d>>,
+    options: Res<Options>,
     mut maillages: ResMut<Assets<Mesh>>,
     mut visibilites: Query<&mut Visibility>,
 ) {
+    let allies = options.effets_allies;
     let dt = temps.delta_secs();
     let t = temps.elapsed_secs();
     let avance = fixe.overstep_fraction() * PAS;
@@ -108,10 +116,10 @@ pub fn dessiner(
     foudre::avancer(&mut v.eclairs, dt);
     feu::avancer(&mut v.braises, dt);
     sol::avancer(&mut v.blocs, dt);
-    let allies = jeu.partie.armes.invocations.pool.iter();
-    let allies = allies.map(|a| (a.id, Vec2::new(a.x, a.z)));
-    let o = orbes(&jeu, &v.etalage.orbes).map(|(o, _)| o);
-    v.arcanes.avancer(o, allies, t, dt);
+    let invocations =
+        crate::sources::invocations(&jeu.partie, allies).map(|(cle, a)| (cle, Vec2::new(a.x, a.z)));
+    let o = orbes(&jeu, allies, &v.etalage.orbes).map(|(o, _)| o);
+    v.arcanes.avancer(o, invocations, t, dt);
     let m = &mut v.lueur;
     m.commencer();
     let e = &v.etalage;
@@ -121,36 +129,43 @@ pub fn dessiner(
     for eclairs in [&v.eclairs, &e.eclairs] {
         foudre::dessiner(m, eclairs, oeil, droite, haut);
     }
-    let f = &jeu.partie.armes.feu;
-    let scenes = [
-        feu::Scene {
+    for (n, src) in sources(&jeu.partie, allies).enumerate() {
+        let f = &src.armes.feu;
+        let scene = feu::Scene {
             tornades: &f.tornades,
             meteores: &f.meteores,
             feux: &f.feux,
-            braises: &v.braises,
+            // Les braises (des événements) ne sont dessinées qu'une fois
+            braises: if n == 0 { &v.braises } else { &[] },
             avance,
-        },
-        feu::Scene {
-            tornades: &e.tornades,
-            meteores: &e.meteores,
-            feux: &e.feux,
-            braises: &e.braises,
-            avance: 0.0,
-        },
-    ];
-    for scene in &scenes {
-        feu::dessiner(m, scene, |a| zone(&jeu, a), t, oeil, droite, haut);
+        };
+        let arsenal = Some(src.arsenal);
+        feu::dessiner(m, &scene, |a| zone(arsenal, a), t, oeil, droite, haut);
     }
+    let scene = feu::Scene {
+        tornades: &e.tornades,
+        meteores: &e.meteores,
+        feux: &e.feux,
+        braises: &e.braises,
+        avance: 0.0,
+    };
+    feu::dessiner(m, &scene, |a| zone(None, a), t, oeil, droite, haut);
     for blocs in [&v.blocs, &e.blocs] {
         let (l, g) = (std::iter::empty(), std::iter::empty());
         sol::dessiner(m, blocs, l, g, t, oeil, droite, haut);
     }
-    let (l, g) = (lames(&jeu, &e.chutes), givres(&jeu, &e.novas));
+    let (l, g) = (
+        lames(&jeu, allies, &e.chutes),
+        givres(&jeu, allies, &e.novas),
+    );
     sol::dessiner(m, &[], l, g, t, oeil, droite, haut);
-    let (p, f) = (pluies(&jeu, &e.zones), fleches(&jeu, &e.fleches));
-    let r = ronces(&jeu, &e.pieges);
+    let (p, f) = (
+        pluies(&jeu, allies, &e.zones),
+        fleches(&jeu, allies, &e.fleches),
+    );
+    let r = ronces(&jeu, allies, &e.pieges);
     posees::dessiner(m, p, f, r, t, oeil, droite, haut);
-    let o = orbes(&jeu, &e.orbes).map(|(o, _)| o);
+    let o = orbes(&jeu, allies, &e.orbes).map(|(o, _)| o);
     v.arcanes.dessiner_orbes(m, o, t, oeil, droite, haut);
     v.arcanes
         .dessiner_apparitions(m, &e.apparitions, oeil, droite, haut);

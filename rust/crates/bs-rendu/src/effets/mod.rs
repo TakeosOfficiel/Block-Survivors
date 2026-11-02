@@ -67,9 +67,11 @@ pub fn placer(
     soleil: Res<OmbresSoleil>,
     temps: Res<Time<Fixed>>,
     camera: Query<&GlobalTransform, With<Camera3d>>,
+    options: Res<crate::options::Options>,
     mut q: Composants,
 ) {
     let p = &jeu.partie;
+    let sources = crate::sources::sources(p, options.effets_allies);
     let t = temps.overstep_fraction() * PAS;
     let temps_jeu = p.etat.temps_jeu as f32 + t;
     let face = camera
@@ -113,7 +115,7 @@ pub fn placer(
             &neutre,
         );
     };
-    for pr in &p.armes.projectiles.pool {
+    for pr in sources.clone().flat_map(|s| &s.armes.projectiles.pool) {
         let (vx, vz) = (pr.dir_x * pr.vitesse, pr.dir_z * pr.vitesse);
         let angle = match pr.def.rotation_propre {
             Some(r) => temps_jeu * r,
@@ -130,8 +132,10 @@ pub fn placer(
         );
     }
     if let Some(fleche) = p.d.projectiles.get("fleche_spectrale") {
-        for [x, z, dx, dz] in p.armes.traque.ricochets() {
-            poser(fleche, x, z, dx.atan2(dz));
+        for s in sources.clone() {
+            for [x, z, dx, dz] in s.armes.traque.ricochets() {
+                poser(fleche, x, z, dx.atan2(dz));
+            }
         }
     }
     if *vitrine {
@@ -141,8 +145,9 @@ pub fn placer(
             poser(def, v.x, v.z, temps_jeu);
         }
     }
-    if !j.mort {
-        for arme in &p.arsenal.armes {
+    for src in sources.filter(|s| !s.joueur.mort) {
+        let j = src.joueur;
+        for arme in &src.arsenal.armes {
             let Mecanique::Orbite { projectile } = &arme.def.mecanique else {
                 continue;
             };
@@ -151,7 +156,7 @@ pub fn placer(
             };
             let s = arme.stats;
             let rotation = temps_jeu * def.rotation_propre.unwrap_or(0.0);
-            let a0 = p.armes.angles_orbite[arme.index] + s.vitesse * t;
+            let a0 = src.armes.angles_orbite[arme.index] + s.vitesse * t;
             for k in 0..tours(s.nombre) {
                 let a = a0 + k as f32 * std::f32::consts::TAU / s.nombre;
                 poser(

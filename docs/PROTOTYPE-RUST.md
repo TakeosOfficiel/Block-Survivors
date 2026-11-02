@@ -14,7 +14,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 2. Monde et rendu | fait : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres), 2d-2 (particules, chiffres de dégâts, barres de vie, secousse), 2d-3 (visuels des armes), 2d-4 (vent, ombres du soleil, lumière des blocs) |
 | 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
 | 4. Sauvegardes et profils | fait : 4a à 4i (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques des quatre classes, Collection, profil du joueur, amis) |
-| 5. Menus | en cours : 5a (menu principal, lancement, retour au menu), 5b (Talents), 5c (Collection), 5d (Profil), 5e (Profils), 5f (Options), 5g (Nouveautés), 5h (chargement), 5i (héros au menu), 5j (compteur de dégâts), 5k (vue F5) |
+| 5. Menus | fait : 5a (menu principal, lancement, retour au menu), 5b (Talents), 5c (Collection), 5d (Profil), 5e (Profils), 5f (Options), 5g (Nouveautés), 5h (chargement), 5i (héros au menu), 5j (compteur de dégâts), 5k (vue F5) |
 | 6. Coopération | fait : 6a (relais complet), 6b (simulation à plusieurs joueurs), 6c-1 (instantanés, mode invité, messages), 6c-2 (transport, session de salon), 6c-3 (hôte et invité, page Multijoueur, partie en coop, coéquipiers affichés) ; vérifiée à deux fenêtres contre un relais local |
 | 7. Mises à jour et distribution | fait : 7a (mises à jour dans le jeu, voie bêta), 7b (workflow de publication signé), 7c (déploiement du relais), 7d (retour arrière après deux plantages) ; chaîne vérifiée de bout en bout sous Linux (`outils/essai-maj.sh`) |
 
@@ -1092,8 +1092,8 @@ mode sans fin.
   ombres (non, oui, oui fines : carte d'ombre 4096), chiffres des dégâts.
 - Panneau par-dessus le menu principal (bouton « Options ») et la pause : curseurs de
   volume (clic ou glissé, pas de 5 %), bascules, « Terminé » ou Échap pour fermer.
-- Reste : le vent n'est pas coupé avec les ombres (shader), et les options compteur de
-  dégâts, vue F5 et effets des alliés n'ont pas encore d'équivalent en jeu.
+- Les options compteur de dégâts (5j), vue F5 (5k) et effets des alliés (6c-3) ont été
+  reprises depuis. Reste : le vent n'est pas coupé avec les ombres (shader).
 - Vérifié aux clics, au menu et en pause (fichier d'options écrit, FPS affichées).
 
 ### 5g : Nouveautés (faites)
@@ -1218,8 +1218,14 @@ mode sans fin.
   de la tête (`hud/etiquette.rs`).
 - Vérifié à deux instances (Xvfb) contre le relais local : salon public créé, trouvé et
   rejoint, partie lancée, chacun voit l'autre marcher.
-- Limite connue : si un invité quitte la partie pour de bon, les indices des joueurs
-  suivants se décalent chez les autres (skin ou pseudo d'un autre possibles).
+- Un invité qui quitte la partie pour de bon garde sa place (combattant `parti`), et les
+  instantanés désignent chacun par son rang réseau : les skins et pseudos des suivants
+  ne se décalent pas.
+- Effets des autres joueurs (option « Effets des autres joueurs (multi) », `effetsAllies`,
+  comme en TS) : projectiles, armes en orbite, flèches ricochantes, météores, tornades,
+  feux, lames, novas, pluies, pièges, orbes arcaniques et créatures invoquées de chaque
+  coéquipier présent sont dessinés (`sources.rs`), avec les stats de son arsenal. Les
+  créatures ont une clé par combattant (chacun numérote les siennes depuis 1).
 
 ## Étape 7 : mises à jour et distribution
 

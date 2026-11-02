@@ -29,6 +29,7 @@ use crate::modeles::animation::{
 };
 use crate::modeles::rendu::Composants;
 use crate::retours::Barres;
+use crate::sources::invocations;
 use crate::{PAS, PartieEnCours};
 
 /// Durée de la chute du joueur mort (config.ts `joueur.dureeMort`).
@@ -56,7 +57,7 @@ const CAPACITE_ALLIES: usize = 64;
 pub struct Precedentes {
     joueur: Vec2,
     ennemis: HashMap<u32, Vec2>,
-    allies: HashMap<u32, Vec2>,
+    allies: HashMap<u64, Vec2>,
 }
 
 /// Teinte d'un état (couleur, force), lue une fois dans les données.
@@ -67,7 +68,7 @@ type Teinte = Option<([f32; 3], f32)>;
 pub struct Animations {
     joueur: EtatAnimation,
     ennemis: HashMap<u32, EtatAnimation>,
-    allies: HashMap<u32, EtatAnimation>,
+    allies: HashMap<u64, EtatAnimation>,
     /// Ravageur de l'Évocation supérieure.
     pub(crate) ravageur: EtatAnimation,
     /// Graine de la partie animée (une nouvelle partie remet tout à zéro).
@@ -122,6 +123,7 @@ pub fn noter_positions(
     mut prec: ResMut<Precedentes>,
     rendus: Res<Rendus>,
     mut suivi: ResMut<Suivi>,
+    options: Res<crate::options::Options>,
 ) {
     let p = &jeu.partie;
     crate::coequipiers::noter(p, &rendus, &mut suivi);
@@ -131,8 +133,8 @@ pub fn noter_positions(
         prec.ennemis.insert(e.id, Vec2::new(e.x, e.z));
     }
     prec.allies.clear();
-    for a in &p.armes.invocations.pool {
-        prec.allies.insert(a.id, Vec2::new(a.x, a.z));
+    for (cle, a) in invocations(p, options.effets_allies) {
+        prec.allies.insert(cle, Vec2::new(a.x, a.z));
     }
 }
 
@@ -142,6 +144,7 @@ pub fn animer(
     rendus: Res<Rendus>,
     mut anim: ResMut<Animations>,
     mut suivi: ResMut<Suivi>,
+    options: Res<crate::options::Options>,
 ) {
     let p = &jeu.partie;
     crate::coequipiers::animer(p, &rendus, &mut suivi, PAS);
@@ -167,11 +170,11 @@ pub fn animer(
         etat.avancer(m, PAS, e.vitesse_sol / e.def.echelle.unwrap_or(1.0));
     }
     a.ennemis.retain(|_, e| e.vu == pas);
-    for al in &p.armes.invocations.pool {
+    for (cle, al) in invocations(p, options.effets_allies) {
         let m = rendus.modele_allie(al.type_allie);
         let etat = a
             .allies
-            .entry(al.id)
+            .entry(cle)
             .or_insert_with(|| EtatAnimation::nouveau(decalage(al.id)));
         etat.vu = pas;
         etat.avancer(m, PAS, al.vitesse_sol);
@@ -186,7 +189,8 @@ pub fn animer(
                 let Some(al) = p.armes.invocations.pool.iter().find(|x| x.id == *id) else {
                     continue;
                 };
-                if let Some(etat) = a.allies.get_mut(id) {
+                // Gestes des créatures du joueur (combattant 0 : clé = id)
+                if let Some(etat) = a.allies.get_mut(&u64::from(*id)) {
                     etat.declencher_attaque(rendus.modele_allie(al.type_allie));
                 }
             }
@@ -228,6 +232,7 @@ pub fn placer_entites(
     mut ombres: ResMut<Ombres>,
     mut barres: ResMut<Barres>,
     (effets, suivi, coequipiers): (Res<Effets>, Res<Suivi>, Res<Coequipiers>),
+    options: Res<crate::options::Options>,
     mut q: Composants,
 ) {
     ombres.0.clear();
@@ -334,14 +339,14 @@ pub fn placer_entites(
     }
 
     // Alliés
-    for a in &p.armes.invocations.pool {
-        let Some(etat) = anim.allies.get(&a.id) else {
+    for (cle, a) in invocations(p, options.effets_allies) {
+        let Some(etat) = anim.allies.get(&cle) else {
             continue;
         };
         let maintenant = Vec2::new(a.x, a.z);
         let pos = prec
             .allies
-            .get(&a.id)
+            .get(&cle)
             .copied()
             .unwrap_or(maintenant)
             .lerp(maintenant, t);

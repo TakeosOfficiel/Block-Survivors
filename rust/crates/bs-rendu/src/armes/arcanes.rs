@@ -53,7 +53,7 @@ pub struct Apparition {
 #[derive(Default)]
 pub struct Arcanes {
     sillages: Vec<Sillage>,
-    connus: Vec<(u32, Vec2, bool)>,
+    connus: Vec<(u64, Vec2, bool)>,
     pub apparitions: Vec<Apparition>,
 }
 
@@ -81,7 +81,7 @@ impl Arcanes {
     pub fn avancer<'a>(
         &mut self,
         orbes: impl Iterator<Item = &'a Orbe>,
-        allies: impl Iterator<Item = (u32, Vec2)>,
+        allies: impl Iterator<Item = (u64, Vec2)>,
         temps: f32,
         dt: f32,
     ) {

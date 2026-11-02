@@ -162,20 +162,38 @@ impl Profils {
         self.enregistrer();
     }
 
-    /// Nouveau profil (devenu l'actif) lu d'un `.bssave`, même d'avant les profils.
+    /// Seul profil, jamais joué (premier lancement) : un import le remplace au lieu de
+    /// s'ajouter à côté.
+    fn seul_et_vierge(&self) -> bool {
+        let r = &self.registre;
+        r.ids.len() == 1
+            && DONNEES_PROFIL
+                .iter()
+                .all(|nom| self.stockage.lire_brut(&cle(&r.ids[0], nom)).is_none())
+    }
+
+    /// Nouveau profil (devenu l'actif) lu d'un `.bssave`, même d'avant les profils. Au
+    /// premier lancement, il prend la place du profil vierge.
     pub fn importer(&mut self, contenu: &str) -> Result<String, RefusImport> {
-        if !self.peut_creer() {
+        let vierge = self.seul_et_vierge();
+        if !vierge && !self.peut_creer() {
             return Err(RefusImport::Complet);
         }
         let profil = bssave::importer(contenu).map_err(|e| match e {
             Erreur::Illisible => RefusImport::Illisible,
             Erreur::Vide => RefusImport::Vide,
         })?;
-        Ok(self.creer(|s, id| {
+        let remplir = |s: &Stockage, id: &str| {
             for (nom, valeur) in &profil.donnees {
                 s.ecrire_brut(&cle(id, nom), valeur);
             }
-        }))
+        };
+        if vierge {
+            let id = self.registre.ids[0].clone();
+            remplir(&self.stockage, &id);
+            return Ok(id);
+        }
+        Ok(self.creer(remplir))
     }
 
     /// Le profil actif en `.bssave` (`version` du jeu, `date` ISO 8601).

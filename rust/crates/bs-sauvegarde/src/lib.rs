@@ -6,11 +6,13 @@
 //! - `collection` : pièces d'armure gagnées et portées, objets de coffre découverts ;
 //! - `profil_joueur` : pseudo et skin du joueur ;
 //! - `amis` : code ami du profil et liste d'amis ;
-//! - `bssave` : fichiers `.bssave` chiffrés (export et import d'un profil).
+//! - `bssave` : fichiers `.bssave` chiffrés (export et import d'un profil) ;
+//! - `electron` : profils laissés par la version Electron, importés au lancement.
 
 pub mod amis;
 mod bssave;
 pub mod collection;
+pub mod electron;
 pub mod profil_joueur;
 pub mod profils;
 pub mod progression;

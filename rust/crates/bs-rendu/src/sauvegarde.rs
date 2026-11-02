@@ -71,6 +71,16 @@ pub struct Sauvegarde {
 impl Sauvegarde {
     pub fn charger(d: &'static Donnees) -> Self {
         let mut profils = Profils::charger(Stockage::du_systeme());
+        let passage = bs_sauvegarde::electron::importer(&mut profils);
+        if !passage.importes.is_empty() {
+            info!(
+                "profils venus de la version Electron : {:?}",
+                passage.importes
+            );
+        }
+        for (fichier, raison) in &passage.refuses {
+            warn!("profil Electron {fichier} non importé : {raison}");
+        }
         if let Some(chemin) = std::env::var_os("BS_IMPORTER") {
             match std::fs::read_to_string(&chemin) {
                 Ok(contenu) => match profils.importer(&contenu) {

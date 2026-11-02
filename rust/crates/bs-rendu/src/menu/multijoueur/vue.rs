@@ -51,6 +51,7 @@ fn ligne(commandes: &mut Commands, parent: Entity) -> Entity {
                 width: Val::Px(LARGEUR),
                 align_items: AlignItems::Center,
                 column_gap: Val::Px(8.0),
+                flex_shrink: 0.0,
                 padding: UiRect::all(Val::Px(8.0)),
                 border: UiRect::all(Val::Px(2.0)),
                 ..default()

@@ -3,7 +3,8 @@
 //!
 //! `Rendus` tient un rendu par apparence : le personnage joué, chaque type d'ennemi,
 //! chaque type d'allié, chaque coffre puis les créatures des talents (ravageur, crocs),
-//! dans l'ordre des tables de données, puis les pièces d'armure portées (`armure`).
+//! dans l'ordre des tables de données, puis les pièces d'armure portées (`armure`), puis
+//! les autres joueurs de la coop.
 
 pub mod animation;
 pub mod armure;
@@ -57,6 +58,30 @@ pub fn demander_textures(
     }
 }
 
+/// Rendu d'une apparence : skin, objet tenu.
+fn compiler(
+    d: &'static Donnees,
+    a: &Apparence,
+    (serveur, textures): (&AssetServer, &Textures),
+    images: &mut Assets<Image>,
+    maillages: &mut Assets<Mesh>,
+    materiaux: &mut Assets<MateriauEntite>,
+    parametres: ParametresBloc,
+) -> RenduModele {
+    let skin = textures.obtenir(serveur, &a.skin);
+    let objet = objet_tenu(
+        a,
+        &ModeleCompile::nouveau(&d.modeles[a.modele.as_str()]),
+        serveur,
+        textures,
+        images,
+        maillages,
+        materiaux,
+        parametres,
+    );
+    rendu(d, a, skin, objet, maillages, materiaux, parametres)
+}
+
 #[derive(Resource)]
 pub struct Rendus {
     pub liste: Vec<RenduModele>,
@@ -65,6 +90,8 @@ pub struct Rendus {
     nombre_coffres: usize,
     /// Pièces d'armure portées : index dans `liste`, et partie du joueur de chaque partie.
     armure: Vec<(usize, Vec<Option<usize>>)>,
+    /// Début des autres joueurs de la coop dans `liste` (après l'armure).
+    debut_autres: usize,
 }
 
 impl Rendus {
@@ -108,12 +135,33 @@ impl Rendus {
         &self.liste[0].modele
     }
 
+    /// Autre joueur de la coop (`n` : combattant `n + 1`).
+    pub fn autre(&mut self, n: usize) -> &mut RenduModele {
+        &mut self.liste[self.debut_autres + n]
+    }
+
+    pub fn modele_autre(&self, n: usize) -> &ModeleCompile {
+        &self.liste[self.debut_autres + n].modele
+    }
+
+    /// Rendu du joueur `k` de la partie (0 : moi), s'il est affiché.
+    pub fn rendu_joueur(&self, k: usize) -> Option<&RenduModele> {
+        match k {
+            0 => self.liste.first(),
+            _ => self.liste.get(self.debut_autres + k - 1),
+        }
+    }
+
+    pub fn nombre_autres(&self) -> usize {
+        self.liste.len() - self.debut_autres
+    }
+
     /// Construit les rendus (textures déjà chargées ou introuvables) ; `portees` : monde
-    /// de la pièce d'armure portée à chaque emplacement.
+    /// de la pièce d'armure portée à chaque emplacement ; `autres` : les autres joueurs.
     #[allow(clippy::too_many_arguments)]
     pub fn construire(
         d: &'static Donnees,
-        joueur: &'static Apparence,
+        (joueur, autres): (&'static Apparence, &[&'static Apparence]),
         portees: &[Option<Monde>; 7],
         ambiance: ParametresBloc,
         serveur: &AssetServer,
@@ -124,7 +172,15 @@ impl Rendus {
     ) -> Self {
         let tous = apparences(d, joueur);
         let a = (serveur, textures);
-        Self::depuis(d, tous, portees, ambiance, a, images, maillages, materiaux)
+        let mut r = Self::depuis(d, tous, portees, ambiance, a, images, maillages, materiaux);
+        let mut parametres = ambiance;
+        parametres.brouillard.z = DECOUPE;
+        parametres.brouillard.w = 0.0;
+        for &apparence in autres {
+            let compile = compiler(d, apparence, a, images, maillages, materiaux, parametres);
+            r.liste.push(compile);
+        }
+        r
     }
 
     /// Le héros seul et son armure (aperçu du menu).
@@ -166,18 +222,8 @@ impl Rendus {
         parametres.brouillard.w = 0.0;
         let mut liste: Vec<RenduModele> = apparences
             .map(|a| {
-                let skin = textures.obtenir(serveur, &a.skin);
-                let objet = objet_tenu(
-                    a,
-                    &ModeleCompile::nouveau(&d.modeles[a.modele.as_str()]),
-                    serveur,
-                    textures,
-                    images,
-                    maillages,
-                    materiaux,
-                    parametres,
-                );
-                rendu(d, a, skin, objet, maillages, materiaux, parametres)
+                let st = (serveur, textures);
+                compiler(d, a, st, images, maillages, materiaux, parametres)
             })
             .collect();
         let mut pieces = Vec::new();
@@ -202,6 +248,7 @@ impl Rendus {
             liste.push(r);
         }
         Self {
+            debut_autres: liste.len(),
             liste,
             nombre_ennemis: d.ennemis.len(),
             nombre_allies: d.allies.allies.len(),

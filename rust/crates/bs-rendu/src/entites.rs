@@ -1,4 +1,5 @@
-//! Entités affichées : joueur, ennemis et alliés en modèles Minecraft (`modeles`).
+//! Entités affichées : joueur, ennemis et alliés en modèles Minecraft (`modeles`) ; les
+//! autres joueurs de la coop passent par `coequipiers`.
 //!
 //! `FixedUpdate` : avant chaque pas, les positions courantes deviennent les précédentes
 //! (`noter_positions`) ; après le pas, les animations avancent (`animer`, gestes
@@ -20,6 +21,7 @@ use bs_regles::ennemis::{DUREE_MORT, Ennemi};
 use bs_regles::evenements::Evenement;
 use bs_regles::ramassage::Coffre;
 
+use crate::coequipiers::{Coequipiers, Suivi};
 use crate::effets::{Effets, Ombres};
 use crate::modeles::Rendus;
 use crate::modeles::animation::{
@@ -115,8 +117,14 @@ pub fn creer_entites(mut commandes: Commands, jeu: Res<PartieEnCours>) {
 }
 
 /// Avant chaque pas : positions courantes, qui deviennent les précédentes.
-pub fn noter_positions(jeu: Res<PartieEnCours>, mut prec: ResMut<Precedentes>) {
+pub fn noter_positions(
+    jeu: Res<PartieEnCours>,
+    mut prec: ResMut<Precedentes>,
+    rendus: Res<Rendus>,
+    mut suivi: ResMut<Suivi>,
+) {
     let p = &jeu.partie;
+    crate::coequipiers::noter(p, &rendus, &mut suivi);
     prec.joueur = Vec2::new(p.etat.joueur.x, p.etat.joueur.z);
     prec.ennemis.clear();
     for e in p.ennemis.actifs() {
@@ -129,8 +137,14 @@ pub fn noter_positions(jeu: Res<PartieEnCours>, mut prec: ResMut<Precedentes>) {
 }
 
 /// Après chaque pas : animations (marche, repos, gestes d'attaque).
-pub fn animer(jeu: Res<PartieEnCours>, rendus: Res<Rendus>, mut anim: ResMut<Animations>) {
+pub fn animer(
+    jeu: Res<PartieEnCours>,
+    rendus: Res<Rendus>,
+    mut anim: ResMut<Animations>,
+    mut suivi: ResMut<Suivi>,
+) {
     let p = &jeu.partie;
+    crate::coequipiers::animer(p, &rendus, &mut suivi, PAS);
     let a = &mut *anim;
     if a.graine != jeu.graine {
         a.graine = jeu.graine;
@@ -213,7 +227,7 @@ pub fn placer_entites(
     mut cible: ResMut<crate::camera::Cible>,
     mut ombres: ResMut<Ombres>,
     mut barres: ResMut<Barres>,
-    effets: Res<Effets>,
+    (effets, suivi, coequipiers): (Res<Effets>, Res<Suivi>, Res<Coequipiers>),
     mut q: Composants,
 ) {
     ombres.0.clear();
@@ -249,6 +263,16 @@ pub fn placer_entites(
         .apparence
         .rayon_ombre;
     ombres.0.push([ici.x, ici.y, rayon]);
+    crate::coequipiers::placer(
+        p,
+        (&suivi, &coequipiers),
+        t,
+        anim.invulnerabilite,
+        &mut rendus,
+        &mut commandes,
+        &mut q,
+        &mut ombres,
+    );
 
     // Ennemis
     for e in p.ennemis.actifs() {

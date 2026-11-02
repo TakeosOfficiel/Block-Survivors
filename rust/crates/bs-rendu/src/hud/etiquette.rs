@@ -1,6 +1,6 @@
-//! Étiquette du pseudo au-dessus du joueur (src/effets/etiquette.ts) : texte blanc en
-//! police pixel sur un fond noir translucide, toujours lisible (par-dessus le décor),
-//! cachée à la mort et à la 3e personne. Haute de 0,42 bloc à 0,35 bloc au-dessus de la
+//! Étiquettes des pseudos au-dessus du joueur et de ses coéquipiers de la coop
+//! (src/effets/etiquette.ts) : texte blanc en police pixel sur un fond noir translucide,
+//! toujours lisible (par-dessus le décor), cachée à la mort (et la sienne à la 3e personne). Haute de 0,42 bloc à 0,35 bloc au-dessus de la
 //! tête : sa taille suit le zoom, par pixels de police entiers.
 
 use bevy::prelude::*;
@@ -19,14 +19,31 @@ const LIGNES: f32 = 9.0;
 #[derive(Component)]
 pub struct Etiquette {
     texte: Entity,
+    /// Joueur de la partie (0 : moi).
+    k: usize,
 }
 
-/// Crée l'étiquette (cachée tant qu'elle n'est pas placée ; aucune si le pseudo est vide).
-pub fn creer(mut commandes: Commands, sauvegarde: Res<crate::sauvegarde::Sauvegarde>) {
-    let pseudo = &sauvegarde.profil.pseudo;
-    if pseudo.is_empty() {
-        return;
+/// Crée les étiquettes (cachées tant qu'elles ne sont pas placées ; aucune pour un pseudo
+/// vide).
+pub fn creer(
+    mut commandes: Commands,
+    sauvegarde: Res<crate::sauvegarde::Sauvegarde>,
+    coequipiers: Option<Res<crate::coequipiers::Coequipiers>>,
+) {
+    let autres = coequipiers
+        .iter()
+        .flat_map(|c| c.0.iter().map(|c| &c.pseudo));
+    for (k, pseudo) in std::iter::once(&sauvegarde.profil.pseudo)
+        .chain(autres)
+        .enumerate()
+    {
+        if !pseudo.is_empty() {
+            creer_une(&mut commandes, pseudo, k);
+        }
     }
+}
+
+fn creer_une(commandes: &mut Commands, pseudo: &str, k: usize) {
     let mut texte = TextePixel::nouveau(pseudo, Color::WHITE, 1.0);
     texte.bord = Bord::Aucun;
     let fond = commandes
@@ -41,7 +58,7 @@ pub fn creer(mut commandes: Commands, sauvegarde: Res<crate::sauvegarde::Sauvega
         ))
         .id();
     let texte = commandes.spawn((texte, ChildOf(fond))).id();
-    commandes.entity(fond).insert(Etiquette { texte });
+    commandes.entity(fond).insert(Etiquette { texte, k });
 }
 
 /// Place l'étiquette au-dessus de la tête du joueur, à l'image.
@@ -60,10 +77,15 @@ pub fn placer(
     // Transform de cette image (la GlobalTransform n'est à jour qu'après PostUpdate :
     // l'étiquette traînerait d'une image derrière le joueur)
     let gt = GlobalTransform::from(*t);
+    let p = &jeu.partie;
     for (e, mut noeud, mut visible, calcule) in &mut etiquettes {
-        let r = &rendus.liste[0];
-        let p = r.pose.position;
-        let tete = Vec3::new(p.x, p.y + r.modele.hauteur + MARGE, p.z);
+        let present = e.k < p.nombre_joueurs();
+        let Some(r) = rendus.rendu_joueur(e.k).filter(|_| present) else {
+            visible.set_if_neq(Visibility::Hidden);
+            continue;
+        };
+        let pos = r.pose.position;
+        let tete = Vec3::new(pos.x, pos.y + r.modele.hauteur + MARGE, pos.z);
         let haut = tete + Vec3::Y * HAUTEUR_TEXTE;
         let ecran = (
             camera.world_to_viewport(&gt, tete),
@@ -73,8 +95,9 @@ pub fn placer(
             visible.set_if_neq(Visibility::Hidden);
             continue;
         };
-        // Pas d'étiquette à la 3e personne (le joueur est juste devant la caméra)
-        let montre = !jeu.partie.etat.joueur.mort && !options.troisieme_personne;
+        // Pas la sienne à la 3e personne (le joueur est juste devant la caméra)
+        let moi_devant = e.k == 0 && options.troisieme_personne;
+        let montre = !p.etat_joueur(e.k).mort && !moi_devant;
         visible.set_if_neq(if montre {
             Visibility::Inherited
         } else {

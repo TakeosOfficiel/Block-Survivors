@@ -15,6 +15,7 @@ mod armes;
 mod camera;
 mod carte_mc;
 mod chargement;
+mod coequipiers;
 mod coop;
 mod creatures;
 mod dessins;
@@ -241,6 +242,7 @@ impl Plugin for PluginJeu {
                     sauvegarde::inserer_skin,
                     dessins::creer.run_if(not(resource_exists::<dessins::Dessins>)),
                     demander_textures.run_if(resource_exists::<Monde>),
+                    coequipiers::preparer,
                     chargement::entrer,
                 )
                     .chain(),
@@ -366,11 +368,13 @@ fn construire_modeles(
     mut images: ResMut<Assets<Image>>,
     mut maillages: ResMut<Assets<Mesh>>,
     mut materiaux: ResMut<Assets<materiau_entite::MateriauEntite>>,
+    coequipiers: Res<coequipiers::Coequipiers>,
 ) {
     let p = &jeu.partie;
+    let autres: Vec<_> = coequipiers.0.iter().map(|c| c.apparence).collect();
     commandes.insert_resource(modeles::Rendus::construire(
         p.d,
-        jeu.apparence_joueur(),
+        (jeu.apparence_joueur(), &autres),
         &sauvegarde.collection.portees(),
         ParametresBloc::de_l_arene(p.etat.arene),
         &serveur,

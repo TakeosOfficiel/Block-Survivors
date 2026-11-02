@@ -15,7 +15,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
 | 4. Sauvegardes et profils | fait : 4a à 4i (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques des quatre classes, Collection, profil du joueur, amis) |
 | 5. Menus | en cours : 5a (menu principal, lancement, retour au menu), 5b (Talents), 5c (Collection), 5d (Profil), 5e (Profils), 5f (Options), 5g (Nouveautés), 5h (chargement), 5i (héros au menu), 5j (compteur de dégâts), 5k (vue F5) |
-| 6. Coopération | en cours : 6a (relais complet), 6b (simulation à plusieurs joueurs) et 6c-1 (instantanés, mode invité, messages) faites ; 6c-2 (transport) et 6c-3 (page Multijoueur, partie en coop) à venir |
+| 6. Coopération | en cours : 6a (relais complet), 6b (simulation à plusieurs joueurs) 6c-1 (instantanés, mode invité, messages) et 6c-2 (transport, session de salon) faites ; 6c-3 (page Multijoueur, partie en coop) à venir |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -1182,4 +1182,14 @@ mode sans fin.
 - Mode invité dans `bs-regles` (`Partie::invite`, `simuler_invite`) : l'invité fait tourner sa marche et les armes de tous les joueurs pour leurs effets, mais ni les dégâts aux ennemis ni ceux qu'il subit (l'hôte les décide).
 - `coop::messages` : messages fiables en JSON (bonjour, accueil, refus, salon, lancer, prêt, départ, carte, carte jouée, coffre, bilan, fin, continuer, reprise). Cartes et objets passent par leur identifiant. Un joueur envoie ses talents actifs (arbre, nœud, rang, option) et ses pièces d'armure ; l'hôte recalcule ses bonus avec `BonusTalents::depuis_noeuds`, désormais partagé avec `Progression::bonus`.
 - 3 essais : entrée aller-retour ; partie hôte à deux joueurs → instantané → partie invitée (équipe, ennemis, niveau, butin ; dégâts restés chez l'hôte ; instantanés périmés et tronqués) ; messages fiables et carte jouée.
+
+### 6c-2 : Transport et session de salon (fait)
+
+- Nouveau crate `bs-reseau` (sans Bevy), prévu par le plan : client du relais.
+- `Connexion` : une WebSocket (tungstenite, TLS par rustls avec les racines webpki) tenue par un fil à part. Le jeu lui confie des octets et relève ceux reçus à chaque image par des canaux, sans jamais attendre. Lecture avec un délai de 3 ms pour rester réactif à l'envoi, TCP_NODELAY. Fermer envoie le code 1000 (départ volontaire pour le relais) ; la fermeture est aussi faite quand la connexion est lâchée.
+- `Session` : la vie d'un salon par-dessus. Créer (public ou non, avec une annonce), lister les salons publics, rejoindre par code, échanger avec l'hôte ou les invités, annoncer, exclure, quitter. Évènements : connectée, salon (code et place), reprise, refus, liste, message, arrivée, départ, hôte perdu ou revenu, exclu, fermé, coupure, perdue.
+- Reprise : une coupure dans un salon n'est pas une fin. La session se reconnecte seule toutes les 2 s et envoie `Reprendre` avec le jeton reçu ; au-delà de 55 s (le relais garde la place 60 s) ou si le relais refuse, elle est perdue.
+- Codes : `code_lisible` (« ABC-DEF ») et `code_saisi` (tolère minuscules, tiret, espaces).
+- Adresse du relais : variable `BS_RELAIS`, sinon `ws://127.0.0.1:8787/salon` en attendant le déploiement (étape 7).
+- 2 essais de bout en bout contre un vrai relais local : salon public listé puis rejoint, code inconnu refusé, échanges dans les deux sens, fermeture du salon au départ de l'hôte ; coupure brutale de l'invité puis reprise de sa place.
 

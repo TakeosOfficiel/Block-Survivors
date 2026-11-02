@@ -1,0 +1,18 @@
+[package]
+name = "bs-reseau"
+description = "Client du relais de la coop (WebSocket dans un fil à part) et session de salon"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+bs-protocole.workspace = true
+tungstenite = { version = "0.28", features = ["rustls-tls-webpki-roots"] }
+
+[dev-dependencies]
+bs-relais.workspace = true
+tokio = { version = "1", features = ["rt-multi-thread", "net"] }
+
+[lints]
+workspace = true

@@ -1,189 +1,230 @@
-//! Relais de la coop : l'hôte ouvre un salon (code de 6 lettres), les invités le
-//! rejoignent ; le relais fait suivre les octets de l'hôte à tous les invités et ceux de
-//! chaque invité à l'hôte, sans les lire (il ne dépend que de `bs-protocole`). Un client
-//! d'une autre version du protocole est refusé.
+//! Relais de la coop : colle axum + tokio autour de la logique des salons (`salons`).
+//! L'hôte ouvre un salon (code de 6 lettres), les invités le rejoignent ou le trouvent dans
+//! la liste publique ; le relais fait suivre les octets de l'hôte à tous les invités et
+//! ceux de chaque invité à l'hôte, sans les lire (il ne dépend que de `bs-protocole`).
 //!
-//! Prototype (étape 0 bis) : salons en mémoire, pas encore de reconnexion ni de liste
-//! publique (étape 6 du plan).
+//! Une tâche par connexion : elle lit le WebSocket, passe chaque message à la logique (sous
+//! un verrou) et écrit ce que la logique lui a déposé dans son canal. Elle envoie un Ping
+//! toutes les `battement` et ferme une connexion silencieuse depuis `silence_max`. Une
+//! tâche d'entretien libère chaque seconde les places réservées expirées et ferme les
+//! salons abandonnés. Routes : `/salon` (WebSocket) et `/etat` (JSON).
 
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+mod limites;
+mod salons;
+
+use std::net::{IpAddr, SocketAddr};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError, Weak};
+use std::time::Instant;
 
 use axum::Router;
-use axum::extract::State;
-use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
-use axum::response::Response;
+use axum::body::Bytes;
+use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade, close_code};
+use axum::extract::{ConnectInfo, State};
+use axum::http::{HeaderMap, header};
+use axum::response::{IntoResponse, Response};
 use axum::routing::get;
-use bs_protocole::{REFUS_PLEIN, REFUS_SALON, REFUS_VERSION, Trame, VERSION_PROTOCOLE, lire_trame};
+use bs_protocole::{PLACES_SALON, VERSION_PROTOCOLE, lire_trame};
 use tokio::sync::mpsc;
+use tokio::time::MissedTickBehavior;
+
+pub use limites::{
+    BATTEMENT, DELAI_RECONNEXION, ENTRETIEN, FENETRE_TENTATIVES, INACTIVITE_SALON, MESSAGE_MAX,
+    Reglages, SALONS_PAR_ADRESSE, SILENCE_MAX, TENTATIVES,
+};
+use salons::{Salons, Siege, Sortant};
 
 /// Joueurs par salon, hôte compris.
-pub const PLACES: usize = 4;
+pub const PLACES: usize = PLACES_SALON as usize;
 
-type Envoi = mpsc::UnboundedSender<Message>;
-
-#[derive(Default)]
-struct Salon {
-    hote: Option<Envoi>,
-    /// Place 1 à PLACES-1 (indice + 1).
-    invites: [Option<Envoi>; PLACES - 1],
+/// État partagé par toutes les connexions.
+struct Partage {
+    salons: Mutex<Salons>,
+    reglages: Reglages,
+    connexions: AtomicUsize,
+    ids: AtomicU64,
 }
 
-#[derive(Default, Clone)]
-pub struct Relais {
-    salons: Arc<Mutex<HashMap<[u8; 6], Salon>>>,
+type Relais = Arc<Partage>;
+
+impl Partage {
+    /// La logique ne laisse jamais les salons incohérents : un verrou empoisonné (panique
+    /// dans une autre tâche) reste utilisable.
+    fn salons(&self) -> MutexGuard<'_, Salons> {
+        self.salons.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+}
+
+/// Sert le relais sur `ecoute` avec les vrais réglages.
+pub async fn servir(ecoute: tokio::net::TcpListener) -> std::io::Result<()> {
+    servir_avec(ecoute, Reglages::default()).await
 }
 
 /// Sert le relais sur `ecoute`, avec TCP_NODELAY : sans lui, Nagle retient les petits
 /// messages (≈ 40 ms de plus par aller-retour).
-pub async fn servir(ecoute: tokio::net::TcpListener) -> std::io::Result<()> {
+pub async fn servir_avec(
+    ecoute: tokio::net::TcpListener,
+    reglages: Reglages,
+) -> std::io::Result<()> {
     use axum::serve::ListenerExt;
     let ecoute = ecoute.tap_io(|tcp| {
         let _ = tcp.set_nodelay(true);
     });
-    axum::serve(ecoute, routes()).await
+    let service = routes_avec(reglages).into_make_service_with_connect_info::<SocketAddr>();
+    axum::serve(ecoute, service).await
 }
 
-/// Routes du relais : `/salon` (WebSocket).
+/// Routes du relais avec les vrais réglages (voir `routes_avec`).
 pub fn routes() -> Router {
+    routes_avec(Reglages::default())
+}
+
+/// Routes du relais : `/salon` (WebSocket) et `/etat`. À appeler dans un runtime tokio
+/// (lance la tâche d'entretien, arrêtée avec le routeur) et à servir avec
+/// `into_make_service_with_connect_info::<SocketAddr>()` (limites par adresse).
+pub fn routes_avec(reglages: Reglages) -> Router {
+    let relais = Arc::new(Partage {
+        salons: Mutex::new(Salons::nouveaux(reglages.clone())),
+        reglages,
+        connexions: AtomicUsize::new(0),
+        ids: AtomicU64::new(0),
+    });
+    tokio::spawn(entretien(Arc::downgrade(&relais)));
     Router::new()
         .route("/salon", get(ouvrir))
-        .with_state(Relais::default())
+        .route("/etat", get(etat))
+        .with_state(relais)
 }
 
-async fn ouvrir(ws: WebSocketUpgrade, State(relais): State<Relais>) -> Response {
-    ws.on_upgrade(move |socket| relais.servir(socket))
-}
-
-/// Code de salon tiré au hasard (lettres sans I ni O, pour éviter les confusions).
-fn nouveau_code(graine: u64) -> [u8; 6] {
-    const LETTRES: &[u8] = b"ABCDEFGHJKLMNPQRSTUVWXYZ";
-    let mut x = graine | 1;
-    core::array::from_fn(|_| {
-        x ^= x << 13;
-        x ^= x >> 7;
-        x ^= x << 17;
-        LETTRES[(x % LETTRES.len() as u64) as usize]
-    })
-}
-
-impl Relais {
-    async fn servir(self, mut socket: WebSocket) {
-        // Première trame : créer ou rejoindre
-        let Some(Ok(Message::Binary(premiere))) = socket.recv().await else {
-            return;
-        };
-        let (tx, mut rx) = mpsc::unbounded_channel::<Message>();
-        let mut tampon = Vec::new();
-        let place = match lire_trame(&premiere) {
-            Some(Trame::Creer { version }) | Some(Trame::Rejoindre { version, .. })
-                if version != VERSION_PROTOCOLE =>
-            {
-                Err(REFUS_VERSION)
-            }
-            Some(Trame::Creer { .. }) => Ok(self.creer(tx)),
-            Some(Trame::Rejoindre { code, .. }) => self.rejoindre(code, tx),
-            _ => return,
-        };
-        let (code, place) = match place {
-            Ok(p) => p,
-            Err(raison) => {
-                Trame::Refus { raison }.ecrire(&mut tampon);
-                let _ = socket.send(Message::Binary(tampon.into())).await;
-                return;
-            }
-        };
-        Trame::Salon { code, place }.ecrire(&mut tampon);
-        if socket
-            .send(Message::Binary(tampon.clone().into()))
-            .await
-            .is_err()
-        {
-            self.quitter(code, place);
-            return;
-        }
-        loop {
-            tokio::select! {
-                sortant = rx.recv() => match sortant {
-                    Some(m) => if socket.send(m).await.is_err() { break },
-                    None => break,
-                },
-                entrant = socket.recv() => match entrant {
-                    Some(Ok(Message::Binary(o))) => self.faire_suivre(code, place, &o, &mut tampon),
-                    Some(Ok(Message::Close(_))) | Some(Err(_)) | None => break,
-                    _ => {}
-                },
-            }
-        }
-        self.quitter(code, place);
+async fn entretien(relais: Weak<Partage>) {
+    let Some(periode) = relais.upgrade().map(|r| r.reglages.entretien) else {
+        return;
+    };
+    let mut tic = tokio::time::interval(periode);
+    tic.set_missed_tick_behavior(MissedTickBehavior::Skip);
+    loop {
+        tic.tick().await;
+        let Some(r) = relais.upgrade() else { return };
+        r.salons().entretenir(Instant::now());
     }
+}
 
-    fn creer(&self, tx: Envoi) -> ([u8; 6], u8) {
-        let mut salons = self.salons.lock().unwrap();
-        let mut graine = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_or(1, |d| d.as_nanos() as u64);
-        let mut code = nouveau_code(graine);
-        while salons.contains_key(&code) {
-            graine = graine.wrapping_add(0x9e37_79b9_7f4a_7c15);
-            code = nouveau_code(graine);
-        }
-        salons.insert(
-            code,
-            Salon {
-                hote: Some(tx),
-                ..Salon::default()
+/// Adresse du client : celle de l'en-tête `CF-Connecting-IP` derrière Cloudflare, sinon
+/// celle de la connexion TCP.
+fn adresse_client(entetes: &HeaderMap, pair: SocketAddr, cloudflare: bool) -> IpAddr {
+    let cf = || {
+        entetes
+            .get("cf-connecting-ip")?
+            .to_str()
+            .ok()?
+            .trim()
+            .parse()
+            .ok()
+    };
+    cloudflare.then(cf).flatten().unwrap_or(pair.ip())
+}
+
+async fn ouvrir(
+    ws: WebSocketUpgrade,
+    State(relais): State<Relais>,
+    ConnectInfo(pair): ConnectInfo<SocketAddr>,
+    entetes: HeaderMap,
+) -> Response {
+    let ip = adresse_client(&entetes, pair, relais.reglages.cloudflare);
+    let max = relais.reglages.message_max;
+    ws.max_message_size(max)
+        .max_frame_size(max)
+        .on_upgrade(move |socket| connexion(relais, socket, ip))
+}
+
+async fn etat(State(relais): State<Relais>) -> impl IntoResponse {
+    let e = relais.salons().etat();
+    let connexions = relais.connexions.load(Ordering::Relaxed);
+    let corps = format!(
+        "{{\"protocole\":{VERSION_PROTOCOLE},\"salons\":{},\"publics\":{},\"joueurs\":{},\"reservees\":{},\"connexions\":{connexions}}}",
+        e.salons, e.publics, e.joueurs, e.reservees
+    );
+    ([(header::CONTENT_TYPE, "application/json")], corps)
+}
+
+/// Vie d'une connexion : accueil (lister, créer, rejoindre, reprendre), puis échanges
+/// dans le salon jusqu'à la coupure.
+async fn connexion(relais: Relais, mut socket: WebSocket, ip: IpAddr) {
+    relais.connexions.fetch_add(1, Ordering::Relaxed);
+    let id = relais.ids.fetch_add(1, Ordering::Relaxed);
+    let (envoi, mut a_envoyer) = mpsc::unbounded_channel();
+    let mut siege: Option<Siege> = None;
+    let r = &relais.reglages;
+    let debut = tokio::time::Instant::now();
+    let mut battement = tokio::time::interval_at(debut + r.battement, r.battement);
+    battement.set_missed_tick_behavior(MissedTickBehavior::Delay);
+    let mut dernier_recu = debut;
+    let volontaire = loop {
+        tokio::select! {
+            sortant = a_envoyer.recv() => match sortant {
+                Some(Sortant::Octets(o)) => if socket.send(Message::Binary(o)).await.is_err() {
+                    break false;
+                },
+                // Exclusion, salon fermé ou place reprise par une autre connexion
+                Some(Sortant::Fermer) | None => {
+                    let _ = socket.send(Message::Close(None)).await;
+                    break false;
+                }
             },
-        );
-        (code, 0)
-    }
-
-    fn rejoindre(&self, code: [u8; 6], tx: Envoi) -> Result<([u8; 6], u8), u8> {
-        let mut salons = self.salons.lock().unwrap();
-        let salon = salons
-            .get_mut(&code)
-            .filter(|s| s.hote.is_some())
-            .ok_or(REFUS_SALON)?;
-        let libre = salon
-            .invites
-            .iter()
-            .position(Option::is_none)
-            .ok_or(REFUS_PLEIN)?;
-        salon.invites[libre] = Some(tx);
-        Ok((code, libre as u8 + 1))
-    }
-
-    /// Hôte → tous les invités ; invité → hôte (avec sa place). Le reste est ignoré.
-    fn faire_suivre(&self, code: [u8; 6], place: u8, octets: &[u8], tampon: &mut Vec<u8>) {
-        let salons = self.salons.lock().unwrap();
-        let Some(salon) = salons.get(&code) else {
-            return;
-        };
-        match lire_trame(octets) {
-            Some(Trame::VersInvites { .. }) if place == 0 => {
-                // Même message pour tous : les octets sont partagés, pas copiés
-                let m = Message::Binary(octets.to_vec().into());
-                for invite in salon.invites.iter().flatten() {
-                    let _ = invite.send(m.clone());
+            entrant = socket.recv() => {
+                dernier_recu = tokio::time::Instant::now();
+                match entrant {
+                    Some(Ok(Message::Binary(o))) => {
+                        let mut salons = relais.salons();
+                        let maintenant = Instant::now();
+                        match siege {
+                            Some(s) => salons.recevoir(s, id, o, maintenant),
+                            None => match lire_trame(&o) {
+                                Some(t) => siege = salons.accueillir(t, ip, id, &envoi, maintenant),
+                                // Trame illisible avant d'avoir un salon : on raccroche
+                                None => break false,
+                            },
+                        }
+                    }
+                    // Fermeture normale (code 1000) : départ volontaire, place libérée
+                    Some(Ok(Message::Close(c))) => {
+                        break c.is_some_and(|c| c.code == close_code::NORMAL);
+                    }
+                    Some(Ok(_)) => {}
+                    Some(Err(_)) | None => break false,
                 }
             }
-            Some(Trame::VersHote { charge, .. }) if place > 0 => {
-                if let Some(hote) = &salon.hote {
-                    Trame::VersHote { place, charge }.ecrire(tampon);
-                    let _ = hote.send(Message::Binary(tampon.clone().into()));
+            _ = battement.tick() => {
+                if dernier_recu.elapsed() >= r.silence_max
+                    || socket.send(Message::Ping(Bytes::new())).await.is_err()
+                {
+                    break false;
                 }
             }
-            _ => {}
         }
+    };
+    if let Some(s) = siege {
+        relais
+            .salons()
+            .deconnecter(s, id, volontaire, Instant::now());
     }
+    relais.connexions.fetch_sub(1, Ordering::Relaxed);
+}
 
-    /// Le départ de l'hôte ferme le salon (les invités sont déconnectés).
-    fn quitter(&self, code: [u8; 6], place: u8) {
-        let mut salons = self.salons.lock().unwrap();
-        if place == 0 {
-            salons.remove(&code);
-        } else if let Some(s) = salons.get_mut(&code) {
-            s.invites[place as usize - 1] = None;
-        }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn adresse_cloudflare() {
+        let pair: SocketAddr = "10.0.0.1:5000".parse().unwrap();
+        let mut h = HeaderMap::new();
+        assert_eq!(adresse_client(&h, pair, true), pair.ip());
+        h.insert("cf-connecting-ip", "2001:db8::7".parse().unwrap());
+        let v6: IpAddr = "2001:db8::7".parse().unwrap();
+        assert_eq!(adresse_client(&h, pair, true), v6);
+        assert_eq!(adresse_client(&h, pair, false), pair.ip());
+        h.insert("cf-connecting-ip", "n'importe quoi".parse().unwrap());
+        assert_eq!(adresse_client(&h, pair, true), pair.ip());
     }
 }

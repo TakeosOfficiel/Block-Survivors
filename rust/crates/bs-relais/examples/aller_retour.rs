@@ -37,7 +37,7 @@ async fn connecter(url: &str, premiere: Trame<'_>) -> (Socket, [u8; 6], u8) {
         panic!("pas de réponse du relais")
     };
     match lire_trame(&r) {
-        Some(Trame::Salon { code, place }) => (ws, code, place),
+        Some(Trame::Salon { code, place, .. }) => (ws, code, place),
         autre => panic!("refusé : {autre:?}"),
     }
 }
@@ -166,6 +166,8 @@ async fn main() {
         &url,
         Trame::Creer {
             version: VERSION_PROTOCOLE,
+            public: false,
+            annonce: &[],
         },
     )
     .await;

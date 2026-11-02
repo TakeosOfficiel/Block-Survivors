@@ -15,7 +15,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
 | 4. Sauvegardes et profils | fait : 4a à 4i (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques des quatre classes, Collection, profil du joueur, amis) |
 | 5. Menus | en cours : 5a (menu principal, lancement, retour au menu), 5b (Talents), 5c (Collection), 5d (Profil), 5e (Profils), 5f (Options), 5g (Nouveautés), 5h (chargement), 5i (héros au menu), 5j (compteur de dégâts), 5k (vue F5) |
-| 6. Coopération | en cours : 6b (simulation à plusieurs joueurs) ; 6a (relais complet) et 6c (instantanés, client, page Multijoueur) à venir |
+| 6. Coopération | en cours : 6a (relais complet) et 6b (simulation à plusieurs joueurs) faites ; 6c (instantanés, client, page Multijoueur) à venir |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -1144,6 +1144,19 @@ mode sans fin.
   les ennemis apparaissent hors de son champ (`VueCamera::troisieme`, test du champ
   tourné, testé). La vue de dessus reste exactement celle d'avant (robot identique).
 - Correctif : le compteur de FPS (`Permanent`) n'est plus retiré au retour au menu.
+
+### 6a : Relais complet (fait)
+
+- Trames binaires étendues (protocole 2) : `Creer` (public, annonce ≤ 256 octets), `Salon` avec un jeton de session, `Reprendre`, `Annoncer`, `Lister`/`Liste` (lue sans allocation), `Arrivee`/`Depart`, `HotePerdu`/`HoteRevenu`, `Exclure`/`Exclu`, `Ferme`, et trois nouvelles raisons de refus (jeton, tentatives, trop de salons).
+- Le relais est découpé en logique pure et synchrone (`salons.rs`, `salons/accueil.rs`, testée sans réseau avec une horloge passée en paramètre), limites (`limites.rs`, `Reglages` injectables) et colle axum (`lib.rs`).
+- 5 places par salon (hôte compris), code de 6 lettres sans I ni O, salons publics listés par version (64 au plus par liste).
+- Reconnexion : une place coupée reste réservée 60 s. Si c'est l'hôte, les invités reçoivent `HotePerdu`, puis `HoteRevenu` à son retour, ou `Ferme` à l'expiration. Si c'est un invité, l'hôte reçoit `Depart`, puis `Arrivee` à son retour pour lui renvoyer un instantané complet.
+- Une fermeture WebSocket normale (code 1000) est un départ volontaire : la place est libérée aussitôt, et le salon est fermé si c'est l'hôte qui part. Le jeu doit donc fermer avec le code 1000 quand le joueur quitte vraiment.
+- Exclusion par l'hôte : l'invité reçoit `Exclu`, sa connexion est fermée, sa place libérée et son jeton n'est plus valide.
+- Battement de cœur : un Ping toutes les 30 s, et une connexion silencieuse depuis 90 s est fermée.
+- Limites par adresse (derrière Cloudflare, via `CF-Connecting-IP` ; `Reglages::cloudflare` à false si le relais est exposé directement) : 3 salons ouverts, 20 `Rejoindre`/`Reprendre` par minute, messages de 256 Ko au plus, salon fermé après 10 min sans message.
+- Page d'état `GET /etat` en JSON : protocole, salons, salons publics, joueurs, places réservées, connexions.
+- 27 tests : trames (aller-retour et rejets), logique des salons, et tests réseau de bout en bout (échanges, reconnexions de l'invité et de l'hôte, exclusion, liste publique, battement de cœur, page d'état).
 
 ### 6b : Simulation à plusieurs joueurs (faite)
 

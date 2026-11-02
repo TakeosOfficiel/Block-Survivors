@@ -1,4 +1,5 @@
-//! Lance le relais : `bs-relais [adresse]` (par défaut 0.0.0.0:8787).
+//! Lance le relais : `bs-relais [adresse]` (par défaut 0.0.0.0:8787). Routes : `/salon`
+//! (WebSocket) et `/etat` (JSON).
 
 #[tokio::main]
 async fn main() {
@@ -12,7 +13,5 @@ async fn main() {
         "relais Block Survivors sur {adresse} (protocole {})",
         bs_protocole::VERSION_PROTOCOLE
     );
-    axum::serve(ecoute, bs_relais::routes())
-        .await
-        .expect("serveur");
+    bs_relais::servir(ecoute).await.expect("serveur");
 }

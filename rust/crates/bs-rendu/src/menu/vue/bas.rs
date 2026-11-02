@@ -53,7 +53,39 @@ pub(super) fn de(p: &mut Pinceau, parent: Entity) {
     }
 }
 
-/// « Jouer », liens (Options, Multijoueur, Nouveautés, Quitter) et pied de page.
+/// Largeur du bouton « Multijoueur », écart avec « Jouer ».
+const LARGEUR_MULTI: f32 = 190.0;
+const ECART: f32 = 12.0;
+
+/// « Multijoueur », à droite de « Jouer », de la même hauteur.
+fn multijoueur(p: &mut Pinceau, racine: Entity) {
+    let b = p.bouton_nu(racine, ActionMenu::OuvrirMulti);
+    let gauche = (420.0 + ECART + LARGEUR_MULTI) / 2.0 - LARGEUR_MULTI;
+    p.c.entity(b).entry::<Node>().and_modify(move |mut n| {
+        *n = Node {
+            width: Val::Px(LARGEUR_MULTI),
+            height: Val::Px(66.0),
+            margin: UiRect::left(Val::Px(gauche)),
+            flex_direction: FlexDirection::Column,
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            row_gap: Val::Px(2.0),
+            border: UiRect::all(Val::Px(2.0)),
+            border_radius: BorderRadius::all(Val::Px(10.0)),
+            ..place(Some(Val::Percent(50.0)), None, None, Some(Val::Px(26.0)))
+        };
+    });
+    p.texte(b, "Multijoueur", true, 18.0, BLANC);
+    p.texte(
+        b,
+        "Coop en ligne",
+        false,
+        12.0,
+        Color::srgb_u8(0xc8, 0xc8, 0xc8),
+    );
+}
+
+/// « Jouer », « Multijoueur », liens (Options, Nouveautés, Quitter) et pied de page.
 pub(super) fn construire(
     p: &mut Pinceau,
     dj: &DonneesJeu,
@@ -74,7 +106,8 @@ pub(super) fn construire(
             Node {
                 width: Val::Px(420.0),
                 height: Val::Px(66.0),
-                margin: UiRect::left(Val::Px(-210.0)),
+                // « Jouer » et « Multijoueur » centrés ensemble
+                margin: UiRect::left(Val::Px(-(420.0 + ECART + LARGEUR_MULTI) / 2.0)),
                 flex_direction: FlexDirection::Column,
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
@@ -108,6 +141,7 @@ pub(super) fn construire(
         14.0,
         Color::srgb_u8(0xd8, 0xff, 0xd0),
     );
+    multijoueur(p, racine);
 
     let liens = p.noeud(
         racine,
@@ -117,7 +151,6 @@ pub(super) fn construire(
         },
     );
     p.bouton(liens, "Options", ActionMenu::Options);
-    p.bouton(liens, "Multijoueur", ActionMenu::OuvrirMulti);
     let nouveautes = p.bouton(liens, "Nouveautés", ActionMenu::Nouveautes);
     if crate::menu::nouveautes::a_lire(sauvegarde.profils.stockage()) {
         // Pastille : nouveautés de cette version pas encore lues

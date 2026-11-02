@@ -82,7 +82,7 @@ pub struct Recompense {
     pub deblocages: Vec<usize>,
     /// Mode sans fin : le temps bat le record sans fin de l'arène.
     pub record_sans_fin: bool,
-    /// Index des succès gagnés par cette partie (`d.talents.succes`).
+    /// Index des succès gagnés par cette partie (`d.succes`).
     pub succes: Vec<usize>,
 }
 
@@ -314,12 +314,12 @@ impl Progression {
             .insert(b.personnage.into(), (avant.xp + xp) as f64);
         let mut record_sans_fin = false;
         let c = &mut self.c;
-        let succes: Vec<usize> = (self.d.talents.succes.iter().enumerate())
+        let succes: Vec<usize> = (self.d.succes.iter().enumerate())
             .filter(|(_, s)| !c.succes.contains_key(&s.id) && b.remplit(&s.condition))
             .map(|(i, _)| i)
             .collect();
         for &i in &succes {
-            c.succes.insert(self.d.talents.succes[i].id.clone(), 1.0);
+            c.succes.insert(self.d.succes[i].id.clone(), 1.0);
         }
         if b.en_equipe() {
             // Une partie à plusieurs ne compte pas pour les records du solo

@@ -105,7 +105,7 @@ fn succes_de_coop() {
     let cle = "block-survivors.p.1.progression".to_owned();
     let mut p = Progression::charger(d, s.clone(), cle.clone());
     let (perso, _) = d.personnages.personnages.get_index(0).unwrap();
-    let index = |id: &str| d.talents.succes.iter().position(|s| s.id == id).unwrap();
+    let index = |id: &str| d.succes.iter().position(|s| s.id == id).unwrap();
     let a_deux = Bilan {
         personnage: perso,
         arene: "prairie",

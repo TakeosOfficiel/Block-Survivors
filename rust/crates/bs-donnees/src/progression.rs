@@ -284,9 +284,6 @@ pub struct Talents {
     pub arbres: Table<[Arbre; 2]>,
     pub maitrise: Maitrise,
     pub deblocages: Vec<Deblocage>,
-    /// Succès de coop, gagnés une fois pour toutes.
-    #[serde(default)]
-    pub succes: Vec<Succes>,
 }
 
 /// Succès : gagné à la fin d'une partie qui remplit toute sa condition.

@@ -14,6 +14,8 @@ trap 'rm -rf "$json" "${ron:-}"' EXIT
 
 if [[ "${1:-}" == "--verifier" ]]; then
   ron="$(mktemp -d)"
+  # Fichiers propres à la version Rust : repris tels quels
+  for f in succes; do cp "$racine/rust/donnees/$f.ron" "$ron/"; done
   (cd "$racine/rust" && cargo run -q -p bs-donnees --bin importer-donnees -- "$json" "$ron")
   if ! diff -r "$racine/rust/donnees" "$ron" > /dev/null; then
     diff -ru "$racine/rust/donnees" "$ron" | head -40

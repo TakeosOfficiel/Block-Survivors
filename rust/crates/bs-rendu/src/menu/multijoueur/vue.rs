@@ -141,7 +141,7 @@ fn accueil(commandes: &mut Commands, racine: Entity, menu: &Menu, vue: &VueMulti
 
 /// Succès de coop : gagnés en or, les autres en gris avec leur condition.
 fn succes(commandes: &mut Commands, racine: Entity, dj: &DonneesJeu, p: &Progression) {
-    let liste = &dj.d.talents.succes;
+    let liste = &dj.d.succes;
     if liste.is_empty() {
         return;
     }

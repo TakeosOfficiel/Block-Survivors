@@ -51,9 +51,14 @@ pub struct Donnees {
     pub particules: effets::Particules,
     pub regles: regles::Regles,
     pub textes: regles::Textes,
+    /// Succès de coop (`succes.ron`, propre à la version Rust).
+    pub succes: Vec<progression::Succes>,
 }
 
-/// Les fichiers de `donnees/`, sans l'extension « .ron ».
+/// Fichiers de `donnees/` sans équivalent TypeScript : l'importeur ne les écrit pas.
+pub const PROPRES: [&str; 1] = ["succes"];
+
+/// Les fichiers de `donnees/` importés de la version TypeScript, sans l'extension « .ron ».
 pub const FICHIERS: [&str; 19] = [
     "blocs",
     "modeles",
@@ -137,6 +142,7 @@ impl Donnees {
             particules: table!("particules"),
             regles: table!("regles"),
             textes: table!("textes"),
+            succes: table!("succes"),
         };
         let erreurs = validation::valider(&donnees);
         if erreurs.is_empty() {
@@ -194,6 +200,7 @@ fn embarque(nom: &str) -> &'static str {
         "sons",
         "particules",
         "regles",
-        "textes"
+        "textes",
+        "succes"
     )
 }

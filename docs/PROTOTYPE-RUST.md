@@ -1268,8 +1268,9 @@ mode sans fin.
 
 ### 6e : Succès de coop (faits)
 
-- Données : `succes` à la fin de `donnees/talents.ron` (identifiant, nom, texte,
-  condition). Une condition combine, au choix : joueurs au moins, victoire, boss vaincus,
+- Données : `donnees/succes.ron` (identifiant, nom, texte, condition), premier fichier
+  propre à la version Rust (`bs_donnees::PROPRES`) : l'importeur TypeScript ne l'écrit
+  pas et `importer-donnees.sh --verifier` le reprend tel quel. Une condition combine, au choix : joueurs au moins, victoire, boss vaincus,
   même classe pour tous, temps survécu ; un champ omis n'est pas exigé. La validation
   refuse les doublons et plus de 4 joueurs. Cinq succès : Ensemble (finir à plusieurs),
   Chasse en groupe (boss à plusieurs), Tenir bon (10:00 à plusieurs), Escouade (finir à

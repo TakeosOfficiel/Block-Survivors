@@ -1,12 +1,13 @@
 # Essai de la chaîne de mise à jour sous Windows (pari 4), pendant de essai-maj.sh :
 # installe N avec l'installeur Velopack, puis N → N+1 (paquet complet) et N+1 → N+2 (delta)
-# par le manifeste signé, et refuse un manifeste falsifié. Demande vpk. Depuis rust/.
+# par le manifeste signé, refuse un manifeste falsifié, et revient à la version d'avant
+# quand la nouvelle plante deux fois au démarrage. Demande vpk. Depuis rust/.
 $ErrorActionPreference = 'Stop'
 $T = Join-Path $env:RUNNER_TEMP 'essai-maj'
 if (-not $env:RUNNER_TEMP) { $T = Join-Path $env:TEMP 'essai-maj' }
 Remove-Item -Recurse -Force $T -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force "$T\app", "$T\depot" | Out-Null
-$env:BS_JOURNAL = "$T\journal.log"; $env:BS_FICHIER_SERIE = "$T\serie"
+$env:BS_JOURNAL = "$T\journal.log"; $env:BS_FICHIER_SERIE = "$T\serie"; $env:BS_DOSSIER_GARDE = "$T\garde"
 cargo build -q --release -p bs-maj --example demo_maj --bin bs-signer
 if ($LASTEXITCODE) { throw 'build' }
 $S = (Resolve-Path 'target\release\bs-signer.exe').Path
@@ -14,8 +15,8 @@ Copy-Item 'target\release\examples\demo_maj.exe' "$T\app\"
 $cles = & $S cles
 $env:BS_CLE_PRIVEE = ($cles[0] -split ': ')[1].Trim(); $env:BS_CLE_PUBLIQUE = ($cles[1] -split ': ')[1].Trim()
 
-function Empaqueter($version, $serie) {
-  Set-Content "$T\app\donnees.txt" "données $version"
+function Empaqueter($version, $serie, $contenu = '') {
+  Set-Content "$T\app\donnees.txt" "données $version $contenu"
   Push-Location $T; vpk pack -u BSDemo -v $version -p "$T\app" -e demo_maj.exe -o "$T\depot" -c stable | Out-Null; Pop-Location
   if ($LASTEXITCODE) { throw "vpk pack $version" }
   & $S manifeste "$T\depot" stable $serie 30 0.1.0 | Out-Null
@@ -43,4 +44,13 @@ if (Select-String -Path $env:BS_JOURNAL -Pattern '0.3.0 téléchargée \(delta\)
 Empaqueter 0.4.0 4
 (Get-Content "$T\depot\version.json" -Raw) -replace '\\"taille\\": (\d)', '\"taille\": 9$1' | Set-Content "$T\depot\version.json" -NoNewline
 & $appli --maj "$T\depot"; Attendu 'refusé : signature du manifeste invalide'
+
+"== retour arrière après deux plantages au démarrage"
+Remove-Item -Recurse -Force "$T\depot"; New-Item -ItemType Directory -Force "$T\depot" | Out-Null
+Empaqueter 0.5.0 6 plante
+& $appli --maj "$T\depot"; Attendu 'plantage simulé'
+& $appli; Attendu 'plantage simulé'
+& $appli; Attendu 'démarré : version 0.3.0'
+if (-not (Select-String -Path $env:BS_JOURNAL -Pattern 'retour arrière : 0.5.0 plantait, retour à 0.3.0' -Quiet)) { throw 'ÉCHEC : retour non signalé' }
+& $appli --maj "$T\depot"; Attendu 'à jour (0.5.0 refusée'
 "== tout est bon"

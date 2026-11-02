@@ -2,11 +2,14 @@
 //! version N puis N+1, elle écrit sa version dans un journal et, avec `--maj <dépôt>`,
 //! cherche une mise à jour via le manifeste signé, la télécharge, l'applique et redémarre.
 //! Clé publique : BS_CLE_PUBLIQUE (dans le jeu, elle sera écrite dans le code).
+//!
+//! Garde (retour arrière) : dossier BS_DOSSIER_GARDE. Une version empaquetée avec
+//! `donnees.txt` contenant « plante » simule un plantage au démarrage.
 
 use std::io::Write;
 
 use bs_maj::manifeste::cle_publique;
-use bs_maj::{Dossier, SourceSignee};
+use bs_maj::{Dossier, SourceSignee, garde};
 use velopack::{UpdateCheck, UpdateManager, VelopackApp};
 
 fn journal(ligne: &str) {
@@ -22,6 +25,22 @@ fn journal(ligne: &str) {
 fn main() {
     // En premier : Velopack gère ici ses propres crochets (installation, mise à jour)
     VelopackApp::build().run();
+    let dossier: std::path::PathBuf = std::env::var("BS_DOSSIER_GARDE")
+        .unwrap_or_else(|_| "/tmp/demo-maj-garde".into())
+        .into();
+    garde::verifier_demarrage(&dossier);
+    if let Some((depuis, vers)) = garde::retour_a_signaler(&dossier) {
+        journal(&format!(
+            "retour arrière : {depuis} plantait, retour à {vers}"
+        ));
+    }
+    let exe = std::env::current_exe().expect("exécutable");
+    let donnees = std::fs::read_to_string(exe.with_file_name("donnees.txt")).unwrap_or_default();
+    if donnees.contains("plante") {
+        journal("plantage simulé au démarrage");
+        std::process::exit(1);
+    }
+    garde::demarrage_reussi(&dossier);
     let args: Vec<String> = std::env::args().collect();
     let Some(depot) = args
         .iter()
@@ -51,6 +70,15 @@ fn main() {
         um.get_current_version_as_string()
     ));
     match um.check_for_updates() {
+        Ok(UpdateCheck::UpdateAvailable(info))
+            if garde::version_refusee(&dossier).as_deref()
+                == Some(info.TargetFullRelease.Version.as_str()) =>
+        {
+            journal(&format!(
+                "à jour ({} refusée : plantait)",
+                info.TargetFullRelease.Version
+            ));
+        }
         Ok(UpdateCheck::UpdateAvailable(info)) => {
             let t = std::time::Instant::now();
             let delta = !info.DeltasToTarget.is_empty();

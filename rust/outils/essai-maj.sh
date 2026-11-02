@@ -2,11 +2,12 @@
 # Essai de bout en bout de la chaîne de mise à jour (pari 4), sous Linux : empaquette
 # l'appli de démonstration (bs-maj/examples/demo_maj) avec Velopack en versions successives,
 # signe chaque manifeste, installe N et vérifie qu'elle se met à jour seule ; puis que les
-# attaques sont refusées (manifeste falsifié, rejoué, expiré, mauvaise clé, paquet corrompu).
+# attaques sont refusées (manifeste falsifié, rejoué, expiré, mauvaise clé, paquet corrompu) ;
+# enfin, qu'une version qui plante deux fois au démarrage est remplacée par la précédente.
 # Demande : vpk (dotnet tool install -g vpk), mksquashfs, zstd, FUSE. À lancer depuis rust/.
 set -euo pipefail
 T=$(mktemp -d)
-export BS_JOURNAL=$T/journal.log BS_FICHIER_SERIE=$T/serie
+export BS_JOURNAL=$T/journal.log BS_FICHIER_SERIE=$T/serie BS_DOSSIER_GARDE=$T/garde
 rm -rf /var/tmp/velopack/BSDemo
 cargo build -q --release -p bs-maj --example demo_maj --bin bs-signer
 S=$PWD/target/release/bs-signer
@@ -15,8 +16,8 @@ cp target/release/examples/demo_maj "$T/app/"
 $S cles > "$T/cles.txt"
 export BS_CLE_PRIVEE=$(sed -n 's/^privée *: //p' "$T/cles.txt") BS_CLE_PUBLIQUE=$(sed -n 's/^publique : //p' "$T/cles.txt")
 
-empaqueter() { # version série
-  echo "données $1" > "$T/app/donnees.txt"
+empaqueter() { # version série [contenu de donnees.txt]
+  echo "données $1 ${3:-}" > "$T/app/donnees.txt"
   (cd "$T" && vpk pack -u BSDemo -v "$1" -p "$T/app" -e demo_maj -o "$T/depot" -c stable > /dev/null)
   $S manifeste "$T/depot" stable "$2" 30 0.1.0 > /dev/null
 }
@@ -58,4 +59,13 @@ cp "$T/bon.json" "$T/depot/version.json"
 for f in "$T"/depot/BSDemo-0.4.0-stable-*.nupkg; do printf 'X' | dd of="$f" bs=1 seek=100 conv=notrunc status=none; done
 lancer --maj "$T/depot"; attendu "téléchargement refusé"
 lancer; attendu "démarré : version 0.3.0"
+
+echo "== retour arrière après deux plantages au démarrage"
+rm -rf "$T/depot" && mkdir -p "$T/depot"
+empaqueter 0.5.0 6 plante
+lancer --maj "$T/depot"; attendu "plantage simulé"
+lancer; attendu "plantage simulé"
+lancer; attendu "démarré : version 0.3.0"
+grep -q "retour arrière : 0.5.0 plantait, retour à 0.3.0" "$BS_JOURNAL" && echo "ok    : retour signalé"
+lancer --maj "$T/depot"; attendu "à jour (0.5.0 refusée"
 echo "== tout est bon (dossier : $T)"

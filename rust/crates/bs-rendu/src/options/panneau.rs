@@ -43,6 +43,7 @@ pub(super) enum Reglage {
     Secousses,
     Ombres,
     Chiffres,
+    Compteur,
 }
 
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
@@ -77,6 +78,7 @@ fn libelle(o: &Options, r: Reglage) -> String {
         Reglage::Secousses => format!("Secousses de l'écran : {}", oui(o.secousses)),
         Reglage::Ombres => format!("Ombres : {}", LIBELLES_OMBRES[o.ombres]),
         Reglage::Chiffres => format!("Chiffres des dégâts : {}", oui(o.chiffres_degats)),
+        Reglage::Compteur => format!("Compteur (Tab) : {}", oui(o.compteur_degats)),
     }
 }
 
@@ -119,6 +121,7 @@ pub(super) fn gerer(
                 Reglage::Secousses => o.secousses = !o.secousses,
                 Reglage::Ombres => o.ombres = (o.ombres + 1) % LIBELLES_OMBRES.len(),
                 Reglage::Chiffres => o.chiffres_degats = !o.chiffres_degats,
+                Reglage::Compteur => o.compteur_degats = !o.compteur_degats,
                 Reglage::Volume(_) => {}
             }
             return;
@@ -307,6 +310,7 @@ fn construire(commandes: &mut Commands, o: &Options) -> Entity {
         Reglage::Secousses,
         Reglage::Ombres,
         Reglage::Chiffres,
+        Reglage::Compteur,
     ] {
         bascule(commandes, affichage, o, r);
     }

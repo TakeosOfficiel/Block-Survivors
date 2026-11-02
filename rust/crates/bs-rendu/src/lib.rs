@@ -300,6 +300,7 @@ impl Plugin for PluginJeu {
                     ecrans::defiler,
                     ecrans::style::survoler,
                     hud::afficher,
+                    hud::compteur::afficher,
                     soleil::suivre,
                 )
                     .chain()

@@ -1,13 +1,15 @@
 //! HUD de la partie (src/ui/hud.ts) en interface Bevy : chrono et prochain boss, barre
 //! du boss, émeraudes et ennemis vaincus, cœurs et PV, totems, expérience et niveau,
-//! armes, passifs et équipement, alertes et messages, voile rouge de blessure. Mise en
-//! page de la fenêtre de référence 1280 × 820 (src/ui/echelle.ts), agrandie par
-//! `UiScale` ; chaque élément n'est retouché que quand sa valeur affichée change.
+//! armes, passifs et équipement, alertes et messages, voile rouge de blessure, compteur
+//! de dégâts. Mise en page de la fenêtre de référence 1280 × 820 (src/ui/echelle.ts),
+//! agrandie par `UiScale` ; chaque élément n'est retouché que quand sa valeur affichée
+//! change.
 
 mod affichage;
 mod barres;
 mod capacites;
 mod coeurs;
+pub mod compteur;
 pub mod etiquette;
 pub mod police;
 
@@ -79,6 +81,7 @@ pub struct Hud {
     coeurs: coeurs::Coeurs,
     barres: barres::Barres,
     capacites: capacites::Capacites,
+    compteur: compteur::Compteur,
     minuterie_message: f32,
     minuterie_alerte: f32,
     temps: f32,
@@ -336,6 +339,7 @@ pub fn construire(
     ));
 
     let capacites = capacites::construire(&mut commandes, racine);
+    let compteur = compteur::construire(&mut commandes, racine);
     commandes.insert_resource(Hud {
         racine,
         chrono,
@@ -352,6 +356,7 @@ pub fn construire(
         coeurs,
         barres,
         capacites,
+        compteur,
         minuterie_message: 0.0,
         minuterie_alerte: 0.0,
         temps: 0.0,

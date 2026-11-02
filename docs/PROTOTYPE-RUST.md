@@ -14,7 +14,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 2. Monde et rendu | fait : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres), 2d-2 (particules, chiffres de dégâts, barres de vie, secousse), 2d-3 (visuels des armes), 2d-4 (vent, ombres du soleil, lumière des blocs) |
 | 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
 | 4. Sauvegardes et profils | fait : 4a à 4i (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques des quatre classes, Collection, profil du joueur, amis) |
-| 5. Menus | en cours : 5a (menu principal, lancement, retour au menu), 5b (Talents), 5c (Collection), 5d (Profil), 5e (Profils), 5f (Options), 5g (Nouveautés), 5h (chargement), 5i (héros au menu) |
+| 5. Menus | en cours : 5a (menu principal, lancement, retour au menu), 5b (Talents), 5c (Collection), 5d (Profil), 5e (Profils), 5f (Options), 5g (Nouveautés), 5h (chargement), 5i (héros au menu), 5j (compteur de dégâts) |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -1118,3 +1118,13 @@ mode sans fin.
 - L'aperçu 3D de la page Profil sert aussi à l'accueil : le héros choisi (skin, armure
   portée) tourne au centre, au-dessus du pseudo, de la maîtrise et des boutons des pages
   (deux rangées). Le fond de l'accueil est celui de la caméra 3D.
+
+### 5j : Compteur de dégâts en jeu (fait)
+
+- Panneau compact en haut à droite (`hud/compteur.rs`) : une ligne par arme, de la plus
+  forte à la plus faible (icône, barre relative à la meilleure, nom, dégâts abrégés,
+  dégâts par seconde depuis l'obtention de l'arme, part du total) et le total en pied.
+  Rafraîchi deux fois par seconde ; huit lignes créées une fois, seulement réécrites.
+- Tab l'affiche ou le cache ; c'est l'option « compteurDegats » (enregistrée, aussi dans
+  le panneau des options : « Compteur (Tab) »).
+- Pas repris : le glisser du panneau par son titre (position retenue dans le jeu TS).

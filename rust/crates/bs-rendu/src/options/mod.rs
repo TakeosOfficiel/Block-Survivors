@@ -1,7 +1,7 @@
 //! Options du joueur (src/options.ts) : volume général et de chaque famille de sons,
-//! compteur de FPS, secousses de l'écran, ombres, chiffres des dégâts. Enregistrées pour
+//! compteur de FPS, secousses de l'écran, ombres, chiffres et compteur des dégâts. Enregistrées pour
 //! toute l'installation (« block-survivors.options », même format que le jeu TS : les
-//! options pas encore reprises, compteur de dégâts, vue, effets des alliés, sont gardées
+//! options pas encore reprises, vue, effets des alliés, sont gardées
 //! telles quelles). Chaque changement est appliqué et enregistré aussitôt. Le panneau
 //! (`panneau`) s'ouvre du menu principal et de la pause.
 
@@ -37,6 +37,8 @@ pub struct Options {
     /// Index dans « aucun », « legers », « complets ».
     pub ombres: usize,
     pub chiffres_degats: bool,
+    /// Compteur de dégâts en jeu (Tab).
+    pub compteur_degats: bool,
     /// Le reste du fichier (options pas encore reprises), réécrit tel quel.
     autres: serde_json::Map<String, Value>,
 }
@@ -50,6 +52,7 @@ impl Default for Options {
             secousses: true,
             ombres: 1,
             chiffres_degats: true,
+            compteur_degats: true,
             autres: serde_json::Map::new(),
         }
     }
@@ -75,6 +78,7 @@ impl Options {
         o.afficher_fps = oui("afficherFps", o.afficher_fps);
         o.secousses = oui("secousses", o.secousses);
         o.chiffres_degats = oui("chiffresDegats", o.chiffres_degats);
+        o.compteur_degats = oui("compteurDegats", o.compteur_degats);
         // Avant la version 2, les ombres repartent activées
         if lu.get("version").and_then(Value::as_u64) == Some(VERSION) {
             let niveau = lu.get("shaders").and_then(Value::as_str);
@@ -89,6 +93,7 @@ impl Options {
                 "afficherFps",
                 "secousses",
                 "chiffresDegats",
+                "compteurDegats",
                 "shaders",
                 "version",
             ];
@@ -112,6 +117,7 @@ impl Options {
         v.insert("secousses".into(), json!(self.secousses));
         v.insert("shaders".into(), json!(NIVEAUX_OMBRES[self.ombres]));
         v.insert("chiffresDegats".into(), json!(self.chiffres_degats));
+        v.insert("compteurDegats".into(), json!(self.compteur_degats));
         v.insert("version".into(), json!(VERSION));
         Value::Object(v)
     }
@@ -243,7 +249,7 @@ mod tests {
         let o = Options::lire(Some(lu));
         assert_eq!(o.volume, 0.4);
         assert_eq!(o.volumes, [0.5, 1.0, 1.0, 1.0]);
-        assert!(o.afficher_fps && !o.secousses && !o.chiffres_degats);
+        assert!(o.afficher_fps && !o.secousses && !o.chiffres_degats && !o.compteur_degats);
         assert_eq!(o.ombres, 0);
         // Les options non reprises sont réécrites telles quelles
         let v = o.json();

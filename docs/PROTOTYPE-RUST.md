@@ -1307,3 +1307,17 @@ mode sans fin.
   fois falsifié ou expiré. Les `.bssave` écrits par Node sont importés par la version Rust
   (deux profils, actif retrouvé). La lecture du localStorage par une autre page `file://`
   a été vérifiée dans Electron 44.
+
+### 8c : comparaison de poids et de démarrage (mesurée sur le conteneur)
+
+| | Electron 0.50.0 | Rust (profil `ship`) |
+|---|---|---|
+| Programme | runtime Electron 283 Mo + jeu web 3,6 Mo | un exécutable de 59 Mo (cartes, textures, sons et polices compris) |
+| Compressé (xz) | — | 14,6 Mo |
+| Fenêtre ouverte | — | 0,4 s après le lancement (rendu logiciel llvmpipe, sans carte graphique) |
+
+- Build `ship` (LTO complet, une unité de code) : 23 min sur 4 cœurs, à partir de zéro.
+- Les images/s du conteneur (rendu logiciel, environ 10 i/s) ne veulent rien dire. Les
+  mesures sur vraie carte graphique (4 joueurs, fin de partie) restent à faire pendant la
+  bêta, sur le PC du propriétaire (journal `MESURE` du jeu).
+- Les statistiques du robot ont déjà été comparées à celles de la version TS (étape 1b-8).

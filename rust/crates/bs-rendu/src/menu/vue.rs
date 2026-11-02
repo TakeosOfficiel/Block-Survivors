@@ -256,6 +256,7 @@ fn heros(
         (r1, "Collection", ActionMenu::Collection),
         (r1, "Profil", ActionMenu::OuvrirProfil),
         (r2, "Profils", ActionMenu::OuvrirProfils),
+        (r2, "Multijoueur", ActionMenu::OuvrirMulti),
     ];
     for (r, t, a) in pages {
         style::bouton(commandes, r, t, LARGEUR_PAGE, false, a);

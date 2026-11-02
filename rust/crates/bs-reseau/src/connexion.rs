@@ -7,6 +7,7 @@
 use std::io::ErrorKind;
 use std::net::TcpStream;
 use std::sync::mpsc::{Receiver, Sender, TryRecvError, channel};
+use std::sync::{Mutex, PoisonError};
 use std::time::Duration;
 
 use tungstenite::protocol::CloseFrame;
@@ -37,7 +38,9 @@ enum Ordre {
 
 pub struct Connexion {
     ordres: Sender<Ordre>,
-    recus: Receiver<Recu>,
+    /// Dans un `Mutex` pour être partageable entre fils (ressource Bevy) ; jamais
+    /// verrouillé : `recevoir` y accède par `&mut`.
+    recus: Mutex<Receiver<Recu>>,
     finie: bool,
 }
 
@@ -61,7 +64,7 @@ impl Connexion {
         };
         Self {
             ordres,
-            recus,
+            recus: Mutex::new(recus),
             finie: false,
         }
     }
@@ -76,7 +79,8 @@ impl Connexion {
         if self.finie {
             return None;
         }
-        match self.recus.try_recv() {
+        let recus = self.recus.get_mut().unwrap_or_else(PoisonError::into_inner);
+        match recus.try_recv() {
             Ok(r) => {
                 self.finie = matches!(r, Recu::Fermee(_));
                 Some(r)

@@ -165,6 +165,7 @@ pub struct Permanent;
 #[allow(clippy::type_complexity)]
 pub fn nettoyer(
     mut commandes: Commands,
+    coop: Option<ResMut<crate::coop::Coop>>,
     racines: Query<
         Entity,
         (
@@ -176,6 +177,10 @@ pub fn nettoyer(
 ) {
     for e in &racines {
         commandes.entity(e).despawn();
+    }
+    if let Some(mut coop) = coop {
+        coop.quitter();
+        commandes.remove_resource::<crate::coop::Coop>();
     }
     commandes.remove_resource::<PartieEnCours>();
     commandes.remove_resource::<Monde>();

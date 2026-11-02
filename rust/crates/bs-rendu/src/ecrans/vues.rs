@@ -97,7 +97,8 @@ fn panneau(commandes: &mut Commands, c: &Contexte, parent: Entity, p: &Partie) -
 }
 
 /// Pause : bandeau sombre aux traits d'or, résumé, Reprendre / Recommencer / Statistiques.
-pub fn pause(commandes: &mut Commands, c: &Contexte, p: &Partie) -> Entity {
+/// `coop` : pas de « Recommencer » (on ne recommence pas seul).
+pub fn pause(commandes: &mut Commands, c: &Contexte, p: &Partie, coop: bool) -> Entity {
     let r = racine(commandes, BackgroundColor(noir(0.45)));
     let stops = vec![
         ColorStop::new(noir(0.3), Val::Percent(0.0)),
@@ -159,14 +160,16 @@ pub fn pause(commandes: &mut Commands, c: &Contexte, p: &Partie) -> Entity {
     style::titre(commandes, bande, "Pause", OR_CLAIR, 6.0);
     bilan::pastilles(commandes, c, bande, p);
     let boutons = rangee(commandes, bande);
-    style::bouton(
-        commandes,
-        boutons,
-        "Recommencer",
-        180.0,
-        false,
-        Action::Recommencer,
-    );
+    if !coop {
+        style::bouton(
+            commandes,
+            boutons,
+            "Recommencer",
+            180.0,
+            false,
+            Action::Recommencer,
+        );
+    }
     style::bouton(
         commandes,
         boutons,
@@ -212,6 +215,7 @@ pub fn fin(
     c: &Contexte,
     p: &Partie,
     recompense: Option<&Recompense>,
+    coop: bool,
 ) -> Entity {
     let e = &p.etat;
     let victoire = e.issue == Some(Issue::Victoire);
@@ -258,7 +262,9 @@ pub fn fin(
     }
     panneau(commandes, c, r, p);
     let boutons = rangee(commandes, r);
-    style::bouton(commandes, boutons, "Rejouer", 240.0, true, Action::Rejouer);
+    if !coop {
+        style::bouton(commandes, boutons, "Rejouer", 240.0, true, Action::Rejouer);
+    }
     if victoire && !e.sans_fin {
         let teinte = Teinte {
             bord: Color::srgb_u8(0xa0, 0x60, 0xe0),
@@ -284,7 +290,9 @@ pub fn fin(
         false,
         Action::Menu,
     );
-    texte(commandes, r, "Entrée : rejouer", GRIS, 1.5);
+    if !coop {
+        texte(commandes, r, "Entrée : rejouer", GRIS, 1.5);
+    }
     r
 }
 

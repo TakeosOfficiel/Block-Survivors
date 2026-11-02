@@ -16,6 +16,7 @@ use bevy::prelude::*;
 use bevy::window::WindowFocused;
 
 use crate::PartieEnCours;
+use crate::coop::Coop;
 use crate::dessins::Dessins;
 use crate::ecran_cartes::EcranCartes;
 use crate::hud::police::TextePixel;
@@ -96,6 +97,7 @@ pub fn gerer(
         ResMut<NextState<crate::Phase>>,
         ResMut<crate::options::PanneauOptions>,
     ),
+    mut coop: Option<ResMut<Coop>>,
 ) {
     let perte_focus = focus.read().any(|f| !f.focused);
     let mut action = boutons
@@ -128,10 +130,28 @@ pub fn gerer(
         }
         Vue::Pause if echap => action = Some(Action::Reprendre),
         Vue::Statistiques if echap => action = Some(Action::Retour),
-        Vue::Fin if entree => action = Some(Action::Rejouer),
+        // Coop : l'hôte a repris la partie (« Continuer sans fin »)
+        Vue::Fin if !finie => {
+            sauvegarde.continuer_sans_fin(&jeu.partie);
+            jeu.fin = 0.0;
+            hud::alerter(&mut hud, &mut textes, ALERTE_SANS_FIN, 4.0);
+            vue = Vue::Aucune;
+        }
+        Vue::Fin if entree && coop.is_none() => action = Some(Action::Rejouer),
         _ => {}
     }
     match action {
+        // En coop, on ne recommence pas seul
+        Some(Action::Recommencer | Action::Rejouer) if coop.is_some() => {}
+        Some(Action::Continuer) if coop.is_some() => {
+            let coop = coop.as_deref_mut().expect("coop");
+            if crate::coop::continuer(coop, &mut jeu.partie) {
+                sauvegarde.continuer_sans_fin(&jeu.partie);
+                jeu.fin = 0.0;
+                hud::alerter(&mut hud, &mut textes, ALERTE_SANS_FIN, 4.0);
+                vue = Vue::Aucune;
+            }
+        }
         Some(Action::Reprendre) => vue = Vue::Aucune,
         Some(Action::Statistiques) => vue = Vue::Statistiques,
         Some(Action::Retour) => vue = Vue::Pause,
@@ -173,13 +193,14 @@ pub fn gerer(
     let p = &jeu.partie;
     ecrans.racine = match vue {
         Vue::Aucune => None,
-        Vue::Pause => Some(vues::pause(&mut commandes, &c, p)),
+        Vue::Pause => Some(vues::pause(&mut commandes, &c, p, coop.is_some())),
         Vue::Statistiques => Some(vues::statistiques(&mut commandes, &c, p)),
         Vue::Fin => Some(vues::fin(
             &mut commandes,
             &c,
             p,
             sauvegarde.recompense.as_ref(),
+            coop.is_some(),
         )),
     };
     if let Ok(mut v) = visibilites.get_mut(hud.racine) {

@@ -1,15 +1,16 @@
 //! Menu principal (phase `Menu`, src/ui/ecranMenu.ts) : choix de la classe et de
 //! l'arène (gardé dans le profil), « Jouer » (ou Entrée) prépare la partie choisie et
-//! passe au chargement, « Quitter » ferme le jeu. Ses pages (Talents, Collection, Profil, Profils, Nouveautés) remplacent
+//! passe au chargement, « Quitter » ferme le jeu. Ses pages (Talents, Collection, Profil, Profils, Nouveautés, Multijoueur) remplacent
 //! l'accueil ; Échap ou « Retour » y ramène. Le menu a sa caméra 2D, et une caméra 3D dessous pour l'aperçu du héros ; tout ce
 //! qu'il crée porte `ElementMenu` et disparaît à sa sortie. Chaque changement refait la
 //! page affichée en entier (hors de la boucle de jeu).
 //!
 //! Essais : `BS_JOUER=n` lance la partie choisie aux n premières entrées au menu ;
-//! `BS_MENU=talents` (ou `collection`, `profil`, `profils`, `nouveautes`) ouvre cette page à l'entrée.
+//! `BS_MENU=talents` (ou `collection`, `profil`, `profils`, `nouveautes`, `multijoueur`) ouvre cette page à l'entrée.
 
 pub mod apercu;
 mod collection;
+pub mod multijoueur;
 mod nouveautes;
 pub mod profil;
 mod profils;
@@ -20,6 +21,7 @@ use bevy::app::AppExit;
 use bevy::prelude::*;
 
 use crate::Phase;
+use crate::coop::{Coop, MessageCoop};
 use crate::dessins::Dessins;
 use crate::lancement::{self, ChoixPartie, DonneesJeu, PartiePreparee};
 use crate::sauvegarde::Sauvegarde;
@@ -52,6 +54,9 @@ pub enum ActionMenu {
     /// Ouvre les Nouveautés.
     Nouveautes,
     Talent(ActionTalent),
+    /// Ouvre la page Multijoueur.
+    OuvrirMulti,
+    Multi(multijoueur::ActionMulti),
 }
 
 /// Page affichée.
@@ -65,6 +70,7 @@ enum Page {
     /// Profils ; celui dont la suppression attend confirmation.
     Profils(Option<usize>),
     Nouveautes,
+    Multijoueur,
 }
 
 /// Marque de tout ce que le menu crée.
@@ -112,6 +118,7 @@ fn construire(
     sauvegarde: &Sauvegarde,
     ic: &mut Icones,
     menu: &Menu,
+    multi: &multijoueur::VueMulti,
 ) -> Entity {
     let (choix, page) = (menu.choix, menu.page);
     let racine = match page {
@@ -139,6 +146,7 @@ fn construire(
         }
         Page::Profils(_) => profils::construire(commandes, dj, sauvegarde, menu),
         Page::Nouveautes => nouveautes::construire(commandes),
+        Page::Multijoueur => multijoueur::construire(commandes, dj, menu, multi),
     };
     commandes.entity(racine).insert(ElementMenu);
     racine
@@ -168,6 +176,7 @@ pub fn entrer(
     mut textures: ResMut<Textures>,
     dessins: Res<Dessins>,
     images: Res<Assets<Image>>,
+    (message, mut annuaire): (Res<MessageCoop>, ResMut<multijoueur::Annuaire>),
 ) {
     let choix = lancement::choix_memorise(&dj, &sauvegarde);
     let page = match std::env::var("BS_MENU").as_deref() {
@@ -176,6 +185,8 @@ pub fn entrer(
         Ok("profil") => Page::Profil,
         Ok("profils") => Page::Profils(None),
         Ok("nouveautes") => Page::Nouveautes,
+        Ok("multijoueur") => Page::Multijoueur,
+        _ if message.0.is_some() => Page::Multijoueur,
         _ => Page::Accueil,
     };
     apercu::camera(&mut commandes, vue::FOND);
@@ -207,7 +218,15 @@ pub fn entrer(
         dessins: &dessins,
         images: &images,
     };
-    menu.racine = construire(&mut commandes, &dj, &sauvegarde, &mut ic, &menu);
+    if page == Page::Multijoueur {
+        annuaire.actualiser();
+    }
+    let multi = multijoueur::VueMulti {
+        coop: None,
+        message: message.0.as_deref(),
+        annuaire: &annuaire,
+    };
+    menu.racine = construire(&mut commandes, &dj, &sauvegarde, &mut ic, &menu, &multi);
     commandes.insert_resource(menu);
 }
 
@@ -229,6 +248,11 @@ pub fn gerer(
     mut phase: ResMut<NextState<Phase>>,
     mut sortie: MessageWriter<AppExit>,
     (mut essais, mut options): (Local<u32>, ResMut<crate::options::PanneauOptions>),
+    (mut coop, mut message, mut annuaire): (
+        Option<ResMut<Coop>>,
+        ResMut<MessageCoop>,
+        ResMut<multijoueur::Annuaire>,
+    ),
 ) {
     let mut action = boutons
         .iter()
@@ -249,6 +273,28 @@ pub fn gerer(
         action = Some(ActionMenu::Fermer);
     }
     let mut suite = None;
+    // Quitter la page Multijoueur, c'est quitter son salon
+    let sur_multi = menu.page == Page::Multijoueur;
+    let multi = match action {
+        Some(ActionMenu::Multi(a)) => Some(a),
+        Some(ActionMenu::Fermer) if sur_multi => Some(multijoueur::ActionMulti::Quitter),
+        _ => None,
+    };
+    let code = menu.validee.take_if(|_| sur_multi);
+    if multi.is_some() || code.is_some() {
+        let mut c = multijoueur::Contexte {
+            commandes: &mut commandes,
+            dj: &dj,
+            sauvegarde: &sauvegarde,
+            coop: coop.as_deref_mut(),
+            message: &mut message,
+            annuaire: &mut annuaire,
+            phase: &mut phase,
+        };
+        if multijoueur::traiter(&mut c, &mut menu, code.as_deref(), multi) {
+            coop = None;
+        }
+    }
     if let Some(s) = menu.validee.take() {
         match menu.page {
             Page::Profil => profil::valider(&mut sauvegarde.profil, &s),
@@ -295,6 +341,12 @@ pub fn gerer(
             profil::agir(&mut sauvegarde, &mut menu, a);
         }
         Some(ActionMenu::Fermer) => page = Page::Accueil,
+        Some(ActionMenu::OuvrirMulti) => {
+            annuaire.actualiser();
+            page = Page::Multijoueur;
+        }
+        Some(ActionMenu::Multi(_)) if menu.page != Page::Multijoueur => return,
+        Some(ActionMenu::Multi(_)) => {}
         Some(ActionMenu::Nouveautes) => {
             nouveautes::marquer_lues(sauvegarde.profils.stockage());
             page = Page::Nouveautes;
@@ -347,7 +399,12 @@ pub fn gerer(
         dessins: &dessins,
         images: &images,
     };
-    menu.racine = construire(&mut commandes, &dj, &sauvegarde, &mut ic, &menu);
+    let multi = multijoueur::VueMulti {
+        coop: coop.as_deref(),
+        message: message.0.as_deref(),
+        annuaire: &annuaire,
+    };
+    menu.racine = construire(&mut commandes, &dj, &sauvegarde, &mut ic, &menu, &multi);
 }
 
 /// Sortie du menu : tout ce qu'il a créé disparaît.

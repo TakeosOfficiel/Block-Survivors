@@ -53,6 +53,8 @@ pub struct EcranCartes {
     propositions: Vec<ChoixEquipement>,
     ouvert_depuis: f32,
     racine: Option<Entity>,
+    /// Cartes jouées à cette image (envoyées aux autres joueurs en coop).
+    pub(crate) jouees: Vec<Choix>,
 }
 
 impl EcranCartes {
@@ -101,6 +103,7 @@ pub fn gerer(
     let maintenant = temps.elapsed_secs();
     let p = &mut jeu.partie;
     let e = &mut *ecran;
+    e.jouees.clear();
     if e.etape.is_none() {
         if !e.humain || !en_attente(p) {
             return;
@@ -229,6 +232,7 @@ fn choisir(p: &mut Partie, e: &mut EcranCartes, k: usize) {
     match e.cartes[k].choix {
         Choix::Niveau(a) => {
             p.appliquer_amelioration(a);
+            e.jouees.push(Choix::Niveau(a));
             p.etat.niveaux_en_attente = p.etat.niveaux_en_attente.saturating_sub(1);
             e.etape = None;
         }
@@ -250,6 +254,7 @@ fn choisir(p: &mut Partie, e: &mut EcranCartes, k: usize) {
                 }
                 _ => {
                     p.appliquer_equipement(c);
+                    e.jouees.push(Choix::Coffre(c));
                     let choix = &mut p.etat.choix_coffre;
                     choix.restants = choix.restants.saturating_sub(1);
                     if ender {

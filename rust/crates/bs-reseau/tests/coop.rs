@@ -94,7 +94,10 @@ fn partie_en_coop() {
         invite.maj_salon();
         matches!(invite.phase, PhaseCoop::Chargement { .. })
     });
-    let mut chez_invite = invite.preparer(d, 3).expect("arène connue");
+    let index = invite.arene(d).expect("arène connue");
+    let mut chez_invite = Partie::nouvelle(d, index, 1, 3, true);
+    invite.preparer(&mut chez_invite);
+    invite.pret();
     assert_eq!(chez_invite.nombre_joueurs(), 2);
     jusqua(|| hote.tous_prets(0.0));
     let mut chez_hote = Partie::nouvelle(d, 0, 0, 7, true);

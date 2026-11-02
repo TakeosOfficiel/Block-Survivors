@@ -15,6 +15,7 @@ mod armes;
 mod camera;
 mod carte_mc;
 mod chargement;
+mod coop;
 mod creatures;
 mod dessins;
 mod ecran_cartes;
@@ -190,7 +191,9 @@ impl Plugin for PluginJeu {
             .init_resource::<camera::Secousse>()
             .init_resource::<ecrans::Ecrans>()
             .init_resource::<menu::apercu::Apercu>()
+            .init_resource::<menu::multijoueur::Annuaire>()
             .init_resource::<chargement::Photos>()
+            .init_resource::<coop::MessageCoop>()
             .insert_resource(ecran_cartes::EcranCartes::nouveau(
                 std::env::var_os("BS_CARTES").is_some(),
             ))
@@ -221,6 +224,7 @@ impl Plugin for PluginJeu {
                 (
                     (
                         menu::profil::saisir,
+                        menu::multijoueur::suivre,
                         menu::gerer,
                         menu::apercu::animer,
                         ecrans::defiler,
@@ -253,6 +257,7 @@ impl Plugin for PluginJeu {
                     .chain()
                     .run_if(in_state(Phase::Chargement)),
             )
+            .add_systems(OnExit(Phase::Chargement), coop::demarrer)
             .add_systems(
                 OnEnter(Phase::Partie),
                 (
@@ -296,6 +301,7 @@ impl Plugin for PluginJeu {
                     armes::dessiner,
                     armes::placer_solides,
                     ecran_cartes::gerer,
+                    coop::envoyer_cartes,
                     ecran_cartes::survoler,
                     ecrans::gerer,
                     ecrans::defiler,
@@ -375,18 +381,35 @@ fn construire_modeles(
     ));
 }
 
+/// Textures chargées (et, en coop, tout le monde prêt) : la partie commence.
+#[allow(clippy::too_many_arguments)]
 fn attendre_textures(
     serveur: Res<AssetServer>,
     textures: Res<Textures>,
     mut phase: ResMut<NextState<Phase>>,
     mut rester: Local<Option<bool>>,
+    coop: Option<ResMut<coop::Coop>>,
+    mut message: ResMut<coop::MessageCoop>,
+    temps: Res<Time>,
 ) {
     // Essai : `BS_CHARGEMENT=1` garde l'écran de chargement
     if *rester.get_or_insert_with(|| std::env::var_os("BS_CHARGEMENT").is_some()) {
         return;
     }
     let a = textures.avancement(&serveur);
-    if a.faites == a.total {
+    let chargees = a.faites == a.total;
+    if let Some(mut coop) = coop {
+        match coop::partie_prete(&mut coop, chargees, temps.delta_secs()) {
+            Ok(true) => {}
+            Ok(false) => return,
+            Err(raison) => {
+                message.0 = Some(raison);
+                phase.set(Phase::Menu);
+                return;
+            }
+        }
+    }
+    if chargees {
         if a.manquantes > 0 {
             warn!(
                 "{} texture(s) introuvable(s) : couleurs de secours",

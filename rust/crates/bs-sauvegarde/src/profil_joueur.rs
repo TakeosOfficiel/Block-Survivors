@@ -35,11 +35,23 @@ pub enum ChoixSkin {
 }
 
 impl ChoixSkin {
-    fn id(&self) -> &'static str {
+    /// Identifiant gardé dans le profil et envoyé aux autres joueurs de la coop.
+    pub fn id(&self) -> &'static str {
         match self {
             Self::Classe => "classe",
             Self::Importe => "importe",
             Self::Vanilla(k) => SKINS_VANILLA[*k],
+        }
+    }
+
+    /// Choix d'après son identifiant (inconnu : celle de la classe).
+    pub fn depuis_id(id: &str) -> Self {
+        match id {
+            "importe" => Self::Importe,
+            _ => SKINS_VANILLA
+                .iter()
+                .position(|s| *s == id)
+                .map_or(Self::Classe, Self::Vanilla),
         }
     }
 }

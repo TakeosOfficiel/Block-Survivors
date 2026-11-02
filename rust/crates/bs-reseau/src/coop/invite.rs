@@ -12,7 +12,7 @@ use bs_protocole::{REFUS_PLEIN, REFUS_SALON, REFUS_VERSION};
 use bs_regles::Partie;
 use bs_regles::joueur::Commandes;
 
-use super::{PhaseCoop, ajouter_joueur, fiable, index_arene, index_personnage};
+use super::{PhaseCoop, ajouter_joueur, fiable, index_arene};
 use crate::{EvenementSession, Session};
 
 pub struct InviteCoop {
@@ -64,30 +64,29 @@ impl InviteCoop {
         self.traiter(None);
     }
 
-    /// Au lancement : ma partie d'invité (arène générée, mes talents, les autres joueurs
-    /// dans l'ordre de la liste), puis `Pret`. `None` si l'arène est inconnue.
-    pub fn preparer(&mut self, d: &'static Donnees, graine: u32) -> Option<Partie> {
-        let PhaseCoop::Chargement { arene } = &self.phase else {
-            return None;
-        };
-        let index = index_arene(d, arene)?;
-        let mut p = Partie::nouvelle(
-            d,
-            index,
-            index_personnage(d, &self.moi.personnage),
-            graine,
-            true,
-        );
+    /// Index de l'arène générée lancée par l'hôte (pendant le chargement).
+    pub fn arene(&self, d: &Donnees) -> Option<usize> {
+        match &self.phase {
+            PhaseCoop::Chargement { arene } => index_arene(d, arene),
+            _ => None,
+        }
+    }
+
+    /// Au lancement : `p` est ma partie (arène lancée, mon personnage, mes talents) ; elle
+    /// devient une partie d'invité, avec les autres joueurs dans l'ordre de la liste.
+    pub fn preparer(&mut self, p: &mut Partie) {
         p.invite = true;
-        p.appliquer_talents(&self.moi.bonus(d));
         let mut table = vec![(self.place, 0)];
         for j in self.joueurs.iter().filter(|j| j.index != self.place) {
-            let k = ajouter_joueur(&mut p, &j.presentation);
+            let k = ajouter_joueur(p, &j.presentation);
             table.push((j.index, k));
         }
         self.recepteur = Some(Recepteur::nouveau(&table));
+    }
+
+    /// Ma partie est prête (textures chargées) : j'attends le départ.
+    pub fn pret(&mut self) {
         self.envoyer(&MessageFiable::Pret);
-        Some(p)
     }
 
     /// Un pas de partie : messages, dernier instantané, entrée, prédiction, lissage.
@@ -191,6 +190,9 @@ impl InviteCoop {
             MessageFiable::Depart if self.recepteur.is_some() => self.phase = PhaseCoop::Partie,
             MessageFiable::Refus { place, raison } if place == self.place => self.finir(&raison),
             MessageFiable::Stats { place, stats } if place == self.place => {
+                if let Some(p) = p {
+                    stats.copier_dans(&mut p.etat.stats);
+                }
                 self.stats = Some(stats);
             }
             MessageFiable::Fin {
@@ -198,7 +200,12 @@ impl InviteCoop {
                 issue,
                 temps,
                 stats,
-            } if place == self.place => self.fin = Some((issue, temps, stats)),
+            } if place == self.place => {
+                if let Some(p) = p {
+                    stats.copier_dans(&mut p.etat.stats);
+                }
+                self.fin = Some((issue, temps, stats));
+            }
             MessageFiable::CarteJouee { index, carte } => {
                 let k = self
                     .recepteur

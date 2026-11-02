@@ -7,7 +7,10 @@ use bevy::prelude::*;
 
 use crate::ecran_cartes::{self, EcranCartes};
 use crate::ecrans::Ecrans;
-use crate::{ATTENTE_RELANCE, Mesure, PAS, PartieEnCours};
+use bs_regles::joueur::Commandes;
+
+use crate::coop::{self, Coop, MessageCoop};
+use crate::{ATTENTE_RELANCE, Mesure, PAS, PartieEnCours, Phase};
 
 /// `BS_DEBUT=<s>` (essais) : le robot joue ces secondes avant l'affichage, sans mourir.
 pub(crate) fn avancer_debut(jeu: &mut PartieEnCours) {
@@ -38,16 +41,33 @@ pub(crate) fn avancer_debut(jeu: &mut PartieEnCours) {
 }
 
 /// Un pas : le clavier (ZQSD, WASD, flèches) conduit le joueur ; sans joueur, le robot.
+/// En coop, rien ne se fige : cartes ou menu ouverts, le joueur reste juste immobile.
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn avancer(
     mut jeu: ResMut<PartieEnCours>,
     touches: Res<ButtonInput<KeyCode>>,
     mut ecran: ResMut<EcranCartes>,
     ecrans: Res<Ecrans>,
     mut mesure: ResMut<Mesure>,
+    coop: Option<ResMut<Coop>>,
+    mut message: ResMut<MessageCoop>,
+    mut phase: ResMut<NextState<Phase>>,
 ) {
     let debut = bevy::platform::time::Instant::now();
     // Les événements du pas précédent ont été lus par `entites::animer`
     jeu.partie.ev.vider();
+    if let Some(mut coop) = coop {
+        ecran.humain = true;
+        let libre = !ecran.ouvert() && !ecrans.ouvert();
+        lire_clavier(&mut jeu.partie.joueur.commandes, &touches, libre);
+        if let Err(raison) = coop::pas(&mut coop, &mut jeu, PAS) {
+            warn!("coop terminée : {raison}");
+            message.0 = Some(raison);
+            phase.set(Phase::Menu);
+        }
+        mesure.ajouter_pas(debut.elapsed());
+        return;
+    }
     if ecrans.fige() {
         return;
     }
@@ -60,12 +80,8 @@ pub(crate) fn avancer(
         return;
     }
     let PartieEnCours { partie, robot, .. } = &mut *jeu;
-    let appui = |codes: &[KeyCode]| codes.iter().any(|c| touches.pressed(*c));
     let c = &mut partie.joueur.commandes;
-    c.haut = appui(&[KeyCode::KeyW, KeyCode::ArrowUp]);
-    c.bas = appui(&[KeyCode::KeyS, KeyCode::ArrowDown]);
-    c.gauche = appui(&[KeyCode::KeyA, KeyCode::ArrowLeft]);
-    c.droite = appui(&[KeyCode::KeyD, KeyCode::ArrowRight]);
+    lire_clavier(c, &touches, true);
     if c.haut || c.bas || c.gauche || c.droite {
         ecran.humain = true;
     }
@@ -76,4 +92,13 @@ pub(crate) fn avancer(
         partie.pas(PAS);
     }
     mesure.ajouter_pas(debut.elapsed());
+}
+
+/// Touches de déplacement (`libre` faux : aucune, le lacet de la caméra reste).
+fn lire_clavier(c: &mut Commandes, touches: &ButtonInput<KeyCode>, libre: bool) {
+    let appui = |codes: &[KeyCode]| libre && codes.iter().any(|c| touches.pressed(*c));
+    c.haut = appui(&[KeyCode::KeyW, KeyCode::ArrowUp]);
+    c.bas = appui(&[KeyCode::KeyS, KeyCode::ArrowDown]);
+    c.gauche = appui(&[KeyCode::KeyA, KeyCode::ArrowLeft]);
+    c.droite = appui(&[KeyCode::KeyD, KeyCode::ArrowRight]);
 }

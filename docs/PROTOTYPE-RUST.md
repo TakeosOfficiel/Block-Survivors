@@ -15,7 +15,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
 | 4. Sauvegardes et profils | fait : 4a à 4i (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques des quatre classes, Collection, profil du joueur, amis) |
 | 5. Menus | en cours : 5a (menu principal, lancement, retour au menu), 5b (Talents), 5c (Collection), 5d (Profil), 5e (Profils), 5f (Options), 5g (Nouveautés), 5h (chargement), 5i (héros au menu), 5j (compteur de dégâts), 5k (vue F5) |
-| 6. Coopération | en cours : 6a (relais complet), 6b (simulation à plusieurs joueurs) 6c-1 (instantanés, mode invité, messages) et 6c-2 (transport, session de salon) faites ; 6c-3 (page Multijoueur, partie en coop) à venir |
+| 6. Coopération | fait : 6a (relais complet), 6b (simulation à plusieurs joueurs), 6c-1 (instantanés, mode invité, messages), 6c-2 (transport, session de salon), 6c-3 (hôte et invité, page Multijoueur, partie en coop, coéquipiers affichés) ; vérifiée à deux fenêtres contre un relais local |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -1193,3 +1193,29 @@ mode sans fin.
 - Adresse du relais : variable `BS_RELAIS`, sinon `ws://127.0.0.1:8787/salon` en attendant le déploiement (étape 7).
 - 2 essais de bout en bout contre un vrai relais local : salon public listé puis rejoint, code inconnu refusé, échanges dans les deux sens, fermeture du salon au départ de l'hôte ; coupure brutale de l'invité puis reprise de sa place.
 
+### 6c-3 : Page Multijoueur et partie en coop (faite)
+
+- `bs-reseau::coop` (sans Bevy) : `HoteCoop` ouvre le salon, tient la liste des joueurs
+  (présentations : pseudo, personnage, skin, talents, armures), la fige au lancement,
+  attend que tous soient prêts (`ATTENTE_PRETS` au plus), simule tout le monde avec les
+  entrées des invités et envoie 15 instantanés par seconde, plus coffres, bilans et fin en
+  messages fiables. `InviteCoop` rejoint par code, prépare sa partie, envoie son entrée,
+  prédit sa marche et applique les instantanés. Les cartes choisies partent aux autres ;
+  « Continuer sans fin » est partagé. Un invité coupé garde sa place 60 s, immobile.
+  Version différente : refusé. Essai de bout en bout sans fenêtre (`tests/coop.rs`).
+- `bs-rendu::coop` : ressource `Coop` (hôte ou invité) du salon au retour au menu ; au
+  chargement, l'invité dit qu'il est prêt une fois ses textures chargées ; en partie, ni
+  pause ni cartes qui figent. Une coop finie (refus, coupure, salon fermé) ramène au menu
+  avec sa raison (`MessageCoop`).
+- Page Multijoueur du menu (`menu/multijoueur/`) : créer un salon public ou privé, saisir
+  un code et rejoindre, liste des salons publics (« pseudo · n/m joueurs », Actualiser).
+  Dans le salon : code « ABC-DEF », joueurs et classes, l'hôte lance sur une arène
+  générée, l'invité attend puis charge la même arène. `BS_MENU=multijoueur` ouvre la page.
+- Coéquipiers à l'écran (`coequipiers.rs`) : personnage et skin de chacun (classe,
+  vanilla, ou importée reçue dans sa présentation, 48 Ko au plus), animés et interpolés
+  entre deux pas, avec ombre, chute à la mort, teinte rouge des coups, et pseudo au-dessus
+  de la tête (`hud/etiquette.rs`).
+- Vérifié à deux instances (Xvfb) contre le relais local : salon public créé, trouvé et
+  rejoint, partie lancée, chacun voit l'autre marcher.
+- Limite connue : si un invité quitte la partie pour de bon, les indices des joueurs
+  suivants se décalent chez les autres (skin ou pseudo d'un autre possibles).

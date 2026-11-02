@@ -227,6 +227,7 @@ impl Plugin for PluginJeu {
                 Update,
                 (
                     maj::suivre_voie,
+                    maj::noter_reussite,
                     (maj::rafraichir, maj::cliquer).run_if(in_state(Phase::Menu)),
                 )
                     .chain(),

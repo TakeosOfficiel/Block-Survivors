@@ -39,6 +39,8 @@ pub struct Reglages {
     pub fichier_serie: PathBuf,
     /// Voie bêta plutôt que stable.
     pub beta: bool,
+    /// Version qui plantait au démarrage (`garde`) : jamais reproposée.
+    pub refusee: Option<String>,
 }
 
 struct Partage {
@@ -77,7 +79,7 @@ impl MiseAJour {
             let modele = std::env::var("BS_DEPOT_MAJ").unwrap_or_else(|_| DEPOT_PAR_DEFAUT.into());
             let lancement = std::thread::Builder::new()
                 .name("mises à jour".into())
-                .spawn(move || boucle(&p, &modele, cles, &canal, r.fichier_serie));
+                .spawn(move || boucle(&p, &modele, cles, &canal, r));
             if let Err(e) = lancement {
                 *partage.etat.lock().unwrap_or_else(|e| e.into_inner()) =
                     Etat::Erreur(e.to_string());
@@ -128,7 +130,7 @@ fn boucle(
     modele: &str,
     cles: Vec<ed25519_dalek::VerifyingKey>,
     installe: &str,
-    fichier_serie: PathBuf,
+    r: Reglages,
 ) {
     let poser = |e: Etat| *p.etat.lock().unwrap_or_else(|e| e.into_inner()) = e;
     loop {
@@ -146,10 +148,10 @@ fn boucle(
                 modele: modele.into(),
             },
             cles.clone(),
-            fichier_serie.clone(),
+            r.fichier_serie.clone(),
         );
         poser(Etat::Recherche);
-        match chercher(source, options, &poser) {
+        match chercher(source, options, r.refusee.as_deref(), &poser) {
             Ok(Some(prete)) => {
                 poser(Etat::Prete(prete.1.Version.clone()));
                 *p.prete.lock().unwrap_or_else(|e| e.into_inner()) = Some(prete);
@@ -171,6 +173,7 @@ fn boucle(
 fn chercher(
     source: SourceSignee<DepotHttps>,
     options: UpdateOptions,
+    refusee: Option<&str>,
     poser: &(dyn Fn(Etat) + Sync),
 ) -> Result<Option<(UpdateManager, VelopackAsset)>, String> {
     let um = UpdateManager::new(source, Some(options), None).map_err(|e| e.to_string())?;
@@ -178,6 +181,9 @@ fn chercher(
         UpdateCheck::UpdateAvailable(info) => info,
         _ => return Ok(None),
     };
+    if refusee == Some(info.TargetFullRelease.Version.as_str()) {
+        return Ok(None);
+    }
     let (envoi, reception) = mpsc::channel::<i16>();
     std::thread::scope(|s| {
         s.spawn(|| {
@@ -207,6 +213,7 @@ mod tests {
     fn hors_installation_inactif() {
         let m = MiseAJour::demarrer(Reglages {
             fichier_serie: std::env::temp_dir().join("bs-maj-essai-serie"),
+            refusee: None,
             beta: false,
         });
         assert!(matches!(m.etat(), Etat::Inactive(_)));

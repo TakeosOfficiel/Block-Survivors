@@ -8,10 +8,12 @@
 //! - `source` : `SourceSignee`, la source Velopack qui n'expose que le manifeste vérifié,
 //!   sur un dossier ou en HTTPS ;
 //! - `cles` : clés publiques écrites dans le build ;
+//! - `garde` : retour à la dernière version qui marchait après deux plantages au démarrage ;
 //! - `service` : recherche en arrière-plan pour le jeu (état, voie, redémarrage) ;
 //! - `bin/bs-signer` : outil de la CI (clés, manifeste depuis la sortie de `vpk`, signature).
 
 pub mod cles;
+pub mod garde;
 pub mod manifeste;
 pub mod service;
 pub mod source;

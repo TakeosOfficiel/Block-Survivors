@@ -16,6 +16,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 4. Sauvegardes et profils | fait : 4a à 4i (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques des quatre classes, Collection, profil du joueur, amis) |
 | 5. Menus | en cours : 5a (menu principal, lancement, retour au menu), 5b (Talents), 5c (Collection), 5d (Profil), 5e (Profils), 5f (Options), 5g (Nouveautés), 5h (chargement), 5i (héros au menu), 5j (compteur de dégâts), 5k (vue F5) |
 | 6. Coopération | fait : 6a (relais complet), 6b (simulation à plusieurs joueurs), 6c-1 (instantanés, mode invité, messages), 6c-2 (transport, session de salon), 6c-3 (hôte et invité, page Multijoueur, partie en coop, coéquipiers affichés) ; vérifiée à deux fenêtres contre un relais local |
+| 7. Mises à jour et distribution | fait : 7a (mises à jour dans le jeu, voie bêta), 7b (workflow de publication signé), 7c (déploiement du relais), 7d (retour arrière après deux plantages) ; chaîne vérifiée de bout en bout sous Linux (`outils/essai-maj.sh`) |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -1219,3 +1220,52 @@ mode sans fin.
   rejoint, partie lancée, chacun voit l'autre marcher.
 - Limite connue : si un invité quitte la partie pour de bon, les indices des joueurs
   suivants se décalent chez les autres (skin ou pseudo d'un autre possibles).
+
+## Étape 7 : mises à jour et distribution
+
+### 7a : mises à jour dans le jeu (faites)
+
+- `bs-maj::service` : un fil cherche une version au lancement puis toutes les 30 min, sur le
+  canal `<système>-<voie>` (`win-stable`, `linux-beta`…). Il lit `version.json` en HTTPS
+  (`DepotHttps`, modèle d'adresse `{canal}`/`{nom}`), vérifie la signature, la série et
+  l'expiration, télécharge le paquet complet (empreinte SHA-256 vérifiée) et le garde prêt.
+- Clés publiques écrites au build (`BS_CLES_MAJ`) ; sans clé ou hors installation
+  Velopack, le service reste inactif (cas du développement).
+- Au menu, un encart en bas à gauche montre le téléchargement, puis « Version x.y.z prête »
+  avec « Redémarrer » (l'installeur attend la fermeture, applique et relance). En partie :
+  rien. Option « Versions bêta » : change de voie tout de suite ; décocher revient à la
+  dernière stable (seul retour en arrière accepté).
+
+### 7b : publication (faite)
+
+- Workflow « Publication Rust » sur un tag `rust-vX.Y.Z` (ou `-beta.N`) : toutes les
+  vérifications, build `ship` Windows et Linux, `vpk pack` (paquets complets seulement),
+  puis signature dans l'environnement protégé `publication` et envoi dans la pré-version
+  `rust-<canal>` du dépôt public, manifeste en dernier. Re-signature à la main (les
+  manifestes expirent au bout de 60 jours). Guide : docs/PUBLICATION-RUST.md.
+
+### 7c : relais (fait)
+
+- Adresse par défaut écrite au build (`BS_RELAIS_DEFAUT`), service systemd durci, Cloudflare
+  Tunnel devant, workflow « Relais » qui déploie par SSH après validation. Guide :
+  docs/RELAIS.md.
+
+### 7d : retour arrière (fait)
+
+- `bs-maj::garde` : chaque lancement est noté (`demarrage.json` dans le dossier des
+  sauvegardes) et compte comme réussi après 20 s de jeu ; le paquet complet de la version
+  qui marche est alors gardé à part (`bonne/`).
+- Après deux démarrages ratés de suite, le troisième remet ce paquet dans le dossier de
+  Velopack, retire les plus récents, et l'installeur l'applique puis relance. La version
+  fautive n'est plus proposée (jusqu'à la suivante) ; le menu affiche « La version X
+  plantait au démarrage : retour à la Y ».
+- Essai de bout en bout (`essai-maj.sh`, `essai-maj.ps1`) : 0.5.0 qui plante deux fois,
+  retour à 0.3.0, signalement, puis 0.5.0 refusée. Vérifié sous Linux.
+
+### Reste à faire avant la bêta
+
+- Manifestes à deux niveaux (clé de secours seule à pouvoir changer les clés).
+- Signature de code Windows (Authenticode).
+- Passage depuis Electron (dernière mise à jour Electron qui installe la version Rust).
+- Réglages GitHub à faire par le propriétaire : variables `BS_CLES_MAJ`, `BS_RELAIS`,
+  environnement `publication` et ses secrets, serveur du relais.

@@ -89,7 +89,8 @@ impl Partie {
         nature: Nature,
     ) {
         let e = &self.ennemis.pool[i];
-        if !e.vivant() {
+        // Chez un invité, les coups ne blessent personne : les vrais viennent de l'hôte
+        if !e.vivant() || self.invite {
             return;
         }
         let periodique = nature.periodique();

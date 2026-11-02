@@ -129,6 +129,7 @@ impl Partie {
     pub fn subir_degats(&mut self, mut degats: f32, boss: bool) -> bool {
         let j = &self.etat.joueur;
         if j.mort
+            || self.invite
             || self.joueur.invincible
             || j.invulnerabilite > 0.0
             || j.protection > 0.0

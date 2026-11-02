@@ -299,3 +299,54 @@ pub struct BonusTalents {
     /// Mécaniques propres actives et leur rang.
     pub mecaniques: Vec<(&'static str, u32)>,
 }
+
+/// Talent actif d'un arbre : identifiant, rang et option choisie (ce qu'un joueur envoie
+/// à l'hôte en coop pour qu'il recalcule ses bonus).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct NoeudActif {
+    pub noeud: String,
+    pub rang: u32,
+    #[serde(default)]
+    pub option: usize,
+}
+
+impl BonusTalents {
+    /// Cumule les effets des talents `actifs` de l'arbre `arbre` du personnage (inconnus
+    /// ignorés, rangs bornés au maximum).
+    pub fn depuis_noeuds<'a>(
+        talents: &'static Talents,
+        personnage: &str,
+        arbre: usize,
+        actifs: impl IntoIterator<Item = (&'a str, u32, usize)>,
+    ) -> Self {
+        let mut b = Self::default();
+        let Some(arbre) = talents.arbres.get(personnage).and_then(|a| a.get(arbre)) else {
+            return b;
+        };
+        for (id, rang, option) in actifs {
+            let Some(noeud) = arbre.noeuds.iter().find(|n| n.id == id) else {
+                continue;
+            };
+            let rang = rang.min(noeud.rang_max);
+            let effet: &'static Gains = match &noeud.options {
+                Some(options) => &options[option.min(1)].gains,
+                None => &noeud.gains,
+            };
+            for _ in 0..rang {
+                if let Some(m) = &effet.modif {
+                    b.modif.cumuler(m);
+                }
+                b.bonus_armes.extend(effet.armes.iter());
+                b.armes.extend(effet.rangs_arme.as_deref());
+                b.armes.extend(effet.arme_depart.as_deref());
+                b.relances += effet.relances.unwrap_or(0.0) as u32;
+            }
+            if let Some(m) = &effet.mecanique {
+                // Comme un dictionnaire : la dernière entrée l'emporte
+                b.mecaniques.retain(|(n, _)| n != m);
+                b.mecaniques.push((m.as_str(), rang));
+            }
+        }
+        b
+    }
+}

@@ -387,3 +387,29 @@ impl Partie {
         }
     }
 }
+
+impl Partie {
+    /// Pas d'un invité (src/reseau/client.ts) : il prédit sa propre marche et fait
+    /// tourner les armes de tous pour l'effet seulement (`invite` : aucun coup ne
+    /// blesse). Ennemis, butin, autres joueurs et vrais dégâts viennent des instantanés
+    /// de l'hôte, appliqués à côté (bs-protocole).
+    pub fn simuler_invite(&mut self, dt: f32) {
+        debug_assert!(self.invite);
+        if self.etat.issue.is_none() {
+            self.etat.temps_jeu += f64::from(dt);
+        }
+        self.maj_joueur(dt);
+        self.ennemis.reconstruire_grille();
+        let tire = !self.equipe.choix_hote && !self.etat.joueur.mort;
+        self.maj_armes(dt, tire);
+        for k in 1..self.nombre_joueurs() {
+            let c = &self.equipe.membres[k - 1];
+            if c.parti || c.etat_joueur.mort {
+                continue;
+            }
+            let tire = !c.en_choix;
+            self.avec_combattant(k, |p| p.maj_armes(dt, tire));
+        }
+        self.maj_projectiles_ennemis(dt);
+    }
+}

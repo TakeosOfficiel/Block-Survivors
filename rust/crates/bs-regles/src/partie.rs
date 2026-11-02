@@ -63,6 +63,8 @@ pub struct Partie {
     pub(crate) vies_traitees: u32,
     /// Les autres joueurs (coopération) ; vide en solo.
     pub equipe: Equipe,
+    /// Partie d'un invité : seul l'hôte décide des coups (voir `simuler_invite`).
+    pub invite: bool,
 }
 
 impl Partie {
@@ -142,6 +144,7 @@ impl Partie {
             prolongation: false,
             vies_traitees: 0,
             equipe: Equipe::nouvelle(),
+            invite: false,
         };
         partie.preparer_joueur();
         partie

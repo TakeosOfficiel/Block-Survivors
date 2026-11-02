@@ -5,6 +5,7 @@
 //! - le **contenu** échangé entre hôte et invités, dont l'**instantané** binaire de la
 //!   simulation (`instantane`), écrit dans un tampon réutilisé (aucune allocation).
 
+pub mod coop;
 mod instantane;
 mod trame;
 

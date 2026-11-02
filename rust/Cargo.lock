@@ -1783,7 +1783,12 @@ dependencies = [
 name = "bs-protocole"
 version = "0.1.0"
 dependencies = [
+ "bs-commun",
+ "bs-donnees",
  "bs-regles",
+ "libm",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

@@ -15,7 +15,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
 | 4. Sauvegardes et profils | fait : 4a à 4i (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques des quatre classes, Collection, profil du joueur, amis) |
 | 5. Menus | en cours : 5a (menu principal, lancement, retour au menu), 5b (Talents), 5c (Collection), 5d (Profil), 5e (Profils), 5f (Options), 5g (Nouveautés), 5h (chargement), 5i (héros au menu), 5j (compteur de dégâts), 5k (vue F5) |
-| 6. Coopération | en cours : 6a (relais complet) et 6b (simulation à plusieurs joueurs) faites ; 6c (instantanés, client, page Multijoueur) à venir |
+| 6. Coopération | en cours : 6a (relais complet), 6b (simulation à plusieurs joueurs) et 6c-1 (instantanés, mode invité, messages) faites ; 6c-2 (transport) et 6c-3 (page Multijoueur, partie en coop) à venir |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -1175,3 +1175,11 @@ mode sans fin.
   l'équipe est à terre. Un joueur parti tombe pour de bon et n'est plus une cible.
 - Par joueur en plus : +60 % d'apparitions, +25 % de PV aux ennemis, +70 % aux boss.
 - Seul, la partie est exactement la même (robot identique) ; 4 essais à plusieurs.
+### 6c-1 : Instantanés de la partie et mode invité (fait)
+
+- `bs-protocole::coop::instantane` : entrées des invités (numéro, touches, lacet) et instantané binaire de la vraie partie, écrit par l'hôte pour chaque invité dans un tampon réutilisé : temps, tués, niveau et XP communs, émeraudes, issue ; l'équipe (position, PV, bouclier, états, touches, vies) ; les ennemis à moins de 34 blocs de l'invité et tous les boss (identifiant, type, position et angle au 1/64 de bloc, PV, états, mort, vitesse au sol, mèche) ; orbes, objets, coffres, projectiles ennemis et chiffres de dégâts.
+- `coop::reception::Recepteur` (côté invité) : applique l'instantané à la `Partie` locale, qui sert telle quelle à l'affichage. L'invité prédit sa marche et la corrige d'après la position renvoyée pour sa dernière entrée prise en compte (historique de 128 entrées, 35 % de l'écart par instantané, recalage au-delà de 3 blocs, recalage complet au premier instantané). Les autres joueurs et les ennemis glissent vers leur dernière position reçue ; un ennemi déjà connu (même identifiant) garde sa position affichée. Un instantané périmé ou tronqué est rejeté sans paniquer.
+- Mode invité dans `bs-regles` (`Partie::invite`, `simuler_invite`) : l'invité fait tourner sa marche et les armes de tous les joueurs pour leurs effets, mais ni les dégâts aux ennemis ni ceux qu'il subit (l'hôte les décide).
+- `coop::messages` : messages fiables en JSON (bonjour, accueil, refus, salon, lancer, prêt, départ, carte, carte jouée, coffre, bilan, fin, continuer, reprise). Cartes et objets passent par leur identifiant. Un joueur envoie ses talents actifs (arbre, nœud, rang, option) et ses pièces d'armure ; l'hôte recalcule ses bonus avec `BonusTalents::depuis_noeuds`, désormais partagé avec `Progression::bonus`.
+- 3 essais : entrée aller-retour ; partie hôte à deux joueurs → instantané → partie invitée (équipe, ennemis, niveau, butin ; dégâts restés chez l'hôte ; instantanés périmés et tronqués) ; messages fiables et carte jouée.
+

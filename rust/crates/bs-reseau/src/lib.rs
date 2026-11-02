@@ -4,14 +4,17 @@
 //! - `session` : la vie d'un salon par-dessus (créer, lister, rejoindre, échanger avec
 //!   l'hôte ou les invités, reprendre sa place après une coupure grâce au jeton) ;
 //! - `coop` : la partie à plusieurs par-dessus la session, côté hôte (`HoteCoop`) et côté
-//!   invité (`InviteCoop`), sans fenêtre : le jeu leur passe sa `Partie` à chaque pas.
+//!   invité (`InviteCoop`), sans fenêtre : le jeu leur passe sa `Partie` à chaque pas ;
+//! - `amis` : présence des amis, invitations et demandes, sur une connexion sans salon.
 //!
 //! Adresse du relais : variable d'environnement `BS_RELAIS`, sinon `ADRESSE_RELAIS`.
 
+pub mod amis;
 mod connexion;
 pub mod coop;
 mod session;
 
+pub use amis::{EvenementAmis, ServiceAmis};
 pub use connexion::{Connexion, Recu};
 pub use coop::{HoteCoop, InviteCoop, PhaseCoop};
 pub use session::{EvenementSession, SalonPublic, Session, code_lisible, code_saisi};

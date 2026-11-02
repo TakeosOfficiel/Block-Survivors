@@ -1,10 +1,14 @@
 //! Liste d'amis du profil (partie gardée de src/reseau/amis.ts), sous la clé `amis` : le
-//! code ami du profil (« ABC-DEF-GHJ », tiré une fois) et les amis ajoutés avec leur
-//! dernier pseudo connu. Même JSON que le jeu TS (version 1).
+//! code ami du profil (« ABC-DEF-GHJ », tiré une fois), sa graine de clé ed25519 (tirée
+//! une fois, `secret`) et les amis ajoutés avec leur dernier pseudo connu et leur clé
+//! publique (retenue à leur première présence, `cle`). Même JSON que le jeu TS (version
+//! 1), complété de ces deux champs que le jeu TS ignore.
 //!
-//! La présence en ligne, les invitations et les demandes passent par le réseau : elles
-//! viendront avec la coop par relais (étape 6), sur ces mêmes codes.
+//! La présence en ligne, les invitations et les demandes passent par le relais
+//! (bs-reseau::amis), sur ces mêmes codes.
 
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD as B64;
 use serde_json::{Value, json};
 
 use crate::stockage::Stockage;
@@ -23,6 +27,8 @@ pub struct Ami {
     pub code: String,
     /// Dernier pseudo connu (« ? » tant qu'il ne s'est pas manifesté).
     pub pseudo: String,
+    /// Clé publique ed25519 retenue à sa première présence (`None` avant).
+    pub cle: Option<[u8; 32]>,
 }
 
 #[derive(Debug, Clone)]
@@ -31,6 +37,8 @@ pub struct Amis {
     cle: String,
     /// Code ami du profil.
     pub code: String,
+    /// Graine de la clé ed25519 du profil (signe ses présences et ses lettres).
+    pub secret: [u8; 32],
     pub amis: Vec<Ami>,
 }
 
@@ -90,6 +98,12 @@ impl RefusAmi {
     }
 }
 
+/// 32 octets en base64, s'il y en a.
+fn octets32(v: &Value) -> Option<[u8; 32]> {
+    let o = B64.decode(v.as_str()?).ok()?;
+    o.try_into().ok()
+}
+
 impl Amis {
     /// Lit la liste (un code ami est tiré et enregistré s'il n'y en a pas encore).
     pub fn charger(stockage: Stockage, cle: String) -> Self {
@@ -113,15 +127,22 @@ impl Amis {
                             v => v.to_string(),
                         };
                         let pseudo = pseudo.chars().take(LONGUEUR_PSEUDO).collect();
-                        Some(Ami { code, pseudo })
+                        let cle = octets32(&a["cle"]);
+                        Some(Ami { code, pseudo, cle })
                     })
                     .collect()
             })
             .unwrap_or_default();
+        let secret = octets32(&lu["secret"]).unwrap_or_else(|| {
+            let mut s = [0u8; 32];
+            getrandom::getrandom(&mut s).expect("aléa du système");
+            s
+        });
         let a = Self {
             stockage,
             cle,
             code,
+            secret,
             amis,
         };
         a.enregistrer();
@@ -132,9 +153,20 @@ impl Amis {
         let amis: Vec<Value> = self
             .amis
             .iter()
-            .map(|a| json!({ "code": a.code, "pseudo": a.pseudo }))
+            .map(|a| {
+                let mut v = json!({ "code": a.code, "pseudo": a.pseudo });
+                if let Some(c) = a.cle {
+                    v["cle"] = B64.encode(c).into();
+                }
+                v
+            })
             .collect();
-        let v = json!({ "version": 1, "code": self.code, "amis": amis });
+        let v = json!({
+            "version": 1,
+            "code": self.code,
+            "secret": B64.encode(self.secret),
+            "amis": amis,
+        });
         self.stockage.ecrire(&self.cle, &v);
     }
 
@@ -151,7 +183,11 @@ impl Amis {
             return Err(RefusAmi::ListePleine);
         }
         let pseudo = pseudo.chars().take(LONGUEUR_PSEUDO).collect();
-        self.amis.push(Ami { code, pseudo });
+        self.amis.push(Ami {
+            code,
+            pseudo,
+            cle: None,
+        });
         self.enregistrer();
         Ok(self.amis.last().expect("ami ajouté"))
     }
@@ -174,6 +210,22 @@ impl Amis {
         {
             a.pseudo = pseudo;
             self.enregistrer();
+        }
+    }
+
+    /// Clé d'un ami vue à sa présence : retenue la première fois (enregistrée). Faux si
+    /// l'ami est inconnu ou en avait déjà une autre (quelqu'un d'autre sous son code).
+    pub fn lier_cle(&mut self, code: &str, cle: [u8; 32]) -> bool {
+        let Some(a) = self.amis.iter_mut().find(|a| a.code == code) else {
+            return false;
+        };
+        match a.cle {
+            Some(c) => c == cle,
+            None => {
+                a.cle = Some(cle);
+                self.enregistrer();
+                true
+            }
         }
     }
 }
@@ -215,8 +267,14 @@ mod tests {
         assert_eq!(a.ajouter("ABCDEFGHJ", "?"), Err(RefusAmi::DejaAmi));
         a.ajouter("KMN-PQR-STU", "?").unwrap();
         a.renommer("KMN-PQR-STU", "Alex");
+        assert!(a.lier_cle("KMN-PQR-STU", [7; 32]));
+        assert!(!a.lier_cle("KMN-PQR-STU", [8; 32]));
+        assert!(!a.lier_cle("ZZZ-ZZZ-ZZZ", [7; 32]));
         let mut relu = Amis::charger(s.clone(), "amis".into());
         assert_eq!(relu.code, code);
+        assert_eq!(relu.secret, a.secret);
+        assert_eq!(relu.amis[1].cle, Some([7; 32]));
+        assert_eq!(relu.amis[0].cle, None);
         assert_eq!(relu.amis.len(), 2);
         assert_eq!(relu.amis[1].pseudo, "Alex");
         assert!(relu.retirer("ABC-DEF-GHJ"));
@@ -232,7 +290,8 @@ mod tests {
             a.amis,
             vec![Ami {
                 code: "ABC-DEF-GHJ".into(),
-                pseudo: "?".into()
+                pseudo: "?".into(),
+                cle: None,
             }]
         );
     }

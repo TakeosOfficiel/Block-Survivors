@@ -1,5 +1,6 @@
 //! Messages fiables de la coop (src/reseau/protocole.ts `MessageFiable`), en JSON : rares
-//! (salon, lancement, cartes, coffres, bilans, fin), ils peuvent allouer. Les cartes et
+//! (salon, lancement, cartes, coffres, bilans, fin), ils peuvent allouer. L'hôte n'a qu'un
+//! envoi vers tous les invités : un message pour un seul porte sa `place`. Les cartes et
 //! les objets passent par leur identifiant (pas leur index), pour rester lisibles et
 //! rejeter proprement une donnée inconnue.
 

@@ -142,10 +142,7 @@ pub fn gerer(
         }
         Some(Action::Continuer) => {
             sauvegarde.continuer_sans_fin(&jeu.partie);
-            let p = &mut jeu.partie;
-            p.etat.issue = None;
-            p.etat.sans_fin = true;
-            p.reprendre_directeurs_boss();
+            jeu.partie.continuer_sans_fin();
             jeu.fin = 0.0;
             hud::alerter(&mut hud, &mut textes, ALERTE_SANS_FIN, 4.0);
             vue = Vue::Aucune;

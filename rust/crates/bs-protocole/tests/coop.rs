@@ -56,10 +56,10 @@ fn instantane_vers_l_invite() {
     let mut octets = Vec::new();
     let entete = Entete {
         numero: 1,
-        derniere_entree: 0,
         rangs: &[0, 1],
+        entrees: &[0, 0],
     };
-    ecrire_instantane_partie(&hote, 1, &entete, &chiffres, &mut octets);
+    ecrire_instantane_partie(&hote, &entete, &chiffres, &mut octets);
     assert!(
         recepteur.appliquer(&mut invite, &octets),
         "instantané lisible"
@@ -100,7 +100,7 @@ fn instantane_vers_l_invite() {
         numero: 2,
         ..entete
     };
-    ecrire_instantane_partie(&hote, 1, &entete, &[], &mut octets);
+    ecrire_instantane_partie(&hote, &entete, &[], &mut octets);
     assert!(recepteur.appliquer(&mut invite, &octets));
     // Octets tronqués : refusés sans paniquer
     let mut invite2 = Partie::nouvelle(d, 0, 1, 7, false);

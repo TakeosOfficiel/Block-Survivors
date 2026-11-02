@@ -1,8 +1,9 @@
-//! Instantané de la partie, écrit par l'hôte pour un invité (src/reseau/hote.ts
-//! `ecrireInstantane`) : l'en-tête (temps, niveau commun, émeraudes, issue), toute
-//! l'équipe, puis ce qui est à moins de `RAYON_ENVOI` de lui (ennemis, boss toujours,
-//! orbes, objets, coffres, projectiles ennemis, chiffres de dégâts). Écrit dans un
-//! tampon réutilisé, sans allocation.
+//! Instantané de la partie, écrit par l'hôte pour tous les invités à la fois (le relais
+//! le fait suivre à chacun ; src/reseau/hote.ts `ecrireInstantane`) : l'en-tête (temps,
+//! niveau commun, émeraudes, issue), toute l'équipe avec la dernière entrée prise en
+//! compte de chacun, puis ce qui est à moins de `RAYON_ENVOI` d'un joueur (ennemis, boss
+//! toujours, orbes, objets, coffres, projectiles ennemis, chiffres de dégâts). Écrit dans
+//! un tampon réutilisé, sans allocation.
 
 use bs_regles::Partie;
 use bs_regles::etat::Issue;
@@ -87,16 +88,16 @@ pub fn lire_entree(octets: &[u8]) -> Option<(u32, Commandes)> {
 /// Ce qui ne se lit pas dans la partie : numéros, rang réseau de chaque joueur.
 pub struct Entete<'a> {
     pub numero: u32,
-    /// Dernière entrée de l'invité prise en compte (il corrige sa prédiction d'après elle).
-    pub derniere_entree: u32,
     /// Par joueur de la partie (0 : l'hôte) : sa place dans le salon.
     pub rangs: &'a [u8],
+    /// Par joueur : sa dernière entrée prise en compte (il corrige sa prédiction d'après
+    /// elle ; 0 pour l'hôte).
+    pub entrees: &'a [u32],
 }
 
-/// Écrit l'instantané destiné au joueur `dest` (≥ 1) dans `sortie`.
+/// Écrit l'instantané (commun à tous les invités) dans `sortie`.
 pub fn ecrire_instantane_partie(
     p: &Partie,
-    dest: usize,
     entete: &Entete,
     chiffres: &[Chiffre],
     sortie: &mut Vec<u8>,
@@ -106,7 +107,6 @@ pub fn ecrire_instantane_partie(
     let hote = p.etat_joueur(0);
     w.u8(TYPE_INSTANTANE);
     w.u32(entete.numero);
-    w.u32(entete.derniere_entree);
     w.f64(e.temps_jeu);
     w.u32(e.ennemis_tues);
     w.u16(hote.niveau.min(u32::from(u16::MAX)) as u16);
@@ -132,6 +132,7 @@ pub fn ecrire_instantane_partie(
             (&m.joueur.commandes, m.en_choix, m.parti)
         };
         w.u8(entete.rangs.get(k).copied().unwrap_or(k as u8));
+        w.u32(entete.entrees.get(k).copied().unwrap_or(0));
         w.f32(j.x);
         w.f32(j.z);
         w.angle(j.angle);
@@ -151,10 +152,15 @@ pub fn ecrire_instantane_partie(
         w.u8(j.vies_utilisees.min(255) as u8);
     }
 
-    let moi = p.etat_joueur(dest);
-    let (cx, cz) = (moi.x, moi.z);
+    // Près d'un joueur, même à terre (il regarde la partie), sauf parti
     let r2 = RAYON_ENVOI * RAYON_ENVOI;
-    let proche = |x: f32, z: f32| (x - cx) * (x - cx) + (z - cz) * (z - cz) <= r2;
+    let proche = |x: f32, z: f32| {
+        (0..n).any(|k| {
+            let j = p.etat_joueur(k);
+            let parti = k > 0 && p.equipe.membres[k - 1].parti;
+            !parti && (j.x - x) * (j.x - x) + (j.z - z) * (j.z - z) <= r2
+        })
+    };
 
     // Ennemis (les boss, partout : leur barre de vie)
     let compte = w.reserver16();

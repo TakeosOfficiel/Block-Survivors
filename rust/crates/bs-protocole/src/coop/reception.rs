@@ -95,7 +95,6 @@ impl Recepteur {
         }
         self.dernier_numero = numero;
         let premier = !std::mem::replace(&mut self.recu, true);
-        let derniere_entree = l.u32();
         let d = p.d;
         let e = &mut p.etat;
         e.temps_jeu = l.f64();
@@ -122,6 +121,7 @@ impl Recepteur {
         // Équipe
         for _ in 0..l.u8() {
             let rang = l.u8() as usize;
+            let derniere_entree = l.u32();
             let (x, z, angle) = (l.f32(), l.f32(), l.angle());
             let (pv, pv_max, bouclier) = (l.f32(), l.f32(), l.f32());
             let drapeaux = l.u8();

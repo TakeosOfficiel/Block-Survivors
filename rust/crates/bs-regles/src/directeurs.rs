@@ -243,6 +243,13 @@ impl Partie {
         }
     }
 
+    /// « Continuer sans fin » après la victoire : la partie reprend, les boss reviennent.
+    pub fn continuer_sans_fin(&mut self) {
+        self.etat.issue = None;
+        self.etat.sans_fin = true;
+        self.reprendre_directeurs_boss();
+    }
+
     /// Mode sans fin : les calendriers reprennent, le prochain venant au plus tôt un intervalle après maintenant.
     pub fn reprendre_directeurs_boss(&mut self) {
         let t = self.etat.temps_jeu as f32;

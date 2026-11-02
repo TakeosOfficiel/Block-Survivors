@@ -67,6 +67,16 @@ Pousser un tag `relais-vN` (ou lancer le workflow « Relais » à la main) :
 Le script bascule d'un coup, redémarre le service et lit `/etat`. L'ancien binaire reste
 dans `/opt/bs-relais/bs-relais.ancien` pour revenir en arrière.
 
+**Serveur actuel (`5.39.102.138`) :** son port SSH est filtré et GitHub ne peut pas le
+joindre. L'étape de déploiement du workflow échoue donc (`scp: Connection closed` au bout
+d'environ 2 min). Le build reste bon : il faut déployer depuis le PC autorisé, dans Git Bash,
+avec la clé `~/.ssh/relais-deploiement` chargée (`ssh-add`) et l'empreinte du serveur dans
+`~/.ssh/known_hosts` :
+```
+gh run download <id du run> -n bs-relais -D relais-binaire   # hors du dépôt
+rust/outils/relais/deployer.sh relais-binaire/bs-relais deploiement@5.39.102.138
+```
+
 Redémarrer coupe les salons en cours. Les joueurs se reconnectent seuls (place gardée
 60 s), mais les salons eux-mêmes sont perdus. On déploie donc le relais seulement quand son
 protocole ou ses limites changent, et à une heure creuse.

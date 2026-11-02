@@ -241,6 +241,8 @@ pub fn entrer(
         coop: None,
         message: message.0.as_deref(),
         annuaire: &annuaire,
+        amis: None,
+        liste: &sauvegarde.amis.amis,
     };
     menu.racine = construire(&mut commandes, &dj, &sauvegarde, &mut ic, &menu, &multi);
     commandes.insert_resource(menu);
@@ -265,10 +267,11 @@ pub fn gerer(
     mut phase: ResMut<NextState<Phase>>,
     mut sortie: MessageWriter<AppExit>,
     (mut essais, mut options): (Local<u32>, ResMut<crate::options::PanneauOptions>),
-    (mut coop, mut message, mut annuaire): (
+    (mut coop, mut message, mut annuaire, mut amis): (
         Option<ResMut<Coop>>,
         ResMut<MessageCoop>,
         ResMut<multijoueur::Annuaire>,
+        Option<ResMut<crate::amis::ReseauAmis>>,
     ),
 ) {
     let mut action = boutons
@@ -302,8 +305,9 @@ pub fn gerer(
         let mut c = multijoueur::Contexte {
             commandes: &mut commandes,
             dj: &dj,
-            sauvegarde: &sauvegarde,
+            sauvegarde: &mut sauvegarde,
             coop: coop.as_deref_mut(),
+            amis: amis.as_deref_mut(),
             message: &mut message,
             annuaire: &mut annuaire,
             phase: &mut phase,
@@ -425,6 +429,8 @@ pub fn gerer(
         coop: coop.as_deref(),
         message: message.0.as_deref(),
         annuaire: &annuaire,
+        amis: amis.as_deref(),
+        liste: &sauvegarde.amis.amis,
     };
     menu.racine = construire(&mut commandes, &dj, &sauvegarde, &mut ic, &menu, &multi);
 }

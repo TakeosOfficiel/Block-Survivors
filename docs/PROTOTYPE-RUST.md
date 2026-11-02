@@ -1241,6 +1241,31 @@ mode sans fin.
   coéquipier présent sont dessinés (`sources.rs`), avec les stats de son arsenal. Les
   créatures ont une clé par combattant (chacun numérote les siennes depuis 1).
 
+### 6d : Amis par le relais (faits)
+
+- Trames `bs_protocole::amis` sur la même WebSocket que les salons, sans salon : le relais
+  ne voit que des **empreintes** (SHA-256) des codes amis. Chaque profil a sa graine de clé
+  ed25519 (`secret`, tirée une fois dans `amis.json`) ; présences et lettres sont signées
+  avec l'adresse visée et un instant croissant.
+- Relais (`bs-relais/src/amis.rs`) : présence gardée 70 s, `Absent` aux suiveurs à la
+  déconnexion, empreinte liée à sa première clé, lettres jamais gardées, 30 envois par
+  minute et par connexion.
+- Client (`bs-reseau::amis::ServiceAmis`, sans Bevy) : connexion à part, republication de
+  la présence toutes les 25 s et à chaque changement (menu, salon avec son code s'il reste
+  de la place, partie), reprise après coupure (2 s puis jusqu'à 60 s). La clé d'un ami est
+  retenue à sa première présence (`cle` dans `amis.json`) ; ensuite, une présence ou une
+  lettre signée d'une autre clé est ignorée. Un ajout est accepté d'un inconnu.
+  Essai de bout en bout contre un vrai relais (`tests/amis.rs`, avec un imposteur).
+  Ami factice pour essayer : `cargo run -p bs-reseau --example ami -- <code> <code suivi>
+  [ajout|demande|invitation]`.
+- Jeu (`bs-rendu/src/amis.rs`) : ressource `ReseauAmis` du profil actif (refaite au
+  changement de profil), clés et pseudos appris enregistrés, messages reçus gardés (8 au
+  plus). `BS_SANS_AMIS` la coupe.
+- Page Multijoueur : colonne « Amis » à droite. Son code, ajout par code, messages reçus
+  (« vous invite » → Rejoindre, « voudrait jouer » → Inviter, « vous a ajouté » →
+  Ajouter), liste des amis avec leur présence et Rejoindre, Inviter (ouvre un salon privé
+  s'il le faut, l'invitation part dès qu'il a son code), « Jouer ? » (demande) et retirer.
+
 ## Étape 7 : mises à jour et distribution
 
 ### 7a : mises à jour dans le jeu (faites)

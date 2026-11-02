@@ -2,9 +2,12 @@
 //! privé), en rejoindre un par son code ou dans la liste des salons publics, puis, dans le
 //! salon, voir qui est là ; l'hôte lance la partie sur l'arène choisie (générée), l'invité
 //! la suit. Hors partie, `suivre` relève la session à chaque image et refait la page quand
-//! le salon change ; une coop finie laisse sa raison dans `MessageCoop`.
+//! le salon change ; une coop finie laisse sa raison dans `MessageCoop`. À droite, les
+//! amis (`amis`) : code ami, ajout, présence, invitations et demandes.
 
+mod amis;
 mod vue;
+mod vue_amis;
 
 pub use vue::{VueMulti, construire};
 
@@ -13,6 +16,7 @@ use bs_reseau::{EvenementSession, PhaseCoop, SalonPublic, Session, code_saisi};
 
 use super::{Menu, Page};
 use crate::Phase;
+use crate::amis::ReseauAmis;
 use crate::coop::{Coop, MessageCoop, Role};
 use crate::lancement::{self, ChoixPartie, DonneesJeu, PartiePreparee, SourceMenu};
 use crate::sauvegarde::Sauvegarde;
@@ -31,6 +35,21 @@ pub enum ActionMulti {
     Actualiser,
     Lancer,
     Quitter,
+    /// Commence la saisie d'un code ami.
+    CodeAmi,
+    /// Ajoute l'ami du code saisi.
+    AjouterAmi,
+    /// Rejoint le salon de l'ami de ce rang.
+    RejoindreAmi(usize),
+    /// Invite l'ami de ce rang (ouvre un salon privé s'il le faut).
+    Inviter(usize),
+    /// Demande à l'ami de ce rang de nous inviter.
+    Demander(usize),
+    Retirer(usize),
+    /// Accepte le message reçu de ce rang (rejoindre, inviter, ajouter).
+    Accepter(usize),
+    /// Oublie le message reçu de ce rang.
+    Ignorer(usize),
 }
 
 /// Liste des salons publics, demandée au relais par une session à part.
@@ -38,6 +57,8 @@ pub enum ActionMulti {
 pub struct Annuaire {
     session: Option<Session>,
     salons: Vec<SalonPublic>,
+    /// La saisie en cours est un code ami (sinon un code de salon).
+    champ_ami: bool,
 }
 
 impl Annuaire {
@@ -72,8 +93,9 @@ impl Annuaire {
 pub struct Contexte<'a, 'w, 's> {
     pub commandes: &'a mut Commands<'w, 's>,
     pub dj: &'a DonneesJeu,
-    pub sauvegarde: &'a Sauvegarde,
+    pub sauvegarde: &'a mut Sauvegarde,
     pub coop: Option<&'a mut Coop>,
+    pub amis: Option<&'a mut ReseauAmis>,
     pub message: &'a mut MessageCoop,
     pub annuaire: &'a mut Annuaire,
     pub phase: &'a mut NextState<Phase>,
@@ -95,8 +117,16 @@ fn agir(c: &mut Contexte, menu: &mut Menu, action: ActionMulti) {
     let choix = menu.choix;
     match action {
         ActionMulti::Creer(public) if c.coop.is_none() => entrer_salon(c, choix, None, public),
-        ActionMulti::Code if c.coop.is_none() => menu.saisie = Some(String::new()),
-        ActionMulti::Rejoindre => {
+        ActionMulti::Code if c.coop.is_none() => {
+            c.annuaire.champ_ami = false;
+            menu.saisie = Some(String::new());
+        }
+        ActionMulti::CodeAmi => {
+            c.annuaire.champ_ami = true;
+            menu.saisie = Some(String::new());
+        }
+        ActionMulti::Rejoindre | ActionMulti::AjouterAmi => {
+            c.annuaire.champ_ami = action == ActionMulti::AjouterAmi;
             let saisie = menu.saisie.take().unwrap_or_default();
             valider(c, menu, &saisie);
         }
@@ -115,7 +145,7 @@ fn agir(c: &mut Contexte, menu: &mut Menu, action: ActionMulti) {
             c.commandes.remove_resource::<Coop>();
             c.message.0 = None;
         }
-        _ => {}
+        a => amis::agir(c, menu, a),
     }
 }
 
@@ -137,6 +167,10 @@ pub fn traiter(
 
 /// Code validé (bouton ou Entrée).
 fn valider(c: &mut Contexte, menu: &Menu, saisie: &str) {
+    if c.annuaire.champ_ami {
+        amis::ajouter(c, saisie);
+        return;
+    }
     if c.coop.is_some() {
         return;
     }
@@ -195,7 +229,7 @@ pub fn suivre(
     mut annuaire: ResMut<Annuaire>,
     (dj, sauvegarde): (Res<DonneesJeu>, Res<Sauvegarde>),
     mut phase: ResMut<NextState<Phase>>,
-    mut vue: Local<u64>,
+    (amis, mut vue): (Option<Res<ReseauAmis>>, Local<u64>),
 ) {
     if annuaire.maj() && menu.page == Page::Multijoueur {
         menu.a_refaire = true;
@@ -241,7 +275,11 @@ pub fn suivre(
     if retirer {
         coop = None;
     }
-    let s = signature(coop.as_deref());
+    // Amis : présences, messages (et leur arrivée)
+    let version = amis.map_or(0, |a| a.version + 1);
+    let s = signature(coop.as_deref())
+        .wrapping_mul(1_000_003)
+        .wrapping_add(version);
     if s != *vue {
         *vue = s;
         if menu.page == Page::Multijoueur {

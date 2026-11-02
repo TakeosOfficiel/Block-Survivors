@@ -10,6 +10,7 @@
 //! tant que personne n'a touché au clavier (ou sans `BS_CARTES=1`), le robot y choisit
 //! les cartes et conduit le joueur (démonstration, captures).
 
+mod amis;
 mod arene;
 mod armes;
 mod camera;
@@ -222,10 +223,12 @@ impl Plugin for PluginJeu {
                     sauvegarde::inserer_skin,
                     menu::entrer,
                     maj::creer_encart,
+                    amis::creer,
                 )
                     .chain(),
             )
             .add_systems(Startup, maj::demarrer)
+            .add_systems(Update, amis::suivre)
             .add_systems(
                 Update,
                 (

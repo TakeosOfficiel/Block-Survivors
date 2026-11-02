@@ -1,17 +1,21 @@
 //! Vue de la page Multijoueur : hors salon (créer, code, salons publics) ou dans le
-//! salon (code, joueurs, lancement), et le message de la dernière coop arrêtée.
+//! salon (code, joueurs, lancement), et le message de la dernière coop arrêtée ; la
+//! colonne des amis à droite (`vue_amis`).
 
 use bevy::prelude::*;
 use bs_reseau::PhaseCoop;
 
+use bs_sauvegarde::amis::Ami;
+
 use super::{ActionMulti, Annuaire};
+use crate::amis::ReseauAmis;
 use crate::coop::Coop;
 use crate::ecrans::style::{self, GRIS, OR, OR_CLAIR, TEXTE};
 use crate::hud::police::TextePixel;
 use crate::lancement::{DonneesJeu, SourceMenu};
 use crate::menu::{ActionMenu, Menu};
 
-const LARGEUR: f32 = 760.0;
+const LARGEUR: f32 = 560.0;
 const ROUGE: Color = Color::srgb_u8(0xff, 0x8a, 0x8a);
 
 /// Ce que la page montre de la coop.
@@ -19,13 +23,26 @@ pub struct VueMulti<'a> {
     pub coop: Option<&'a Coop>,
     pub message: Option<&'a str>,
     pub annuaire: &'a Annuaire,
+    pub amis: Option<&'a ReseauAmis>,
+    pub liste: &'a [Ami],
 }
 
-fn texte(commandes: &mut Commands, parent: Entity, t: &str, couleur: Color, taille: f32) {
+pub(super) fn texte(
+    commandes: &mut Commands,
+    parent: Entity,
+    t: &str,
+    couleur: Color,
+    taille: f32,
+) {
     commandes.spawn((TextePixel::nouveau(t, couleur, taille), ChildOf(parent)));
 }
 
-fn bouton(commandes: &mut Commands, parent: Entity, t: &str, action: Option<ActionMulti>) {
+pub(super) fn bouton(
+    commandes: &mut Commands,
+    parent: Entity,
+    t: &str,
+    action: Option<ActionMulti>,
+) {
     let b = style::bouton(commandes, parent, t, 0.0, false, ());
     let mut e = commandes.entity(b);
     e.entry::<Node>().and_modify(|mut n| {
@@ -44,11 +61,11 @@ fn bouton(commandes: &mut Commands, parent: Entity, t: &str, action: Option<Acti
     }
 }
 
-fn ligne(commandes: &mut Commands, parent: Entity) -> Entity {
+pub(super) fn ligne(commandes: &mut Commands, parent: Entity, largeur: f32) -> Entity {
     commandes
         .spawn((
             Node {
-                width: Val::Px(LARGEUR),
+                width: Val::Px(largeur),
                 align_items: AlignItems::Center,
                 column_gap: Val::Px(8.0),
                 flex_shrink: 0.0,
@@ -64,21 +81,21 @@ fn ligne(commandes: &mut Commands, parent: Entity) -> Entity {
 }
 
 /// Hors salon : créer, rejoindre par code, salons publics.
-fn accueil(commandes: &mut Commands, racine: Entity, menu: &Menu, vue: &VueMulti) {
-    let l = ligne(commandes, racine);
+fn accueil(commandes: &mut Commands, racine: Entity, menu: &Menu, vue: &VueMulti, saisie: bool) {
+    let l = ligne(commandes, racine, LARGEUR);
     texte(commandes, l, "Créer un salon :", OR, 2.0);
     bouton(commandes, l, "Public", Some(ActionMulti::Creer(true)));
     bouton(commandes, l, "Privé", Some(ActionMulti::Creer(false)));
 
-    let l = ligne(commandes, racine);
+    let l = ligne(commandes, racine, LARGEUR);
     texte(commandes, l, "Rejoindre :", OR, 2.0);
     let champ = match &menu.saisie {
-        Some(s) => format!("{s}_"),
-        None => "Taper le code".into(),
+        Some(s) if saisie => format!("{s}_"),
+        _ => "Taper le code".into(),
     };
     bouton(commandes, l, &champ, Some(ActionMulti::Code));
     bouton(commandes, l, "Rejoindre", Some(ActionMulti::Rejoindre));
-    if menu.saisie.is_some() {
+    if menu.saisie.is_some() && saisie {
         texte(
             commandes,
             racine,
@@ -88,7 +105,7 @@ fn accueil(commandes: &mut Commands, racine: Entity, menu: &Menu, vue: &VueMulti
         );
     }
 
-    let l = ligne(commandes, racine);
+    let l = ligne(commandes, racine, LARGEUR);
     texte(commandes, l, "Salons publics", OR, 2.0);
     let recherche = vue.annuaire.session.is_some();
     let t = if recherche {
@@ -106,7 +123,7 @@ fn accueil(commandes: &mut Commands, racine: Entity, menu: &Menu, vue: &VueMulti
         texte(commandes, racine, "Aucun salon public ouvert.", GRIS, 1.5);
     }
     for (k, s) in vue.annuaire.salons.iter().enumerate() {
-        let l = ligne(commandes, racine);
+        let l = ligne(commandes, racine, LARGEUR);
         let hote = String::from_utf8_lossy(&s.annonce);
         let t = format!("{hote} · {}/{} joueurs", s.joueurs, s.places);
         texte(commandes, l, &t, TEXTE, 2.0);
@@ -143,7 +160,7 @@ fn salon(commandes: &mut Commands, racine: Entity, dj: &DonneesJeu, menu: &Menu,
         1.5,
     );
     for j in coop.joueurs() {
-        let l = ligne(commandes, racine);
+        let l = ligne(commandes, racine, LARGEUR);
         let p = &j.presentation;
         let classe =
             dj.d.personnages
@@ -165,7 +182,7 @@ fn salon(commandes: &mut Commands, racine: Entity, dj: &DonneesJeu, menu: &Menu,
         );
         texte(commandes, l, classe, GRIS, 1.5);
     }
-    let l = ligne(commandes, racine);
+    let l = ligne(commandes, racine, LARGEUR);
     if coop.est_hote() {
         let arene = &dj.arenes[menu.choix.arene];
         let generee = matches!(arene.source, SourceMenu::Generee(_));
@@ -225,10 +242,33 @@ pub fn construire(
         ))
         .id();
     texte(commandes, racine, "Multijoueur", OR_CLAIR, 3.0);
+    let colonne = |largeur: f32| Node {
+        width: Val::Px(largeur),
+        flex_direction: FlexDirection::Column,
+        align_items: AlignItems::Center,
+        row_gap: Val::Px(8.0),
+        ..default()
+    };
+    let corps = commandes
+        .spawn((
+            Node {
+                column_gap: Val::Px(24.0),
+                align_items: AlignItems::FlexStart,
+                ..default()
+            },
+            ChildOf(racine),
+        ))
+        .id();
+    let gauche = commandes.spawn((colonne(LARGEUR), ChildOf(corps))).id();
+    let droite = commandes
+        .spawn((colonne(super::vue_amis::LARGEUR), ChildOf(corps)))
+        .id();
+    let saisie_salon = !vue.annuaire.champ_ami;
     match vue.coop {
-        Some(coop) => salon(commandes, racine, dj, menu, coop),
-        None => accueil(commandes, racine, menu, vue),
+        Some(coop) => salon(commandes, gauche, dj, menu, coop),
+        None => accueil(commandes, gauche, menu, vue, saisie_salon),
     }
+    super::vue_amis::construire(commandes, droite, menu, vue);
     if let Some(m) = vue.message {
         commandes.spawn((
             TextePixel::nouveau(m, ROUGE, 1.5).bloc(LARGEUR),

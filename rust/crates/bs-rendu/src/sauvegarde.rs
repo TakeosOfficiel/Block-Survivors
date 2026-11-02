@@ -59,8 +59,7 @@ pub struct Sauvegarde {
     pub profil: ProfilJoueur,
     /// Profils du dossier (profil actif, clés de ses données).
     pub profils: Profils,
-    /// Code ami et amis (réseau : étape 6).
-    #[allow(dead_code)] // lu par la page Multijoueur (étapes 5 et 6)
+    /// Code ami, clé du profil et amis (suivis par `crate::amis`).
     pub amis: Amis,
     /// Récompense de la partie qui vient de finir (écran de fin).
     pub recompense: Option<Recompense>,

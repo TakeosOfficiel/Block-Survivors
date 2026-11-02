@@ -44,13 +44,16 @@ fn fin_de_partie_et_talents() {
         xp: 1e6,
         boss: 1,
         sans_fin: false,
-        en_equipe: false,
+        joueurs: 1,
+        meme_classe: false,
+        victoire: false,
     };
     let r = p.terminer_partie(&bilan);
     assert_eq!(r.xp, 1_000_000);
     assert!(r.apres.niveau > r.avant.niveau);
     let mine = d.talents.deblocages.iter().position(|b| b.id == "mine");
     assert_eq!(r.deblocages, vec![mine.unwrap()]);
+    assert!(r.succes.is_empty(), "seul, aucun succès de coop");
 
     // Un talent racine s'achète jusqu'à son rang maximal
     let racine = d.talents.arbres[perso][0]
@@ -93,4 +96,48 @@ fn fin_de_partie_et_talents() {
     let json: serde_json::Value = s.lire(&cle).unwrap();
     assert_eq!(json["version"], 3);
     assert_eq!(json["parties"], serde_json::json!(1));
+}
+
+#[test]
+fn succes_de_coop() {
+    let d = donnees();
+    let s = stockage("succes");
+    let cle = "block-survivors.p.1.progression".to_owned();
+    let mut p = Progression::charger(d, s.clone(), cle.clone());
+    let (perso, _) = d.personnages.personnages.get_index(0).unwrap();
+    let index = |id: &str| d.talents.succes.iter().position(|s| s.id == id).unwrap();
+    let a_deux = Bilan {
+        personnage: perso,
+        arene: "prairie",
+        temps: 900.0,
+        xp: 10.0,
+        boss: 1,
+        sans_fin: false,
+        joueurs: 2,
+        meme_classe: false,
+        victoire: true,
+    };
+    let r = p.terminer_partie(&a_deux);
+    let mut attendus = vec![
+        index("ensemble"),
+        index("chasse_groupe"),
+        index("tenir_bon"),
+    ];
+    attendus.sort_unstable();
+    assert_eq!(r.succes, attendus);
+    // À plusieurs, les records du solo ne bougent pas
+    assert_eq!((p.record("prairie"), p.parties()), (0.0, 0));
+    // Un succès ne se gagne qu'une fois
+    assert!(p.terminer_partie(&a_deux).succes.is_empty());
+    let a_quatre = Bilan {
+        joueurs: 4,
+        meme_classe: true,
+        victoire: false,
+        ..a_deux
+    };
+    let r = p.terminer_partie(&a_quatre);
+    assert_eq!(r.succes, vec![index("meme_uniforme")]);
+    let relu = Progression::charger(d, s, cle);
+    assert!(relu.succes("ensemble") && relu.succes("meme_uniforme"));
+    assert!(!relu.succes("escouade"));
 }

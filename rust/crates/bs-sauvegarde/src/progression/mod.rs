@@ -12,7 +12,7 @@
 use std::collections::BTreeMap;
 
 use bs_donnees::Donnees;
-use bs_donnees::progression::{Condition, Deblocage, TypeDeblocage};
+use bs_donnees::progression::{Condition, ConditionSucces, Deblocage, TypeDeblocage};
 use serde_json::{Map, Value};
 
 use crate::stockage::Stockage;
@@ -48,8 +48,28 @@ pub struct Bilan<'a> {
     /// Suite en mode sans fin d'une partie gagnée : la victoire a déjà compté la partie,
     /// le record et l'XP d'avant ; `xp` et `boss` ne comptent que la suite.
     pub sans_fin: bool,
-    /// Partie à plusieurs : seule la maîtrise progresse.
-    pub en_equipe: bool,
+    /// Joueurs dans la partie, soi compris : à plusieurs, seuls la maîtrise et les
+    /// succès progressent.
+    pub joueurs: u8,
+    /// Tous les joueurs avaient la même classe.
+    pub meme_classe: bool,
+    /// Partie gagnée (arène finie) ; faux pour la suite sans fin.
+    pub victoire: bool,
+}
+
+impl Bilan<'_> {
+    pub fn en_equipe(&self) -> bool {
+        self.joueurs > 1
+    }
+
+    /// Le bilan remplit `c`.
+    pub fn remplit(&self, c: &ConditionSucces) -> bool {
+        self.joueurs >= c.joueurs
+            && (self.victoire || !c.victoire)
+            && self.boss >= c.boss
+            && (self.meme_classe || !c.meme_classe)
+            && self.temps >= f64::from(c.survie)
+    }
 }
 
 /// Ce que la partie a rapporté.
@@ -62,6 +82,8 @@ pub struct Recompense {
     pub deblocages: Vec<usize>,
     /// Mode sans fin : le temps bat le record sans fin de l'arène.
     pub record_sans_fin: bool,
+    /// Index des succès gagnés par cette partie (`d.talents.succes`).
+    pub succes: Vec<usize>,
 }
 
 /// Pourquoi un rang ne peut pas être acheté.
@@ -82,6 +104,8 @@ struct Champs {
     arbres: Nombres,
     records: Nombres,
     records_sans_fin: Nombres,
+    /// Succès gagnés : identifiant → 1.
+    succes: Nombres,
     boss_vaincus: f64,
     parties: f64,
     reinitialise: bool,
@@ -159,6 +183,7 @@ impl Progression {
             arbres: table(&v["arbres"]),
             records: table(&v["records"]),
             records_sans_fin: table(&v["recordsSansFin"]),
+            succes: table(&v["succes"]),
             boss_vaincus: nombre(&v["bossVaincus"]),
             parties: nombre(&v["parties"]),
             // Une ancienne sauvegarde existait : ses talents sont remis à zéro
@@ -192,6 +217,7 @@ impl Progression {
         o.insert("arbres".into(), json_table(&c.arbres));
         o.insert("records".into(), json_table(&c.records));
         o.insert("recordsSansFin".into(), json_table(&c.records_sans_fin));
+        o.insert("succes".into(), json_table(&c.succes));
         o.insert("bossVaincus".into(), json(c.boss_vaincus));
         o.insert("parties".into(), json(c.parties));
         o.insert("reinitialise".into(), Value::Bool(c.reinitialise));
@@ -242,6 +268,11 @@ impl Progression {
         self.c.records.get(arene).copied().unwrap_or(0.0)
     }
 
+    /// Le succès `id` est gagné.
+    pub fn succes(&self, id: &str) -> bool {
+        self.c.succes.contains_key(id)
+    }
+
     pub fn record_sans_fin(&self, arene: &str) -> f64 {
         self.c.records_sans_fin.get(arene).copied().unwrap_or(0.0)
     }
@@ -283,7 +314,14 @@ impl Progression {
             .insert(b.personnage.into(), (avant.xp + xp) as f64);
         let mut record_sans_fin = false;
         let c = &mut self.c;
-        if b.en_equipe {
+        let succes: Vec<usize> = (self.d.talents.succes.iter().enumerate())
+            .filter(|(_, s)| !c.succes.contains_key(&s.id) && b.remplit(&s.condition))
+            .map(|(i, _)| i)
+            .collect();
+        for &i in &succes {
+            c.succes.insert(self.d.talents.succes[i].id.clone(), 1.0);
+        }
+        if b.en_equipe() {
             // Une partie à plusieurs ne compte pas pour les records du solo
         } else if b.sans_fin {
             c.boss_vaincus += f64::from(b.boss);
@@ -308,6 +346,7 @@ impl Progression {
                 .filter(|&i| self.rempli(&deblocages[i]))
                 .collect(),
             record_sans_fin,
+            succes,
         }
     }
 

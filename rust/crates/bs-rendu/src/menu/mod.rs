@@ -243,6 +243,7 @@ pub fn entrer(
         annuaire: &annuaire,
         amis: None,
         liste: &sauvegarde.amis.amis,
+        progression: &sauvegarde.progression,
     };
     menu.racine = construire(&mut commandes, &dj, &sauvegarde, &mut ic, &menu, &multi);
     commandes.insert_resource(menu);
@@ -431,6 +432,7 @@ pub fn gerer(
         annuaire: &annuaire,
         amis: amis.as_deref(),
         liste: &sauvegarde.amis.amis,
+        progression: &sauvegarde.progression,
     };
     menu.racine = construire(&mut commandes, &dj, &sauvegarde, &mut ic, &menu, &multi);
 }

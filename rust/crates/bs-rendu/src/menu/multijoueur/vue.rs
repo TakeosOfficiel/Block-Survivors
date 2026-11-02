@@ -1,11 +1,12 @@
 //! Vue de la page Multijoueur : hors salon (créer, code, salons publics) ou dans le
 //! salon (code, joueurs, lancement), et le message de la dernière coop arrêtée ; la
-//! colonne des amis à droite (`vue_amis`).
+//! colonne des amis à droite (`vue_amis`) ; hors salon, les succès de coop.
 
 use bevy::prelude::*;
 use bs_reseau::PhaseCoop;
 
 use bs_sauvegarde::amis::Ami;
+use bs_sauvegarde::progression::Progression;
 
 use super::{ActionMulti, Annuaire};
 use crate::amis::ReseauAmis;
@@ -25,6 +26,7 @@ pub struct VueMulti<'a> {
     pub annuaire: &'a Annuaire,
     pub amis: Option<&'a ReseauAmis>,
     pub liste: &'a [Ami],
+    pub progression: &'a Progression,
 }
 
 pub(super) fn texte(
@@ -134,6 +136,26 @@ fn accueil(commandes: &mut Commands, racine: Entity, menu: &Menu, vue: &VueMulti
             "Rejoindre",
             (!plein).then_some(ActionMulti::Public(k)),
         );
+    }
+}
+
+/// Succès de coop : gagnés en or, les autres en gris avec leur condition.
+fn succes(commandes: &mut Commands, racine: Entity, dj: &DonneesJeu, p: &Progression) {
+    let liste = &dj.d.talents.succes;
+    if liste.is_empty() {
+        return;
+    }
+    let gagnes = liste.iter().filter(|s| p.succes(&s.id)).count();
+    let l = ligne(commandes, racine, LARGEUR);
+    let t = format!("Succès de coop · {gagnes}/{}", liste.len());
+    texte(commandes, l, &t, OR, 2.0);
+    for s in liste {
+        let (t, couleur) = if p.succes(&s.id) {
+            (format!("{} · {} · gagné", s.nom, s.texte), OR_CLAIR)
+        } else {
+            (format!("{} · {}", s.nom, s.texte), GRIS)
+        };
+        texte(commandes, racine, &t, couleur, 1.5);
     }
 }
 
@@ -266,7 +288,10 @@ pub fn construire(
     let saisie_salon = !vue.annuaire.champ_ami;
     match vue.coop {
         Some(coop) => salon(commandes, gauche, dj, menu, coop),
-        None => accueil(commandes, gauche, menu, vue, saisie_salon),
+        None => {
+            accueil(commandes, gauche, menu, vue, saisie_salon);
+            succes(commandes, gauche, dj, vue.progression);
+        }
     }
     super::vue_amis::construire(commandes, droite, menu, vue);
     if let Some(m) = vue.message {

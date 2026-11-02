@@ -250,6 +250,16 @@ pub(crate) fn valider(d: &Donnees) -> Vec<ErreurValidation> {
             }
         }
     }
+    for (k, s) in d.talents.succes.iter().enumerate() {
+        if d.talents.succes[..k].iter().any(|t| t.id == s.id) {
+            v.erreur("talents", &s.id, "succès en double".to_owned());
+        }
+        // Joueurs au plus dans une partie (bs-regles `equipe::regles::JOUEURS_MAX`)
+        let max = 4;
+        if s.condition.joueurs > max {
+            v.erreur("talents", &s.id, format!("plus de {max} joueurs"));
+        }
+    }
     for (id, p) in &d.particules.particules {
         // « morceau » prend son image de l'icône donnée à l'émission
         if p.images.is_empty() && p.animation != crate::effets::AnimationParticule::Morceau {

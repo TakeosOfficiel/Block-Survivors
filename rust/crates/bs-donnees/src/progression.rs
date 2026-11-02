@@ -284,6 +284,35 @@ pub struct Talents {
     pub arbres: Table<[Arbre; 2]>,
     pub maitrise: Maitrise,
     pub deblocages: Vec<Deblocage>,
+    /// Succès de coop, gagnés une fois pour toutes.
+    #[serde(default)]
+    pub succes: Vec<Succes>,
+}
+
+/// Succès : gagné à la fin d'une partie qui remplit toute sa condition.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Succes {
+    pub id: String,
+    pub nom: String,
+    pub texte: String,
+    pub condition: ConditionSucces,
+}
+
+/// Ce que la partie doit remplir ; un champ laissé à zéro (ou faux) n'est pas exigé.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct ConditionSucces {
+    /// Joueurs au moins dans la partie, soi compris.
+    pub joueurs: u8,
+    /// Partie gagnée (arène finie).
+    pub victoire: bool,
+    /// Boss vaincus au moins.
+    pub boss: u32,
+    /// Tous les joueurs ont la même classe.
+    pub meme_classe: bool,
+    /// Temps survécu au moins (s).
+    pub survie: f32,
 }
 
 /// Effets en jeu de l'arbre actif d'une classe (src/progression/sauvegarde.ts `bonus`),

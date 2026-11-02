@@ -1266,6 +1266,23 @@ mode sans fin.
   Ajouter), liste des amis avec leur présence et Rejoindre, Inviter (ouvre un salon privé
   s'il le faut, l'invitation part dès qu'il a son code), « Jouer ? » (demande) et retirer.
 
+### 6e : Succès de coop (faits)
+
+- Données : `succes` à la fin de `donnees/talents.ron` (identifiant, nom, texte,
+  condition). Une condition combine, au choix : joueurs au moins, victoire, boss vaincus,
+  même classe pour tous, temps survécu ; un champ omis n'est pas exigé. La validation
+  refuse les doublons et plus de 4 joueurs. Cinq succès : Ensemble (finir à plusieurs),
+  Chasse en groupe (boss à plusieurs), Tenir bon (10:00 à plusieurs), Escouade (finir à
+  4), Même uniforme (boss à 4 de la même classe).
+- `Bilan` ne dit plus seulement « en équipe » : il porte le nombre de joueurs, la même
+  classe et la victoire. `Sauvegarde::terminer` les tire des joueurs du salon
+  (`Coop::joueurs`, chez l'hôte comme chez l'invité) : à plusieurs, seuls la maîtrise
+  et les succès progressent, comme avant.
+- Sauvegarde : champ `succes` de la progression (identifiant → 1), gagné une fois pour
+  toutes ; `Recompense::succes` donne ceux de la partie, affichés sur l'écran de fin
+  (« Succès : … »). La page Multijoueur (hors salon) liste les succès, gagnés en or.
+- Test : `bs-sauvegarde/tests/progression.rs` `succes_de_coop`.
+
 ## Étape 7 : mises à jour et distribution
 
 ### 7a : mises à jour dans le jeu (faites)

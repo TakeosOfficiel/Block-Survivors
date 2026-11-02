@@ -183,7 +183,9 @@ pub fn gerer(
     }
     ecrans.vue = vue;
     if vue == Vue::Fin {
-        sauvegarde.terminer(&jeu.partie);
+        let joueurs = coop.as_deref().map(Coop::joueurs).unwrap_or_default();
+        let classes = joueurs.iter().map(|j| j.presentation.personnage.as_str());
+        sauvegarde.terminer(&jeu.partie, classes);
     }
     let c = bilan::Contexte {
         serveur: &serveur,

@@ -18,6 +18,7 @@ use bs_donnees::arenes::Monde;
 use bs_donnees::equipement::Piece;
 use bs_donnees::progression::BonusTalents;
 use bs_donnees::{Apparence, Donnees};
+use bs_regles::etat::Issue;
 use bs_regles::evenements::Evenement;
 use bs_regles::partie::Partie;
 use bs_sauvegarde::collection::MONDES;
@@ -204,7 +205,8 @@ impl Sauvegarde {
     }
 
     /// Enregistre la partie finie ; sa récompense est gardée pour l'écran de fin.
-    pub fn terminer(&mut self, p: &Partie) {
+    /// `classes` : celles des joueurs de la coop (vide seul).
+    pub fn terminer<'a>(&mut self, p: &Partie, classes: impl Iterator<Item = &'a str> + Clone) {
         let e = &p.etat;
         let (personnage, _) =
             p.d.personnages
@@ -225,7 +227,9 @@ impl Sauvegarde {
             xp: f64::from(xp),
             boss,
             sans_fin: e.sans_fin,
-            en_equipe: false,
+            joueurs: classes.clone().count().max(1) as u8,
+            meme_classe: classes.clone().all(|c| c == personnage),
+            victoire: !e.sans_fin && e.issue == Some(Issue::Victoire),
         };
         self.recompense = Some(self.progression.terminer_partie(&bilan));
     }

@@ -385,4 +385,9 @@ fn maitrise(commandes: &mut Commands, c: &Contexte, parent: Entity, p: &Partie, 
         let t = format!("Débloqué : {} !", p.d.talents.deblocages[i].nom);
         texte(commandes, bloc, &t, JAUNE, 2.0);
     }
+    for &i in &r.succes {
+        let s = &p.d.talents.succes[i];
+        let t = format!("Succès : {} ({})", s.nom, s.texte);
+        texte(commandes, bloc, &t, JAUNE, 2.0);
+    }
 }

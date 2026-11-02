@@ -1093,7 +1093,8 @@ mode sans fin.
 - Panneau par-dessus le menu principal (bouton « Options ») et la pause : curseurs de
   volume (clic ou glissé, pas de 5 %), bascules, « Terminé » ou Échap pour fermer.
 - Les options compteur de dégâts (5j), vue F5 (5k) et effets des alliés (6c-3) ont été
-  reprises depuis. Reste : le vent n'est pas coupé avec les ombres (shader).
+  reprises depuis. « Ombres et vent » coupe aussi le vent (comme en TS : force nulle
+  dans le shader, `direction.w` du matériau des blocs, appliqué aux matériaux créés ensuite).
 - Vérifié aux clics, au menu et en pause (fichier d'options écrit, FPS affichées).
 
 ### 5g : Nouveautés (faites)

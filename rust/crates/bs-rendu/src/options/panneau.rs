@@ -80,7 +80,7 @@ fn libelle(o: &Options, r: Reglage) -> String {
         },
         Reglage::Fps => format!("Compteur de FPS : {}", oui(o.afficher_fps)),
         Reglage::Secousses => format!("Secousses de l'écran : {}", oui(o.secousses)),
-        Reglage::Ombres => format!("Ombres : {}", LIBELLES_OMBRES[o.ombres]),
+        Reglage::Ombres => format!("Ombres et vent : {}", LIBELLES_OMBRES[o.ombres]),
         Reglage::Chiffres => format!("Chiffres des dégâts : {}", oui(o.chiffres_degats)),
         Reglage::Compteur => format!("Compteur (Tab) : {}", oui(o.compteur_degats)),
         Reglage::Vue => {

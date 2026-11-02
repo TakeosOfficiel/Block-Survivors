@@ -51,7 +51,7 @@ fn vertex(s: Sommet) -> Sortie {
     var monde = mesh_functions::mesh_position_local_to_world(monde_depuis_local, vec4(s.position, 1.0));
     var exclu = p.animation.w > 0.5;
 #ifdef BLOC
-    monde = vec4(monde.xyz + souffle(monde.xyz, s.vent, globals.time), 1.0);
+    monde = vec4(monde.xyz + souffle(monde.xyz, s.vent, globals.time) * (1.0 - p.direction.w), 1.0);
 #else
     exclu = exclu || p.brouillard.w > 0.5;
 #endif

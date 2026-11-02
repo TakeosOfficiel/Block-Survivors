@@ -58,7 +58,7 @@ fn vertex(s: Sommet) -> Sortie {
     var o: Sortie;
     let monde_depuis_local = mesh_functions::get_world_from_local(s.instance);
     var monde = mesh_functions::mesh_position_local_to_world(monde_depuis_local, vec4(s.position, 1.0));
-    monde = vec4(monde.xyz + souffle(monde.xyz, s.vent, globals.time), 1.0);
+    monde = vec4(monde.xyz + souffle(monde.xyz, s.vent, globals.time) * (1.0 - p.direction.w), 1.0);
     o.world_position = monde;
     o.position = position_world_to_clip(monde.xyz);
     o.world_normal = mesh_functions::mesh_normal_local_to_world(s.normale, s.instance);

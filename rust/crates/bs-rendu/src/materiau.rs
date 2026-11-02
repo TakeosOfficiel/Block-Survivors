@@ -193,7 +193,34 @@ impl Plugin for PluginMateriaux {
         load_shader_library!(app, "shaders/soleil.wgsl");
         load_shader_library!(app, "shaders/lumiere.wgsl");
         app.add_plugins(MaterialPlugin::<MateriauBloc>::default())
-            .add_systems(Update, animer_textures);
+            .add_systems(Update, (animer_textures, couper_le_vent));
+    }
+}
+
+/// Le vent suit l'option des ombres (« Ombres et vent » de la version TS : sans
+/// shaders, sa force est nulle). `direction.w` à 1 : vent coupé. Appliqué aux
+/// matériaux créés ensuite (nouvelle arène) comme à ceux déjà là.
+fn couper_le_vent(
+    ombres: Res<crate::soleil::OmbresSoleil>,
+    mut evenements: MessageReader<AssetEvent<MateriauBloc>>,
+    mut materiaux: ResMut<Assets<MateriauBloc>>,
+) {
+    let nouveaux = evenements
+        .read()
+        .any(|e| matches!(e, AssetEvent::Added { .. }));
+    if !nouveaux && !ombres.is_changed() {
+        return;
+    }
+    let coupe = if ombres.0 { 0.0 } else { 1.0 };
+    let ids: Vec<_> = materiaux
+        .iter()
+        .filter(|(_, m)| m.parametres.direction.w != coupe)
+        .map(|(id, _)| id)
+        .collect();
+    for id in ids {
+        if let Some(m) = materiaux.get_mut(id) {
+            m.parametres.direction.w = coupe;
+        }
     }
 }
 

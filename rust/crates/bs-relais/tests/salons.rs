@@ -334,7 +334,7 @@ async fn page_etat() {
     tcp.read_to_string(&mut reponse).await.unwrap();
     assert!(reponse.starts_with("HTTP/1.1 200"), "{reponse}");
     let attendu = format!(
-        "{{\"protocole\":{V},\"salons\":1,\"publics\":1,\"joueurs\":2,\"reservees\":0,\"connexions\":2}}"
+        "{{\"protocole\":{V},\"salons\":1,\"publics\":1,\"joueurs\":2,\"reservees\":0,\"connexions\":2,\"amis\":0,\"presences\":0}}"
     );
     assert!(reponse.ends_with(&attendu), "{reponse}");
 }

@@ -12,6 +12,7 @@ axum = { version = "0.8", features = ["ws"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync", "time"] }
 
 [dev-dependencies]
+ed25519-dalek = "2.2"
 bs-regles.workspace = true
 bs-commun.workspace = true
 tokio-tungstenite = "0.28"

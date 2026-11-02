@@ -1789,9 +1789,11 @@ dependencies = [
  "bs-commun",
  "bs-donnees",
  "bs-regles",
+ "ed25519-dalek",
  "libm",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
 ]
 
 [[package]]
@@ -1812,6 +1814,7 @@ dependencies = [
  "bs-commun",
  "bs-protocole",
  "bs-regles",
+ "ed25519-dalek",
  "futures-util",
  "tokio",
  "tokio-tungstenite 0.28.0",

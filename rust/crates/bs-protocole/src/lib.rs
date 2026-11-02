@@ -3,8 +3,11 @@
 //! - les **trames du relais** (`Trame`) : créer, lister, rejoindre ou reprendre un salon,
 //!   puis faire suivre des octets de l'hôte vers les invités et retour, sans les lire ;
 //! - le **contenu** échangé entre hôte et invités, dont l'**instantané** binaire de la
-//!   simulation (`instantane`), écrit dans un tampon réutilisé (aucune allocation).
+//!   simulation (`instantane`), écrit dans un tampon réutilisé (aucune allocation) ;
+//! - les **trames des amis** (`amis`) : présence signée et boîte aux lettres, rangées
+//!   sous une empreinte du code ami.
 
+pub mod amis;
 pub mod coop;
 mod instantane;
 mod trame;

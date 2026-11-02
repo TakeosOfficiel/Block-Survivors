@@ -7,8 +7,9 @@
 //! un verrou) et écrit ce que la logique lui a déposé dans son canal. Elle envoie un Ping
 //! toutes les `battement` et ferme une connexion silencieuse depuis `silence_max`. Une
 //! tâche d'entretien libère chaque seconde les places réservées expirées et ferme les
-//! salons abandonnés. Routes : `/salon` (WebSocket) et `/etat` (JSON).
+//! salons abandonnés et oublie les présences d'amis muettes (`amis`). Routes : `/salon` (WebSocket) et `/etat` (JSON).
 
+mod amis;
 mod limites;
 mod salons;
 
@@ -24,6 +25,7 @@ use axum::extract::{ConnectInfo, State};
 use axum::http::{HeaderMap, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
+use bs_protocole::amis::lire_trame_ami;
 use bs_protocole::{PLACES_SALON, VERSION_PROTOCOLE, lire_trame};
 use tokio::sync::mpsc;
 use tokio::time::MissedTickBehavior;
@@ -40,6 +42,7 @@ pub const PLACES: usize = PLACES_SALON as usize;
 /// État partagé par toutes les connexions.
 struct Partage {
     salons: Mutex<Salons>,
+    amis: Mutex<amis::Amis>,
     reglages: Reglages,
     connexions: AtomicUsize,
     ids: AtomicU64,
@@ -52,6 +55,10 @@ impl Partage {
     /// dans une autre tâche) reste utilisable.
     fn salons(&self) -> MutexGuard<'_, Salons> {
         self.salons.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    fn amis(&self) -> MutexGuard<'_, amis::Amis> {
+        self.amis.lock().unwrap_or_else(PoisonError::into_inner)
     }
 }
 
@@ -85,6 +92,7 @@ pub fn routes() -> Router {
 pub fn routes_avec(reglages: Reglages) -> Router {
     let relais = Arc::new(Partage {
         salons: Mutex::new(Salons::nouveaux(reglages.clone())),
+        amis: Mutex::new(amis::Amis::default()),
         reglages,
         connexions: AtomicUsize::new(0),
         ids: AtomicU64::new(0),
@@ -106,6 +114,7 @@ async fn entretien(relais: Weak<Partage>) {
         tic.tick().await;
         let Some(r) = relais.upgrade() else { return };
         r.salons().entretenir(Instant::now());
+        r.amis().entretenir(Instant::now());
     }
 }
 
@@ -140,8 +149,9 @@ async fn ouvrir(
 async fn etat(State(relais): State<Relais>) -> impl IntoResponse {
     let e = relais.salons().etat();
     let connexions = relais.connexions.load(Ordering::Relaxed);
+    let (abonnes, presences) = relais.amis().etat();
     let corps = format!(
-        "{{\"protocole\":{VERSION_PROTOCOLE},\"salons\":{},\"publics\":{},\"joueurs\":{},\"reservees\":{},\"connexions\":{connexions}}}",
+        "{{\"protocole\":{VERSION_PROTOCOLE},\"salons\":{},\"publics\":{},\"joueurs\":{},\"reservees\":{},\"connexions\":{connexions},\"amis\":{abonnes},\"presences\":{presences}}}",
         e.salons, e.publics, e.joueurs, e.reservees
     );
     ([(header::CONTENT_TYPE, "application/json")], corps)
@@ -175,14 +185,17 @@ async fn connexion(relais: Relais, mut socket: WebSocket, ip: IpAddr) {
                 dernier_recu = tokio::time::Instant::now();
                 match entrant {
                     Some(Ok(Message::Binary(o))) => {
-                        let mut salons = relais.salons();
                         let maintenant = Instant::now();
                         match siege {
-                            Some(s) => salons.recevoir(s, id, o, maintenant),
-                            None => match lire_trame(&o) {
-                                Some(t) => siege = salons.accueillir(t, ip, id, &envoi, maintenant),
+                            Some(s) => relais.salons().recevoir(s, id, o, maintenant),
+                            None => if let Some(t) = lire_trame(&o) {
+                                siege = relais.salons().accueillir(t, ip, id, &envoi, maintenant);
+                            } else if let Some(t) = lire_trame_ami(&o) {
+                                // Amis : sur une connexion sans salon
+                                relais.amis().recevoir(t, &o, id, &envoi, maintenant);
+                            } else {
                                 // Trame illisible avant d'avoir un salon : on raccroche
-                                None => break false,
+                                break false;
                             },
                         }
                     }
@@ -203,6 +216,7 @@ async fn connexion(relais: Relais, mut socket: WebSocket, ip: IpAddr) {
             }
         }
     };
+    relais.amis().deconnecter(id);
     if let Some(s) = siege {
         relais
             .salons()

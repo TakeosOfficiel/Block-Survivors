@@ -11,6 +11,8 @@ bs-commun.workspace = true
 bs-donnees.workspace = true
 bs-regles.workspace = true
 libm.workspace = true
+ed25519-dalek = "2.2"
+sha2 = "0.10"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 

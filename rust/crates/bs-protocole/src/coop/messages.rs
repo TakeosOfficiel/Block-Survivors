@@ -247,11 +247,9 @@ impl From<IssueReseau> for Issue {
 pub enum MessageFiable {
     /// Joueur → hôte, dès l'arrivée dans le salon.
     Bonjour(Presentation),
-    /// Hôte → joueur : son index dans le salon.
-    Accueil {
-        index: u8,
-    },
+    /// Hôte → le joueur de la place `place` : refusé (version, partie en cours).
     Refus {
+        place: u8,
         raison: String,
     },
     /// Hôte → tous : composition du salon et arène choisie.
@@ -283,10 +281,12 @@ pub enum MessageFiable {
     },
     /// Hôte → un joueur : son bilan, régulièrement et à la fin.
     Stats {
+        place: u8,
         stats: StatsReseau,
     },
     /// Hôte → un joueur : fin de partie au temps de jeu `temps` (s).
     Fin {
+        place: u8,
         issue: IssueReseau,
         temps: f64,
         stats: StatsReseau,

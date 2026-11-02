@@ -12,5 +12,5 @@ pub mod octets;
 pub mod reception;
 
 pub use instantane::*;
-pub use messages::{CarteJouee, InfoJoueur, MessageFiable, Presentation, StatsReseau};
+pub use messages::{CarteJouee, InfoJoueur, IssueReseau, MessageFiable, Presentation, StatsReseau};
 pub use reception::Recepteur;

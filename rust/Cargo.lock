@@ -1835,7 +1835,10 @@ dependencies = [
 name = "bs-reseau"
 version = "0.1.0"
 dependencies = [
+ "bs-commun",
+ "bs-donnees",
  "bs-protocole",
+ "bs-regles",
  "bs-relais",
  "tokio",
  "tungstenite 0.28.0",

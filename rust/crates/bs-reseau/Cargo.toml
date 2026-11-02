@@ -7,10 +7,13 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
+bs-donnees.workspace = true
 bs-protocole.workspace = true
+bs-regles.workspace = true
 tungstenite = { version = "0.28", features = ["rustls-tls-webpki-roots"] }
 
 [dev-dependencies]
+bs-commun.workspace = true
 bs-relais.workspace = true
 tokio = { version = "1", features = ["rt-multi-thread", "net"] }
 

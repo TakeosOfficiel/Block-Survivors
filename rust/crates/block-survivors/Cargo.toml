@@ -9,6 +9,7 @@ publish.workspace = true
 [dependencies]
 bevy.workspace = true
 bs-commun.workspace = true
+bs-maj.workspace = true
 bs-rendu.workspace = true
 
 [lints]

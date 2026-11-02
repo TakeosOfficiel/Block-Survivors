@@ -16,10 +16,14 @@ pub use connexion::{Connexion, Recu};
 pub use coop::{HoteCoop, InviteCoop, PhaseCoop};
 pub use session::{EvenementSession, SalonPublic, Session, code_lisible, code_saisi};
 
-/// Relais par défaut (local tant que le relais n'est pas déployé : étape 7).
-pub const ADRESSE_RELAIS: &str = "ws://127.0.0.1:8787/salon";
+/// Relais par défaut : celui écrit dans le build publié (`BS_RELAIS_DEFAUT` à la
+/// compilation, variable `BS_RELAIS` du dépôt dans la CI), sinon le relais local.
+pub const ADRESSE_RELAIS: &str = match option_env!("BS_RELAIS_DEFAUT") {
+    Some(a) => a,
+    None => "ws://127.0.0.1:8787/salon",
+};
 
-/// Adresse du relais à utiliser.
+/// Adresse du relais à utiliser (`BS_RELAIS` pour un autre).
 pub fn adresse_relais() -> String {
     std::env::var("BS_RELAIS").unwrap_or_else(|_| ADRESSE_RELAIS.to_owned())
 }

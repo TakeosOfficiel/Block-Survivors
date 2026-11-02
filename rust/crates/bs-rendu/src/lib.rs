@@ -28,6 +28,7 @@ mod hud;
 mod icones_armures;
 mod lancement;
 mod lumiere;
+mod maj;
 mod materiau;
 mod materiau_entite;
 mod menu;
@@ -217,6 +218,16 @@ impl Plugin for PluginJeu {
                     dessins::creer.run_if(not(resource_exists::<dessins::Dessins>)),
                     sauvegarde::inserer_skin,
                     menu::entrer,
+                    maj::creer_encart,
+                )
+                    .chain(),
+            )
+            .add_systems(Startup, maj::demarrer)
+            .add_systems(
+                Update,
+                (
+                    maj::suivre_voie,
+                    (maj::rafraichir, maj::cliquer).run_if(in_state(Phase::Menu)),
                 )
                     .chain(),
             )

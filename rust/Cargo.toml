@@ -20,6 +20,7 @@ bs-sauvegarde = { path = "crates/bs-sauvegarde" }
 bs-protocole = { path = "crates/bs-protocole" }
 bs-relais = { path = "crates/bs-relais" }
 bs-reseau = { path = "crates/bs-reseau" }
+bs-maj = { path = "crates/bs-maj" }
 bs-rendu = { path = "crates/bs-rendu" }
 bs-audio = { path = "crates/bs-audio" }
 bs-robot = { path = "crates/bs-robot" }

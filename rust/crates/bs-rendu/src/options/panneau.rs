@@ -45,6 +45,7 @@ pub(super) enum Reglage {
     Chiffres,
     Compteur,
     Vue,
+    Beta,
 }
 
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
@@ -88,6 +89,7 @@ fn libelle(o: &Options, r: Reglage) -> String {
             };
             format!("Vue (F5) : {vue}")
         }
+        Reglage::Beta => format!("Versions bêta : {}", oui(o.beta)),
     }
 }
 
@@ -132,6 +134,7 @@ pub(super) fn gerer(
                 Reglage::Chiffres => o.chiffres_degats = !o.chiffres_degats,
                 Reglage::Compteur => o.compteur_degats = !o.compteur_degats,
                 Reglage::Vue => o.troisieme_personne = !o.troisieme_personne,
+                Reglage::Beta => o.beta = !o.beta,
                 Reglage::Volume(_) => {}
             }
             return;
@@ -322,6 +325,7 @@ fn construire(commandes: &mut Commands, o: &Options) -> Entity {
         Reglage::Chiffres,
         Reglage::Compteur,
         Reglage::Vue,
+        Reglage::Beta,
     ] {
         bascule(commandes, affichage, o, r);
     }

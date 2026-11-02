@@ -41,6 +41,8 @@ pub struct Options {
     pub compteur_degats: bool,
     /// Vue à la 3e personne (F5) plutôt que de dessus.
     pub troisieme_personne: bool,
+    /// Mises à jour de la voie bêta plutôt que stable.
+    pub beta: bool,
     /// Le reste du fichier (options pas encore reprises), réécrit tel quel.
     autres: serde_json::Map<String, Value>,
 }
@@ -56,6 +58,7 @@ impl Default for Options {
             chiffres_degats: true,
             compteur_degats: true,
             troisieme_personne: false,
+            beta: false,
             autres: serde_json::Map::new(),
         }
     }
@@ -82,6 +85,7 @@ impl Options {
         o.secousses = oui("secousses", o.secousses);
         o.chiffres_degats = oui("chiffresDegats", o.chiffres_degats);
         o.compteur_degats = oui("compteurDegats", o.compteur_degats);
+        o.beta = oui("voieBeta", o.beta);
         o.troisieme_personne = lu.get("vue").and_then(Value::as_str) == Some("troisieme");
         // Avant la version 2, les ombres repartent activées
         if lu.get("version").and_then(Value::as_u64) == Some(VERSION) {
@@ -99,6 +103,7 @@ impl Options {
                 "chiffresDegats",
                 "compteurDegats",
                 "vue",
+                "voieBeta",
                 "shaders",
                 "version",
             ];
@@ -129,6 +134,7 @@ impl Options {
             "dessus"
         };
         v.insert("vue".into(), json!(vue));
+        v.insert("voieBeta".into(), json!(self.beta));
         v.insert("version".into(), json!(VERSION));
         Value::Object(v)
     }

@@ -1694,6 +1694,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bs-commun",
+ "bs-maj",
  "bs-rendu",
 ]
 
@@ -1823,6 +1824,7 @@ dependencies = [
  "bs-audio",
  "bs-commun",
  "bs-donnees",
+ "bs-maj",
  "bs-monde",
  "bs-protocole",
  "bs-regles",

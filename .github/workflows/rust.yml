@@ -6,11 +6,15 @@
 name: Version Rust
 
 on:
+  # Branches seulement : un tag « rust-v* » passe par « Publication Rust », qui appelle ce
+  # workflow (workflow_call) avant de publier
   push:
+    branches: ['**']
     paths: ['rust/**', 'src/donnees/**', '.github/workflows/rust.yml']
   pull_request:
     paths: ['rust/**', 'src/donnees/**', '.github/workflows/rust.yml']
   workflow_dispatch:
+  workflow_call:
 
 concurrency:
   group: rust-${{ github.ref }}

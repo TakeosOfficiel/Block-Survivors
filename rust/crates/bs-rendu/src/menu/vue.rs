@@ -17,6 +17,8 @@ use crate::sauvegarde::Sauvegarde;
 
 pub(super) const FOND: Color = Color::srgb_u8(0x14, 0x17, 0x1f);
 const LARGEUR_COTE: f32 = 320.0;
+/// Boutons des pages, sous le héros.
+const LARGEUR_PAGE: f32 = 176.0;
 const JAUNE: Color = Color::srgb_u8(0xff, 0xe0, 0x66);
 const ROUGE_VERROU: Color = Color::srgb_u8(0xd0, 0x80, 0x70);
 const CHOISI: Teinte = Teinte {
@@ -110,7 +112,7 @@ pub fn construire(
                 row_gap: Val::Px(12.0),
                 ..default()
             },
-            BackgroundColor(FOND),
+            // Fond transparent : le héros 3D (caméra de l'aperçu, fond `FOND`) au centre
         ))
         .id();
     texte(commandes, racine, "Block Survivors", OR_CLAIR, 5.0);
@@ -210,7 +212,7 @@ fn heros(
     let col = colonne(commandes, parent, Val::Auto, 8.0);
     commandes.entity(col).entry::<Node>().and_modify(|mut n| {
         n.flex_grow = 1.0;
-        n.justify_content = JustifyContent::Center;
+        n.justify_content = JustifyContent::FlexEnd;
     });
     let (id, p) = d
         .personnages
@@ -235,37 +237,35 @@ fn heros(
         let t = format!("Talents : {} ({rangs} rang{s})", a.nom);
         texte(commandes, col, &t, GRIS, 1.5);
     }
-    style::bouton(commandes, col, "Talents", 200.0, false, ActionMenu::Talents);
-    style::bouton(
-        commandes,
-        col,
-        "Collection",
-        200.0,
-        false,
-        ActionMenu::Collection,
-    );
-    style::bouton(
-        commandes,
-        col,
-        "Profil",
-        200.0,
-        false,
-        ActionMenu::OuvrirProfil,
-    );
-    style::bouton(
-        commandes,
-        col,
-        "Profils",
-        200.0,
-        false,
-        ActionMenu::OuvrirProfils,
-    );
+    // Pages, sur deux rangées sous le héros
+    let rangee = |commandes: &mut Commands| {
+        commandes
+            .spawn((
+                Node {
+                    column_gap: Val::Px(8.0),
+                    ..default()
+                },
+                ChildOf(col),
+            ))
+            .id()
+    };
+    let r1 = rangee(commandes);
+    let r2 = rangee(commandes);
+    let pages = [
+        (r1, "Talents", ActionMenu::Talents),
+        (r1, "Collection", ActionMenu::Collection),
+        (r1, "Profil", ActionMenu::OuvrirProfil),
+        (r2, "Profils", ActionMenu::OuvrirProfils),
+    ];
+    for (r, t, a) in pages {
+        style::bouton(commandes, r, t, LARGEUR_PAGE, false, a);
+    }
     let nouveau = super::nouveautes::a_lire(sauvegarde.profils.stockage());
     let b = style::bouton(
         commandes,
-        col,
+        r2,
         "Nouveautés",
-        200.0,
+        LARGEUR_PAGE,
         false,
         ActionMenu::Nouveautes,
     );
@@ -275,8 +275,8 @@ fn heros(
             TextePixel::nouveau("Nouveau !", OR_CLAIR, 1.5).contour(),
             Node {
                 position_type: PositionType::Absolute,
-                left: Val::Px(206.0),
-                top: Val::Px(12.0),
+                right: Val::Px(-4.0),
+                top: Val::Px(-10.0),
                 ..default()
             },
             ChildOf(b),

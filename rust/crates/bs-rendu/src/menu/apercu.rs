@@ -1,4 +1,4 @@
-//! Aperçu 3D du héros de la page Profil (src/ui/apercuHeros.ts) : le personnage choisi
+//! Aperçu 3D du héros de l'accueil et de la page Profil (src/ui/apercuHeros.ts) : le personnage choisi
 //! avec la skin du profil et l'armure portée, qui tourne lentement sur lui-même. Une
 //! caméra 3D du menu le dessine sous l'interface (la page Profil laisse son centre
 //! transparent). Refait quand la page change ; ses textures sont attendues avant.
@@ -18,6 +18,8 @@ use crate::textures::Textures;
 
 /// Tours par seconde.
 const VITESSE: f32 = 0.08;
+/// Place du héros sur l'accueil (sur la page Profil : l'origine).
+const POSITION_ACCUEIL: Vec3 = Vec3::new(0.0, 0.55, -4.0);
 
 /// Héros affiché : ce qu'il porte, ses rendus une fois les textures arrivées.
 #[derive(Resource, Default)]
@@ -78,7 +80,7 @@ pub fn animer(
 ) {
     let d = dj.d;
     if menu.is_changed() {
-        if menu.page != Page::Profil {
+        if !matches!(menu.page, Page::Profil | Page::Accueil) {
             vider(&mut commandes, &mut apercu);
             return;
         }
@@ -132,7 +134,12 @@ pub fn animer(
         r.commencer();
     }
     let j = rendus.joueur();
-    j.pose.position = Vec3::ZERO;
+    // Accueil : plus loin et plus haut, au-dessus des textes du centre
+    j.pose.position = if menu.page == Page::Accueil {
+        POSITION_ACCUEIL
+    } else {
+        Vec3::ZERO
+    };
     j.pose.angle = *angle;
     j.ajouter(&mut commandes, &mut q);
     rendus.poser_armure(&mut commandes, &mut q);

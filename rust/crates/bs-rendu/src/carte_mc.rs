@@ -35,6 +35,13 @@ pub struct Import {
 }
 
 impl Import {
+    /// Arène en cours d'import (avant sa construction).
+    pub fn arene(&self) -> Option<&Arene> {
+        self.definition.as_ref()
+    }
+}
+
+impl Import {
     /// Lit la schématique embarquée et la définition de l'arène.
     pub fn nouvel(
         d: &'static Donnees,

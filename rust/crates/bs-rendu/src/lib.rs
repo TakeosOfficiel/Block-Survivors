@@ -14,6 +14,7 @@ mod arene;
 mod armes;
 mod camera;
 mod carte_mc;
+mod chargement;
 mod creatures;
 mod dessins;
 mod ecran_cartes;
@@ -189,6 +190,7 @@ impl Plugin for PluginJeu {
             .init_resource::<camera::Secousse>()
             .init_resource::<ecrans::Ecrans>()
             .init_resource::<menu::apercu::Apercu>()
+            .init_resource::<chargement::Photos>()
             .insert_resource(ecran_cartes::EcranCartes::nouveau(
                 std::env::var_os("BS_CARTES").is_some(),
             ))
@@ -235,6 +237,7 @@ impl Plugin for PluginJeu {
                     sauvegarde::inserer_skin,
                     dessins::creer.run_if(not(resource_exists::<dessins::Dessins>)),
                     demander_textures.run_if(resource_exists::<Monde>),
+                    chargement::entrer,
                 )
                     .chain(),
             )
@@ -245,6 +248,7 @@ impl Plugin for PluginJeu {
                     hud::demander_textures.run_if(resource_exists::<PartieEnCours>),
                     demander_armure.run_if(resource_exists::<PartieEnCours>),
                     attendre_textures.run_if(resource_exists::<PartieEnCours>),
+                    chargement::avancer,
                 )
                     .chain()
                     .run_if(in_state(Phase::Chargement)),
@@ -372,7 +376,12 @@ fn attendre_textures(
     serveur: Res<AssetServer>,
     textures: Res<Textures>,
     mut phase: ResMut<NextState<Phase>>,
+    mut rester: Local<Option<bool>>,
 ) {
+    // Essai : `BS_CHARGEMENT=1` garde l'écran de chargement
+    if *rester.get_or_insert_with(|| std::env::var_os("BS_CHARGEMENT").is_some()) {
+        return;
+    }
     let a = textures.avancement(&serveur);
     if a.faites == a.total {
         if a.manquantes > 0 {

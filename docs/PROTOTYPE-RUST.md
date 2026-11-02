@@ -14,7 +14,7 @@ Journal de travail de la migration (plan : `docs/PLAN-RUST.md`). Tenu à jour à
 | 2. Monde et rendu | fait : 2a (textures vanilla, arène affichée, vraie partie), 2b (modèles Minecraft des entités), 2c (maps .schem importées), 2d-1 (projectiles, orbes, objets, coffres, ombres), 2d-2 (particules, chiffres de dégâts, barres de vie, secousse), 2d-3 (visuels des armes), 2d-4 (vent, ombres du soleil, lumière des blocs) |
 | 3. Jouable en solo | fait : 3a (sons), 3b (HUD), 3c (écrans de cartes), 3d (pause, fin, bilan, mode sans fin) |
 | 4. Sauvegardes et profils | fait : 4a à 4i (stockage, profils, maîtrise, records, `.bssave`, talents appliqués, mécaniques des quatre classes, Collection, profil du joueur, amis) |
-| 5. Menus | en cours : 5a (menu principal, lancement, retour au menu), 5b (Talents), 5c (Collection), 5d (Profil), 5e (Profils), 5f (Options), 5g (Nouveautés) |
+| 5. Menus | en cours : 5a (menu principal, lancement, retour au menu), 5b (Talents), 5c (Collection), 5d (Profil), 5e (Profils), 5f (Options), 5g (Nouveautés), 5h (chargement) |
 
 **01/11/2026 : version navigateur abandonnée** (décision du joueur). `bs-web`, `rust/web`,
 les scripts web et la tâche web de la CI sont retirés ; les mesures web plus bas restent
@@ -1101,3 +1101,14 @@ mode sans fin.
   « Nouveau ! » tant que la page n'a pas été ouverte pour la version installée
   (`block-survivors.version-vue`, comme la version TS).
 - Essais : `BS_MENU=nouveautes`. Vérifié aux clics (ouverture, défilement, pastille effacée).
+
+### 5h : Écran de chargement (fait)
+
+- `bs-rendu/src/chargement.rs` : pendant la phase `Chargement`, la photo de l'arène en
+  plein écran (les 4 photos fournies, embarquées en `.webp` et décodées une fois), son
+  nom, une astuce au hasard (`textes.astuces`), la barre ornée qui ne recule jamais
+  (textures chargées ; « Construction de la carte… » pendant l'import d'une map).
+- Pas encore repris : la photo prise à chaque fin de chargement pour remplacer celle
+  fournie (version TS).
+- Essais : `BS_CHARGEMENT=1` garde l'écran de chargement. Vérifié sur la Zone volcanique,
+  le Jardin des champignons (map importée) et au lancement depuis le menu.

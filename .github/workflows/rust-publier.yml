@@ -125,6 +125,7 @@ jobs:
       - name: Signer et publier, canal par canal
         env:
           BS_CLE_PRIVEE: ${{ secrets.BS_CLE_PRIVEE }}
+          BS_DELEGATION: ${{ vars.BS_DELEGATION }}
           GH_TOKEN: ${{ secrets.VERSION_TOKEN }}
         run: |
           if [ -z "$BS_CLE_PRIVEE" ] || [ -z "$GH_TOKEN" ]; then echo "Secrets BS_CLE_PRIVEE ou VERSION_TOKEN absents."; exit 1; fi
@@ -157,6 +158,7 @@ jobs:
       - name: Re-signer chaque canal publié
         env:
           BS_CLE_PRIVEE: ${{ secrets.BS_CLE_PRIVEE }}
+          BS_DELEGATION: ${{ vars.BS_DELEGATION }}
           GH_TOKEN: ${{ secrets.VERSION_TOKEN }}
         run: |
           for CANAL in win-stable linux-stable win-beta linux-beta; do

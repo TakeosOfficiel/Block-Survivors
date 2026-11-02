@@ -15,7 +15,7 @@ use velopack::bundle::Manifest;
 use velopack::sources::UpdateSource;
 use velopack::{Error, VelopackAsset, VelopackAssetFeed};
 
-use crate::manifeste::{Manifeste, verifier};
+use crate::manifeste::{Manifeste, Series, verifier};
 
 /// Nom du manifeste signé sur le dépôt.
 pub const NOM_MANIFESTE: &str = "version.json";
@@ -116,11 +116,16 @@ impl<D: Depot> SourceSignee<D> {
         }
     }
 
-    fn derniere_serie(&self) -> u64 {
-        std::fs::read_to_string(&self.fichier_serie)
-            .ok()
-            .and_then(|s| s.trim().parse().ok())
-            .unwrap_or(0)
+    /// Séries vues : « <manifeste> <délégation> » (la seconde absente des vieux fichiers).
+    fn series_vues(&self) -> Series {
+        let texte = std::fs::read_to_string(&self.fichier_serie).unwrap_or_default();
+        let mut n = texte
+            .split_whitespace()
+            .map(|x| x.parse::<u64>().unwrap_or(0));
+        Series {
+            manifeste: n.next().unwrap_or(0),
+            delegation: n.next().unwrap_or(0),
+        }
     }
 }
 
@@ -138,7 +143,7 @@ impl<D: Depot> UpdateSource for SourceSignee<D> {
         _id: &str,
     ) -> Result<VelopackAssetFeed, Error> {
         let octets = self.depot.lire(voie, NOM_MANIFESTE)?;
-        let m = verifier(&octets, &self.cles, self.derniere_serie(), maintenant())
+        let (m, series) = verifier(&octets, &self.cles, self.series_vues(), maintenant())
             .map_err(|r| Error::Other(r.to_string()))?;
         if m.voie != voie {
             return Err(Error::Other(format!(
@@ -149,7 +154,10 @@ impl<D: Depot> UpdateSource for SourceSignee<D> {
         if let Some(dossier) = self.fichier_serie.parent() {
             let _ = std::fs::create_dir_all(dossier);
         }
-        std::fs::write(&self.fichier_serie, m.serie.to_string())?;
+        std::fs::write(
+            &self.fichier_serie,
+            format!("{} {}", series.manifeste, series.delegation),
+        )?;
         let paquets = m
             .paquets
             .iter()

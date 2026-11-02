@@ -8,18 +8,26 @@ Rien n'est publié sur un simple push, sur `main` comme sur `rust`.
 
 ## Préparer (une fois)
 
-1. **Deux paires de clés**, créées sur votre PC (depuis `rust/`) :
+1. **Clés**, créées sur votre PC (depuis `rust/`) :
    ```
+   cargo run -q -p bs-maj --bin bs-signer -- cles   # racine 1
+   cargo run -q -p bs-maj --bin bs-signer -- cles   # racine 2 (secours)
    cargo run -q -p bs-maj --bin bs-signer -- cles   # clé de la CI
-   cargo run -q -p bs-maj --bin bs-signer -- cles   # clé de secours
    ```
+   - Les deux clés privées **racines** ne vont jamais sur GitHub : gardez-les hors ligne
+     (clé USB, gestionnaire de mots de passe), à deux endroits différents.
    - La clé privée **de la CI** va dans le secret `BS_CLE_PRIVEE` de l'environnement
      `publication`.
-   - La clé privée **de secours** ne va jamais sur GitHub : gardez-la hors ligne (clé USB,
-     gestionnaire de mots de passe).
+   - Une racine autorise la clé de la CI par une **délégation** (ici pour un an) :
+     ```
+     BS_CLE_PRIVEE=<privée racine 1> cargo run -q -p bs-maj --bin bs-signer -- \
+       deleguer <publique CI> 1 365
+     ```
 2. **Variables du dépôt** (Settings → Secrets and variables → Actions → Variables) :
-   - `BS_CLES_MAJ` : les deux clés **publiques**, séparées par une virgule (CI, secours).
-     Elles sont écrites dans le jeu à la compilation.
+   - `BS_CLES_MAJ` : les deux clés **publiques racines**, séparées par une virgule. Elles
+     sont écrites dans le jeu à la compilation (pas la clé de la CI).
+   - `BS_DELEGATION` : la ligne JSON sortie par `deleguer`. Elle est jointe à chaque
+     manifeste.
    - `BS_RELAIS` : adresse du relais (docs/RELAIS.md).
 3. **Environnement `publication`** (Settings → Environments), avec validation à la main
    (Required reviewers) et ces secrets :
@@ -60,17 +68,26 @@ pendant ce temps, lancez à la main le workflow « Publication Rust » (case « 
 cochée). Un manifeste expiré n'empêche pas de jouer : le jeu ne trouve simplement plus de
 mise à jour.
 
+## Renouveler la délégation
+
+Une délégation expire (365 jours ci-dessus). Avant, refaire `deleguer` avec une **série
+plus grande** et remplacer la variable `BS_DELEGATION`. Le jeu retient la plus grande
+série vue et refuse ensuite les délégations plus anciennes.
+
 ## Si la clé de la CI est volée
 
-1. Signer un manifeste à la main avec la **clé de secours**
-   (`BS_CLE_PRIVEE=<secours> bs-signer manifeste …`) pour une version dont le build ne
-   contient plus que la clé de secours et une nouvelle clé de CI.
-2. Remplacer le secret `BS_CLE_PRIVEE` et la variable `BS_CLES_MAJ`.
+1. Créer une nouvelle clé de CI (`bs-signer cles`), la mettre dans le secret
+   `BS_CLE_PRIVEE`.
+2. Avec une racine, déléguer à cette seule nouvelle clé, avec une série plus grande que la
+   précédente, et remplacer `BS_DELEGATION`.
+3. Publier (ou re-signer) une version : dès qu'un jeu a vu la nouvelle délégation, il
+   refuse l'ancienne, donc la clé volée. Aucun nouveau build n'est nécessaire.
 
-Limite actuelle : le jeu accepte les deux clés à égalité. Avec la clé de la CI, un voleur
-pourrait donc lui aussi publier une version qui retire la clé de secours. Réserver ce
-pouvoir à la clé de secours demande des manifestes à deux niveaux (comme TUF). C'est à
-faire avant la sortie de la bêta.
+Le voleur ne peut ni changer les clés racines (elles sont dans le build), ni se signer une
+délégation. Il garde la main jusqu'à ce que les joueurs aient vu la nouvelle délégation :
+c'est pourquoi on publie tout de suite après. Si une **racine** est volée, il faut une
+nouvelle version dont `BS_CLES_MAJ` ne contient plus qu'elle-même remplacée, signée avec
+l'autre racine (`BS_CLE_PRIVEE=<racine 2>`, sans `BS_DELEGATION`).
 
 ## Voies
 
@@ -84,7 +101,8 @@ faire avant la sortie de la bêta.
 Quand la version Rust est publiée en **stable** et qu'on veut que tout le monde y passe :
 
 1. Dans `electron/passage.cjs`, mettre `BASCULE = true` et recopier dans `CLES` les clés
-   publiques de la variable `BS_CLES_MAJ` (même ordre).
+   publiques racines de la variable `BS_CLES_MAJ` (la délégation voyage dans le
+   manifeste).
 2. Publier cette version Electron comme d'habitude (push sur `main`) : c'est la
    **dernière**.
 3. Au lancement suivant, chez chaque joueur Electron :

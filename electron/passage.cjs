@@ -26,7 +26,10 @@ const { spawn } = require('node:child_process');
 
 /** À passer à true dans la dernière version Electron (avec CLES rempli). */
 const BASCULE = false;
-/** Clés publiques des manifestes (base64, 32 octets) : celles de la variable BS_CLES_MAJ. */
+/**
+ * Clés publiques racines des manifestes (base64, 32 octets) : celles de la variable
+ * BS_CLES_MAJ. La clé de la CI n'y est pas : elle est autorisée par la délégation jointe.
+ */
 const CLES = [];
 const DEPOT = 'https://github.com/TakeosOfficiel/Block-Survivors-version/releases/download/rust-{canal}/{nom}';
 const DOSSIER_PROFILS = 'depuis-electron';
@@ -45,18 +48,31 @@ function canal() {
 /** Préfixe DER (SPKI) d'une clé publique ed25519 brute. */
 const SPKI_ED25519 = Buffer.from('302a300506032b6570032100', 'hex');
 
-/** Manifeste vérifié (objet), ou une exception. */
-function verifierManifeste(texteEnveloppe, cles, maintenant = Date.now() / 1000) {
-  const enveloppe = JSON.parse(texteEnveloppe);
-  const signature = Buffer.from(enveloppe.signature, 'base64');
-  const donnees = Buffer.from(enveloppe.manifeste, 'utf8');
-  const signee = cles.some((cle) => {
+/** Signature ed25519 (base64) de `texte` par l'une des `cles` (base64). */
+function signee(texte, signatureB64, cles) {
+  const signature = Buffer.from(signatureB64 ?? '', 'base64');
+  const donnees = Buffer.from(texte, 'utf8');
+  return cles.some((cle) => {
     const brute = Buffer.from(cle, 'base64');
     if (brute.length !== 32) return false;
     const publique = crypto.createPublicKey({ key: Buffer.concat([SPKI_ED25519, brute]), format: 'der', type: 'spki' });
     return crypto.verify(null, donnees, publique, signature);
   });
-  if (!signee) throw new Error('signature du manifeste invalide');
+}
+
+/**
+ * Manifeste vérifié (objet), ou une exception. Signé par une racine, ou par une clé de
+ * la délégation jointe (signée par une racine, pas expirée), comme bs-maj.
+ */
+function verifierManifeste(texteEnveloppe, cles, maintenant = Date.now() / 1000) {
+  const enveloppe = JSON.parse(texteEnveloppe);
+  if (!signee(enveloppe.manifeste, enveloppe.signature, cles)) {
+    const d = enveloppe.delegation;
+    if (!d || !signee(d.texte, d.signature, cles)) throw new Error('signature du manifeste invalide');
+    const delegation = JSON.parse(d.texte);
+    if (!(delegation.expire > maintenant)) throw new Error('délégation expirée');
+    if (!signee(enveloppe.manifeste, enveloppe.signature, delegation.cles ?? [])) throw new Error('signature du manifeste invalide');
+  }
   const manifeste = JSON.parse(enveloppe.manifeste);
   if (!(manifeste.expire > maintenant)) throw new Error('manifeste expiré');
   return manifeste;

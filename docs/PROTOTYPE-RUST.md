@@ -1262,11 +1262,24 @@ mode sans fin.
 - Essai de bout en bout (`essai-maj.sh`, `essai-maj.ps1`) : 0.5.0 qui plante deux fois,
   retour à 0.3.0, signalement, puis 0.5.0 refusée. Vérifié sous Linux.
 
+### 7e : délégation des clés de manifeste (fait)
+
+- Deux niveaux, comme TUF (`bs-maj::delegation`) : le build ne contient que les clés
+  racines (hors ligne). Une racine signe une délégation (série, expiration, clés
+  autorisées) jointe à chaque manifeste ; la clé de la CI n'est qu'une clé déléguée.
+- Le jeu retient la plus grande série de délégation vue (fichier de série :
+  « <manifeste> <délégation> », l'ancien format reste lu) : une clé de CI volée se
+  révoque en publiant une délégation plus récente, sans nouveau build.
+- `bs-signer deleguer <clés> <série> <jours>` ; `bs-signer manifeste` joint
+  `BS_DELEGATION`. Une racine peut encore signer seule (secours).
+- La vérification Electron du passage (`passage.cjs`) accepte la même délégation.
+- Tests : clé déléguée acceptée ; clé de CI sans délégation, délégation signée par une
+  autre clé, délégation plus ancienne que la dernière vue, délégation expirée : refusées.
+
 ### Reste à faire avant la bêta
 
-- Manifestes à deux niveaux (clé de secours seule à pouvoir changer les clés).
 - Signature de code Windows (Authenticode).
-- Réglages GitHub à faire par le propriétaire : variables `BS_CLES_MAJ`, `BS_RELAIS`,
+- Réglages GitHub à faire par le propriétaire : variables `BS_CLES_MAJ`, `BS_DELEGATION`, `BS_RELAIS`,
   environnement `publication` et ses secrets, serveur du relais.
 
 ## Étape 8 : bêta puis bascule

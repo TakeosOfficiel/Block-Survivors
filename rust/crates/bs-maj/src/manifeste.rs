@@ -1,11 +1,15 @@
 //! Manifeste d'une version : numéro de série croissant, expiration, voie, version minimale
 //! pour la coop, et la liste des paquets Velopack (complet et deltas) avec leurs empreintes.
 //! Il voyage dans une enveloppe JSON : `{"manifeste": "<le JSON, en texte>", "signature":
-//! "<base64>"}`. On signe les octets exacts du texte : pas de question de mise en forme.
+//! "<base64>", "delegation": {…}}`. On signe les octets exacts du texte : pas de question
+//! de mise en forme. La signature vient d'une clé racine du jeu, ou d'une clé que la
+//! délégation jointe autorise (`delegation`).
 
 use base64::{Engine, engine::general_purpose::STANDARD as B64};
-use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
+use ed25519_dalek::{Signer, SigningKey, VerifyingKey};
 use serde::{Deserialize, Serialize};
+
+use crate::delegation::{Delegation, cles_deleguees, signee};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Manifeste {
@@ -52,6 +56,16 @@ pub struct Paquet {
 pub struct Enveloppe {
     pub manifeste: String,
     pub signature: String,
+    /// Délégation qui autorise la clé signataire (absente : signé par une racine).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub delegation: Option<Delegation>,
+}
+
+/// Dernières séries vues (manifeste, délégation) : jamais en arrière.
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub struct Series {
+    pub manifeste: u64,
+    pub delegation: u64,
 }
 
 #[derive(Debug, PartialEq)]
@@ -65,6 +79,11 @@ pub enum Refus {
         derniere: u64,
     },
     Expire,
+    DelegationAncienne {
+        serie: u64,
+        derniere: u64,
+    },
+    DelegationExpiree,
 }
 
 impl std::fmt::Display for Refus {
@@ -76,50 +95,59 @@ impl std::fmt::Display for Refus {
                 write!(f, "manifeste ancien (série {serie} < {derniere})")
             }
             Refus::Expire => write!(f, "manifeste expiré"),
+            Refus::DelegationAncienne { serie, derniere } => {
+                write!(f, "délégation ancienne (série {serie} < {derniere})")
+            }
+            Refus::DelegationExpiree => write!(f, "délégation expirée"),
         }
     }
 }
 
-/// Enveloppe signée (JSON) du manifeste.
-pub fn signer(m: &Manifeste, cle: &SigningKey) -> String {
+/// Enveloppe signée (JSON) du manifeste, avec la délégation qui autorise `cle` (aucune si
+/// `cle` est une racine).
+pub fn signer(m: &Manifeste, cle: &SigningKey, delegation: Option<&Delegation>) -> String {
     let texte = serde_json::to_string_pretty(m).expect("manifeste sérialisable");
     let signature = B64.encode(cle.sign(texte.as_bytes()).to_bytes());
     serde_json::to_string_pretty(&Enveloppe {
         manifeste: texte,
         signature,
+        delegation: delegation.cloned(),
     })
     .expect("enveloppe sérialisable")
 }
 
-/// Vérifie l'enveloppe : signature par l'une des `cles` (CI ou secours), série au moins
-/// égale à `derniere_serie`, pas expirée à `maintenant` (secondes Unix).
+/// Vérifie l'enveloppe : signature par l'une des `racines`, ou par une clé de sa délégation
+/// (elle-même signée par une racine, pas plus ancienne que la dernière vue, pas expirée) ;
+/// série au moins égale à la dernière vue ; pas expirée à `maintenant` (secondes Unix).
+/// Rend aussi les séries à retenir.
 pub fn verifier(
     octets: &[u8],
-    cles: &[VerifyingKey],
-    derniere_serie: u64,
+    racines: &[VerifyingKey],
+    vues: Series,
     maintenant: u64,
-) -> Result<Manifeste, Refus> {
+) -> Result<(Manifeste, Series), Refus> {
     let e: Enveloppe = serde_json::from_slice(octets).map_err(|_| Refus::Illisible)?;
-    let sig = B64.decode(&e.signature).map_err(|_| Refus::Signature)?;
-    let sig = Signature::from_slice(&sig).map_err(|_| Refus::Signature)?;
-    // verify_strict : refuse aussi les signatures malléables
-    if !cles.iter().any(|c| {
-        c.verify_strict(e.manifeste.as_bytes(), &sig).is_ok()
-            && c.verify(e.manifeste.as_bytes(), &sig).is_ok()
-    }) {
-        return Err(Refus::Signature);
+    let mut series = vues;
+    if !signee(&e.manifeste, &e.signature, racines) {
+        let d = e.delegation.as_ref().ok_or(Refus::Signature)?;
+        let (serie, cles) = cles_deleguees(d, racines, vues.delegation, maintenant)?;
+        if !signee(&e.manifeste, &e.signature, &cles) {
+            return Err(Refus::Signature);
+        }
+        series.delegation = serie;
     }
     let m: Manifeste = serde_json::from_str(&e.manifeste).map_err(|_| Refus::Illisible)?;
-    if m.serie < derniere_serie {
+    if m.serie < vues.manifeste {
         return Err(Refus::Ancien {
             serie: m.serie,
-            derniere: derniere_serie,
+            derniere: vues.manifeste,
         });
     }
     if maintenant >= m.expire {
         return Err(Refus::Expire);
     }
-    Ok(m)
+    series.manifeste = m.serie;
+    Ok((m, series))
 }
 
 /// Clé publique depuis son écriture en base64 (32 octets).

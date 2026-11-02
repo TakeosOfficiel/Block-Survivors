@@ -80,6 +80,14 @@ impl ParametresBloc {
             taille: Vec4::ONE,
         }
     }
+
+    /// Ambiance de l'arène pour `MateriauEntite`, dont le shader lit `animation.x`
+    /// autrement (1 : dessiné devant tout, sans profondeur) : remis à 0.
+    pub fn pour_entites(a: &Arene) -> Self {
+        let mut p = Self::de_l_arene(a);
+        p.animation.x = 0.0;
+        p
+    }
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]

@@ -389,7 +389,7 @@ fn construire_modeles(
         p.d,
         (jeu.apparence_joueur(), &autres),
         &sauvegarde.collection.portees(),
-        ParametresBloc::de_l_arene(p.etat.arene),
+        ParametresBloc::pour_entites(p.etat.arene),
         &serveur,
         &textures,
         &mut images,

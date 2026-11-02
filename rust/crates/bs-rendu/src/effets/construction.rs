@@ -76,7 +76,7 @@ pub fn construire(
     mut materiaux: ResMut<Assets<MateriauEntite>>,
 ) {
     let d = jeu.partie.d;
-    let ambiance = ParametresBloc::de_l_arene(jeu.partie.etat.arene);
+    let ambiance = ParametresBloc::pour_entites(jeu.partie.etat.arene);
     // Éclairé, découpé ; brillant (non éclairé) ; teinté par instance ; translucide
     let mut eclaire = ambiance;
     eclaire.brouillard.z = 0.5;

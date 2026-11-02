@@ -114,7 +114,7 @@ pub fn construire(
     mut materiaux: ResMut<Assets<MateriauLueur>>,
     mut materiaux_entites: ResMut<Assets<MateriauEntite>>,
 ) {
-    let ambiance = ParametresBloc::de_l_arene(jeu.partie.etat.arene);
+    let ambiance = ParametresBloc::pour_entites(jeu.partie.etat.arene);
     let b = ambiance.brouillard;
     let materiau = materiaux.add(MateriauLueur {
         parametres: ParametresLueur {

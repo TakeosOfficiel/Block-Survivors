@@ -1,5 +1,6 @@
 //! Aperçu 3D du héros de l'accueil et de la page Profil (src/ui/apercuHeros.ts) : le personnage choisi
-//! avec la skin du profil et l'armure portée, qui tourne lentement sur lui-même. Une
+//! avec la skin du profil et l'armure portée, de trois quarts, qui respire doucement ;
+//! glisser à la souris (bouton gauche, hors des boutons) le fait tourner. Une
 //! caméra 3D du menu le dessine sous l'interface (la page Profil laisse son centre
 //! transparent). Refait quand la page change ; ses textures sont attendues avant.
 
@@ -12,22 +13,38 @@ use super::{ElementMenu, Menu, Page};
 use crate::lancement::DonneesJeu;
 use crate::materiau::ParametresBloc;
 use crate::materiau_entite::MateriauEntite;
+use crate::modeles::animation::{EtatAnimation, calculer_rotations};
 use crate::modeles::{Rendus, armure, rendu};
 use crate::sauvegarde::Sauvegarde;
 use crate::textures::Textures;
 
-/// Tours par seconde.
-const VITESSE: f32 = 0.08;
+/// Orientation de départ : de trois quarts, comme sur un écran de personnage.
+const ANGLE_INITIAL: f32 = 0.45;
+/// Radians par pixel glissé.
+const SENSIBILITE: f32 = 0.012;
 /// Place du héros sur l'accueil (sur la page Profil : l'origine).
 const POSITION_ACCUEIL: Vec3 = Vec3::new(0.0, 0.55, -4.0);
 
 /// Héros affiché : ce qu'il porte, ses rendus une fois les textures arrivées.
-#[derive(Resource, Default)]
+#[derive(Resource)]
 pub struct Apercu {
     cle: Option<(Apparence, [Option<Monde>; 7])>,
     apparence: Option<&'static Apparence>,
     rendus: Option<Rendus>,
     angle: f32,
+    animation: EtatAnimation,
+}
+
+impl Default for Apercu {
+    fn default() -> Self {
+        Self {
+            cle: None,
+            apparence: None,
+            rendus: None,
+            angle: ANGLE_INITIAL,
+            animation: EtatAnimation::default(),
+        }
+    }
 }
 
 /// Caméra 3D du menu (sous la caméra de l'interface).
@@ -71,6 +88,11 @@ pub fn animer(
     sauvegarde: Res<Sauvegarde>,
     mut apercu: ResMut<Apercu>,
     (serveur, mut textures, temps): (Res<AssetServer>, ResMut<Textures>, Res<Time>),
+    (souris, mut glisse, interactions): (
+        Res<ButtonInput<MouseButton>>,
+        MessageReader<bevy::input::mouse::MouseMotion>,
+        Query<&Interaction>,
+    ),
     (mut images, mut maillages, mut materiaux): (
         ResMut<Assets<Image>>,
         ResMut<Assets<Mesh>>,
@@ -111,7 +133,7 @@ pub fn animer(
             return;
         }
         let portees = sauvegarde.collection.portees();
-        let ambiance = ParametresBloc::de_l_arene(dj.arenes[menu.choix.arene].def);
+        let ambiance = ParametresBloc::pour_entites(dj.arenes[menu.choix.arene].def);
         apercu.rendus = Some(Rendus::heros(
             d,
             apparence,
@@ -124,16 +146,27 @@ pub fn animer(
             &mut materiaux,
         ));
     }
-    let Apercu { rendus, angle, .. } = &mut *apercu;
+    let Apercu {
+        rendus,
+        angle,
+        animation,
+        ..
+    } = &mut *apercu;
     let Some(rendus) = rendus.as_mut() else {
         return;
     };
-    *angle =
-        (*angle + temps.delta_secs() * VITESSE * std::f32::consts::TAU) % std::f32::consts::TAU;
+    // Glisser hors des boutons fait tourner le héros
+    let sur_bouton = interactions.iter().any(|i| *i != Interaction::None);
+    let dx: f32 = glisse.read().map(|m| m.delta.x).sum();
+    if souris.pressed(MouseButton::Left) && !sur_bouton {
+        *angle += dx * SENSIBILITE;
+    }
     for r in &mut rendus.liste {
         r.commencer();
     }
     let j = rendus.joueur();
+    animation.avancer(&j.modele, temps.delta_secs().min(0.1), 0.0);
+    calculer_rotations(&j.modele, animation, &mut j.pose.rotations);
     // Accueil : plus loin et plus haut, au-dessus des textes du centre
     j.pose.position = if menu.page == Page::Accueil {
         POSITION_ACCUEIL

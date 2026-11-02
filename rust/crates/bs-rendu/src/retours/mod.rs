@@ -114,7 +114,7 @@ pub fn construire(
 ) {
     let d = jeu.partie.d;
     // Non éclairés ; les chiffres et barres passent devant le décor (`animation.x`)
-    let mut base = ParametresBloc::de_l_arene(jeu.partie.etat.arene);
+    let mut base = ParametresBloc::pour_entites(jeu.partie.etat.arene);
     base.brouillard.w = 1.0;
     let mut decoupe = base;
     decoupe.brouillard.z = 0.1;

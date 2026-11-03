@@ -173,7 +173,7 @@ pub(super) fn construire(
         Text::new("JOUER"),
         TextFont {
             font: police,
-            font_size: 52.0,
+            font_size: 46.0,
             ..default()
         },
         TextColor(IVOIRE),

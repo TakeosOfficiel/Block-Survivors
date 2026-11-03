@@ -1,13 +1,13 @@
 //! Police des textes du menu (styles.css `--menu-police`) : Inter, embarquée (licence
 //! OFL, `polices/OFL.txt`), en normal et demi-gras ; et celle du logo de l'accueil,
-//! Lilita One (licence OFL, `polices/OFL-LilitaOne.txt`). La police pixel du jeu
+//! Luckiest Guy (licence Apache 2.0, `polices/LICENCE-LuckiestGuy.txt`). La police pixel du jeu
 //! (`hud::police`) reste celle des titres. `texte` donne le trio Bevy d'un texte.
 
 use bevy::prelude::*;
 
 const NORMALE: &[u8] = include_bytes!("polices/Inter-Regular.otf");
 const GRASSE: &[u8] = include_bytes!("polices/Inter-SemiBold.otf");
-const LOGO: &[u8] = include_bytes!("polices/LilitaOne-Regular.ttf");
+const LOGO: &[u8] = include_bytes!("polices/LuckiestGuy-Regular.ttf");
 
 /// Les deux graisses d'Inter et la police du logo.
 #[derive(Resource, Clone)]

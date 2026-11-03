@@ -1,4 +1,4 @@
-//! Logo de l'accueil en Lilita One (`polices`) : deux lignes de même largeur, BLOCK en
+//! Logo de l'accueil en Luckiest Guy (`polices`) : deux lignes de même largeur, BLOCK en
 //! pierre claire, SURVIVORS en or. Chaque ligne est un empilement de textes : une
 //! ombre douce, un contour noir (copies décalées en cercle), l'épaisseur (copies vers
 //! le bas, teinte du flanc), puis la face en bandes rognées (claire en haut).
@@ -51,7 +51,7 @@ fn ligne(
         parent,
         Node {
             padding: UiRect::all(Val::Px(bord)),
-            margin: UiRect::bottom(Val::Px(profondeur - taille * 0.18)),
+            margin: UiRect::bottom(Val::Px(profondeur - taille * 0.3)),
             ..default()
         },
     );
@@ -115,6 +115,6 @@ pub(super) fn construire(p: &mut Pinceau, parent: Entity) {
             ..default()
         },
     );
-    ligne(p, l, "BLOCK", &PIERRE, 128.0, (9.0, 5.0));
-    ligne(p, l, "SURVIVORS", &OR, 70.0, (6.0, 4.0));
+    ligne(p, l, "BLOCK", &PIERRE, 132.0, (9.0, 5.0));
+    ligne(p, l, "SURVIVORS", &OR, 74.0, (6.0, 4.0));
 }

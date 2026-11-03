@@ -1,7 +1,9 @@
 //! Écran de chargement (src/ui/ecranChargement.ts), pendant la phase `Chargement` : la
 //! photo de l'arène en plein écran (celles fournies avec le jeu, embarquées), son nom, une
 //! astuce au hasard et une barre qui ne recule jamais. Tout disparaît à la sortie de la
-//! phase. Les photos sont décodées une fois puis gardées.
+//! phase. Les photos sont décodées une fois puis gardées. Dégradé sombre vers le bas,
+//! textes groupés au-dessus de la barre, étape et pourcentage sur une ligne
+//! (docs/CHARTE-UI.md).
 
 use std::collections::HashMap;
 
@@ -9,8 +11,8 @@ use bevy::asset::RenderAssetUsages;
 use bevy::prelude::*;
 
 use crate::carte_mc::Import;
-use crate::dessins::Dessins;
-use crate::ecrans::style::{self, GRIS, OR, OR_CLAIR, TEXTE};
+use crate::ecrans::charte::{self, AIDE, IVOIRE, OR_SOURD, OR_VIF};
+use crate::ecrans::style;
 use crate::hud::police::{TextePixel, ecrire};
 use crate::lancement::DonneesJeu;
 use crate::textures::Textures;
@@ -55,6 +57,10 @@ pub(crate) struct Remplissage;
 #[derive(Component)]
 pub(crate) struct Libelle;
 
+/// Pourcentage, à droite de l'étape.
+#[derive(Component)]
+pub(crate) struct Pourcent;
+
 /// Part déjà remplie (0 à 1) : la barre ne recule pas quand des textures s'ajoutent.
 #[derive(Resource, Default)]
 pub struct Avance(f32);
@@ -85,7 +91,6 @@ pub(crate) fn photo(
 pub fn entrer(
     mut commandes: Commands,
     dj: Res<DonneesJeu>,
-    dessins: Res<Dessins>,
     jeu: Option<Res<PartieEnCours>>,
     import: Option<Res<Import>>,
     mut images: ResMut<Assets<Image>>,
@@ -112,58 +117,94 @@ pub fn entrer(
     }
     // Voile dégradé vers le bas, sous les textes
     let stops = vec![
-        ColorStop::new(Color::srgba(0.0, 0.0, 0.0, 0.0), Val::Percent(45.0)),
-        ColorStop::new(Color::srgba(0.0, 0.0, 0.0, 0.85), Val::Percent(100.0)),
+        ColorStop::new(Color::srgba(0.0, 0.0, 0.0, 0.0), Val::Percent(30.0)),
+        ColorStop::new(Color::srgba(0.04, 0.05, 0.06, 0.75), Val::Percent(65.0)),
+        ColorStop::new(Color::srgba(0.04, 0.05, 0.06, 0.95), Val::Percent(100.0)),
     ];
     commandes.spawn((
         style::plein(),
         BackgroundGradient::from(LinearGradient::to_bottom(stops)),
         ChildOf(racine),
     ));
+    // Groupe en bas : nom, astuce, étape et pourcentage, barre
     let bas = commandes
         .spawn((
             Node {
                 position_type: PositionType::Absolute,
-                left: Val::ZERO,
-                right: Val::ZERO,
+                left: Val::Percent(50.0),
+                margin: UiRect::left(Val::Px(-LARGEUR_BARRE / 2.0)),
+                width: Val::Px(LARGEUR_BARRE),
                 bottom: Val::Px(48.0),
                 flex_direction: FlexDirection::Column,
-                align_items: AlignItems::Center,
-                row_gap: Val::Px(10.0),
+                row_gap: Val::Px(12.0),
                 ..default()
             },
             ChildOf(racine),
         ))
         .id();
     if let Some(a) = arene {
-        commandes.spawn((TextePixel::nouveau(&a.nom, OR_CLAIR, 4.0), ChildOf(bas)));
+        commandes.spawn((TextePixel::nouveau(&a.nom, IVOIRE, 4.0), ChildOf(bas)));
     }
     let astuces = &dj.d.textes.astuces;
     if !astuces.is_empty() {
         let k = crate::lancement::graine_au_hasard() as usize % astuces.len();
-        let t = format!("Astuce : {}", astuces[k]);
+        let bloc = commandes
+            .spawn((
+                Node {
+                    flex_direction: FlexDirection::Column,
+                    row_gap: Val::Px(6.0),
+                    padding: UiRect::new(Val::Px(12.0), Val::Px(12.0), Val::Px(8.0), Val::Px(8.0)),
+                    border: UiRect::left(Val::Px(3.0)),
+                    ..default()
+                },
+                BackgroundColor(Color::srgba(0.063, 0.078, 0.094, 0.7)),
+                BorderColor::all(OR_SOURD),
+                ChildOf(bas),
+            ))
+            .id();
+        commandes.spawn((TextePixel::nouveau("Astuce", OR_VIF, 1.5), ChildOf(bloc)));
         commandes.spawn((
-            TextePixel::nouveau(&t, TEXTE, 2.0).bloc(760.0),
-            Node {
-                margin: UiRect::bottom(Val::Px(8.0)),
-                ..default()
-            },
-            ChildOf(bas),
+            TextePixel::nouveau(&astuces[k], IVOIRE, 2.0)
+                .bloc(LARGEUR_BARRE - 30.0)
+                .a_gauche(),
+            ChildOf(bloc),
         ));
     }
-    let cadre = commandes
+    // Étape à gauche, pourcentage à droite, sur une ligne
+    let ligne = commandes
         .spawn((
             Node {
-                width: Val::Px(LARGEUR_BARRE),
-                height: Val::Px(18.0),
-                border: UiRect::all(Val::Px(3.0)),
+                justify_content: JustifyContent::SpaceBetween,
+                margin: UiRect::top(Val::Px(8.0)),
                 ..default()
             },
-            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.7)),
             ChildOf(bas),
         ))
         .id();
-    style::orner(&mut commandes, &dessins, cadre);
+    commandes.spawn((
+        Libelle,
+        TextePixel::nouveau("Chargement…", AIDE, 1.5),
+        ChildOf(ligne),
+    ));
+    commandes.spawn((
+        Pourcent,
+        TextePixel::nouveau("0 %", IVOIRE, 1.5),
+        ChildOf(ligne),
+    ));
+    let cadre = commandes
+        .spawn((
+            Node {
+                height: Val::Px(14.0),
+                border: UiRect::all(Val::Px(2.0)),
+                border_radius: BorderRadius::all(Val::Px(2.0)),
+                margin: UiRect::top(Val::Px(-6.0)),
+                ..default()
+            },
+            BackgroundColor(charte::CREUX),
+            BorderColor::all(charte::BORD),
+            ChildOf(bas),
+        ))
+        .id();
     commandes.spawn((
         Remplissage,
         Node {
@@ -171,13 +212,8 @@ pub fn entrer(
             height: Val::Percent(100.0),
             ..default()
         },
-        BackgroundColor(OR),
+        BackgroundColor(charte::VERT_GAIN),
         ChildOf(cadre),
-    ));
-    commandes.spawn((
-        Libelle,
-        TextePixel::nouveau("Chargement… 0 %", GRIS, 1.5),
-        ChildOf(bas),
     ));
 }
 
@@ -189,7 +225,7 @@ pub fn avancer(
     import: Option<Res<Import>>,
     mut avance: ResMut<Avance>,
     mut barre: Query<&mut Node, With<Remplissage>>,
-    mut libelle: Query<&mut TextePixel, With<Libelle>>,
+    mut libelles: Query<(&mut TextePixel, Has<Pourcent>), Or<(With<Libelle>, With<Pourcent>)>>,
 ) {
     let a = textures.avancement(&serveur);
     let (etape, part) = match import.is_some() {
@@ -204,7 +240,11 @@ pub fn avancer(
     {
         n.width = Val::Percent(pourcent);
     }
-    if let Ok(mut t) = libelle.single_mut() {
-        ecrire(&mut t, &format!("{etape} {pourcent} %"));
+    for (mut t, pourcentage) in &mut libelles {
+        if pourcentage {
+            ecrire(&mut t, &format!("{pourcent} %"));
+        } else {
+            ecrire(&mut t, etape);
+        }
     }
 }

@@ -1,6 +1,6 @@
 //! Petits dessins pixel art faits au lancement (src/ui/iconesObjets.ts, ornements.ts) :
 //! icônes 16 × 16 des bagues et amulettes (anneau ou chaîne de métal, gemme sertie,
-//! contour sombre) et losange d'or serti d'une émeraude des écrans.
+//! contour sombre).
 
 use bevy::asset::RenderAssetUsages;
 use bevy::image::ImageSampler;
@@ -11,17 +11,14 @@ use bs_donnees::equipement::{FormeIcone, IconeObjet, Metal};
 
 pub(crate) const TAILLE: usize = 16;
 pub(crate) const CONTOUR: u32 = 0x1a1206;
-/// Côté du losange (impair : un trait de 1 pixel passe par sa rangée du milieu).
-pub const COTE_JOYAU: usize = 13;
 
 /// Images dessinées au lancement : icône de chaque objet d'équipement, pièces dessinées
-/// des armures, losange.
+/// des armures.
 #[derive(Resource)]
 pub struct Dessins {
     pub objets: Vec<Handle<Image>>,
     /// Bouclier, cape et talisman de chaque armure de monde (ordre des données).
     pub armures: Vec<[Handle<Image>; 3]>,
-    pub joyau: Handle<Image>,
 }
 
 pub fn creer(
@@ -44,12 +41,7 @@ pub fn creer(
             crate::icones_armures::dessiner(&a.couleurs).map(|px| image(&mut images, TAILLE, &px))
         })
         .collect();
-    let joyau = image(&mut images, COTE_JOYAU, &joyau());
-    commandes.insert_resource(Dessins {
-        objets,
-        armures,
-        joyau,
-    });
+    commandes.insert_resource(Dessins { objets, armures });
 }
 
 /// Image carrée de `cote` pixels 0xRRGGBB (u32::MAX : transparent).
@@ -208,27 +200,4 @@ fn losange(poser: &mut impl FnMut(i32, i32, u32), cx: f32, cy: f32, r: f32, c: [
         (cy - 1.0).round() as i32,
         0xffffff,
     );
-}
-
-/// Losange d'or (contour sombre, biseau éclairé en haut à gauche) serti d'une émeraude.
-fn joyau() -> Vec<u32> {
-    let c = (COTE_JOYAU as i32 - 1) / 2;
-    let mut px = Vec::with_capacity(COTE_JOYAU * COTE_JOYAU);
-    for y in 0..COTE_JOYAU as i32 {
-        for x in 0..COTE_JOYAU as i32 {
-            let anneau = c - ((x - c).abs() + (y - c).abs());
-            let haut_gauche = x + y < 2 * c;
-            px.push(match anneau {
-                a if a < 0 => u32::MAX,
-                0 => CONTOUR,
-                1 if haut_gauche => 0xffe58a,
-                1 => 0x8a6418,
-                2 => 0xe0b040,
-                _ if (x == c - 1 && y == c - 1) || (x == c && y == c - 2) => 0xc8ffd8,
-                _ if haut_gauche || (x + y == 2 * c && x < c) => 0x17dd62,
-                _ => 0x0a8a3a,
-            });
-        }
-    }
-    px
 }

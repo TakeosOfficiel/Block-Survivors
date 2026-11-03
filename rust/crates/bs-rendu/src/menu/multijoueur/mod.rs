@@ -24,8 +24,12 @@ use crate::sauvegarde::Sauvegarde;
 /// Bouton de la page.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ActionMulti {
-    /// Crée un salon (public : vrai).
-    Creer(bool),
+    /// Choisit la visibilité du salon à créer (public : vrai).
+    Visibilite(bool),
+    /// Crée le salon, avec la visibilité choisie.
+    Creer,
+    /// Déplie ou replie les succès de coop.
+    Succes,
     /// Commence la saisie d'un code.
     Code,
     /// Rejoint le salon du code saisi.
@@ -59,6 +63,10 @@ pub struct Annuaire {
     salons: Vec<SalonPublic>,
     /// La saisie en cours est un code ami (sinon un code de salon).
     champ_ami: bool,
+    /// Le salon à créer sera public.
+    public: bool,
+    /// Les succès de coop sont dépliés.
+    succes_ouverts: bool,
 }
 
 impl Annuaire {
@@ -116,7 +124,12 @@ fn entrer_salon(c: &mut Contexte, choix: ChoixPartie, code: Option<[u8; 6]>, pub
 fn agir(c: &mut Contexte, menu: &mut Menu, action: ActionMulti) {
     let choix = menu.choix;
     match action {
-        ActionMulti::Creer(public) if c.coop.is_none() => entrer_salon(c, choix, None, public),
+        ActionMulti::Visibilite(public) => c.annuaire.public = public,
+        ActionMulti::Succes => c.annuaire.succes_ouverts ^= true,
+        ActionMulti::Creer if c.coop.is_none() => {
+            let public = c.annuaire.public;
+            entrer_salon(c, choix, None, public);
+        }
         ActionMulti::Code if c.coop.is_none() => {
             c.annuaire.champ_ami = false;
             menu.saisie = Some(String::new());

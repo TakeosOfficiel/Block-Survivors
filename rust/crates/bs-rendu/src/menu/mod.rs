@@ -58,6 +58,8 @@ pub enum ActionMenu {
     Options,
     /// Ouvre les Nouveautés.
     Nouveautes,
+    /// Déplie une version des Nouveautés.
+    Version(usize),
     Talent(ActionTalent),
     /// Ouvre la page Multijoueur.
     OuvrirMulti,
@@ -74,7 +76,8 @@ enum Page {
     Profil,
     /// Profils ; celui dont la suppression attend confirmation.
     Profils(Option<usize>),
-    Nouveautes,
+    /// Nouveautés ; la version dépliée.
+    Nouveautes(usize),
     Multijoueur,
 }
 
@@ -152,8 +155,8 @@ fn construire(
             );
             profil::construire(commandes, (dj, sauvegarde, dessins), ic, etat)
         }
-        Page::Profils(_) => profils::construire(commandes, dj, sauvegarde, menu),
-        Page::Nouveautes => nouveautes::construire(commandes),
+        Page::Profils(_) => profils::construire(commandes, (dj, sauvegarde), ic, menu),
+        Page::Nouveautes(k) => nouveautes::construire(commandes, ic, k),
         Page::Multijoueur => multijoueur::construire(commandes, dj, menu, multi),
     };
     commandes.entity(racine).insert(ElementMenu);
@@ -197,7 +200,7 @@ pub fn entrer(
         Ok("collection") => Page::Collection(collection::monde_de_l_arene(&dj, choix.arene)),
         Ok("profil") => Page::Profil,
         Ok("profils") => Page::Profils(None),
-        Ok("nouveautes") => Page::Nouveautes,
+        Ok("nouveautes") => Page::Nouveautes(0),
         Ok("multijoueur") => Page::Multijoueur,
         _ if message.0.is_some() => Page::Multijoueur,
         _ => Page::Accueil,
@@ -375,8 +378,9 @@ pub fn gerer(
         Some(ActionMenu::Multi(_)) => {}
         Some(ActionMenu::Nouveautes) => {
             nouveautes::marquer_lues(sauvegarde.profils.stockage());
-            page = Page::Nouveautes;
+            page = Page::Nouveautes(0);
         }
+        Some(ActionMenu::Version(k)) => page = Page::Nouveautes(k),
         Some(ActionMenu::Options) => {
             options.ouvrir();
             return;

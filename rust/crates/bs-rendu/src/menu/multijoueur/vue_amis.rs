@@ -9,11 +9,11 @@ use bs_sauvegarde::amis::Ami;
 use super::ActionMulti;
 use super::vue::{VueMulti, bouton, ligne, texte};
 use crate::amis::Note;
-use crate::ecrans::style::{GRIS, OR, OR_CLAIR, TEXTE};
+use crate::ecrans::charte::{AIDE, IVOIRE, OR_VIF};
 use crate::menu::Menu;
 
-pub const LARGEUR: f32 = 420.0;
-const VERT: Color = Color::srgb_u8(0x6d, 0xe0, 0x6d);
+pub const LARGEUR: f32 = 400.0;
+const VERT: Color = crate::ecrans::charte::VERT_GAIN;
 const BLEU: Color = Color::srgb_u8(0x8a, 0xc8, 0xff);
 
 /// Pseudo connu d'un code (sinon le code lui-même).
@@ -27,7 +27,7 @@ fn nom<'a>(liste: &'a [Ami], code: &'a str) -> &'a str {
 /// Où en est un ami, en clair.
 fn statut(p: Option<&Etat>) -> (String, Color) {
     let Some(p) = p else {
-        return ("Hors ligne".into(), GRIS);
+        return ("Hors ligne".into(), AIDE);
     };
     let t = match (p.etat, p.salon) {
         (EtatPresence::Menu, _) => return ("En ligne".into(), VERT),
@@ -51,7 +51,7 @@ fn deux_lignes(commandes: &mut Commands, l: Entity, haut: &str, bas: &str, coule
             ChildOf(l),
         ))
         .id();
-    texte(commandes, c, haut, TEXTE, 1.75);
+    texte(commandes, c, haut, IVOIRE, 1.75);
     texte(commandes, c, bas, couleur, 1.5);
 }
 
@@ -64,22 +64,23 @@ fn messages(commandes: &mut Commands, racine: Entity, vue: &VueMulti, notes: &[N
             Note::Demande { .. } => ("voudrait jouer avec vous", "Inviter"),
             Note::Ajout { pseudo, .. } => {
                 let t = format!("{pseudo} vous a ajouté");
-                deux_lignes(commandes, l, &t, n.code(), OR);
+                deux_lignes(commandes, l, &t, n.code(), IVOIRE);
                 bouton(commandes, l, "Ajouter", Some(ActionMulti::Accepter(k)));
                 bouton(commandes, l, "x", Some(ActionMulti::Ignorer(k)));
                 continue;
             }
         };
-        deux_lignes(commandes, l, qui, t, OR);
+        deux_lignes(commandes, l, qui, t, IVOIRE);
         bouton(commandes, l, oui, Some(ActionMulti::Accepter(k)));
         bouton(commandes, l, "x", Some(ActionMulti::Ignorer(k)));
     }
 }
 
+/// Panneau des amis.
 pub fn construire(commandes: &mut Commands, racine: Entity, menu: &Menu, vue: &VueMulti) {
-    texte(commandes, racine, "Amis", OR, 2.0);
+    super::vue::section(commandes, racine, "Amis");
     let Some(amis) = vue.amis else {
-        texte(commandes, racine, "Amis indisponibles.", GRIS, 1.5);
+        texte(commandes, racine, "Amis indisponibles.", AIDE, 1.5);
         return;
     };
     let code = amis.service.code();
@@ -87,7 +88,7 @@ pub fn construire(commandes: &mut Commands, racine: Entity, menu: &Menu, vue: &V
         commandes,
         racine,
         &format!("Votre code : {code}"),
-        OR_CLAIR,
+        OR_VIF,
         2.0,
     );
     if !amis.service.connecte() {
@@ -95,25 +96,34 @@ pub fn construire(commandes: &mut Commands, racine: Entity, menu: &Menu, vue: &V
             commandes,
             racine,
             "Relais injoignable, nouvel essai…",
-            GRIS,
+            AIDE,
             1.5,
         );
     }
 
-    let l = ligne(commandes, racine, LARGEUR);
+    let l = commandes
+        .spawn((
+            Node {
+                column_gap: Val::Px(8.0),
+                flex_shrink: 0.0,
+                ..default()
+            },
+            ChildOf(racine),
+        ))
+        .id();
     let saisie = vue.annuaire.champ_ami;
     let champ = match &menu.saisie {
-        Some(s) if saisie => format!("{s}_"),
+        Some(s) if saisie => format!("{s}|"),
         _ => "Code d'un ami".into(),
     };
-    bouton(commandes, l, &champ, Some(ActionMulti::CodeAmi));
+    super::vue::champ(commandes, l, &champ, ActionMulti::CodeAmi);
     bouton(commandes, l, "Ajouter", Some(ActionMulti::AjouterAmi));
     if menu.saisie.is_some() && saisie {
         texte(
             commandes,
             racine,
             "Entrée : ajouter · Échap : annuler",
-            GRIS,
+            AIDE,
             1.5,
         );
     }
@@ -123,7 +133,7 @@ pub fn construire(commandes: &mut Commands, racine: Entity, menu: &Menu, vue: &V
     if vue.liste.is_empty() {
         let t = "Aucun ami : donnez-leur votre code, ou ajoutez le leur.";
         commandes.spawn((
-            crate::hud::police::TextePixel::nouveau(t, GRIS, 1.5).bloc(LARGEUR),
+            crate::hud::police::TextePixel::nouveau(t, AIDE, 1.5).bloc(LARGEUR),
             ChildOf(racine),
         ));
     }

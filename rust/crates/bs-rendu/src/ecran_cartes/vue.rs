@@ -1,8 +1,9 @@
-//! Mise en page de l'écran de cartes (styles.css `#cartes`, `.carte`) : voile sombre,
-//! titre d'or entre deux traits, cartes debout au liseré d'or bordé de sombre, losange
-//! émeraude en haut, bandeau et liseré intérieur de la couleur de la famille (rareté pour
-//! les objets), fond teinté ; touche, icône, nom, étiquette, description et lignes
-//! « avant → après » (nouvelle valeur en vert). Bouton « Relancer » sous les cartes.
+//! Mise en page de l'écran de cartes (docs/CHARTE-UI.md) : voile sombre, titre ivoire
+//! entre deux traits d'or sourd, cartes debout au bord neutre (seule la carte survolée
+//! passe à l'or vif), bandeau et liseré intérieur de la couleur de la famille (rareté pour
+//! les objets), fond teinté ; zones fixes : touche, icône, nom en ivoire, stat clé, puis
+//! étiquette, description et autres lignes « avant → après » (nouvelle valeur en vert).
+//! Sous les cartes : « Laisser les objets » (refus d'un coffre) et « Relancer ».
 //! Tout est reconstruit à chaque ouverture ou relance (jamais pendant le jeu).
 
 use bevy::prelude::*;
@@ -10,7 +11,8 @@ use bs_donnees::equipement::Rarete;
 use bs_regles::textes::{Carte, Famille, Icone};
 
 use crate::dessins::Dessins;
-use crate::ecrans::style::{GRIS, JOYAU, OR, OR_CLAIR, SOMBRE, plein};
+use crate::ecrans::charte::{self, AIDE, BORD, IVOIRE, OR_SOURD, Relief};
+use crate::ecrans::style::{SOMBRE, plein};
 use crate::hud::police::TextePixel;
 use crate::textures::Textures;
 
@@ -19,7 +21,7 @@ const FOND_CARTE: Color = Color::srgba_u8(10, 12, 18, 240);
 const TEXTE_BANDEAU: Color = Color::srgb_u8(0x10, 0x13, 0x1b);
 const DESCRIPTION: Color = Color::srgb_u8(0xc8, 0xcc, 0xd6);
 const STATS: Color = Color::srgb_u8(0xcf, 0xe9, 0xc8);
-const VALEUR: Color = Color::srgb_u8(0x7d, 0xff, 0x7d);
+const VALEUR: Color = charte::VERT_GAIN;
 const LARGEUR_CARTE: f32 = 250.0;
 /// Largeur du texte dans la carte (marges de 18 px et liseré).
 const LARGEUR_TEXTE: f32 = LARGEUR_CARTE - 2.0 * 18.0 - 6.0;
@@ -99,13 +101,12 @@ pub fn construire(
                 height: Val::Px(3.0),
                 ..default()
             },
-            BackgroundColor(OR),
-            Outline::new(Val::Px(3.0), Val::ZERO, SOMBRE),
+            BackgroundColor(OR_SOURD),
             ChildOf(ligne),
         )
     };
     commandes.spawn(trait_or());
-    commandes.spawn((TextePixel::nouveau(titre, OR_CLAIR, 4.0), ChildOf(ligne)));
+    commandes.spawn((TextePixel::nouveau(titre, IVOIRE, 4.0), ChildOf(ligne)));
     commandes.spawn(trait_or());
 
     let liste = commandes
@@ -119,12 +120,33 @@ pub fn construire(
             ChildOf(racine),
         ))
         .id();
+    let mut refus = None;
     for (k, carte) in cartes.iter().enumerate() {
+        // Refus du coffre : action secondaire sous les cartes, pas une carte
+        if carte.famille == Famille::Action && carte.etiquette == "Refuser" {
+            refus = Some((k, carte));
+            continue;
+        }
         construire_carte(commandes, c, liste, k, carte);
     }
 
+    let bas = commandes
+        .spawn((
+            Node {
+                column_gap: Val::Px(12.0),
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            ChildOf(racine),
+        ))
+        .id();
+    if let Some((k, carte)) = refus {
+        let b = charte::bouton_relief(commandes, bas, Relief::SECONDAIRE, 40.0, BoutonCarte(k));
+        let t = format!("{} ({})", carte.nom, k + 1);
+        commandes.spawn((TextePixel::nouveau(&t, IVOIRE, 2.0), ChildOf(b)));
+    }
     if let Some(n) = relances {
-        bouton_relancer(commandes, racine, n);
+        bouton_relancer(commandes, bas, n);
     }
     racine
 }
@@ -147,13 +169,14 @@ fn construire_carte(
                 min_height: Val::Px(350.0),
                 padding: UiRect::new(Val::Px(18.0), Val::Px(18.0), Val::Px(50.0), Val::Px(18.0)),
                 border: UiRect::all(Val::Px(3.0)),
+                border_radius: BorderRadius::all(Val::Px(2.0)),
                 flex_direction: FlexDirection::Column,
                 align_items: AlignItems::Center,
-                row_gap: Val::Px(10.0),
+                row_gap: Val::Px(8.0),
                 ..default()
             },
-            BorderColor::all(OR),
-            Outline::new(Val::Px(3.0), Val::ZERO, SOMBRE),
+            BorderColor::all(BORD),
+            Outline::new(Val::Px(2.0), Val::ZERO, SOMBRE),
             BackgroundColor(FOND_CARTE),
             BackgroundGradient::from(LinearGradient::to_bottom(vec![
                 ColorStop::new(teinte, Val::Percent(0.0)),
@@ -201,20 +224,6 @@ fn construire_carte(
     commandes.spawn((
         TextePixel::nouveau(carte.famille.nom(), TEXTE_BANDEAU, 2.0).sans_bord(),
         ChildOf(bandeau),
-    ));
-    // Losange au milieu du liseré du haut
-    commandes.spawn((
-        ImageNode::new(c.dessins.joyau.clone()),
-        Node {
-            position_type: PositionType::Absolute,
-            left: Val::Percent(50.0),
-            margin: UiRect::left(Val::Px(-JOYAU / 2.0)),
-            top: Val::Px(-21.0),
-            width: Val::Px(JOYAU),
-            height: Val::Px(JOYAU),
-            ..default()
-        },
-        ChildOf(bouton),
     ));
     // Touche
     let touche = commandes
@@ -278,11 +287,38 @@ fn construire_carte(
             ChildOf(cadre),
         ));
     }
-    // Nom, étiquette (sauf si elle répète le bandeau), description
+    // Zone du nom (hauteur fixe : deux lignes), en ivoire ; stat clé dessous
+    let zone_nom = commandes
+        .spawn((
+            Node {
+                height: Val::Px(40.0),
+                flex_shrink: 0.0,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            ChildOf(bouton),
+        ))
+        .id();
     commandes.spawn((
-        TextePixel::nouveau(&carte.nom, famille, 2.0).bloc(LARGEUR_TEXTE),
-        ChildOf(bouton),
+        TextePixel::nouveau(&carte.nom, IVOIRE, 2.0).bloc(LARGEUR_TEXTE),
+        ChildOf(zone_nom),
     ));
+    let zone_cle = commandes
+        .spawn((
+            Node {
+                height: Val::Px(18.0),
+                flex_shrink: 0.0,
+                ..default()
+            },
+            ChildOf(bouton),
+        ))
+        .id();
+    if let Some(cle) = carte.lignes.first() {
+        commandes.spawn((
+            TextePixel::nouveau(cle, VALEUR, 1.5).bloc(LARGEUR_TEXTE),
+            ChildOf(zone_cle),
+        ));
+    }
     if carte.etiquette != carte.famille.nom() {
         let pastille = commandes
             .spawn((
@@ -304,7 +340,8 @@ fn construire_carte(
         TextePixel::nouveau(&carte.description, DESCRIPTION, 1.5).bloc(LARGEUR_TEXTE),
         ChildOf(bouton),
     ));
-    if carte.lignes.is_empty() {
+    // Les autres lignes en pied (la première est la stat clé, sous le nom)
+    if carte.lignes.len() < 2 {
         return;
     }
     // Lignes « Dégâts : 10 → 15 » : la nouvelle valeur ressort
@@ -323,7 +360,7 @@ fn construire_carte(
             ChildOf(bouton),
         ))
         .id();
-    for l in &carte.lignes {
+    for l in carte.lignes.iter().skip(1) {
         // Valeur à la ligne si elle ne tient pas
         let noeud = Node {
             flex_wrap: FlexWrap::Wrap,
@@ -344,40 +381,27 @@ fn construire_carte(
     }
 }
 
-/// « Relancer (R) · 2 restantes », ou « Plus de relance » grisé.
-fn bouton_relancer(commandes: &mut Commands, racine: Entity, n: u32) {
-    let bouton = commandes
-        .spawn((
-            Button,
-            BoutonRelancer,
-            Node {
-                height: Val::Px(40.0),
-                padding: UiRect::horizontal(Val::Px(18.0)),
-                column_gap: Val::Px(8.0),
-                align_items: AlignItems::Center,
-                border: UiRect::all(Val::Px(1.0)),
-                border_radius: BorderRadius::all(Val::Px(8.0)),
-                ..default()
-            },
-            BorderColor::all(Color::srgba(1.0, 1.0, 1.0, if n == 0 { 0.1 } else { 0.22 })),
-            BackgroundColor(Color::srgba_u8(12, 14, 20, if n == 0 { 115 } else { 166 })),
-            ChildOf(racine),
-        ))
-        .id();
+/// « Relancer (R) · 2 restantes », ou « Plus de relance » éteint.
+fn bouton_relancer(commandes: &mut Commands, parent: Entity, n: u32) {
+    let bouton = charte::bouton_relief(commandes, parent, Relief::SECONDAIRE, 40.0, BoutonRelancer);
     if n == 0 {
+        commandes
+            .entity(bouton)
+            .remove::<(Button, Relief)>()
+            .insert(BackgroundColor(charte::CREUX));
         commandes.spawn((
-            TextePixel::nouveau("Plus de relance", Color::srgb_u8(0x8a, 0x8a, 0x8a), 2.0),
+            TextePixel::nouveau("Plus de relance", AIDE, 2.0),
             ChildOf(bouton),
         ));
         return;
     }
     let pluriel = if n > 1 { "s" } else { "" };
     commandes.spawn((
-        TextePixel::nouveau("Relancer (R)", Color::srgb_u8(0xe8, 0xe8, 0xe8), 2.0),
+        TextePixel::nouveau("Relancer (R)", IVOIRE, 2.0),
         ChildOf(bouton),
     ));
     commandes.spawn((
-        TextePixel::nouveau(&format!("· {n} restante{pluriel}"), GRIS, 2.0),
+        TextePixel::nouveau(&format!("· {n} restante{pluriel}"), AIDE, 2.0),
         ChildOf(bouton),
     ));
 }

@@ -228,6 +228,24 @@ pub fn construire(
             ChildOf(haut),
         ))
         .id();
+    // Cartouche commune des cœurs et de l'expérience (posée dessous)
+    let groupe = creer(
+        &mut commandes,
+        Node {
+            bottom: Val::Px(30.0),
+            left: Val::Percent(50.0),
+            margin: UiRect::left(Val::Px(-250.0)),
+            width: Val::Px(500.0),
+            height: Val::Px(80.0),
+            border: UiRect::all(Val::Px(2.0)),
+            border_radius: BorderRadius::all(Val::Px(2.0)),
+            ..absolu()
+        },
+    );
+    commandes.entity(groupe).insert((
+        BackgroundColor(Color::srgba(0.063, 0.078, 0.094, 0.55)),
+        BorderColor::all(Color::srgba(0.282, 0.3, 0.337, 0.6)),
+    ));
     let barres = barres::construire(&mut commandes, &serveur, &textures, d, racine, haut);
     let coeurs = coeurs::construire(&mut commandes, &serveur, &textures, racine);
 

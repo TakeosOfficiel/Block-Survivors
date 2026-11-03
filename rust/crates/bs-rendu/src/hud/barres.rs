@@ -120,14 +120,22 @@ pub fn construire(
         })
         .collect();
 
-    // Boss, sous le chrono : nom puis barre
+    // Boss, sous le chrono : cartouche sombre, nom puis barre
     let boss = commandes
         .spawn((
             Node {
                 flex_direction: FlexDirection::Column,
                 align_items: AlignItems::Center,
-                row_gap: Val::Px(2.0),
+                row_gap: Val::Px(4.0),
+                padding: UiRect::new(Val::Px(14.0), Val::Px(14.0), Val::Px(6.0), Val::Px(10.0)),
+                border: UiRect::all(Val::Px(2.0)),
+                border_radius: BorderRadius::all(Val::Px(2.0)),
                 ..default()
+            },
+            BackgroundColor(Color::srgba(0.063, 0.078, 0.094, 0.82)),
+            BorderColor {
+                top: crate::ecrans::charte::OR_SOURD,
+                ..BorderColor::all(crate::ecrans::charte::BORD)
             },
             Visibility::Hidden,
             ChildOf(haut),

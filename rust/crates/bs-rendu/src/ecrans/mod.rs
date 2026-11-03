@@ -4,11 +4,14 @@
 //! pendant les cartes ni après la fin. « Menu principal » abandonne la partie (une
 //! partie finie est déjà comptée). Le HUD est masqué sous l'écran de fin.
 //!
+//! Recommencer et Menu principal demandent confirmation depuis la pause.
+//!
 //! Essais : `BS_PAUSE=1` (ou `stats`) ouvre la pause (ou ses statistiques) au début ;
 //! `BS_PAUSE=menu` revient aussitôt au menu principal.
 
 mod bilan;
 pub mod charte;
+mod fin;
 pub mod style;
 pub(crate) mod vues;
 
@@ -39,6 +42,8 @@ enum Vue {
     Aucune,
     Pause,
     Statistiques,
+    /// Confirmation de Recommencer ou Menu principal depuis la pause.
+    Confirmer(Action),
     Fin,
 }
 
@@ -52,7 +57,7 @@ pub struct Ecrans {
 impl Ecrans {
     /// La partie est en pause (pause ou ses statistiques).
     pub fn fige(&self) -> bool {
-        matches!(self.vue, Vue::Pause | Vue::Statistiques)
+        matches!(self.vue, Vue::Pause | Vue::Statistiques | Vue::Confirmer(_))
     }
 
     /// Un écran est affiché (la molette ne zoome plus).
@@ -124,12 +129,22 @@ pub fn gerer(
                     vue = Vue::Pause;
                 } else if essai.as_deref() == Some("stats") {
                     vue = Vue::Statistiques;
+                } else if essai.as_deref() == Some("confirmer") {
+                    vue = Vue::Confirmer(Action::Menu);
                 } else if essai.as_deref() == Some("menu") {
                     action = Some(Action::Menu);
                 }
             }
         }
-        Vue::Pause if echap => action = Some(Action::Reprendre),
+        Vue::Pause if echap || entree => action = Some(Action::Reprendre),
+        Vue::Confirmer(_) if echap || entree => action = Some(Action::Retour),
+        // Recommencer et Menu principal, depuis la pause : confirmer d'abord
+        Vue::Pause
+            if matches!(action, Some(Action::Recommencer | Action::Menu))
+                && !(action == Some(Action::Recommencer) && coop.is_some()) =>
+        {
+            vue = Vue::Confirmer(action.take().expect("action"));
+        }
         Vue::Statistiques if echap => action = Some(Action::Retour),
         // Coop : l'hôte a repris la partie (« Continuer sans fin »)
         Vue::Fin if !finie => {
@@ -198,7 +213,8 @@ pub fn gerer(
         Vue::Aucune => None,
         Vue::Pause => Some(vues::pause(&mut commandes, &c, p, coop.is_some())),
         Vue::Statistiques => Some(vues::statistiques(&mut commandes, &c, p)),
-        Vue::Fin => Some(vues::fin(
+        Vue::Confirmer(a) => Some(vues::confirmer(&mut commandes, a)),
+        Vue::Fin => Some(fin::fin(
             &mut commandes,
             &c,
             p,
@@ -207,7 +223,8 @@ pub fn gerer(
         )),
     };
     if let Ok(mut v) = visibilites.get_mut(hud.racine) {
-        *v = if vue == Vue::Fin {
+        // Masqué sous la fin et les statistiques (rien ne dépasse du panneau)
+        *v = if matches!(vue, Vue::Fin | Vue::Statistiques) {
             Visibility::Hidden
         } else {
             Visibility::Inherited

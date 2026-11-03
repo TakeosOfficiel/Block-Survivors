@@ -247,6 +247,7 @@ impl Plugin for PluginJeu {
                         menu::gerer,
                         menu::apercu::animer,
                         ecrans::defiler,
+                        ecrans::vues::indiquer,
                     )
                         .chain(),
                     (ecrans::style::survoler, ecrans::charte::survoler_relief),
@@ -326,6 +327,7 @@ impl Plugin for PluginJeu {
                     ecran_cartes::survoler,
                     ecrans::gerer,
                     ecrans::defiler,
+                    ecrans::vues::indiquer,
                     (ecrans::style::survoler, ecrans::charte::survoler_relief),
                     hud::afficher,
                     hud::compteur::afficher,

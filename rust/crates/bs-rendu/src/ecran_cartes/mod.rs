@@ -21,6 +21,7 @@ pub use vue::{BoutonCarte, BoutonRelancer};
 
 use crate::PartieEnCours;
 use crate::dessins::Dessins;
+use crate::ecrans::charte::{self, Relief};
 use crate::textures::Textures;
 
 /// Délai avant qu'un clic ou une touche soit accepté (s).
@@ -184,17 +185,19 @@ pub fn gerer(
     ));
 }
 
-/// Carte survolée : soulevée.
+/// Carte survolée : soulevée, bord d'or vif (les autres restent neutres).
+#[allow(clippy::type_complexity)]
 pub fn survoler(
-    mut cartes: Query<(&Interaction, &mut UiTransform), (Changed<Interaction>, With<BoutonCarte>)>,
+    mut cartes: Query<
+        (&Interaction, &mut UiTransform, &mut BorderColor),
+        (Changed<Interaction>, With<BoutonCarte>, Without<Relief>),
+    >,
 ) {
-    for (i, mut t) in &mut cartes {
-        let y = if *i == Interaction::None {
-            0.0
-        } else {
-            -SOULEVEMENT
-        };
+    for (i, mut t, mut bord) in &mut cartes {
+        let survol = *i != Interaction::None;
+        let y = if survol { -SOULEVEMENT } else { 0.0 };
         t.translation = Val2::px(0.0, y);
+        *bord = BorderColor::all(if survol { charte::OR_VIF } else { charte::BORD });
     }
 }
 

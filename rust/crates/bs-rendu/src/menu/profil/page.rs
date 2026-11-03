@@ -1,5 +1,7 @@
 //! Construction de la page Profil : skins à gauche, pseudo et classe au centre (le
-//! héros 3D est dessous), pièces d'armure portées à droite.
+//! héros 3D est dessous), pièces d'armure portées à droite. Charte commune
+//! (docs/CHARTE-UI.md) : bloc « Personnalisation », pseudo avec crayon, emplacements
+//! d'armure lisibles même vides.
 
 use bevy::prelude::*;
 use bs_donnees::arenes::Monde;
@@ -10,7 +12,8 @@ use bs_sauvegarde::profil_joueur::{
 
 use super::{ActionProfil, Skin};
 use crate::dessins::Dessins;
-use crate::ecrans::style::{self, GRIS, OR, OR_CLAIR, TEXTE};
+use crate::ecrans::charte::{self, AIDE as GRIS, IVOIRE as TEXTE, OR_SOURD, OR_VIF};
+use crate::ecrans::style;
 use crate::hud::police::TextePixel;
 use crate::icones_armures;
 use crate::lancement::DonneesJeu;
@@ -19,33 +22,83 @@ use crate::sauvegarde::Sauvegarde;
 
 const LARGEUR_SKINS: f32 = 300.0;
 const LARGEUR_ARMURE: f32 = 380.0;
-const JAUNE: Color = Color::srgb_u8(0xff, 0xe0, 0x66);
+const JAUNE: Color = OR_VIF;
 const ROUGE: Color = Color::srgb_u8(0xff, 0x8a, 0x8a);
-const VERT: Color = Color::srgb_u8(0x55, 0xff, 0x55);
+const VERT: Color = charte::VERT_GAIN;
 
 fn texte(commandes: &mut Commands, parent: Entity, t: &str, couleur: Color, taille: f32) {
     commandes.spawn((TextePixel::nouveau(t, couleur, taille), ChildOf(parent)));
 }
 
 fn panneau(commandes: &mut Commands, parent: Entity, largeur: f32, titre: &str) -> Entity {
-    let p = commandes
+    let p = charte::panneau(
+        commandes,
+        parent,
+        Node {
+            width: Val::Px(largeur),
+            align_items: AlignItems::Center,
+            row_gap: Val::Px(6.0),
+            padding: UiRect::all(Val::Px(12.0)),
+            ..default()
+        },
+    );
+    let entete = commandes
         .spawn((
             Node {
-                width: Val::Px(largeur),
-                flex_direction: FlexDirection::Column,
-                align_items: AlignItems::Center,
-                row_gap: Val::Px(5.0),
-                padding: UiRect::all(Val::Px(8.0)),
-                border: UiRect::all(Val::Px(2.0)),
+                width: Val::Percent(100.0),
+                justify_content: JustifyContent::Center,
+                padding: UiRect::bottom(Val::Px(6.0)),
+                margin: UiRect::bottom(Val::Px(4.0)),
+                border: UiRect::bottom(Val::Px(2.0)),
                 ..default()
             },
-            BackgroundColor(crate::menu::vue::FOND),
-            BorderColor::all(Color::srgb_u8(0x2a, 0x2a, 0x2a)),
+            BorderColor::all(charte::BORD),
+            ChildOf(p),
+        ))
+        .id();
+    texte(commandes, entete, titre, TEXTE, 2.0);
+    p
+}
+
+/// Petit crayon d'or : « ce texte se modifie ».
+fn crayon(commandes: &mut Commands, parent: Entity) {
+    let cadre = commandes
+        .spawn((
+            Node {
+                width: Val::Px(20.0),
+                height: Val::Px(20.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..default()
+            },
             ChildOf(parent),
         ))
         .id();
-    texte(commandes, p, titre, OR, 2.0);
-    p
+    let corps = commandes
+        .spawn((
+            Node {
+                width: Val::Px(5.0),
+                height: Val::Px(18.0),
+                flex_direction: FlexDirection::Column,
+                justify_content: JustifyContent::SpaceBetween,
+                ..default()
+            },
+            BackgroundColor(OR_VIF),
+            UiTransform::from_rotation(Rot2::degrees(45.0)),
+            ChildOf(cadre),
+        ))
+        .id();
+    // Gomme en haut, mine en bas
+    for (h, c) in [(4.0, charte::ROUGE), (4.0, charte::CREUX)] {
+        commandes.spawn((
+            Node {
+                height: Val::Px(h),
+                ..default()
+            },
+            BackgroundColor(c),
+            ChildOf(corps),
+        ));
+    }
 }
 
 /// Bouton compact ; `choisi` le met en avant, sans action il est éteint.
@@ -71,7 +124,10 @@ fn bouton(
         }
         None => {
             e.remove::<(Button, style::BoutonPage)>();
-            e.insert(BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.3)));
+            e.insert((
+                BackgroundColor(charte::CREUX),
+                BorderColor::all(charte::BORD),
+            ));
         }
     }
     if choisi {
@@ -146,13 +202,14 @@ pub fn construire(
                 height: Val::Percent(100.0),
                 flex_direction: FlexDirection::Column,
                 align_items: AlignItems::Center,
-                padding: UiRect::all(Val::Px(12.0)),
-                row_gap: Val::Px(8.0),
+                padding: UiRect::all(Val::Px(charte::MARGE)),
+                row_gap: Val::Px(12.0),
                 ..default()
             },
+            BackgroundColor(charte::FOND),
         ))
         .id();
-    texte(commandes, racine, "Profil", OR_CLAIR, 3.0);
+    texte(commandes, racine, "Profil", TEXTE, 4.0);
     let corps = commandes
         .spawn((
             Node {
@@ -228,19 +285,19 @@ pub fn construire(
         ));
     }
 
-    // Centre : pseudo (le héros est dessiné dessous)
+    // Centre : bloc « Personnalisation » (le héros est dessiné dessous)
     let centre = commandes
         .spawn((
             Node {
                 flex_grow: 1.0,
                 flex_direction: FlexDirection::Column,
                 align_items: AlignItems::Center,
-                row_gap: Val::Px(6.0),
                 ..default()
             },
             ChildOf(corps),
         ))
         .id();
+    let centre = panneau(commandes, centre, 420.0, "Personnalisation");
     let (t, couleur) = match saisie {
         Some(s) => (format!("{s}_"), JAUNE),
         None if profil.pseudo.is_empty() => ("Sans pseudo".to_owned(), GRIS),
@@ -255,7 +312,14 @@ pub fn construire(
         Some(ActionProfil::Pseudo),
     );
     commandes.entity(b).despawn_related::<Children>();
+    commandes.entity(b).entry::<Node>().and_modify(|mut n| {
+        n.padding = UiRect::horizontal(Val::Px(14.0));
+        n.column_gap = Val::Px(10.0);
+    });
     texte(commandes, b, &t, couleur, 2.5);
+    if saisie.is_none() {
+        crayon(commandes, b);
+    }
     let aide = if saisie.is_some() {
         "Entrée : valider · Échap : annuler"
     } else {
@@ -271,24 +335,27 @@ pub fn construire(
         commandes,
         centre,
         &format!("{} · {nom_skin}", classe.nom),
-        OR_CLAIR,
+        OR_SOURD,
         2.0,
     );
 
     // Armure portée
     armure(commandes, (dj, sauvegarde, dessins), ic, corps);
 
-    let retour = style::bouton(
+    let retour = charte::bouton_relief(
         commandes,
         racine,
-        "Retour",
-        200.0,
-        false,
+        charte::Relief::SECONDAIRE,
+        charte::H_SECONDAIRE,
         ActionMenu::Fermer,
     );
     commandes
         .entity(retour)
-        .insert(BackgroundColor(crate::menu::vue::FOND));
+        .entry::<Node>()
+        .and_modify(|mut n| {
+            n.width = Val::Px(200.0);
+        });
+    texte(commandes, retour, "Retour", TEXTE, 2.0);
     racine
 }
 
@@ -378,7 +445,7 @@ fn icone_piece(
     possedee: bool,
 ) {
     let icone = icones_armures::icone(d, dessins, monde, piece, |c| ic.icone(c));
-    let eteint = if possedee { 1.0 } else { 0.25 };
+    let eteint = if possedee { 1.0 } else { 0.5 };
     let t = icone.teinte.to_srgba();
     let teinte = Color::srgba(t.red * eteint, t.green * eteint, t.blue * eteint, 1.0);
     let image = commandes

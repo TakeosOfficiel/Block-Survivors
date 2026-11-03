@@ -140,16 +140,21 @@ impl Partie {
                     )
                 } else {
                     (
-                        "Ne rien prendre",
+                        "Laisser les objets",
                         "Refuser",
                         format!(
                             "Laisser ces objets dans le coffre et repartir avec {n} émeraudes."
                         ),
                     )
                 };
+                let nom = if seule {
+                    nom.to_owned()
+                } else {
+                    format!("{nom} · recevoir {n} émeraudes")
+                };
                 carte(
                     Famille::Action,
-                    nom,
+                    &nom,
                     Icone::Texture(emeraude),
                     etiquette.into(),
                     description,

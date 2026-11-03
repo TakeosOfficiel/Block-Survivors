@@ -3,7 +3,7 @@
 //! par seconde depuis son obtention, part du total), et le total en pied. Tab ou l'option
 //! « Compteur » l'affiche ou le cache. Rafraîchi deux fois par seconde (temps réel) ;
 //! les lignes sont créées une fois et seulement réécrites. Le panneau n'est pas
-//! déplaçable (il l'est dans le jeu TS).
+//! déplaçable (il l'est dans le jeu TS). Masqué pendant les écrans de choix.
 
 use bevy::prelude::*;
 use bs_regles::textes::libelles::nombre;
@@ -198,6 +198,7 @@ pub fn afficher(
     jeu: Res<PartieEnCours>,
     hud: Option<ResMut<Hud>>,
     mut options: ResMut<Options>,
+    cartes: Res<crate::ecran_cartes::EcranCartes>,
     touches: Res<ButtonInput<KeyCode>>,
     temps: Res<Time<Real>>,
     mut visibles: Query<&mut Visibility>,
@@ -212,7 +213,8 @@ pub fn afficher(
         options.compteur_degats = !options.compteur_degats;
     }
     let c = &mut hud.compteur;
-    let actif = options.compteur_degats;
+    // Masqué pendant les choix (cartes de niveau, coffres) : rien ne gêne la lecture
+    let actif = options.compteur_degats && !cartes.ouvert();
     if let Ok(mut v) = visibles.get_mut(c.racine) {
         v.set_if_neq(if actif {
             Visibility::Inherited
@@ -220,7 +222,7 @@ pub fn afficher(
             Visibility::Hidden
         });
     }
-    if options.is_changed() && actif {
+    if (options.is_changed() || cartes.is_changed()) && actif {
         c.minuterie = 0.0;
     }
     c.minuterie -= temps.delta_secs();

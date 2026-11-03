@@ -121,7 +121,7 @@ pub fn pastilles(commandes: &mut Commands, c: &Contexte, parent: Entity, p: &Par
                     column_gap: Val::Px(6.0),
                     padding: UiRect::axes(Val::Px(12.0), Val::Px(6.0)),
                     border: UiRect::all(Val::Px(1.0)),
-                    border_radius: BorderRadius::MAX,
+                    border_radius: BorderRadius::all(Val::Px(2.0)),
                     ..default()
                 },
                 BackgroundColor(Color::srgba(1.0, 1.0, 1.0, 0.07)),
@@ -155,7 +155,7 @@ pub fn tuiles(commandes: &mut Commands, c: &Contexte, parent: Entity, p: &Partie
                     align_items: AlignItems::Center,
                     row_gap: Val::Px(6.0),
                     border: UiRect::all(Val::Px(1.0)),
-                    border_radius: BorderRadius::all(Val::Px(12.0)),
+                    border_radius: BorderRadius::all(Val::Px(2.0)),
                     ..default()
                 },
                 BackgroundColor(Color::srgba_u8(10, 12, 18, 153)),
@@ -289,8 +289,8 @@ pub fn bilan(commandes: &mut Commands, c: &Contexte, parent: Entity, p: &Partie)
     tableau_degats(commandes, c, parent, p);
 }
 
-/// Tableau du compteur de dégâts : rang, total, part, DPS, coups, critiques, plus gros
-/// coup, achevés ; armes de la plus forte à la plus faible.
+/// Tableau des dégâts, simplifié : arme et rang, total, part, dégâts par seconde,
+/// achevés ; armes de la plus forte à la plus faible (le détail est au compteur, Tab).
 fn tableau_degats(commandes: &mut Commands, c: &Contexte, parent: Entity, p: &Partie) {
     let (e, s) = (&p.etat, &p.etat.stats);
     let mut armes: Vec<_> = p.arsenal.armes.iter().collect();
@@ -300,7 +300,7 @@ fn tableau_degats(commandes: &mut Commands, c: &Contexte, parent: Entity, p: &Pa
         .first()
         .map_or(1.0, |a| s.degats_par_arme[a.index].max(1.0));
     let mut colonnes = vec![GridTrack::px(28.0), GridTrack::flex(1.0)];
-    colonnes.extend((0..7).map(|_| GridTrack::auto()));
+    colonnes.extend((0..4).map(|_| GridTrack::auto()));
     let grille = commandes
         .spawn((
             Node {
@@ -327,18 +327,9 @@ fn tableau_degats(commandes: &mut Commands, c: &Contexte, parent: Entity, p: &Pa
         ));
     };
     commandes.spawn((Node::default(), ChildOf(grille)));
-    for (k, titre) in [
-        "Arme",
-        "Dégâts",
-        "Part",
-        "Par s",
-        "Coups",
-        "Critiques",
-        "Max",
-        "Achevés",
-    ]
-    .into_iter()
-    .enumerate()
+    for (k, titre) in ["Arme", "Dégâts", "Part", "Par s", "Achevés"]
+        .into_iter()
+        .enumerate()
     {
         cellule(commandes, titre, GRIS, k == 0);
     }
@@ -346,19 +337,10 @@ fn tableau_degats(commandes: &mut Commands, c: &Contexte, parent: Entity, p: &Pa
         let i = a.index;
         let dg = s.degats_par_arme[i];
         let duree = (e.temps_jeu - s.acquisition_arme[i].max(0.0)).max(1.0);
-        let coups = s.coups_par_arme[i];
         let rang = if a.rang >= a.rang_max() {
             "MAX".to_owned()
         } else {
             format!("rang {}", a.rang)
-        };
-        let critiques = if coups > 0 {
-            format!(
-                "{} %",
-                (f64::from(s.critiques_par_arme[i]) * 100.0 / f64::from(coups)).round()
-            )
-        } else {
-            "-".to_owned()
         };
         let part = if total > 0.0 { dg / total * 100.0 } else { 0.0 };
         commandes.spawn((c.image(&a.def.icone, 24.0), ChildOf(grille)));
@@ -372,9 +354,6 @@ fn tableau_degats(commandes: &mut Commands, c: &Contexte, parent: Entity, p: &Pa
             degats(dg),
             format!("{} %", part.round()),
             decimal(dg / duree),
-            entier(f64::from(coups)),
-            critiques,
-            entier(f64::from(s.plus_gros_coup_par_arme[i])),
             entier(f64::from(s.tues_par_arme[i])),
         ] {
             cellule(commandes, &v, Color::WHITE, false);

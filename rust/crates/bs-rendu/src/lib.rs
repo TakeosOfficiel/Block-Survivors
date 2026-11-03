@@ -247,6 +247,7 @@ impl Plugin for PluginJeu {
                         menu::multijoueur::suivre,
                         menu::gerer,
                         menu::apercu::animer,
+                        menu::apercu::cadrer,
                         ecrans::defiler,
                         ecrans::vues::indiquer,
                     )

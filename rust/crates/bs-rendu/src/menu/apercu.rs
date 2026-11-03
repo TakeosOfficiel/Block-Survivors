@@ -28,6 +28,17 @@ const POSITION_ACCUEIL: Vec3 = Vec3::new(-2.3, -0.45, -2.2);
 /// Sur l'accueil, le héros se tourne vers la droite (vers les mobs).
 const TOUR_ACCUEIL: f32 = 0.5;
 
+/// Hauteur visée par la caméra de scène (`camera::HAUTEUR_VISEE_TROISIEME`).
+const HAUTEUR_VISEE: f32 = 1.8;
+/// Format des photos de scène.
+const FORMAT_PHOTO: f32 = 16.0 / 9.0;
+/// Orientation du héros au centre de la scène (de trois quarts vers la caméra).
+const ANGLE_SCENE: f32 = -0.35;
+
+/// Marque la caméra de l'aperçu.
+#[derive(Component)]
+pub struct CameraApercu;
+
 /// Héros affiché : ce qu'il porte, ses rendus une fois les textures arrivées.
 #[derive(Resource)]
 pub struct Apercu {
@@ -54,6 +65,7 @@ impl Default for Apercu {
 pub fn camera(commandes: &mut Commands) {
     commandes.spawn((
         Name::new("caméra de l'aperçu"),
+        CameraApercu,
         Camera3d::default(),
         Camera {
             order: 0,
@@ -68,6 +80,46 @@ pub fn camera(commandes: &mut Commands) {
         Transform::from_xyz(0.0, 1.4, 8.0).looking_at(Vec3::new(0.0, 1.25, 0.0), Vec3::Y),
         ElementMenu,
     ));
+}
+
+/// Place la caméra de l'aperçu : sur l'accueil d'une arène photographiée de haut,
+/// celle de la photo (champ resserré si la fenêtre, plus large, la recadre en
+/// hauteur) ; sinon la vue de face.
+pub fn cadrer(
+    menu: Res<Menu>,
+    dj: Res<DonneesJeu>,
+    fenetre: Query<&Window, With<bevy::window::PrimaryWindow>>,
+    mut camera: Query<(&mut Transform, &mut Projection), With<CameraApercu>>,
+) {
+    let Ok((mut t, mut projection)) = camera.single_mut() else {
+        return;
+    };
+    let Projection::Perspective(p) = &mut *projection else {
+        return;
+    };
+    if !scene_cadree(&menu, &dj) {
+        *t = Transform::from_xyz(0.0, 1.4, 8.0).looking_at(Vec3::new(0.0, 1.25, 0.0), Vec3::Y);
+        p.fov = 30f32.to_radians();
+        return;
+    }
+    let c = &super::fond::CADRAGE;
+    let (l, tg) = (c.lacet.to_radians(), c.tangage.to_radians());
+    let (sl, cl) = l.sin_cos();
+    let (st, ct) = tg.sin_cos();
+    let visee = Vec3::new(-cl * c.decalage, HAUTEUR_VISEE, sl * c.decalage);
+    t.translation = visee + Vec3::new(sl * ct, st, cl * ct) * c.distance;
+    t.rotation = Quat::from_euler(EulerRot::YXZ, l, -tg, 0.0);
+    let format = fenetre
+        .single()
+        .map(|f| f.width() / f.height().max(1.0))
+        .unwrap_or(FORMAT_PHOTO);
+    let demi = (c.champ.to_radians() / 2.0).tan() * (FORMAT_PHOTO / format).min(1.0);
+    p.fov = 2.0 * demi.atan();
+}
+
+/// Vrai sur l'accueil quand la photo de l'arène choisie est vue de haut.
+fn scene_cadree(menu: &Menu, dj: &DonneesJeu) -> bool {
+    menu.page == Page::Accueil && super::fond::cadree(&dj.arenes[menu.choix.arene].def.id)
 }
 
 /// Retire le héros affiché.
@@ -170,14 +222,17 @@ pub fn animer(
     let j = rendus.joueur();
     animation.avancer(&j.modele, temps.delta_secs().min(0.1), 0.0);
     calculer_rotations(&j.modele, animation, &mut j.pose.rotations);
-    // Accueil : au premier plan, à gauche
+    // Accueil : au centre de la scène vue de haut, ou au premier plan à gauche
     let accueil = menu.page == Page::Accueil;
-    j.pose.position = if accueil {
-        POSITION_ACCUEIL
+    let (position, tour) = if scene_cadree(&menu, &dj) {
+        (Vec3::ZERO, ANGLE_SCENE)
+    } else if accueil {
+        (POSITION_ACCUEIL, TOUR_ACCUEIL)
     } else {
-        Vec3::ZERO
+        (Vec3::ZERO, 0.0)
     };
-    j.pose.angle = *angle + if accueil { TOUR_ACCUEIL } else { 0.0 };
+    j.pose.position = position;
+    j.pose.angle = *angle + tour;
     j.ajouter(&mut commandes, &mut q);
     rendus.poser_armure(&mut commandes, &mut q);
     for r in &mut rendus.liste {

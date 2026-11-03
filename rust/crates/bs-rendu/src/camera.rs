@@ -302,8 +302,10 @@ pub fn suivre(
         c.lacet = s.lacet;
         c.tangage = s.tangage;
         c.distance = s.distance;
-        c.x = cible.0.x;
-        c.z = cible.0.y;
+        // Visée à gauche du joueur (vers la gauche de l'image)
+        let (sl, cl) = s.lacet.sin_cos();
+        c.x = cible.0.x - cl * s.decalage;
+        c.z = cible.0.y + sl * s.decalage;
         decalage = Vec2::ZERO;
         if let Projection::Perspective(p) = &mut *projection {
             p.fov = s.champ;

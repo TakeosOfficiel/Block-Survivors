@@ -22,13 +22,18 @@ pub(crate) fn avancer_debut(jeu: &mut PartieEnCours) {
         jeu.partie.ev.vider();
         let j = &mut jeu.partie.etat.joueur;
         j.pv = j.pv_max;
-        if crate::scene::scene().is_some() {
-            // Capture de scène : le joueur attend au point de départ
+        if crate::scene::immobile() {
+            // Capture de scène : le joueur attend au point de départ, désarmé, que les
+            // mobs l'entourent
             jeu.partie.etat.niveaux_en_attente = 0;
+            jeu.partie.arsenal.armes.clear();
             jeu.partie.pas(PAS);
         } else {
             jeu.robot.avancer(&mut jeu.partie);
         }
+    }
+    if crate::scene::immobile() {
+        encercler(jeu);
     }
     // Essai de l'écran des coffres : un coffre (de boss avec « ender ») à ouvrir
     if let Ok(v) = std::env::var("BS_COFFRE") {
@@ -109,4 +114,25 @@ fn lire_clavier(c: &mut Commandes, touches: &ButtonInput<KeyCode>, libre: bool) 
     c.bas = appui(&[KeyCode::KeyS, KeyCode::ArrowDown]);
     c.gauche = appui(&[KeyCode::KeyA, KeyCode::ArrowLeft]);
     c.droite = appui(&[KeyCode::KeyD, KeyCode::ArrowRight]);
+}
+
+/// Capture de scène : les mobs collés au joueur reculent sur un cercle autour de lui,
+/// pour que le héros de l'accueil, posé au centre, reste visible.
+fn encercler(jeu: &mut PartieEnCours) {
+    let (jx, jz) = (jeu.partie.etat.joueur.x, jeu.partie.etat.joueur.z);
+    let n = jeu.partie.ennemis.nombre;
+    for (i, e) in jeu.partie.ennemis.pool[..n].iter_mut().enumerate() {
+        let (dx, dz) = (e.x - jx, e.z - jz);
+        let d = (dx * dx + dz * dz).sqrt();
+        if d > 3.5 {
+            continue;
+        }
+        // Angle d'arrivée, écarté d'un angle d'or pour ne pas les empiler
+        let a = dz.atan2(dx) + i as f32 * 2.4;
+        let r = 2.4 + (i % 3) as f32 * 0.8;
+        e.x = jx + a.cos() * r;
+        e.z = jz + a.sin() * r;
+        // Tourné vers le joueur
+        e.angle = bs_commun::maths::atan2(jx - e.x, jz - e.z);
+    }
 }

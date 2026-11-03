@@ -271,9 +271,8 @@ pub fn placer_entites(
     let rayon = p.d.personnages.personnages[p.etat.index_personnage]
         .apparence
         .rayon_ombre;
-    if crate::scene::scene().is_none() {
-        ombres.0.push([ici.x, ici.y, rayon]);
-    }
+    // Capture de scène : l'ombre reste, le héros de l'accueil s'y tiendra
+    ombres.0.push([ici.x, ici.y, rayon]);
     crate::coequipiers::placer(
         p,
         (&suivi, &coequipiers),

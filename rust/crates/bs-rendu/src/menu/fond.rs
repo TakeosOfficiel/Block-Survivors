@@ -35,6 +35,33 @@ const SCENES: [(&str, &[u8]); 4] = [
     ),
 ];
 
+/// Caméra des photos vues de haut (`BS_SCENE=0,40,13,50,3`) : lacet, tangage, champ
+/// (degrés), distance et décalage de la visée (blocs). Le héros de l'accueil est
+/// dessiné par la même caméra, là où se tenait le joueur.
+pub const CADRAGE: Cadrage = Cadrage {
+    lacet: 0.0,
+    tangage: 40.0,
+    distance: 13.0,
+    champ: 50.0,
+    decalage: 3.0,
+};
+/// Arènes photographiées ainsi (les autres : vue de l'entrée, héros au premier plan).
+const CADREES: [&str; 3] = ["prairie", "mine", "nether"];
+
+/// Réglages d'une caméra de scène.
+pub struct Cadrage {
+    pub lacet: f32,
+    pub tangage: f32,
+    pub distance: f32,
+    pub champ: f32,
+    pub decalage: f32,
+}
+
+/// Vrai si la photo de l'arène suit `CADRAGE`.
+pub fn cadree(id: &str) -> bool {
+    CADREES.contains(&id)
+}
+
 /// Couche de rendu de la photo (les autres caméras ne la voient pas).
 const COUCHE: usize = 1;
 /// Durée du fondu d'apparition (s).

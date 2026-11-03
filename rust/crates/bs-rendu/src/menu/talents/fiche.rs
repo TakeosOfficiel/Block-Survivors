@@ -1,16 +1,17 @@
-//! Fiche du talent consulté (35 % de la largeur) : en tête l'icône, le nom, le type, le
-//! rang et la branche ; l'effet (ou les deux options d'un talent à choix) ; les
-//! conditions (prérequis et palier avec leur état, coût) ; en bas l'action : « Apprendre
-//! · 1 point » en vert si possible, sinon un bouton éteint qui dit pourquoi, plus les
-//! réglages (talent final actif, arme de départ).
+//! Fiche du talent consulté, flottant à droite sur un voile sombre, sans cadre : une
+//! grande icône, le nom, le type et la branche, le rang en crans ; l'effet (ou les deux
+//! options d'un talent à choix, la jouée marquée d'un trait d'or) ; les conditions
+//! (prérequis, palier, coût) cochées ou barrées ; en bas un seul bouton vert
+//! « Apprendre · 1 point » quand l'achat est possible, sinon l'état en texte, plus les
+//! réglages en liens (talent final actif, arme de départ).
 
 use bevy::prelude::*;
 use bs_donnees::progression::{Noeud, TypeNoeud};
 use bs_sauvegarde::progression::RefusAchat;
 
-use super::{ActionTalent, Contexte, bouton, ecrire, rangee, schema};
+use super::{ActionTalent, Contexte, bouton, ecrire, lien, rangee, schema};
 use crate::ecrans::charte::{
-    self, AIDE, BORD, IVOIRE, OR_VIF, ROUGE, Relief, T_AIDE, T_CORPS, T_SECTION, VERT_GAIN,
+    AIDE, IVOIRE, MARGE, OR_VIF, ROUGE, T_AIDE, T_CORPS, T_SECTION, VERT_GAIN,
 };
 use crate::menu::{ActionMenu, Icones};
 
@@ -22,19 +23,27 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, paren
     let (p, a, n) = (c.id(), c.etat.arbre, c.noeud());
     let def = c.arbre();
     let rang = prog.rang(p, a, n);
-    let f = charte::panneau(
-        commandes,
-        parent,
-        Node {
-            flex_grow: 35.0,
-            flex_basis: Val::ZERO,
-            min_width: Val::Px(340.0),
-            row_gap: Val::Px(10.0),
-            ..default()
-        },
-    );
-    // En tête : icône, nom, type · rang, branche
-    let tete = rangee(commandes, f, 12.0);
+    let voile = LinearGradient::to_right(vec![
+        ColorStop::new(Color::NONE, Val::Percent(0.0)),
+        ColorStop::new(Color::srgba(0.0, 0.0, 0.0, 0.45), Val::Percent(30.0)),
+        ColorStop::new(Color::srgba(0.0, 0.0, 0.0, 0.55), Val::Percent(100.0)),
+    ]);
+    let f = commandes
+        .spawn((
+            Node {
+                width: Val::Px(430.0),
+                flex_shrink: 0.0,
+                flex_direction: FlexDirection::Column,
+                row_gap: Val::Px(12.0),
+                padding: UiRect::new(Val::Px(70.0), Val::Px(MARGE), Val::Px(24.0), Val::Px(8.0)),
+                ..default()
+            },
+            BackgroundGradient::from(voile),
+            ChildOf(parent),
+        ))
+        .id();
+    // En tête : icône, nom, type · branche, crans du rang
+    let tete = rangee(commandes, f, 14.0);
     let icone = n
         .options
         .as_ref()
@@ -42,8 +51,8 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, paren
     commandes.spawn((
         ImageNode::new(ic.icone(icone)),
         Node {
-            width: Val::Px(40.0),
-            height: Val::Px(40.0),
+            width: Val::Px(56.0),
+            height: Val::Px(56.0),
             flex_shrink: 0.0,
             ..default()
         },
@@ -59,7 +68,7 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, paren
             ChildOf(tete),
         ))
         .id();
-    ecrire(commandes, ic, noms, &n.nom, (true, T_SECTION, IVOIRE));
+    ecrire(commandes, ic, noms, &n.nom, (true, T_SECTION + 4.0, IVOIRE));
     let genre = match n.genre {
         TypeNoeud::Bonus => "Bonus",
         TypeNoeud::Capacite => "Capacité",
@@ -67,11 +76,17 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, paren
         TypeNoeud::Final => "Talent final",
     };
     let meta = rangee(commandes, noms, 6.0);
-    let t = format!("{genre} · Rang {rang}/{} ·", n.rang_max);
-    ecrire(commandes, ic, meta, &t, (false, T_AIDE, AIDE));
+    ecrire(
+        commandes,
+        ic,
+        meta,
+        &format!("{genre} ·"),
+        (false, T_AIDE, AIDE),
+    );
     let branche = def.branches.get(&n.branche).map_or("", String::as_str);
     let couleur = schema::couleur_branche(n.branche);
     ecrire(commandes, ic, meta, branche, (true, T_AIDE, couleur));
+    crans(commandes, ic, f, rang, n.rang_max);
 
     effet(commandes, c, ic, f, n);
     conditions(commandes, c, ic, f, n);
@@ -103,25 +118,28 @@ fn effet(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity, n: 
     };
     let choisie = prog.option(p, a, n);
     for (i, o) in options.iter().enumerate() {
-        let relief = if rang > 0 && i == choisie {
-            Relief::CHOISI
-        } else {
-            Relief::SECONDAIRE
-        };
-        let b = charte::bouton_relief(commandes, f, relief, 0.0, ());
-        commandes.entity(b).entry::<Node>().and_modify(|mut n| {
-            n.height = Val::Auto;
-            n.justify_content = JustifyContent::FlexStart;
-            n.align_items = AlignItems::FlexStart;
-            n.column_gap = Val::Px(10.0);
-            n.padding = UiRect::all(Val::Px(8.0));
-        });
-        if rang > 0 {
+        let jouee = rang > 0 && i == choisie;
+        let b = commandes
+            .spawn((
+                Node {
+                    column_gap: Val::Px(12.0),
+                    padding: UiRect::new(Val::Px(12.0), Val::Px(8.0), Val::Px(8.0), Val::Px(8.0)),
+                    border: UiRect::left(Val::Px(3.0)),
+                    ..default()
+                },
+                BorderColor::all(if jouee { OR_VIF } else { Color::NONE }),
+                BackgroundColor(if jouee {
+                    Color::srgba(0.95, 0.78, 0.36, 0.10)
+                } else {
+                    Color::srgba(1.0, 1.0, 1.0, 0.03)
+                }),
+                ChildOf(f),
+            ))
+            .id();
+        if rang > 0 && !jouee {
             commandes
                 .entity(b)
-                .insert(ActionMenu::Talent(ActionTalent::Option(i)));
-        } else {
-            commandes.entity(b).remove::<Button>();
+                .insert((Button, ActionMenu::Talent(ActionTalent::Option(i))));
         }
         commandes.spawn((
             ImageNode::new(ic.icone(&o.icone)),
@@ -144,7 +162,7 @@ fn effet(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity, n: 
                 ChildOf(b),
             ))
             .id();
-        let nom = if rang > 0 && i == choisie {
+        let nom = if jouee {
             format!("✓ {}", o.nom)
         } else {
             o.nom.clone()
@@ -205,12 +223,9 @@ fn conditions(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity
             Node {
                 flex_direction: FlexDirection::Column,
                 row_gap: Val::Px(4.0),
-                margin: UiRect::top(Val::Px(4.0)),
-                padding: UiRect::top(Val::Px(10.0)),
-                border: UiRect::top(Val::Px(2.0)),
+                margin: UiRect::top(Val::Px(10.0)),
                 ..default()
             },
-            BorderColor::all(BORD),
             ChildOf(f),
         ))
         .id();
@@ -304,46 +319,95 @@ fn actions(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity, n
         );
     }
     if rang > 0 && n.genre == TypeNoeud::Final {
-        let (t, action) = if actif {
-            ("✓ Talent final actif", None)
+        if actif {
+            ecrire(
+                commandes,
+                ic,
+                bas,
+                "✓ Talent final actif",
+                (true, T_CORPS, VERT_GAIN),
+            );
         } else {
-            ("Activer ce talent final", Some(ActionTalent::ActiverFinal))
-        };
-        bouton(commandes, ic, bas, t, Relief::SECONDAIRE, action);
+            let action = Some(ActionMenu::Talent(ActionTalent::ActiverFinal));
+            lien(
+                commandes,
+                ic,
+                bas,
+                "Activer ce talent final ›",
+                (T_CORPS, IVOIRE),
+                action,
+            );
+        }
     }
     if rang > 0 && n.gains.arme_depart.is_some() {
         let t = if actif {
-            "Désactiver l'arme de départ"
+            "Désactiver l'arme de départ ›"
         } else {
-            "Activer l'arme de départ"
+            "Activer l'arme de départ ›"
         };
-        let action = Some(ActionTalent::BasculerArme);
-        bouton(commandes, ic, bas, t, Relief::SECONDAIRE, action);
+        let action = Some(ActionMenu::Talent(ActionTalent::BasculerArme));
+        lien(commandes, ic, bas, t, (T_CORPS, IVOIRE), action);
     }
     let perso = &c.dj.d.personnages.personnages[c.etat.personnage];
-    let (t, aide) = match prog.refus_achat(p, a, n) {
-        None if rang == 0 => ("Apprendre · 1 point".to_owned(), None),
-        None => ("Rang suivant · 1 point".to_owned(), None),
-        Some(RefusAchat::Max) => ("✓ Appris".to_owned(), None),
-        Some(RefusAchat::Verrou) => ("Prérequis non remplis".to_owned(), None),
-        Some(RefusAchat::Points) => (
-            "Aucun point disponible".to_owned(),
-            Some(format!("Joue {} pour gagner de la maîtrise.", perso.nom)),
-        ),
-    };
-    let achat = prog
-        .refus_achat(p, a, n)
-        .is_none()
-        .then_some(ActionTalent::Acheter);
-    let b = bouton(commandes, ic, bas, &t, Relief::PRINCIPAL, achat);
-    commandes
-        .entity(b)
-        .entry::<Node>()
-        .and_modify(|mut n| n.height = Val::Px(charte::H_PRINCIPAL));
-    if let Some(aide) = aide {
-        let e = ecrire(commandes, ic, bas, &aide, (false, T_AIDE, OR_VIF));
-        commandes
-            .entity(e)
-            .insert(TextLayout::new_with_justify(Justify::Center));
+    match prog.refus_achat(p, a, n) {
+        None => {
+            let t = if rang == 0 {
+                "Apprendre · 1 point"
+            } else {
+                "Rang suivant · 1 point"
+            };
+            bouton(commandes, ic, bas, t, ActionTalent::Acheter);
+        }
+        Some(RefusAchat::Max) => {
+            ecrire(commandes, ic, bas, "✓ Appris", (true, T_SECTION, OR_VIF));
+        }
+        Some(RefusAchat::Verrou) => {
+            ecrire(
+                commandes,
+                ic,
+                bas,
+                "Prérequis non remplis",
+                (true, T_CORPS, ROUGE),
+            );
+        }
+        Some(RefusAchat::Points) => {
+            ecrire(
+                commandes,
+                ic,
+                bas,
+                "Aucun point disponible",
+                (true, T_CORPS, AIDE),
+            );
+            let t = format!("Joue {} pour gagner de la maîtrise.", perso.nom);
+            ecrire(commandes, ic, bas, &t, (false, T_AIDE, OR_VIF));
+        }
     }
+}
+
+/// Rang en crans : un trait par rang, d'or s'il est acquis.
+fn crans(commandes: &mut Commands, ic: &Icones, f: Entity, rang: u32, max: u32) {
+    let l = rangee(commandes, f, 4.0);
+    for i in 0..max {
+        let couleur = if i < rang {
+            OR_VIF
+        } else {
+            Color::srgba(1.0, 1.0, 1.0, 0.12)
+        };
+        commandes.spawn((
+            Node {
+                width: Val::Px(26.0),
+                height: Val::Px(5.0),
+                border_radius: BorderRadius::all(Val::Px(2.0)),
+                ..default()
+            },
+            BackgroundColor(couleur),
+            ChildOf(l),
+        ));
+    }
+    let t = format!("Rang {rang}/{max}");
+    let e = ecrire(commandes, ic, l, &t, (false, T_AIDE, AIDE));
+    commandes.entity(e).insert(Node {
+        margin: UiRect::left(Val::Px(6.0)),
+        ..default()
+    });
 }

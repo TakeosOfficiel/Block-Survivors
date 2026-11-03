@@ -17,12 +17,9 @@ pub(super) const LARGEUR: f32 = 400.0;
 const H_JOUER: f32 = 84.0;
 const LIVRE: &str = "item/enchanted_book";
 const COFFRE: &str = "entity/chest/normal";
-/// Couleur du libellé d'un lien au repos (survolé : or).
-const REPOS: Color = IVOIRE;
-
-/// Lien de l'accueil : son libellé change de couleur au survol.
-#[derive(Component)]
-pub struct Lien;
+/// Lien sans cadre : ses libellés à la couleur de repos passent à l'or au survol.
+#[derive(Component, Clone, Copy)]
+pub struct Lien(pub Color);
 
 /// Bouton sans cadre ; renvoie (lien, place de l'icône).
 pub(super) fn lien(
@@ -35,7 +32,7 @@ pub(super) fn lien(
     let b =
         p.c.spawn((
             Button,
-            Lien,
+            Lien(IVOIRE),
             action,
             Node {
                 align_items: AlignItems::Center,
@@ -58,7 +55,7 @@ pub(super) fn lien(
             ..default()
         },
     );
-    p.texte(b, t, true, taille, REPOS);
+    p.texte(b, t, true, taille, IVOIRE);
     (b, icone)
 }
 
@@ -241,23 +238,27 @@ pub(super) fn construire(
     coffre(p, icone);
 }
 
-/// Survol d'un lien : ses textes passent à l'or.
+/// Survol d'un lien : ses textes (et ceux d'une colonne enfant) passent à l'or ;
+/// ceux d'une autre couleur (séparateurs, flèches, détails) ne bougent pas.
 pub fn survoler_liens(
-    liens: Query<(&Interaction, &Children), (Changed<Interaction>, With<Lien>)>,
+    liens: Query<(&Interaction, &Lien, &Children), Changed<Interaction>>,
+    enfants: Query<&Children>,
     mut textes: Query<&mut TextColor>,
 ) {
-    for (i, enfants) in &liens {
+    for (i, lien, fils) in &liens {
         let couleur = if *i == Interaction::None {
-            REPOS
+            lien.0
         } else {
             OR_VIF
         };
-        for e in enfants {
-            if let Ok(mut t) = textes.get_mut(*e) {
-                // Les séparateurs et flèches restent pâles
-                if t.0 != AIDE {
-                    t.0 = couleur;
-                }
+        let petits = fils
+            .iter()
+            .flat_map(|e| enfants.get(e).into_iter().flatten().copied());
+        for e in fils.iter().chain(petits) {
+            if let Ok(mut t) = textes.get_mut(e)
+                && (t.0 == lien.0 || t.0 == OR_VIF)
+            {
+                t.0 = couleur;
             }
         }
     }

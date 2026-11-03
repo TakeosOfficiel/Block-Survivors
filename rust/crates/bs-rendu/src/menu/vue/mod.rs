@@ -13,7 +13,7 @@ mod colonne;
 mod logo;
 mod volet;
 
-pub use colonne::survoler_liens;
+pub use colonne::{Lien, survoler_liens};
 
 use bevy::prelude::*;
 

@@ -1,17 +1,16 @@
-//! Arbre de talents (src/ui/ecranTalents.ts `dessinerSchema`), dans un panneau qui
-//! défile à la molette : un bandeau par palier (« Palier II · 3/8 rangs requis »),
-//! liaisons de 3 (ardoise fermées, vertes quand le talent du dessus est complet), cases
-//! de 48 par état (disponible : bord clair et « + » ; acquis : fond vert et coche ;
-//! fermé : creusé, icône éteinte, cadenas ; consulté : quatre coins d'or), rang sous la
-//! case, tranche basse à la couleur de la branche.
+//! Arbre de talents, centré sur le fond sans panneau, défilant à la molette. Chaque
+//! palier s'ouvre sur un filet discret et son libellé à gauche (« PALIER II · 5/8
+//! rangs »). Les liaisons s'allument d'or quand le talent du dessus est complet. Les
+//! cases (56) se lisent par leur bord : or et halo si apprises, vert et halo si
+//! achetables, éteintes et creusées si fermées ; le rang est une pastille au coin, la
+//! case consultée est cerclée d'ivoire.
 
 use bevy::prelude::*;
 use bs_donnees::progression::{Branche, Noeud, TypeNoeud};
 
 use super::{ActionTalent, Contexte, ecrire};
 use crate::ecrans::charte::{
-    self, AIDE, BORD, CREUX, IVOIRE, OR_SOURD, OR_VIF, ROUGE, Relief, SURFACE, SURFACE_SURVOL,
-    T_AIDE, VERT_GAIN,
+    AIDE, IVOIRE, OR_SOURD, OR_VIF, ROUGE, Relief, VERT_GAIN, bord_relief, cadenas,
 };
 use crate::ecrans::vues::Defilant;
 use crate::hud::police::TextePixel;
@@ -19,17 +18,24 @@ use crate::menu::ActionMenu;
 use crate::menu::Icones;
 
 /// Placement des talents (px).
-const ECART_X: f32 = 96.0;
-const ECART_Y: f32 = 62.0;
-const BANDE: f32 = 24.0;
-const BORD_X: f32 = 24.0;
-const TAILLE: f32 = 48.0;
+const ECART_X: f32 = 108.0;
+const ECART_Y: f32 = 64.0;
+/// Hauteur ajoutée au-dessus de chaque palier.
+const BANDE: f32 = 26.0;
+const BORD_X: f32 = 120.0;
+const TAILLE: f32 = 52.0;
 const COLONNES: f32 = 7.0;
 const LIGNES: u32 = 7;
-const ACQUIS: Color = Color::srgb_u8(0x2c, 0x46, 0x32);
-const ACQUIS_SURVOL: Color = Color::srgb_u8(0x36, 0x55, 0x3d);
+const APPRIS: Color = Color::srgb_u8(0x3a, 0x30, 0x1c);
+const APPRIS_SURVOL: Color = Color::srgb_u8(0x4a, 0x3e, 0x24);
+const OUVERT: Color = Color::srgb_u8(0x1d, 0x23, 0x2a);
+const OUVERT_SURVOL: Color = Color::srgb_u8(0x29, 0x31, 0x3a);
+const FERME: Color = Color::srgb_u8(0x10, 0x13, 0x17);
+const BORD_FERME: Color = Color::srgb_u8(0x2a, 0x30, 0x36);
+const BORD_OUVERT: Color = Color::srgb_u8(0x5a, 0x63, 0x6b);
+const LIAISON: Color = Color::srgb_u8(0x26, 0x2b, 0x33);
+const FILET: Color = Color::srgba(1.0, 1.0, 1.0, 0.07);
 const FINAL: Color = Color::srgb_u8(0x8a, 0x6c, 0xcf);
-const FOND_BANDE: Color = Color::srgb_u8(0x1d, 0x23, 0x27);
 const CHIFFRES: [&str; 4] = ["I", "II", "III", "IV"];
 
 pub fn couleur_branche(b: Branche) -> Color {
@@ -42,7 +48,7 @@ pub fn couleur_branche(b: Branche) -> Color {
     }
 }
 
-/// Haut de la ligne `ligne` : les bandeaux de palier au-dessus la décalent.
+/// Haut de la ligne `ligne` : chaque palier au-dessus la décale d'une bande.
 fn haut(c: &Contexte, ligne: u32) -> f32 {
     let bandes = 1 + c
         .dj
@@ -52,7 +58,7 @@ fn haut(c: &Contexte, ligne: u32) -> f32 {
         .iter()
         .filter(|p| p.ligne <= ligne)
         .count();
-    bandes as f32 * BANDE + ligne as f32 * ECART_Y + 6.0
+    bandes as f32 * BANDE + ligne as f32 * ECART_Y
 }
 
 fn coin(c: &Contexte, n: &Noeud) -> Vec2 {
@@ -70,22 +76,29 @@ fn absolu(position: Vec2, taille: Vec2) -> Node {
     }
 }
 
+fn halo(couleur: Color, flou: f32) -> BoxShadow {
+    BoxShadow::new(couleur, Val::ZERO, Val::ZERO, Val::ZERO, Val::Px(flou))
+}
+
 pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, parent: Entity) {
-    let panneau = charte::panneau(
-        commandes,
-        parent,
-        Node {
-            flex_grow: 65.0,
-            flex_basis: Val::ZERO,
-            align_items: AlignItems::Center,
-            padding: UiRect::axes(Val::Px(16.0), Val::Px(6.0)),
-            overflow: Overflow::scroll_y(),
-            ..default()
-        },
-    );
-    commandes.entity(panneau).insert(Defilant);
+    let zone = commandes
+        .spawn((
+            Defilant,
+            Node {
+                flex_grow: 1.0,
+                min_height: Val::ZERO,
+                align_self: AlignSelf::Stretch,
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                overflow: Overflow::scroll_y(),
+                ..default()
+            },
+            ScrollPosition::default(),
+            ChildOf(parent),
+        ))
+        .id();
     let largeur = 2.0 * BORD_X + (COLONNES - 1.0) * ECART_X + TAILLE;
-    let hauteur = haut(c, LIGNES - 1) + TAILLE + 20.0;
+    let hauteur = haut(c, LIGNES - 1) + TAILLE + 24.0;
     let schema = commandes
         .spawn((
             Node {
@@ -94,7 +107,7 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, paren
                 flex_shrink: 0.0,
                 ..default()
             },
-            ChildOf(panneau),
+            ChildOf(zone),
         ))
         .id();
     paliers(commandes, c, ic, schema);
@@ -111,20 +124,23 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, paren
             let d = vers - de;
             let longueur = d.length();
             let milieu = (de + vers) / 2.0 + Vec2::splat(TAILLE / 2.0);
-            let couleur = if prog.complet(p, a, parent) {
-                VERT_GAIN
-            } else {
-                BORD
-            };
-            commandes.spawn((
-                absolu(
-                    milieu - Vec2::new(longueur / 2.0, 1.5),
-                    Vec2::new(longueur, 3.0),
-                ),
-                UiTransform::from_rotation(Rot2::radians(d.y.atan2(d.x))),
-                BackgroundColor(couleur),
-                ChildOf(schema),
-            ));
+            let allumee = prog.complet(p, a, parent);
+            let e = commandes
+                .spawn((
+                    absolu(
+                        milieu - Vec2::new(longueur / 2.0, 2.0),
+                        Vec2::new(longueur, 4.0),
+                    ),
+                    UiTransform::from_rotation(Rot2::radians(d.y.atan2(d.x))),
+                    BackgroundColor(if allumee { OR_VIF } else { LIAISON }),
+                    ChildOf(schema),
+                ))
+                .id();
+            if allumee {
+                commandes
+                    .entity(e)
+                    .insert(halo(OR_VIF.with_alpha(0.45), 8.0));
+            }
         }
     }
     for (k, n) in def.noeuds.iter().enumerate() {
@@ -132,7 +148,7 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, paren
     }
 }
 
-/// Bandeau de chaque palier : nom, rangs requis (ou ouvert), cadenas s'il est fermé.
+/// Filet et libellé de chaque palier : nom, rangs requis (ou ouvert), cadenas.
 fn paliers(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, schema: Entity) {
     let prog = &c.sauvegarde.progression;
     let (p, a) = (c.id(), c.etat.arbre);
@@ -140,84 +156,96 @@ fn paliers(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, schema: Enti
         std::iter::once((0, 0)).chain(c.dj.d.talents.paliers.iter().map(|x| (x.ligne, x.rangs)));
     for (i, (ligne, rangs)) in tous.enumerate() {
         let atteint = rangs == 0 || prog.palier_atteint(p, a, ligne);
+        let y = haut(c, ligne) - BANDE + 2.0;
+        commandes.spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                left: Val::Px(BORD_X - 16.0),
+                right: Val::ZERO,
+                top: Val::Px(y + 9.0),
+                height: Val::Px(1.0),
+                ..default()
+            },
+            BackgroundColor(FILET),
+            ChildOf(schema),
+        ));
         let b = commandes
             .spawn((
                 Node {
                     position_type: PositionType::Absolute,
                     left: Val::ZERO,
-                    right: Val::ZERO,
-                    top: Val::Px(haut(c, ligne) - 25.0),
-                    height: Val::Px(22.0),
-                    align_items: AlignItems::Center,
-                    column_gap: Val::Px(8.0),
-                    padding: UiRect::horizontal(Val::Px(8.0)),
-                    border_radius: BorderRadius::all(Val::Px(2.0)),
+                    width: Val::Px(BORD_X - 24.0),
+                    top: Val::Px(y),
+                    flex_direction: FlexDirection::Column,
+                    align_items: AlignItems::FlexEnd,
+                    row_gap: Val::Px(2.0),
                     ..default()
                 },
-                BackgroundColor(FOND_BANDE),
                 ChildOf(schema),
             ))
             .id();
-        let nom = format!("Palier {}", CHIFFRES.get(i).copied().unwrap_or("?"));
-        ecrire(commandes, ic, b, &nom, (true, T_AIDE, IVOIRE));
-        let achetes = rangs.min(prog.points(p, a, Some(ligne)));
-        let (t, couleur) = if atteint {
-            ("ouvert".to_owned(), VERT_GAIN)
-        } else {
-            (format!("{achetes}/{rangs} rangs requis"), ROUGE)
-        };
-        ecrire(
-            commandes,
-            ic,
-            b,
-            &format!("· {t}"),
-            (false, T_AIDE, couleur),
-        );
+        let nom = format!("PALIER {}", CHIFFRES.get(i).copied().unwrap_or("?"));
+        let couleur = if atteint { AIDE } else { ROUGE };
+        ecrire(commandes, ic, b, &nom, (true, 13.0, couleur));
         if !atteint {
-            charte::cadenas(commandes, b, 10.0, ROUGE);
+            let achetes = rangs.min(prog.points(p, a, Some(ligne)));
+            let l = super::rangee(commandes, b, 5.0);
+            cadenas(commandes, l, 9.0, ROUGE);
+            let t = format!("{achetes}/{rangs} rangs");
+            ecrire(commandes, ic, l, &t, (false, 13.0, ROUGE));
         }
     }
 }
 
-/// Coins d'or autour de la case consultée.
-fn coins(commandes: &mut Commands, b: Entity) {
-    let (e, l, d) = (Val::Px(3.0), Val::Px(12.0), Val::Px(-8.0));
-    for (gauche, dessus) in [(true, true), (false, true), (true, false), (false, false)] {
-        let mut n = Node {
+/// Anneau ivoire autour de la case consultée.
+fn anneau(commandes: &mut Commands, b: Entity) {
+    commandes.spawn((
+        Node {
             position_type: PositionType::Absolute,
-            width: l,
-            height: l,
+            left: Val::Px(-8.0),
+            right: Val::Px(-8.0),
+            top: Val::Px(-8.0),
+            bottom: Val::Px(-10.0),
+            border: UiRect::all(Val::Px(2.0)),
+            border_radius: BorderRadius::all(Val::Px(10.0)),
             ..default()
-        };
-        if gauche {
-            n.left = d;
-            n.border.left = e;
-        } else {
-            n.right = d;
-            n.border.right = e;
-        }
-        if dessus {
-            n.top = d;
-            n.border.top = e;
-        } else {
-            n.bottom = Val::Px(-10.0);
-            n.border.bottom = e;
-        }
-        commandes.spawn((n, BorderColor::all(OR_VIF), ChildOf(b)));
-    }
+        },
+        BorderColor::all(IVOIRE),
+        ChildOf(b),
+    ));
 }
 
-/// Petite marque en coin (texte Inter).
-fn marque(commandes: &mut Commands, ic: &Icones, b: Entity, t: &str, couleur: Color, gauche: bool) {
+/// Petite marque en coin haut gauche.
+fn marque(commandes: &mut Commands, ic: &Icones, b: Entity, t: &str, couleur: Color) {
     let n = Node {
         position_type: PositionType::Absolute,
-        top: Val::Px(-9.0),
-        left: if gauche { Val::Px(-6.0) } else { Val::Auto },
-        right: if gauche { Val::Auto } else { Val::Px(-6.0) },
+        top: Val::Px(-10.0),
+        left: Val::Px(-8.0),
         ..default()
     };
     let e = ecrire(commandes, ic, b, t, (true, 16.0, couleur));
     commandes.entity(e).insert((n, TextShadow::default()));
+}
+
+/// Pastille de rang au coin bas droit.
+fn rang(commandes: &mut Commands, ic: &Icones, b: Entity, t: &str, couleur: Color) {
+    let e = commandes
+        .spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                right: Val::Px(-10.0),
+                bottom: Val::Px(-12.0),
+                padding: UiRect::axes(Val::Px(5.0), Val::Px(1.0)),
+                border: UiRect::all(Val::Px(1.0)),
+                border_radius: BorderRadius::all(Val::Px(8.0)),
+                ..default()
+            },
+            BackgroundColor(Color::srgb_u8(0x0b, 0x0d, 0x10)),
+            BorderColor::all(couleur.with_alpha(0.6)),
+            ChildOf(b),
+        ))
+        .id();
+    ecrire(commandes, ic, e, t, (true, 12.0, couleur));
 }
 
 fn noeud(
@@ -230,8 +258,8 @@ fn noeud(
 ) {
     let prog = &c.sauvegarde.progression;
     let (p, a) = (c.id(), c.etat.arbre);
-    let rang = prog.rang(p, a, n);
-    let ferme = rang == 0 && !prog.ouvert(p, a, n);
+    let r = prog.rang(p, a, n);
+    let ferme = r == 0 && !prog.ouvert(p, a, n);
     // Cadenas seulement derrière un palier fermé (le reste se lit aux liaisons)
     let palier =
         c.dj.d
@@ -241,31 +269,34 @@ fn noeud(
             .rev()
             .find(|x| n.ligne >= x.ligne);
     let derriere = palier.is_some_and(|x| !prog.palier_atteint(p, a, x.ligne));
-    let inactif = rang > 0 && !prog.actif(p, a, n);
+    let inactif = r > 0 && !prog.actif(p, a, n);
     let disponible = prog.refus_achat(p, a, n).is_none();
+    let complet = r >= n.rang_max;
     let bord = match n.genre {
-        _ if disponible => AIDE,
+        _ if r > 0 => OR_VIF,
+        _ if disponible => VERT_GAIN,
+        _ if ferme => BORD_FERME,
         TypeNoeud::Capacite => OR_SOURD,
         TypeNoeud::Final => FINAL,
-        _ => BORD,
+        _ => BORD_OUVERT,
     };
-    let (fond, fond_survol) = if rang > 0 {
-        (ACQUIS, ACQUIS_SURVOL)
+    let (fond, fond_survol) = if r > 0 {
+        (APPRIS, APPRIS_SURVOL)
     } else if ferme {
-        (CREUX, SURFACE)
+        (FERME, OUVERT)
     } else {
-        (SURFACE, SURFACE_SURVOL)
+        (OUVERT, OUVERT_SURVOL)
     };
     let relief = Relief {
         fond,
         bord,
         fond_survol,
         bord_survol: IVOIRE,
-        tranche: couleur_branche(n.branche),
+        tranche: bord.darker(0.15),
     };
     let mut boite = absolu(coin(c, n), Vec2::splat(TAILLE));
-    boite.border = charte::bord_relief();
-    boite.border_radius = BorderRadius::all(Val::Px(2.0));
+    boite.border = bord_relief();
+    boite.border_radius = BorderRadius::all(Val::Px(6.0));
     boite.justify_content = JustifyContent::Center;
     boite.align_items = AlignItems::Center;
     let b = commandes
@@ -277,9 +308,18 @@ fn noeud(
             ChildOf(schema),
         ))
         .id();
+    if r > 0 && !inactif {
+        commandes
+            .entity(b)
+            .insert(halo(OR_VIF.with_alpha(0.4), 14.0));
+    } else if disponible {
+        commandes
+            .entity(b)
+            .insert(halo(VERT_GAIN.with_alpha(0.35), 12.0));
+    }
     // Icône (éteinte si fermée ou inactive) ; talent à choix : deux moitiés
     let teinte = if ferme {
-        Color::srgb(0.4, 0.4, 0.4)
+        Color::srgb(0.32, 0.32, 0.34)
     } else if inactif {
         Color::srgb(0.6, 0.6, 0.6)
     } else {
@@ -289,16 +329,16 @@ fn noeud(
         Some(options) => {
             let choisie = prog.option(p, a, n);
             for (i, o) in options.iter().enumerate() {
-                let eteinte = rang > 0 && i != choisie;
+                let eteinte = r > 0 && i != choisie;
                 let t = if eteinte {
                     Color::srgb(0.35, 0.35, 0.35)
                 } else {
                     teinte
                 };
-                let place = Vec2::splat(if i == 0 { 1.0 } else { TAILLE - 6.0 - 23.0 });
+                let place = Vec2::splat(if i == 0 { 2.0 } else { TAILLE - 6.0 - 26.0 });
                 commandes.spawn((
                     ImageNode::new(ic.icone(&o.icone)).with_color(t),
-                    absolu(place, Vec2::splat(22.0)),
+                    absolu(place, Vec2::splat(24.0)),
                     ChildOf(b),
                 ));
             }
@@ -307,74 +347,42 @@ fn noeud(
             commandes.spawn((
                 ImageNode::new(ic.icone(&n.icone)).with_color(teinte),
                 Node {
-                    width: Val::Px(32.0),
-                    height: Val::Px(32.0),
+                    width: Val::Px(36.0),
+                    height: Val::Px(36.0),
                     ..default()
                 },
                 ChildOf(b),
             ));
         }
     }
-    // Rang sous la case
-    let ligne = commandes
-        .spawn((
-            Node {
-                position_type: PositionType::Absolute,
-                left: Val::Px(-16.0),
-                right: Val::Px(-16.0),
-                top: Val::Px(TAILLE + 1.0),
-                justify_content: JustifyContent::Center,
-                ..default()
-            },
-            ChildOf(b),
-        ))
-        .id();
-    let sous = commandes
-        .spawn((
-            Node {
-                padding: UiRect::horizontal(Val::Px(4.0)),
-                border_radius: BorderRadius::all(Val::Px(2.0)),
-                ..default()
-            },
-            BackgroundColor(charte::FOND),
-            ChildOf(ligne),
-        ))
-        .id();
-    let couleur = if rang >= n.rang_max {
-        VERT_GAIN
-    } else if rang > 0 {
+    let couleur = if complet {
+        OR_VIF
+    } else if r > 0 {
         IVOIRE
+    } else if disponible {
+        VERT_GAIN
     } else {
         AIDE
     };
-    ecrire(
-        commandes,
-        ic,
-        sous,
-        &format!("{rang}/{}", n.rang_max),
-        (true, 13.0, couleur),
-    );
-    if rang >= n.rang_max {
-        marque(commandes, ic, b, "✓", VERT_GAIN, false);
-    } else if disponible {
-        marque(commandes, ic, b, "+", VERT_GAIN, false);
-    } else if ferme && derriere {
-        let cad = charte::cadenas(commandes, b, 10.0, AIDE);
+    if !ferme || r > 0 {
+        rang(commandes, ic, b, &format!("{r}/{}", n.rang_max), couleur);
+    } else if derriere {
+        let cad = cadenas(commandes, b, 10.0, AIDE);
         commandes.entity(cad).entry::<Node>().and_modify(|mut n| {
             n.position_type = PositionType::Absolute;
             n.right = Val::Px(-5.0);
-            n.top = Val::Px(-6.0);
+            n.bottom = Val::Px(-6.0);
         });
     }
     if n.gains.arme_depart.is_some() {
-        marque(commandes, ic, b, "★", OR_VIF, true);
+        marque(commandes, ic, b, "★", OR_VIF);
     }
     if inactif {
         commandes.spawn((
             TextePixel::nouveau("zZ", Color::srgb(0.87, 0.87, 0.87), 1.0),
             Node {
                 position_type: PositionType::Absolute,
-                left: Val::Px(0.0),
+                left: Val::Px(2.0),
                 top: Val::Px(0.0),
                 ..default()
             },
@@ -382,6 +390,6 @@ fn noeud(
         ));
     }
     if k == c.etat.noeud {
-        coins(commandes, b);
+        anneau(commandes, b);
     }
 }

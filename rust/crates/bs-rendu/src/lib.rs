@@ -252,7 +252,11 @@ impl Plugin for PluginJeu {
                         ecrans::vues::indiquer,
                     )
                         .chain(),
-                    (ecrans::style::survoler, ecrans::charte::survoler_relief),
+                    (
+                        ecrans::style::survoler,
+                        ecrans::charte::survoler_relief,
+                        menu::survoler_liens,
+                    ),
                     (menu::fond::suivre, menu::fond::couvrir),
                 )
                     .run_if(in_state(Phase::Menu)),

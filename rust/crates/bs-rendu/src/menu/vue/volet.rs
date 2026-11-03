@@ -1,11 +1,12 @@
-//! Volet de l'accueil, ouvert par la tuile de la classe ou la vignette de l'arène : un
-//! panneau à deux colonnes posé au-dessus du choix de partie (la liste à gauche, la
-//! fiche de la choisie à droite), sur un voile qui le referme au clic.
+//! Volet de l'accueil, ouvert par la classe ou l'arène du résumé : un panneau à deux
+//! colonnes posé à droite de la colonne du menu (la liste à gauche, la fiche de la
+//! choisie à droite), sur un voile qui le referme au clic.
 
 use bevy::prelude::*;
 use bevy::ui::FocusPolicy;
 
-use super::bas::HAUTEUR_CHOIX;
+use super::bas::BAS;
+use super::colonne;
 use super::{Pinceau, arenes, classes, place};
 use crate::ecrans::charte::{self, BORD};
 use crate::lancement::{ChoixPartie, DonneesJeu};
@@ -13,8 +14,10 @@ use crate::menu::{ActionMenu, Volet};
 use crate::sauvegarde::Sauvegarde;
 
 const LARGEUR: f32 = 720.0;
-/// Écart entre le volet et le haut des tuiles.
-const ECART: f32 = 12.0;
+/// Bord gauche du volet : après la colonne du menu.
+const GAUCHE: f32 = charte::MARGE + colonne::LARGEUR + 32.0;
+/// Haut du volet : sous le profil.
+const HAUT: f32 = 84.0;
 
 pub(super) fn construire(
     p: &mut Pinceau,
@@ -26,12 +29,13 @@ pub(super) fn construire(
     if ouvert == Volet::Aucun {
         return;
     }
-    // Voile cliquable : referme le volet (sous les tuiles, qui restent cliquables)
+    // Voile cliquable à droite de la colonne (qui reste cliquable) : referme le volet
     let tout = Some(Val::ZERO);
+    let gauche = Some(Val::Px(GAUCHE - 16.0));
     p.c.spawn((
         Button,
         ActionMenu::Volet(Volet::Aucun),
-        place(tout, tout, tout, Some(Val::Px(HAUTEUR_CHOIX + 4.0))),
+        place(gauche, tout, tout, tout),
         BackgroundColor(Color::srgba(0.02, 0.03, 0.05, 0.45)),
         ChildOf(racine),
     ));
@@ -39,13 +43,12 @@ pub(super) fn construire(
         racine,
         Node {
             flex_direction: FlexDirection::Column,
-            justify_content: JustifyContent::FlexEnd,
-            align_items: AlignItems::Center,
+            align_items: AlignItems::FlexStart,
             ..place(
-                tout,
-                tout,
-                Some(Val::Px(24.0)),
-                Some(Val::Px(HAUTEUR_CHOIX + ECART)),
+                Some(Val::Px(GAUCHE)),
+                Some(Val::Px(charte::MARGE)),
+                Some(Val::Px(HAUT)),
+                Some(Val::Px(BAS + 40.0)),
             )
         },
     );

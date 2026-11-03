@@ -17,6 +17,7 @@ pub mod profil;
 mod profils;
 mod talents;
 mod vue;
+pub use vue::survoler_liens;
 
 use bevy::app::AppExit;
 use bevy::prelude::*;

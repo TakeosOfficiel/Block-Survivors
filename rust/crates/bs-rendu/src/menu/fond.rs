@@ -1,7 +1,7 @@
 //! Fond de l'accueil : la scène de l'arène choisie (son village vu de l'entrée,
 //! src/assets/accueil, photographiée avec `BS_SCENE`) en plein écran, recadrée comme
 //! `background-size: cover`, qui apparaît en fondu à chaque changement d'arène, sous un
-//! voile léger (plus sombre derrière le logo et le choix de partie). Elle est
+//! voile léger (profond à gauche, derrière la colonne du menu). Elle est
 //! dessinée par une caméra 2D sous celle du héros (ordre −1), sur sa propre couche.
 //! `Couvrir` recadre de même une image d'interface (vignettes des arènes).
 
@@ -100,19 +100,19 @@ pub fn creer(commandes: &mut Commands, fond: Color) {
     ));
     let sombre = |a: f32| Color::srgba_u8(6, 8, 14, (a * 255.0) as u8);
     let arret = |a: f32, p: f32| ColorStop::new(sombre(a), Val::Percent(p));
-    // Logo et raccourcis à gauche : un peu d'ombre derrière eux, la scène reste lisible
+    // Colonne du menu à gauche : une ombre profonde derrière elle, la scène reste lisible
     let cotes = LinearGradient::to_right(vec![
-        arret(0.55, 0.0),
-        arret(0.2, 22.0),
-        arret(0.0, 36.0),
+        arret(0.9, 0.0),
+        arret(0.72, 24.0),
+        arret(0.0, 46.0),
         arret(0.0, 80.0),
         arret(0.3, 100.0),
     ]);
     let haut_bas = LinearGradient::to_bottom(vec![
-        arret(0.35, 0.0),
-        arret(0.0, 20.0),
-        arret(0.0, 62.0),
-        arret(0.7, 100.0),
+        arret(0.3, 0.0),
+        arret(0.0, 18.0),
+        arret(0.0, 70.0),
+        arret(0.55, 100.0),
     ]);
     commandes.spawn((
         Name::new("voile du menu"),

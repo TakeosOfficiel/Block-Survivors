@@ -1,16 +1,18 @@
-//! Accueil (docs/CHARTE-UI.md) : la scène d'abord. Plein écran sur la photo du village
-//! de l'arène (`fond`), le héros 3D au premier plan à gauche ; par-dessus, le logo en
-//! haut à gauche, les raccourcis dessous (`raccourcis`), le profil et « Apparence » en
-//! haut à droite, et en bas au centre le choix de partie (`bas` : tuile de la classe,
-//! vignette de l'arène, grand « JOUER »). Un clic sur la tuile ou la vignette ouvre son
-//! volet (`volet`) ; un choix le referme. Refait en entier à chaque changement (hors de
-//! la boucle de jeu).
+//! Accueil (docs/CHARTE-UI.md) : la scène d'abord. Plein écran sur la photo de l'arène
+//! vue de haut (`fond`), le héros 3D au centre, cerné de mobs ; par-dessus, à gauche
+//! sur une ombre profonde, une colonne : le logo, le grand « JOUER », le résumé
+//! classe · arène et les liens (`colonne`), puis Options, Nouveautés et Quitter en bas
+//! (`bas`) ; le profil et « Apparence » en haut à droite. Un clic sur la classe ou
+//! l'arène du résumé ouvre son volet à droite de la colonne (`volet`) ; un choix le
+//! referme. Refait en entier à chaque changement (hors de la boucle de jeu).
 
 mod arenes;
 mod bas;
 mod classes;
-mod raccourcis;
+mod colonne;
 mod volet;
+
+pub use colonne::survoler_liens;
 
 use bevy::prelude::*;
 
@@ -145,14 +147,14 @@ pub fn construire(
         racine,
         Node {
             flex_direction: FlexDirection::Column,
-            row_gap: Val::Px(28.0),
-            ..place(Some(Val::Px(MARGE)), None, Some(Val::Px(HAUT)), None)
+            row_gap: Val::Px(8.0),
+            ..place(Some(Val::Px(MARGE)), None, Some(Val::Px(HAUT + 12.0)), None)
         },
     );
     logo(&mut p, gauche);
-    raccourcis::construire(&mut p, dj, sauvegarde, choix, gauche);
+    colonne::construire(&mut p, dj, sauvegarde, choix, gauche);
     profil(&mut p, dj, sauvegarde, choix, racine);
-    bas::construire(&mut p, dj, sauvegarde, (choix, ouvert), racine);
+    bas::construire(&mut p, sauvegarde, racine);
     volet::construire(&mut p, dj, sauvegarde, (choix, ouvert), racine);
     racine
 }
@@ -192,7 +194,8 @@ fn logo(p: &mut Pinceau, parent: Entity) {
         Node {
             flex_direction: FlexDirection::Column,
             align_items: AlignItems::FlexStart,
-            row_gap: Val::Px(6.0),
+            row_gap: Val::Px(8.0),
+            margin: UiRect::bottom(Val::Px(36.0)),
             ..default()
         },
     );
@@ -200,12 +203,12 @@ fn logo(p: &mut Pinceau, parent: Entity) {
         Color::srgb_u8(0xa9, 0xa9, 0xa2),
         Color::srgb_u8(0xee, 0xec, 0xe4),
     );
-    ligne_logo(p, l, "BLOCK", pierre, 9.0);
+    ligne_logo(p, l, "BLOCK", pierre, 11.0);
     let or = (
         Color::srgb_u8(0xd2, 0x8c, 0x1c),
         Color::srgb_u8(0xff, 0xd8, 0x5a),
     );
-    ligne_logo(p, l, "SURVIVORS", or, 5.0);
+    ligne_logo(p, l, "SURVIVORS", or, 6.1);
 }
 
 /// En haut à droite : « Apparence », le dé du pseudo, le profil (visage, pseudo).

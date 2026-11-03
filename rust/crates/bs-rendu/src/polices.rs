@@ -1,17 +1,20 @@
 //! Police des textes du menu (styles.css `--menu-police`) : Inter, embarquée (licence
-//! OFL, `polices/OFL.txt`), en normal et demi-gras. La police pixel du jeu
+//! OFL, `polices/OFL.txt`), en normal et demi-gras ; et celle du logo de l'accueil,
+//! Lilita One (licence OFL, `polices/OFL-LilitaOne.txt`). La police pixel du jeu
 //! (`hud::police`) reste celle des titres. `texte` donne le trio Bevy d'un texte.
 
 use bevy::prelude::*;
 
 const NORMALE: &[u8] = include_bytes!("polices/Inter-Regular.otf");
 const GRASSE: &[u8] = include_bytes!("polices/Inter-SemiBold.otf");
+const LOGO: &[u8] = include_bytes!("polices/LilitaOne-Regular.ttf");
 
-/// Les deux graisses d'Inter.
+/// Les deux graisses d'Inter et la police du logo.
 #[derive(Resource, Clone)]
 pub struct PolicesMenu {
     pub normale: Handle<Font>,
     pub grasse: Handle<Font>,
+    pub logo: Handle<Font>,
 }
 
 impl PolicesMenu {
@@ -57,5 +60,10 @@ fn charger(fontes: &mut Assets<Font>) -> PolicesMenu {
     };
     let normale = ajouter(NORMALE);
     let grasse = ajouter(GRASSE);
-    PolicesMenu { normale, grasse }
+    let logo = ajouter(LOGO);
+    PolicesMenu {
+        normale,
+        grasse,
+        logo,
+    }
 }

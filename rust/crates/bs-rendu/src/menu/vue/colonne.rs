@@ -8,7 +8,6 @@ use bevy::prelude::*;
 
 use super::Pinceau;
 use crate::ecrans::charte::{self, AIDE, IVOIRE, OR_VIF, Relief, T_AIDE, T_SECTION};
-use crate::hud::police::TextePixel;
 use crate::lancement::{ChoixPartie, DonneesJeu};
 use crate::menu::{ActionMenu, Volet};
 use crate::sauvegarde::Sauvegarde;
@@ -168,7 +167,22 @@ pub(super) fn construire(
     if let Some(i) = arme {
         p.icone(jouer, i, 44.0);
     }
-    p.c.spawn((TextePixel::nouveau("JOUER", IVOIRE, 6.0), ChildOf(jouer)));
+    // Même police que le logo, ombrée
+    let police = p.ic.polices.logo.clone();
+    p.c.spawn((
+        Text::new("JOUER"),
+        TextFont {
+            font: police,
+            font_size: 52.0,
+            ..default()
+        },
+        TextColor(IVOIRE),
+        TextShadow {
+            offset: Vec2::new(0.0, 4.0),
+            color: Color::srgba(0.0, 0.12, 0.02, 0.7),
+        },
+        ChildOf(jouer),
+    ));
 
     // Résumé : classe · arène, chacun ouvre son volet
     let resume = p.noeud(

@@ -1,13 +1,11 @@
-//! Logo de l'accueil, dessiné en police du jeu (aucune image) : des lettres en relief
-//! comme des blocs, la face en bandes (claire en haut, plus sombre en bas), une
-//! épaisseur de plusieurs pixels de police vers le bas, le tout cerclé de noir.
-//! BLOCK en pierre, SURVIVORS comme un bloc d'herbe (dessus vert, terre dessous) ;
-//! `BS_LOGO=2` (pierre et or) ou `3` (or et pierre) pour comparer.
+//! Logo de l'accueil en Lilita One (`polices`) : deux lignes de même largeur, BLOCK en
+//! pierre claire, SURVIVORS en or. Chaque ligne est un empilement de textes : une
+//! ombre douce, un contour noir (copies décalées en cercle), l'épaisseur (copies vers
+//! le bas, teinte du flanc), puis la face en bandes rognées (claire en haut).
 
 use bevy::prelude::*;
 
 use super::{Pinceau, place};
-use crate::hud::police::TextePixel;
 
 /// Une matière : bandes de la face (de haut en bas, avec la part de hauteur où chacune
 /// s'arrête) et teinte de l'épaisseur.
@@ -16,106 +14,80 @@ struct Matiere {
     flanc: Color,
 }
 
-const NOIR: Color = Color::srgb_u8(0x10, 0x0c, 0x0a);
+const NOIR: Color = Color::srgb_u8(0x12, 0x0d, 0x0a);
 
 const PIERRE: Matiere = Matiere {
     bandes: &[
-        (Color::srgb_u8(0xf2, 0xf0, 0xea), 0.3),
-        (Color::srgb_u8(0xc4, 0xc2, 0xbb), 0.7),
-        (Color::srgb_u8(0x96, 0x94, 0x8e), 1.0),
+        (Color::srgb_u8(0xff, 0xfd, 0xf6), 0.42),
+        (Color::srgb_u8(0xe2, 0xdf, 0xd6), 0.62),
+        (Color::srgb_u8(0xc2, 0xbe, 0xb4), 1.0),
     ],
-    flanc: Color::srgb_u8(0x55, 0x53, 0x50),
-};
-
-const HERBE: Matiere = Matiere {
-    bandes: &[
-        (Color::srgb_u8(0x9c, 0xe0, 0x4a), 0.28),
-        (Color::srgb_u8(0x6a, 0xb0, 0x2e), 0.45),
-        (Color::srgb_u8(0xb0, 0x7a, 0x48), 0.75),
-        (Color::srgb_u8(0x8a, 0x5a, 0x34), 1.0),
-    ],
-    flanc: Color::srgb_u8(0x4a, 0x2e, 0x1a),
+    flanc: Color::srgb_u8(0x5c, 0x58, 0x52),
 };
 
 const OR: Matiere = Matiere {
     bandes: &[
-        (Color::srgb_u8(0xff, 0xec, 0x8a), 0.3),
-        (Color::srgb_u8(0xff, 0xc8, 0x3a), 0.65),
-        (Color::srgb_u8(0xe0, 0x8e, 0x1a), 1.0),
+        (Color::srgb_u8(0xff, 0xe7, 0x7a), 0.45),
+        (Color::srgb_u8(0xff, 0xc4, 0x2e), 0.65),
+        (Color::srgb_u8(0xf0, 0x9a, 0x14), 1.0),
     ],
-    flanc: Color::srgb_u8(0x7a, 0x3e, 0x0c),
+    flanc: Color::srgb_u8(0x86, 0x44, 0x0c),
 };
 
-/// Un mot : ses lettres une à une, écartées d'un pixel de police (le gras les
-/// collerait sinon).
-fn mot(p: &mut Pinceau, parent: Entity, t: &str, m: &Matiere, taille: f32, profondeur: u32) {
-    let r = p.noeud(
-        parent,
-        Node {
-            column_gap: Val::ZERO,
-            ..default()
-        },
-    );
-    let mut lettre = [0u8; 4];
-    for c in t.chars() {
-        ligne(p, r, c.encode_utf8(&mut lettre), m, taille, profondeur);
-    }
-}
+/// Directions du contour (huit, plus huit à mi-chemin pour l'arrondir).
+const CERCLE: usize = 16;
 
-/// Une lettre, en gras (chaque dessin doublé d'un pixel vers la droite, comme le gras
-/// du jeu) : ombre portée, silhouette noire, épaisseur (`profondeur` pixels de police
-/// vers le bas), puis la face en bandes, sans trait entre elle et son épaisseur.
-fn ligne(p: &mut Pinceau, parent: Entity, t: &str, m: &Matiere, taille: f32, profondeur: u32) {
-    let px = |k: f32| Some(Val::Px(k * taille));
+/// Une ligne : `taille` (px) de police, `profondeur` et `bord` (contour) en px.
+fn ligne(
+    p: &mut Pinceau,
+    parent: Entity,
+    t: &str,
+    m: &Matiere,
+    taille: f32,
+    (profondeur, bord): (f32, f32),
+) {
+    let police = p.ic.polices.logo.clone();
     let l = p.noeud(
         parent,
         Node {
-            margin: UiRect::new(
-                Val::ZERO,
-                Val::Px(taille),
-                Val::ZERO,
-                Val::Px(taille * profondeur as f32),
-            ),
+            padding: UiRect::all(Val::Px(bord)),
+            margin: UiRect::bottom(Val::Px(profondeur - taille * 0.18)),
             ..default()
         },
     );
-    // Dessin contouré en (x, y) pixels de police ; sans bord, il perd la marge d'un
-    // pixel du contour et se décale d'autant
-    let dessin =
-        |p: &mut Pinceau, parent: Entity, couleur: Color, contour: bool, (x, y): (f32, f32)| {
-            for gras in [0.0, 1.0] {
-                let texte = TextePixel::nouveau(t, couleur, taille);
-                let (texte, marge) = if contour {
-                    (texte.contour(), 0.0)
-                } else {
-                    (texte.sans_bord(), 1.0)
-                };
-                let n = Node {
-                    flex_shrink: 0.0,
-                    ..place(px(x + gras + marge), None, px(y + marge), None)
-                };
-                p.c.spawn((texte, n, ChildOf(parent)));
-            }
-        };
-    // Place de la ligne dans le flux (invisible)
+    let texte = |couleur: Color| {
+        (
+            Text::new(t),
+            TextFont {
+                font: police.clone(),
+                font_size: taille,
+                ..default()
+            },
+            TextColor(couleur),
+            TextLayout::new_with_no_wrap(),
+        )
+    };
+    // Place dans le flux (invisible)
+    p.c.spawn((texte(Color::NONE), ChildOf(l)));
+    let a = |x: f32, y: f32| place(Some(Val::Px(bord + x)), None, Some(Val::Px(bord + y)), None);
+    // Ombre douce sous le tout
     p.c.spawn((
-        TextePixel::nouveau(t, Color::NONE, taille).contour(),
-        Visibility::Hidden,
+        texte(Color::srgba(0.0, 0.0, 0.0, 0.35)),
+        a(bord * 0.6, profondeur + bord * 1.8),
         ChildOf(l),
     ));
-    let prof = profondeur as f32;
-    dessin(
-        p,
-        l,
-        Color::srgba(0.0, 0.0, 0.0, 0.45),
-        true,
-        (1.0, prof + 1.5),
-    );
-    for k in 0..=profondeur {
-        dessin(p, l, NOIR, true, (0.0, k as f32));
+    // Contour noir autour de la face, du milieu et du fond de l'épaisseur
+    for y in [0.0, profondeur / 2.0, profondeur] {
+        for i in 0..CERCLE {
+            let (s, c) = (i as f32 * std::f32::consts::TAU / CERCLE as f32).sin_cos();
+            p.c.spawn((texte(NOIR), a(c * bord, y + s * bord), ChildOf(l)));
+        }
     }
-    for k in 1..=profondeur {
-        dessin(p, l, m.flanc, false, (0.0, k as f32));
+    // Épaisseur, du fond vers la face, un pixel à la fois
+    let mut y = profondeur;
+    while y > 0.0 {
+        p.c.spawn((texte(m.flanc), a(0.0, y), ChildOf(l)));
+        y -= 1.0;
     }
     // Face : bandes rognées, de la plus basse (pleine) à la plus haute
     for &(couleur, fin) in m.bandes.iter().rev() {
@@ -128,7 +100,7 @@ fn ligne(p: &mut Pinceau, parent: Entity, t: &str, m: &Matiere, taille: f32, pro
                 ..place(Some(Val::ZERO), None, Some(Val::ZERO), None)
             },
         );
-        dessin(p, r, couleur, false, (0.0, 0.0));
+        p.c.spawn((texte(couleur), a(0.0, 0.0), ChildOf(r)));
     }
 }
 
@@ -139,17 +111,10 @@ pub(super) fn construire(p: &mut Pinceau, parent: Entity) {
         Node {
             flex_direction: FlexDirection::Column,
             align_items: AlignItems::FlexStart,
-            row_gap: Val::Px(6.0),
-            margin: UiRect::bottom(Val::Px(30.0)),
+            margin: UiRect::new(Val::Px(-6.0), Val::ZERO, Val::Px(-14.0), Val::Px(26.0)),
             ..default()
         },
     );
-    let variante = std::env::var("BS_LOGO").unwrap_or_default();
-    let (haut, bas) = match variante.as_str() {
-        "2" => (&PIERRE, &OR),
-        "3" => (&OR, &PIERRE),
-        _ => (&PIERRE, &HERBE),
-    };
-    mot(p, l, "BLOCK", haut, 10.0, 2);
-    mot(p, l, "SURVIVORS", bas, 5.55, 2);
+    ligne(p, l, "BLOCK", &PIERRE, 128.0, (9.0, 5.0));
+    ligne(p, l, "SURVIVORS", &OR, 70.0, (6.0, 4.0));
 }

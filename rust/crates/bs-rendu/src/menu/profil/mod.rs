@@ -160,3 +160,4 @@ pub fn saisir(
 }
 
 pub use page::construire;
+pub(in crate::menu) use page::visage;

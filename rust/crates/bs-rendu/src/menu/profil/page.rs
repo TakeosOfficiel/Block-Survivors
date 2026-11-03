@@ -82,7 +82,13 @@ fn bouton(
 }
 
 /// Visage de la skin (et son calque de chapeau), en tête de `parent`.
-fn visage(commandes: &mut Commands, ic: &mut Icones, parent: Entity, chemin: &str) {
+pub(in crate::menu) fn visage(
+    commandes: &mut Commands,
+    ic: &mut Icones,
+    parent: Entity,
+    chemin: &str,
+    cote: f32,
+) {
     let image = ic.icone(chemin);
     let s = ic
         .images
@@ -97,8 +103,9 @@ fn visage(commandes: &mut Commands, ic: &mut Icones, parent: Entity, chemin: &st
                 ..default()
             },
             Node {
-                width: Val::Px(24.0),
-                height: Val::Px(24.0),
+                width: Val::Px(cote),
+                height: Val::Px(cote),
+                flex_shrink: 0.0,
                 ..default()
             },
         ))
@@ -111,8 +118,8 @@ fn visage(commandes: &mut Commands, ic: &mut Icones, parent: Entity, chemin: &st
         },
         Node {
             position_type: PositionType::Absolute,
-            width: Val::Px(24.0),
-            height: Val::Px(24.0),
+            width: Val::Px(cote),
+            height: Val::Px(cote),
             ..default()
         },
         ChildOf(tete),
@@ -191,7 +198,7 @@ pub fn construire(
         commandes.entity(b).entry::<Node>().and_modify(|mut n| {
             n.justify_content = JustifyContent::FlexStart;
         });
-        visage(commandes, ic, b, &chemin);
+        visage(commandes, ic, b, &chemin, 24.0);
     }
     let bras = if profil.bras_fins {
         "Bras : fins"

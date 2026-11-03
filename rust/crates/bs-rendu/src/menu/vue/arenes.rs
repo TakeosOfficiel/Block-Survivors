@@ -1,23 +1,20 @@
-//! Colonne des arènes de l'accueil (src/ui/ecranMenu.ts `afficherArenes`) : une vignette
-//! par arène (sa photo recadrée, son nom, voilée et grisée si elle est verrouillée),
-//! puis les détails de la choisie : description, mobs, boss à venir et records.
+//! Panneau de l'arène de l'accueil : les arènes dans l'ordre, la choisie dépliée (grande
+//! vignette, liseré d'or, coche, puis description, mobs, boss à venir et records collés
+//! dessous), les autres en lignes de 52 (miniature, nom, ou cadenas et condition) ;
+//! en bas, le bouton de la Collection (classée par monde).
 
 use bevy::prelude::*;
 use bs_donnees::arenes::Arene;
 use bs_donnees::progression::TypeDeblocage;
 
-use super::{BLANC, Pinceau, place};
-use crate::ecrans::style::{BoutonPage, OR, OR_CLAIR, Teinte};
+use super::{Pinceau, place};
+use crate::ecrans::charte::{self, AIDE, IVOIRE, OR_VIF, Relief, T_AIDE, T_CORPS, VERT_GAIN};
 use crate::hud::formater_temps;
 use crate::lancement::{ChoixPartie, DonneesJeu};
 use crate::menu::ActionMenu;
 use crate::menu::fond::Couvrir;
 use crate::sauvegarde::Sauvegarde;
 
-const BORD: Color = Color::srgba(1.0, 1.0, 1.0, 0.12);
-const VERROU: Color = Color::srgb_u8(0xff, 0xb0, 0xa0);
-const DESCRIPTION: Color = Color::srgb_u8(0xd0, 0xd0, 0xd0);
-const MOBS: Color = Color::srgb_u8(0x8f, 0xe0, 0x8f);
 const TEXTE_BOSS: Color = Color::srgb_u8(0xe8, 0xd8, 0xff);
 const FOND_BOSS: Color = Color::srgba(110.0 / 255.0, 60.0 / 255.0, 160.0 / 255.0, 0.55);
 
@@ -33,89 +30,133 @@ pub(super) fn construire(
         parent,
         Node {
             flex_direction: FlexDirection::Column,
-            flex_shrink: 0.0,
-            row_gap: Val::Px(10.0),
+            row_gap: Val::Px(6.0),
             ..default()
         },
     );
     for (k, a) in dj.arenes.iter().enumerate() {
-        vignette(p, sauvegarde, a.def, k == choix.arene, k, liste);
+        if k == choix.arene {
+            choisie(p, dj, sauvegarde, a.def, liste);
+        } else {
+            ligne(p, sauvegarde, a.def, k, liste);
+        }
     }
-    details(p, dj, sauvegarde, dj.arenes[choix.arene].def, parent);
+    let b = p.bouton(
+        parent,
+        "Collection",
+        Relief::SECONDAIRE,
+        ActionMenu::Collection,
+    );
+    p.c.entity(b).entry::<Node>().and_modify(|mut n| {
+        n.margin = UiRect::top(Val::Px(16.0));
+    });
 }
 
-/// Vignette d'une arène : photo, voile vers le bas, nom (et verrou).
-fn vignette(
-    p: &mut Pinceau,
-    sauvegarde: &Sauvegarde,
-    a: &Arene,
-    choisie: bool,
-    k: usize,
-    parent: Entity,
-) {
-    let verrou = sauvegarde.progression.verrou(TypeDeblocage::Arene, &a.id);
-    let teinte = Teinte {
-        bord: if choisie { OR } else { BORD },
-        fond: Color::NONE,
-    };
-    let mut v = p.c.spawn((
+/// Photo de l'arène couvrant son parent (grisée si `gris`).
+fn photo(p: &mut Pinceau, a: &Arene, gris: bool, parent: Entity) {
+    if let Some(image) = p.ic.photos.decodee(&a.id) {
+        let g = if gris { 0.3 } else { 1.0 };
+        p.c.spawn((
+            ImageNode::new(image).with_color(Color::srgb(g, g, g)),
+            Couvrir,
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                ..place(Some(Val::ZERO), None, Some(Val::ZERO), None)
+            },
+            ChildOf(parent),
+        ));
+    }
+}
+
+/// Arène choisie : grande vignette (photo, voile, nom, coche) et ses détails.
+fn choisie(p: &mut Pinceau, dj: &DonneesJeu, sauvegarde: &Sauvegarde, a: &Arene, parent: Entity) {
+    let bloc = p.noeud(
+        parent,
         Node {
-            width: Val::Percent(100.0),
-            height: Val::Px(84.0),
-            min_height: Val::Px(84.0),
+            flex_direction: FlexDirection::Column,
             flex_shrink: 0.0,
             border: UiRect::all(Val::Px(2.0)),
-            border_radius: BorderRadius::all(Val::Px(10.0)),
+            border_radius: BorderRadius::all(Val::Px(2.0)),
+            ..default()
+        },
+    );
+    p.c.entity(bloc)
+        .insert((BackgroundColor(charte::CHOISI), BorderColor::all(OR_VIF)));
+    let v = p.noeud(
+        bloc,
+        Node {
+            height: Val::Px(88.0),
+            flex_shrink: 0.0,
             overflow: Overflow::clip(),
             ..default()
         },
-        teinte,
-        BorderColor::all(teinte.bord),
-        BackgroundColor(Color::srgb_u8(0x1a, 0x1d, 0x26)),
-        ChildOf(parent),
-    ));
-    if verrou.is_none() {
-        v.insert((Button, BoutonPage, ActionMenu::Arene(k)));
-    }
-    let v = v.id();
-    let tout = || Node {
+    );
+    photo(p, a, false, v);
+    let voile = LinearGradient::to_bottom(vec![
+        ColorStop::new(Color::NONE, Val::Percent(35.0)),
+        ColorStop::new(Color::srgba(0.0, 0.0, 0.0, 0.85), Val::Percent(100.0)),
+    ]);
+    let tout = Node {
         width: Val::Percent(100.0),
         height: Val::Percent(100.0),
         ..place(Some(Val::ZERO), None, Some(Val::ZERO), None)
     };
-    if let Some(image) = p.ic.photos.decodee(&a.id) {
-        let gris = if verrou.is_some() { 0.3 } else { 1.0 };
-        p.c.spawn((
-            ImageNode::new(image).with_color(Color::srgb(gris, gris, gris)),
-            Couvrir,
-            tout(),
-            ChildOf(v),
-        ));
+    p.c.spawn((tout, BackgroundGradient::from(voile), ChildOf(v)));
+    let bas = Some(Val::Px(8.0));
+    let n = p.noeud(v, place(Some(Val::Px(12.0)), Some(Val::Px(34.0)), None, bas));
+    p.texte(n, &a.nom, true, T_CORPS + 1.0, IVOIRE);
+    let n = p.noeud(v, place(None, Some(Val::Px(10.0)), None, bas));
+    p.texte(n, "✓", true, 20.0, OR_VIF);
+    details(p, dj, sauvegarde, a, bloc);
+}
+
+/// Autre arène : miniature, nom, ou cadenas et condition si verrouillée.
+fn ligne(p: &mut Pinceau, sauvegarde: &Sauvegarde, a: &Arene, k: usize, parent: Entity) {
+    let verrou = sauvegarde.progression.verrou(TypeDeblocage::Arene, &a.id);
+    let mut l = p.c.spawn((
+        Node {
+            min_height: Val::Px(52.0),
+            flex_shrink: 0.0,
+            align_items: AlignItems::Center,
+            column_gap: Val::Px(10.0),
+            padding: UiRect::axes(Val::Px(6.0), Val::Px(4.0)),
+            border: charte::bord_relief(),
+            border_radius: BorderRadius::all(Val::Px(2.0)),
+            ..default()
+        },
+        Relief::SECONDAIRE.composants(),
+        ChildOf(parent),
+    ));
+    if verrou.is_none() {
+        l.insert((Button, ActionMenu::Arene(k)));
     }
-    let voile = LinearGradient::to_bottom(vec![
-        ColorStop::new(Color::NONE, Val::Percent(30.0)),
-        ColorStop::new(Color::srgba(0.0, 0.0, 0.0, 0.85), Val::Percent(100.0)),
-    ]);
-    p.c.spawn((tout(), BackgroundGradient::from(voile), ChildOf(v)));
-    let bas = Some(Val::Px(10.0));
-    let gauche = Some(Val::Px(12.0));
-    match verrou {
-        None => {
-            let n = p.noeud(v, place(gauche, None, None, bas));
-            p.texte(n, &a.nom, true, 16.0, BLANC);
-        }
-        Some(verrou) => {
-            let n = p.noeud(v, place(gauche, None, Some(Val::Px(8.0)), None));
-            p.texte(n, &a.nom, true, 16.0, Color::srgb_u8(0xa0, 0xa0, 0xa0));
-            let n = p.noeud(v, place(gauche, Some(Val::Px(12.0)), None, bas));
-            p.texte(
-                n,
-                &format!("Verrouillée · {}", verrou.texte),
-                false,
-                13.0,
-                VERROU,
-            );
-        }
+    let l = l.id();
+    let mini = p.noeud(
+        l,
+        Node {
+            width: Val::Px(64.0),
+            height: Val::Px(36.0),
+            flex_shrink: 0.0,
+            overflow: Overflow::clip(),
+            ..default()
+        },
+    );
+    photo(p, a, verrou.is_some(), mini);
+    let textes = p.noeud(
+        l,
+        Node {
+            flex_direction: FlexDirection::Column,
+            flex_grow: 1.0,
+            flex_shrink: 1.0,
+            row_gap: Val::Px(1.0),
+            ..default()
+        },
+    );
+    p.texte(textes, &a.nom, true, T_CORPS, IVOIRE);
+    if let Some(v) = verrou {
+        p.texte(textes, &v.texte, false, T_AIDE - 1.0, AIDE);
+        charte::cadenas(p.c, l, 14.0, AIDE);
     }
 }
 
@@ -127,18 +168,21 @@ fn details(p: &mut Pinceau, dj: &DonneesJeu, sauvegarde: &Sauvegarde, a: &Arene,
         Node {
             flex_direction: FlexDirection::Column,
             row_gap: Val::Px(6.0),
-            margin: UiRect::top(Val::Px(12.0)),
+            padding: UiRect::all(Val::Px(10.0)),
             ..default()
         },
     );
-    p.texte(col, &a.description, false, 13.0, DESCRIPTION);
-    p.texte(
+    p.texte(col, &a.description, false, T_AIDE, AIDE);
+    let mobs = p.noeud(
         col,
-        &format!("Mobs : {}", noms_mobs(d, a)),
-        false,
-        13.0,
-        MOBS,
+        Node {
+            flex_wrap: FlexWrap::Wrap,
+            column_gap: Val::Px(6.0),
+            ..default()
+        },
     );
+    p.texte(mobs, "Mobs", true, T_AIDE, IVOIRE);
+    p.texte(mobs, &noms_mobs(d, a), false, T_AIDE, VERT_GAIN);
     let boss = p.noeud(
         col,
         Node {
@@ -153,23 +197,23 @@ fn details(p: &mut Pinceau, dj: &DonneesJeu, sauvegarde: &Sauvegarde, a: &Arene,
             boss,
             Node {
                 padding: UiRect::axes(Val::Px(8.0), Val::Px(2.0)),
-                border_radius: BorderRadius::all(Val::Px(6.0)),
+                border_radius: BorderRadius::all(Val::Px(2.0)),
                 ..default()
             },
         );
         p.c.entity(pastille).insert(BackgroundColor(FOND_BOSS));
-        p.texte(pastille, &b, false, 12.0, TEXTE_BOSS);
+        p.texte(pastille, &b, false, T_AIDE - 1.0, TEXTE_BOSS);
     }
     let prog = &sauvegarde.progression;
     let record = prog.record(&a.id);
     if record > 0.0 {
         let t = format!("Record : {}", formater_temps(record as i64));
-        p.texte(col, &t, true, 13.0, OR_CLAIR);
+        p.texte(col, &t, true, T_AIDE, OR_VIF);
     }
     let sans_fin = prog.record_sans_fin(&a.id);
     if sans_fin > 0.0 {
         let t = format!("Record sans fin : {}", formater_temps(sans_fin as i64));
-        p.texte(col, &t, true, 13.0, OR_CLAIR);
+        p.texte(col, &t, true, T_AIDE, OR_VIF);
     }
 }
 

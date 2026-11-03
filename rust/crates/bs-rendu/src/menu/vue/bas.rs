@@ -1,91 +1,92 @@
-//! Bas de l'accueil (styles.css `#menu-jouer`, `.menu-liens`, `.menu-pied`) : le grand
-//! bouton « Jouer » vert, les liens (Options, Multijoueur, Nouveautés avec sa pastille,
-//! Quitter) et la version ; plus le dé du pseudo.
+//! Pied de l'accueil, en trois groupes : à gauche Options et Nouveautés (avec sa
+//! pastille), au centre « Jouer » (vert en relief, résumé de la partie dessous) et
+//! « Multijoueur », à droite la version et « Quitter », à l'écart des lancements. Plus
+//! le dé du pseudo, posé dans le bandeau du haut.
 
 use bevy::prelude::*;
 
-use super::{BLANC, MARGE, ORE_TRANSPARENT, Pinceau, place};
-use crate::ecrans::style::{BoutonPage, OR, OR_CLAIR, Teinte};
+use super::{PIED, Pinceau, place};
+use crate::ecrans::charte::{self, AIDE, IVOIRE, MARGE, OR_VIF, Relief, T_AIDE, T_CORPS};
 use crate::hud::police::TextePixel;
 use crate::lancement::{ChoixPartie, DonneesJeu};
 use crate::menu::ActionMenu;
 use crate::sauvegarde::Sauvegarde;
 
-/// Dé du pseudo au hasard (`.menu-de`) : cinq points dessinés.
+/// Dé du pseudo au hasard : cinq points dessinés.
 pub(super) fn de(p: &mut Pinceau, parent: Entity) {
-    let b = p.bouton_nu(parent, ActionMenu::PseudoAleatoire);
+    let b = charte::bouton_relief(
+        p.c,
+        parent,
+        Relief::SECONDAIRE,
+        charte::H_SECONDAIRE,
+        ActionMenu::PseudoAleatoire,
+    );
     p.c.entity(b).entry::<Node>().and_modify(|mut n| {
-        n.min_width = Val::Px(30.0);
-        n.width = Val::Px(30.0);
-        n.height = Val::Px(30.0);
+        n.width = Val::Px(charte::H_SECONDAIRE);
         n.padding = UiRect::ZERO;
-        n.border_radius = BorderRadius::all(Val::Px(6.0));
     });
     let face = p.noeud(
         b,
         Node {
-            width: Val::Px(16.0),
-            height: Val::Px(16.0),
-            border_radius: BorderRadius::all(Val::Px(3.0)),
+            width: Val::Px(18.0),
+            height: Val::Px(18.0),
+            border_radius: BorderRadius::all(Val::Px(2.0)),
             ..default()
         },
     );
-    p.c.entity(face)
-        .insert(BackgroundColor(Color::srgb_u8(0xdd, 0xdd, 0xdd)));
+    p.c.entity(face).insert(BackgroundColor(IVOIRE));
     for (x, y) in [
         (3.0, 3.0),
-        (10.0, 3.0),
-        (6.5, 6.5),
-        (3.0, 10.0),
-        (10.0, 10.0),
+        (12.0, 3.0),
+        (7.5, 7.5),
+        (3.0, 12.0),
+        (12.0, 12.0),
     ] {
         let point = p.noeud(
             face,
             Node {
                 width: Val::Px(3.0),
                 height: Val::Px(3.0),
-                border_radius: BorderRadius::MAX,
                 ..place(Some(Val::Px(x)), None, Some(Val::Px(y)), None)
             },
         );
-        p.c.entity(point)
-            .insert(BackgroundColor(Color::srgb_u8(0x14, 0x17, 0x1f)));
+        p.c.entity(point).insert(BackgroundColor(charte::FOND));
     }
 }
 
-/// Largeur du bouton « Multijoueur », écart avec « Jouer ».
-const LARGEUR_MULTI: f32 = 190.0;
-const ECART: f32 = 12.0;
-
-/// « Multijoueur », à droite de « Jouer », de la même hauteur.
-fn multijoueur(p: &mut Pinceau, racine: Entity) {
-    let b = p.bouton_nu(racine, ActionMenu::OuvrirMulti);
-    let gauche = (420.0 + ECART + LARGEUR_MULTI) / 2.0 - LARGEUR_MULTI;
-    p.c.entity(b).entry::<Node>().and_modify(move |mut n| {
-        *n = Node {
-            width: Val::Px(LARGEUR_MULTI),
-            height: Val::Px(66.0),
-            margin: UiRect::left(Val::Px(gauche)),
-            flex_direction: FlexDirection::Column,
-            justify_content: JustifyContent::Center,
+/// Groupe du pied (un tiers de la largeur), aligné selon `alignement`.
+fn groupe(p: &mut Pinceau, parent: Entity, alignement: JustifyContent) -> Entity {
+    p.noeud(
+        parent,
+        Node {
+            flex_grow: 1.0,
+            flex_basis: Val::ZERO,
+            justify_content: alignement,
             align_items: AlignItems::Center,
-            row_gap: Val::Px(2.0),
-            border: UiRect::all(Val::Px(2.0)),
-            border_radius: BorderRadius::all(Val::Px(10.0)),
-            ..place(Some(Val::Percent(50.0)), None, None, Some(Val::Px(26.0)))
-        };
-    });
-    p.texte(b, "Multijoueur", true, 18.0, BLANC);
-    p.texte(
-        b,
-        "Coop en ligne",
-        false,
-        12.0,
-        Color::srgb_u8(0xc8, 0xc8, 0xc8),
-    );
+            column_gap: Val::Px(8.0),
+            ..default()
+        },
+    )
 }
 
-/// « Jouer », « Multijoueur », liens (Options, Nouveautés, Quitter) et pied de page.
+/// Grand bouton à deux lignes (titre, sous-titre), de largeur `largeur`.
+fn bouton_double(
+    p: &mut Pinceau,
+    parent: Entity,
+    relief: Relief,
+    largeur: f32,
+    action: ActionMenu,
+) -> Entity {
+    let b = charte::bouton_relief(p.c, parent, relief, 60.0, action);
+    p.c.entity(b).entry::<Node>().and_modify(move |mut n| {
+        n.width = Val::Px(largeur);
+        n.flex_direction = FlexDirection::Column;
+        n.row_gap = Val::Px(3.0);
+    });
+    b
+}
+
+/// Pied : liens, « Jouer », « Multijoueur », version et « Quitter ».
 pub(super) fn construire(
     p: &mut Pinceau,
     dj: &DonneesJeu,
@@ -93,98 +94,94 @@ pub(super) fn construire(
     choix: ChoixPartie,
     racine: Entity,
 ) {
-    let vert = |hex: u32| Color::srgb_u8((hex >> 16) as u8, (hex >> 8) as u8, hex as u8);
-    let jouer =
-        p.c.spawn((
-            Button,
-            BoutonPage,
-            Teinte {
-                bord: OR,
-                fond: ORE_TRANSPARENT,
-            },
-            ActionMenu::Jouer,
-            Node {
-                width: Val::Px(420.0),
-                height: Val::Px(66.0),
-                // « Jouer » et « Multijoueur » centrés ensemble
-                margin: UiRect::left(Val::Px(-(420.0 + ECART + LARGEUR_MULTI) / 2.0)),
-                flex_direction: FlexDirection::Column,
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                row_gap: Val::Px(4.0),
-                border: UiRect::all(Val::Px(2.0)),
-                border_radius: BorderRadius::all(Val::Px(10.0)),
-                ..place(Some(Val::Percent(50.0)), None, None, Some(Val::Px(26.0)))
-            },
-            BorderColor::all(OR),
-            BackgroundGradient::from(LinearGradient::to_bottom(vec![
-                ColorStop::new(vert(0x34a046), Val::Percent(0.0)),
-                ColorStop::new(vert(0x1d6b2a), Val::Percent(100.0)),
-            ])),
-            BoxShadow::new(
-                Color::srgba(1.0, 0.78, 0.31, 0.35),
-                Val::ZERO,
-                Val::ZERO,
-                Val::Px(2.0),
-                Val::Px(18.0),
-            ),
-            ChildOf(racine),
-        ))
-        .id();
-    p.c.spawn((TextePixel::nouveau("JOUER", BLANC, 4.0), ChildOf(jouer)));
-    let nom = &dj.d.personnages.personnages[choix.personnage].nom;
-    let sous_titre = format!("{nom} · {}", dj.arenes[choix.arene].def.nom);
-    p.texte(
-        jouer,
-        &sous_titre,
-        true,
-        14.0,
-        Color::srgb_u8(0xd8, 0xff, 0xd0),
-    );
-    multijoueur(p, racine);
-
-    let liens = p.noeud(
+    let pied = p.noeud(
         racine,
         Node {
-            column_gap: Val::Px(8.0),
-            ..place(Some(Val::Px(MARGE)), None, None, Some(Val::Px(30.0)))
+            height: Val::Px(PIED),
+            flex_shrink: 0.0,
+            padding: UiRect::horizontal(Val::Px(MARGE)),
+            align_items: AlignItems::Center,
+            ..default()
         },
     );
-    p.bouton(liens, "Options", ActionMenu::Options);
-    let nouveautes = p.bouton(liens, "Nouveautés", ActionMenu::Nouveautes);
+    let gauche = groupe(p, pied, JustifyContent::FlexStart);
+    p.bouton(gauche, "Options", Relief::SECONDAIRE, ActionMenu::Options);
+    let nouveautes = p.bouton(
+        gauche,
+        "Nouveautés",
+        Relief::SECONDAIRE,
+        ActionMenu::Nouveautes,
+    );
     if crate::menu::nouveautes::a_lire(sauvegarde.profils.stockage()) {
         // Pastille : nouveautés de cette version pas encore lues
         let pastille = p.noeud(
             nouveautes,
             Node {
-                padding: UiRect::axes(Val::Px(7.0), Val::Px(1.0)),
-                border_radius: BorderRadius::MAX,
-                ..place(None, Some(Val::Px(-8.0)), Some(Val::Px(-11.0)), None)
+                padding: UiRect::axes(Val::Px(6.0), Val::Px(1.0)),
+                border_radius: BorderRadius::all(Val::Px(2.0)),
+                ..place(None, Some(Val::Px(-8.0)), Some(Val::Px(-12.0)), None)
             },
         );
-        p.c.entity(pastille).insert(BackgroundColor(OR_CLAIR));
+        p.c.entity(pastille).insert(BackgroundColor(OR_VIF));
         let t =
             p.ic.polices
-                .texte("NOUVEAU !", true, 11.0, Color::srgb_u8(0x2a, 0x1d, 0x02));
+                .texte("NOUVEAU", true, 11.0, Color::srgb_u8(0x2a, 0x1d, 0x02));
         p.c.spawn((t, ChildOf(pastille)));
     }
-    p.bouton(liens, "Quitter", ActionMenu::Quitter);
 
-    let pied = p.noeud(
-        racine,
+    let centre = groupe(p, pied, JustifyContent::Center);
+    let jouer = bouton_double(p, centre, Relief::PRINCIPAL, 300.0, ActionMenu::Jouer);
+    p.c.entity(jouer).insert(BoxShadow::new(
+        Color::srgba(0.0, 0.0, 0.0, 0.5),
+        Val::ZERO,
+        Val::Px(4.0),
+        Val::ZERO,
+        Val::Px(10.0),
+    ));
+    p.c.spawn((TextePixel::nouveau("JOUER", IVOIRE, 3.0), ChildOf(jouer)));
+    let nom = &dj.d.personnages.personnages[choix.personnage].nom;
+    let resume = format!("{nom} · {}", dj.arenes[choix.arene].def.nom);
+    p.texte(
+        jouer,
+        &resume,
+        true,
+        T_AIDE - 1.0,
+        Color::srgb_u8(0xd6, 0xf0, 0xd8),
+    );
+    let multi = bouton_double(
+        p,
+        centre,
+        Relief::SECONDAIRE,
+        180.0,
+        ActionMenu::OuvrirMulti,
+    );
+    p.texte(multi, "Multijoueur", true, T_CORPS, IVOIRE);
+    p.texte(multi, "Coop en ligne", false, T_AIDE - 2.0, AIDE);
+
+    let droite = groupe(p, pied, JustifyContent::FlexEnd);
+    let version = p.noeud(
+        droite,
         Node {
             flex_direction: FlexDirection::Column,
             align_items: AlignItems::FlexEnd,
-            ..place(None, Some(Val::Px(MARGE)), None, Some(Val::Px(30.0)))
+            margin: UiRect::right(Val::Px(16.0)),
+            ..default()
         },
     );
     let pale = Color::srgba(1.0, 1.0, 1.0, 0.55);
-    p.texte(pied, &format!("v{}", bs_commun::VERSION), false, 12.0, pale);
     p.texte(
-        pied,
+        version,
+        &format!("v{}", bs_commun::VERSION),
+        false,
+        12.0,
+        pale,
+    );
+    p.texte(
+        version,
         "Projet de fan, non affilié à Mojang",
         false,
         12.0,
         pale,
     );
+    p.bouton(droite, "Quitter", Relief::SECONDAIRE, ActionMenu::Quitter);
 }

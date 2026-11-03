@@ -249,7 +249,7 @@ impl Plugin for PluginJeu {
                         ecrans::defiler,
                     )
                         .chain(),
-                    ecrans::style::survoler,
+                    (ecrans::style::survoler, ecrans::charte::survoler_relief),
                     (menu::fond::suivre, menu::fond::couvrir),
                 )
                     .run_if(in_state(Phase::Menu)),
@@ -326,7 +326,7 @@ impl Plugin for PluginJeu {
                     ecran_cartes::survoler,
                     ecrans::gerer,
                     ecrans::defiler,
-                    ecrans::style::survoler,
+                    (ecrans::style::survoler, ecrans::charte::survoler_relief),
                     hud::afficher,
                     hud::compteur::afficher,
                     soleil::suivre,

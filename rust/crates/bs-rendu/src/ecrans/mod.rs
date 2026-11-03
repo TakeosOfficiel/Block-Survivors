@@ -8,6 +8,7 @@
 //! `BS_PAUSE=menu` revient aussitôt au menu principal.
 
 mod bilan;
+pub mod charte;
 pub mod style;
 pub(crate) mod vues;
 

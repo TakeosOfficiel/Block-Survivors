@@ -252,6 +252,10 @@ pub fn placer_entites(
     calculer_rotations(&r.modele, &anim.joueur, &mut r.pose.rotations);
     let pose = &mut r.pose;
     pose.position = Vec3::new(ici.x, hauteur_flottement(&r.modele, &anim.joueur), ici.y);
+    if crate::scene::scene().is_some() {
+        // Capture de scène : le héros de l'accueil prendra sa place
+        pose.position.y -= 1000.0;
+    }
     pose.angle = j.angle;
     pose.inclinaison = if j.mort {
         angle_chute(j.temps_mort, DUREE_MORT_JOUEUR)
@@ -267,7 +271,9 @@ pub fn placer_entites(
     let rayon = p.d.personnages.personnages[p.etat.index_personnage]
         .apparence
         .rayon_ombre;
-    ombres.0.push([ici.x, ici.y, rayon]);
+    if crate::scene::scene().is_none() {
+        ombres.0.push([ici.x, ici.y, rayon]);
+    }
     crate::coequipiers::placer(
         p,
         (&suivi, &coequipiers),

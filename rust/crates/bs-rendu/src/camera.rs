@@ -296,6 +296,19 @@ pub fn suivre(
     c.z += (cible.0.y - c.z) * k;
     c.distance += (cible_distance - c.distance) * kz;
 
+    if let Some(s) = crate::scene::scene() {
+        // Capture de scène : caméra fixe autour du joueur
+        c.troisieme = true;
+        c.lacet = s.lacet;
+        c.tangage = s.tangage;
+        c.distance = s.distance;
+        c.x = cible.0.x;
+        c.z = cible.0.y;
+        decalage = Vec2::ZERO;
+        if let Projection::Perspective(p) = &mut *projection {
+            p.fov = s.champ;
+        }
+    }
     if c.troisieme {
         // Derrière le point visé, à l'opposé du regard
         let (sl, cl) = c.lacet.sin_cos();

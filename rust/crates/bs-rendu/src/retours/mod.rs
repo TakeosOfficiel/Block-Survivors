@@ -200,7 +200,7 @@ pub fn recevoir(
                 valeur,
                 style,
             } => {
-                if options.chiffres_degats {
+                if options.chiffres_degats && crate::scene::scene().is_none() {
                     retours.chiffres.ajouter(Vec3::new(x, y, z), valeur, style);
                 }
             }

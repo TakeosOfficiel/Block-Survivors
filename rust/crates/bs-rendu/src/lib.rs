@@ -39,6 +39,7 @@ mod options;
 mod polices;
 mod retours;
 mod sauvegarde;
+mod scene;
 mod simulation;
 mod skins;
 mod soleil;
@@ -317,6 +318,7 @@ impl Plugin for PluginJeu {
                     entites::placer_entites,
                     camera::capturer_souris,
                     camera::suivre,
+                    scene::masquer_interface,
                     hud::etiquette::placer,
                     effets::placer,
                     retours::dessiner,

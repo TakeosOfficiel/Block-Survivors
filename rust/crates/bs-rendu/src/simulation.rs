@@ -22,7 +22,13 @@ pub(crate) fn avancer_debut(jeu: &mut PartieEnCours) {
         jeu.partie.ev.vider();
         let j = &mut jeu.partie.etat.joueur;
         j.pv = j.pv_max;
-        jeu.robot.avancer(&mut jeu.partie);
+        if crate::scene::scene().is_some() {
+            // Capture de scène : le joueur attend au point de départ
+            jeu.partie.etat.niveaux_en_attente = 0;
+            jeu.partie.pas(PAS);
+        } else {
+            jeu.robot.avancer(&mut jeu.partie);
+        }
     }
     // Essai de l'écran des coffres : un coffre (de boss avec « ender ») à ouvrir
     if let Ok(v) = std::env::var("BS_COFFRE") {
@@ -85,7 +91,9 @@ pub(crate) fn avancer(
     if c.haut || c.bas || c.gauche || c.droite {
         ecran.humain = true;
     }
-    if !ecran.humain {
+    if crate::scene::scene().is_some() {
+        // Capture de scène : la partie reste figée sur l'instant photographié
+    } else if !ecran.humain {
         robot.avancer(partie);
     } else if !ecran_cartes::en_attente(partie) {
         // Cartes à choisir : partie en pause

@@ -204,7 +204,7 @@ pub(super) fn construire(
         if k > 0 {
             p.texte(resume, "·", true, T_SECTION - 2.0, AIDE);
         }
-        let (b, icone) = lien(p, resume, t, T_SECTION - 4.0, ActionMenu::Volet(volet));
+        let (b, icone) = lien(p, resume, t, T_AIDE + 1.0, ActionMenu::Volet(volet));
         p.c.entity(icone).despawn();
         p.c.entity(b).entry::<Node>().and_modify(|mut n| {
             n.column_gap = Val::Px(4.0);

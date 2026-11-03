@@ -37,7 +37,11 @@ pub(super) fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones
     commandes.entity(e).entry::<Node>().and_modify(|mut n| {
         n.padding = UiRect::new(Val::Px(MARGE), Val::Px(MARGE), Val::Px(18.0), Val::Px(6.0));
     });
-    ecrire(commandes, ic, e, "Talents", (true, 36.0, IVOIRE));
+    let titre = ecrire(commandes, ic, e, "Talents", (true, 36.0, IVOIRE));
+    commandes.entity(titre).insert(Node {
+        margin: UiRect::right(Val::Px(36.0)),
+        ..default()
+    });
     // Classes
     let r = rangee(commandes, e, 30.0);
     for (k, (id, perso)) in d.personnages.personnages.iter().enumerate() {

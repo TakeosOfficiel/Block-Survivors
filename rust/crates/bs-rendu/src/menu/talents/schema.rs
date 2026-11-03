@@ -105,6 +105,7 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, paren
                 width: Val::Px(largeur),
                 height: Val::Px(hauteur),
                 flex_shrink: 0.0,
+                margin: UiRect::vertical(Val::Auto),
                 ..default()
             },
             ChildOf(zone),

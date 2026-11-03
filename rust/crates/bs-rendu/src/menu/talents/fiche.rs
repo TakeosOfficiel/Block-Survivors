@@ -1,4 +1,4 @@
-//! Fiche du talent consulté, flottant à droite sur un voile sombre, sans cadre : une
+//! Fiche du talent consulté, flottant à droite sur le fond, sans cadre : une
 //! grande icône, le nom, le type et la branche, le rang en crans ; l'effet (ou les deux
 //! options d'un talent à choix, la jouée marquée d'un trait d'or) ; les conditions
 //! (prérequis, palier, coût) cochées ou barrées ; en bas un seul bouton vert
@@ -23,11 +23,6 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, paren
     let (p, a, n) = (c.id(), c.etat.arbre, c.noeud());
     let def = c.arbre();
     let rang = prog.rang(p, a, n);
-    let voile = LinearGradient::to_right(vec![
-        ColorStop::new(Color::NONE, Val::Percent(0.0)),
-        ColorStop::new(Color::srgba(0.0, 0.0, 0.0, 0.45), Val::Percent(30.0)),
-        ColorStop::new(Color::srgba(0.0, 0.0, 0.0, 0.55), Val::Percent(100.0)),
-    ]);
     let f = commandes
         .spawn((
             Node {
@@ -35,10 +30,9 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, paren
                 flex_shrink: 0.0,
                 flex_direction: FlexDirection::Column,
                 row_gap: Val::Px(12.0),
-                padding: UiRect::new(Val::Px(70.0), Val::Px(MARGE), Val::Px(24.0), Val::Px(8.0)),
+                padding: UiRect::new(Val::Px(40.0), Val::Px(MARGE), Val::Px(28.0), Val::Px(8.0)),
                 ..default()
             },
-            BackgroundGradient::from(voile),
             ChildOf(parent),
         ))
         .id();
@@ -302,8 +296,8 @@ fn actions(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity, n
         .spawn((
             Node {
                 flex_direction: FlexDirection::Column,
-                row_gap: Val::Px(8.0),
-                margin: UiRect::top(Val::Auto),
+                row_gap: Val::Px(10.0),
+                margin: UiRect::top(Val::Px(22.0)),
                 ..default()
             },
             ChildOf(f),

@@ -171,6 +171,7 @@ fn page_talents(dj: &DonneesJeu, sauvegarde: &Sauvegarde, personnage: usize) -> 
         personnage,
         arbre: sauvegarde.progression.arbre_actif(id),
         noeud: 0,
+        confirmation: false,
     })
 }
 

@@ -12,7 +12,7 @@ mod classes;
 use bevy::prelude::*;
 
 use super::{ActionMenu, Icones};
-use crate::ecrans::charte::{self, AIDE, IVOIRE, MARGE, Relief, T_AIDE, T_CORPS};
+use crate::ecrans::charte::{self, AIDE, IVOIRE, MARGE, Relief, T_CORPS};
 use crate::hud::police::TextePixel;
 use crate::lancement::{ChoixPartie, DonneesJeu};
 use crate::sauvegarde::Sauvegarde;

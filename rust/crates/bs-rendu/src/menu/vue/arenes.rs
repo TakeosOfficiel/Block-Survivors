@@ -104,7 +104,10 @@ fn choisie(p: &mut Pinceau, dj: &DonneesJeu, sauvegarde: &Sauvegarde, a: &Arene,
     };
     p.c.spawn((tout, BackgroundGradient::from(voile), ChildOf(v)));
     let bas = Some(Val::Px(8.0));
-    let n = p.noeud(v, place(Some(Val::Px(12.0)), Some(Val::Px(34.0)), None, bas));
+    let n = p.noeud(
+        v,
+        place(Some(Val::Px(12.0)), Some(Val::Px(34.0)), None, bas),
+    );
     p.texte(n, &a.nom, true, T_CORPS + 1.0, IVOIRE);
     let n = p.noeud(v, place(None, Some(Val::Px(10.0)), None, bas));
     p.texte(n, "✓", true, 20.0, OR_VIF);

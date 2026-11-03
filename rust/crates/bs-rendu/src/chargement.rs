@@ -74,6 +74,17 @@ pub(crate) fn photo(
     if let Some(h) = photos.0.get(cle) {
         return Some(h.clone());
     }
+    let h = decoder(images, octets, id)?;
+    photos.0.insert(cle, h.clone());
+    Some(h)
+}
+
+/// Décode une photo WebP embarquée.
+pub(crate) fn decoder(
+    images: &mut Assets<Image>,
+    octets: &[u8],
+    id: &str,
+) -> Option<Handle<Image>> {
     let lue = image::load_from_memory_with_format(octets, image::ImageFormat::WebP);
     let image = match lue {
         Ok(i) => Image::from_dynamic(i, true, RenderAssetUsages::RENDER_WORLD),
@@ -82,9 +93,7 @@ pub(crate) fn photo(
             return None;
         }
     };
-    let h = images.add(image);
-    photos.0.insert(cle, h.clone());
-    Some(h)
+    Some(images.add(image))
 }
 
 /// Entrée en chargement : caméra, photo, nom de l'arène, astuce, barre vide.

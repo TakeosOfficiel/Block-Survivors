@@ -1,7 +1,7 @@
-//! Panneau de la classe de l'accueil : une ligne par classe (icône de son arme, nom,
-//! rôle, ou cadenas et condition), la choisie marquée d'un liseré d'or et d'une coche ;
-//! puis sa fiche (description, vie, vitesse, arme, bonus, cartes exclusives), sa
-//! maîtrise et le bouton des Talents.
+//! Volet des classes de l'accueil : à gauche une ligne par classe (icône de son arme,
+//! nom, rôle, ou cadenas et condition), la choisie marquée d'un liseré d'or et d'une
+//! coche ; à droite sa fiche (description, vie, vitesse, arme, bonus, cartes
+//! exclusives), sa maîtrise et le bouton des Talents.
 
 use bevy::prelude::*;
 use bs_donnees::progression::TypeDeblocage;
@@ -21,7 +21,7 @@ pub(super) fn construire(
     dj: &DonneesJeu,
     sauvegarde: &Sauvegarde,
     choix: ChoixPartie,
-    parent: Entity,
+    (parent, detail): (Entity, Entity),
 ) {
     let d = dj.d;
     p.section(parent, "Classe");
@@ -101,8 +101,8 @@ pub(super) fn construire(
             }
         }
     }
-    fiche(p, dj, choix, parent);
-    maitrise(p, dj, sauvegarde, choix, parent);
+    fiche(p, dj, choix, detail);
+    maitrise(p, dj, sauvegarde, choix, detail);
 }
 
 /// Liseré d'or de 4 au bord gauche d'une ligne choisie.
@@ -157,13 +157,10 @@ fn fiche(p: &mut Pinceau, dj: &DonneesJeu, choix: ChoixPartie, parent: Entity) {
         Node {
             flex_direction: FlexDirection::Column,
             row_gap: Val::Px(2.0),
-            margin: UiRect::top(Val::Px(16.0)),
-            padding: UiRect::top(Val::Px(12.0)),
-            border: UiRect::top(Val::Px(2.0)),
             ..default()
         },
     );
-    p.c.entity(f).insert(BorderColor::all(BORD));
+    p.texte(f, &perso.nom, true, charte::T_SECTION, IVOIRE);
     let desc = p.texte(f, &perso.description, false, T_AIDE, AIDE);
     p.c.entity(desc).insert(Node {
         margin: UiRect::bottom(Val::Px(6.0)),

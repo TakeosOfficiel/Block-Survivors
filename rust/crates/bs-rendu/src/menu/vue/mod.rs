@@ -1,31 +1,28 @@
-//! Accueil, écran de préparation de partie (docs/CHARTE-UI.md) posé sur la photo de
-//! l'arène (`fond`) : bandeau du haut (logo, bouton du profil), trois colonnes (la
-//! classe à gauche dans `classes`, le héros 3D au centre avec « Apparence » sous ses
-//! pieds, l'arène à droite dans `arenes`), pied d'écran (`bas` : liens, « Jouer »,
-//! « Multijoueur », « Quitter »). Refait en entier à chaque changement de choix (hors
-//! de la boucle de jeu).
+//! Accueil (docs/CHARTE-UI.md) : la scène d'abord. Plein écran sur la photo du village
+//! de l'arène (`fond`), le héros 3D au premier plan à gauche ; par-dessus, le logo en
+//! haut à gauche, les raccourcis dessous (`raccourcis`), le profil et « Apparence » en
+//! haut à droite, et en bas au centre le choix de partie (`bas` : tuile de la classe,
+//! vignette de l'arène, grand « JOUER »). Un clic sur la tuile ou la vignette ouvre son
+//! volet (`volet`) ; un choix le referme. Refait en entier à chaque changement (hors de
+//! la boucle de jeu).
 
 mod arenes;
 mod bas;
 mod classes;
+mod raccourcis;
+mod volet;
 
 use bevy::prelude::*;
 
-use super::{ActionMenu, Icones};
+use super::{ActionMenu, Icones, Volet};
 use crate::ecrans::charte::{self, AIDE, IVOIRE, MARGE, Relief, T_CORPS};
 use crate::hud::police::TextePixel;
 use crate::lancement::{ChoixPartie, DonneesJeu};
 use crate::sauvegarde::Sauvegarde;
 
 pub(super) const FOND: Color = Color::srgb_u8(0x0b, 0x0e, 0x16);
-/// Hauteur du bandeau du haut et du pied d'écran.
-const HAUT: f32 = 72.0;
-const PIED: f32 = 88.0;
-/// Largeur des colonnes de la classe et de l'arène.
-const LARGEUR_CLASSE: f32 = 300.0;
-const LARGEUR_ARENE: f32 = 320.0;
-/// Hauteur du héros au-dessus d'« Apparence » (ses pieds sur la même ligne).
-const PLACE_HEROS: f32 = 468.0;
+/// Marge du haut de l'écran.
+const HAUT: f32 = 24.0;
 const OMBRE: Color = Color::srgba(0.0, 0.0, 0.0, 0.85);
 
 /// Outils de construction : commandes, polices et icônes.
@@ -130,7 +127,7 @@ pub fn construire(
     dj: &DonneesJeu,
     sauvegarde: &Sauvegarde,
     ic: &mut Icones,
-    choix: ChoixPartie,
+    (choix, ouvert): (ChoixPartie, Volet),
 ) -> Entity {
     let racine = commandes
         .spawn((
@@ -138,78 +135,100 @@ pub fn construire(
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
-                flex_direction: FlexDirection::Column,
                 ..default()
             },
-            // Transparent : la photo et le héros 3D sont dessous
+            // Transparent : la scène et le héros 3D sont dessous
         ))
         .id();
     let mut p = Pinceau { c: commandes, ic };
-    bandeau(&mut p, dj, sauvegarde, choix, racine);
-    let milieu = p.noeud(
+    let gauche = p.noeud(
         racine,
         Node {
-            flex_grow: 1.0,
-            min_height: Val::ZERO,
-            padding: UiRect::horizontal(Val::Px(MARGE)),
-            column_gap: Val::Px(24.0),
-            align_items: AlignItems::FlexStart,
-            ..default()
+            flex_direction: FlexDirection::Column,
+            row_gap: Val::Px(28.0),
+            ..place(Some(Val::Px(MARGE)), None, Some(Val::Px(HAUT)), None)
         },
     );
-    let colonne = |largeur| Node {
-        width: Val::Px(largeur),
-        flex_shrink: 0.0,
-        max_height: Val::Percent(100.0),
-        ..default()
-    };
-    let gauche = charte::panneau(p.c, milieu, colonne(LARGEUR_CLASSE));
-    classes::construire(&mut p, dj, sauvegarde, choix, gauche);
-    centre(&mut p, milieu);
-    let droite = charte::panneau(p.c, milieu, colonne(LARGEUR_ARENE));
-    arenes::construire(&mut p, dj, sauvegarde, choix, droite);
-    bas::construire(&mut p, dj, sauvegarde, choix, racine);
+    logo(&mut p, gauche);
+    raccourcis::construire(&mut p, dj, sauvegarde, choix, gauche);
+    profil(&mut p, dj, sauvegarde, choix, racine);
+    bas::construire(&mut p, dj, sauvegarde, (choix, ouvert), racine);
+    volet::construire(&mut p, dj, sauvegarde, (choix, ouvert), racine);
     racine
 }
 
-/// Bandeau du haut : logo à gauche, bouton du profil (visage, pseudo) et dé à droite.
-fn bandeau(
+/// Une ligne du logo : ombre décalée d'un pixel de police, lettres cerclées de noir,
+/// moitié haute plus claire (relief de pierre ou d'or).
+fn ligne_logo(p: &mut Pinceau, parent: Entity, t: &str, (bas, haut): (Color, Color), taille: f32) {
+    let l = p.noeud(parent, Node::default());
+    let d = Some(Val::Px(taille));
+    let ombre = TextePixel::nouveau(t, Color::srgb_u8(0x14, 0x0e, 0x08), taille).contour();
+    p.c.spawn((ombre, place(d, None, d, None), ChildOf(l)));
+    p.c.spawn((TextePixel::nouveau(t, bas, taille).contour(), ChildOf(l)));
+    let moitie = p.noeud(
+        l,
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(52.0),
+            overflow: Overflow::clip(),
+            ..place(Some(Val::ZERO), None, Some(Val::ZERO), None)
+        },
+    );
+    let clair = TextePixel::nouveau(t, haut, taille).contour();
+    p.c.spawn((
+        clair,
+        Node {
+            flex_shrink: 0.0,
+            ..default()
+        },
+        ChildOf(moitie),
+    ));
+}
+
+/// Logo sur deux lignes : BLOCK en pierre claire, SURVIVORS en or, de même largeur.
+fn logo(p: &mut Pinceau, parent: Entity) {
+    let l = p.noeud(
+        parent,
+        Node {
+            flex_direction: FlexDirection::Column,
+            align_items: AlignItems::FlexStart,
+            row_gap: Val::Px(6.0),
+            ..default()
+        },
+    );
+    let pierre = (
+        Color::srgb_u8(0xa9, 0xa9, 0xa2),
+        Color::srgb_u8(0xee, 0xec, 0xe4),
+    );
+    ligne_logo(p, l, "BLOCK", pierre, 9.0);
+    let or = (
+        Color::srgb_u8(0xd2, 0x8c, 0x1c),
+        Color::srgb_u8(0xff, 0xd8, 0x5a),
+    );
+    ligne_logo(p, l, "SURVIVORS", or, 5.0);
+}
+
+/// En haut à droite : « Apparence », le dé du pseudo, le profil (visage, pseudo).
+fn profil(
     p: &mut Pinceau,
     dj: &DonneesJeu,
     sauvegarde: &Sauvegarde,
     choix: ChoixPartie,
     racine: Entity,
 ) {
-    let b = p.noeud(
-        racine,
-        Node {
-            height: Val::Px(HAUT),
-            flex_shrink: 0.0,
-            padding: UiRect::horizontal(Val::Px(MARGE)),
-            justify_content: JustifyContent::SpaceBetween,
-            align_items: AlignItems::Center,
-            ..default()
-        },
-    );
-    let logo = p.noeud(
-        b,
-        Node {
-            column_gap: Val::Px(16.0),
-            ..default()
-        },
-    );
-    p.c.spawn((TextePixel::nouveau("Block", IVOIRE, 4.0), ChildOf(logo)));
-    p.c.spawn((
-        TextePixel::nouveau("Survivors", charte::OR_VIF, 4.0),
-        ChildOf(logo),
-    ));
     let droite = p.noeud(
-        b,
+        racine,
         Node {
             column_gap: Val::Px(8.0),
             align_items: AlignItems::Center,
-            ..default()
+            ..place(None, Some(Val::Px(MARGE)), Some(Val::Px(HAUT)), None)
         },
+    );
+    p.bouton(
+        droite,
+        "Apparence",
+        Relief::SECONDAIRE,
+        ActionMenu::OuvrirProfil,
     );
     bas::de(p, droite);
     let profil = charte::bouton_relief(
@@ -229,43 +248,4 @@ fn bandeau(
     super::profil::visage(p.c, p.ic, profil, &apparence.skin, 28.0);
     p.texte(profil, &sauvegarde.profil.pseudo, true, T_CORPS, IVOIRE);
     p.texte(profil, "⌄", true, T_CORPS, AIDE);
-}
-
-/// Colonne du héros (dessiné dessous par la caméra 3D) : ombre au sol, « Apparence »
-/// sous ses pieds.
-fn centre(p: &mut Pinceau, milieu: Entity) {
-    let c = p.noeud(
-        milieu,
-        Node {
-            flex_grow: 1.0,
-            flex_direction: FlexDirection::Column,
-            align_items: AlignItems::Center,
-            padding: UiRect::top(Val::Px(PLACE_HEROS)),
-            ..default()
-        },
-    );
-    let sol = p.noeud(
-        c,
-        Node {
-            width: Val::Px(220.0),
-            height: Val::Px(40.0),
-            margin: UiRect::left(Val::Px(-110.0)),
-            ..place(
-                Some(Val::Percent(50.0)),
-                None,
-                Some(Val::Px(PLACE_HEROS - 44.0)),
-                None,
-            )
-        },
-    );
-    let ombre = RadialGradient::new(
-        UiPosition::CENTER,
-        RadialGradientShape::FarthestSide,
-        vec![
-            ColorStop::new(Color::srgba(0.0, 0.0, 0.0, 0.55), Val::Percent(0.0)),
-            ColorStop::new(Color::srgba(0.0, 0.0, 0.0, 0.0), Val::Percent(100.0)),
-        ],
-    );
-    p.c.entity(sol).insert(BackgroundGradient::from(ombre));
-    p.bouton(c, "Apparence", Relief::SECONDAIRE, ActionMenu::OuvrirProfil);
 }

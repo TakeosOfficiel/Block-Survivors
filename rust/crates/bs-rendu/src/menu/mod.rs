@@ -64,6 +64,17 @@ pub enum ActionMenu {
     /// Ouvre la page Multijoueur.
     OuvrirMulti,
     Multi(multijoueur::ActionMulti),
+    /// Ouvre ce volet de l'accueil (le referme s'il l'est déjà).
+    Volet(Volet),
+}
+
+/// Volet ouvert sur l'accueil, au-dessus du choix de partie.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub enum Volet {
+    #[default]
+    Aucun,
+    Classes,
+    Arenes,
 }
 
 /// Page affichée.
@@ -104,6 +115,8 @@ pub struct Menu {
     depose: Option<std::path::PathBuf>,
     /// Pseudo proposé pour un nouveau profil.
     suggestion: String,
+    /// Volet ouvert de l'accueil.
+    volet: Volet,
 }
 
 /// Icônes des pages (chargées à la demande).
@@ -133,7 +146,7 @@ fn construire(
 ) -> Entity {
     let (choix, page) = (menu.choix, menu.page);
     let racine = match page {
-        Page::Accueil => vue::construire(commandes, dj, sauvegarde, ic, choix),
+        Page::Accueil => vue::construire(commandes, dj, sauvegarde, ic, (choix, menu.volet)),
         Page::Talents(etat) => {
             let c = talents::Contexte {
                 dj,
@@ -229,6 +242,11 @@ pub fn entrer(
         validee: None,
         depose: None,
         suggestion: profils::suggestion(),
+        volet: match std::env::var("BS_VOLET").as_deref() {
+            Ok("classes") => Volet::Classes,
+            Ok("arenes") => Volet::Arenes,
+            _ => Volet::Aucun,
+        },
     };
     let mut ic = Icones {
         serveur: &serveur,
@@ -292,10 +310,13 @@ pub fn gerer(
     let accueil = menu.page == Page::Accueil;
     let clavier = !menu.clavier_pris && menu.saisie.is_none() && !options.ouvert();
     let entree = touches.any_just_pressed([KeyCode::Enter, KeyCode::NumpadEnter]);
+    let echap = clavier && touches.just_pressed(KeyCode::Escape);
     if auto || (accueil && entree && clavier) {
         action = Some(ActionMenu::Jouer);
-    } else if !accueil && clavier && touches.just_pressed(KeyCode::Escape) {
+    } else if echap && !accueil {
         action = Some(ActionMenu::Fermer);
+    } else if echap && menu.volet != Volet::Aucun {
+        action = Some(ActionMenu::Volet(Volet::Aucun));
     }
     let mut suite = None;
     // Quitter la page Multijoueur, c'est quitter son salon
@@ -350,8 +371,17 @@ pub fn gerer(
         _ if suite.is_some() => {}
         None if menu.a_refaire => {}
         None => return,
-        Some(ActionMenu::Classe(k)) => choix.personnage = k,
-        Some(ActionMenu::Arene(k)) => choix.arene = k,
+        Some(ActionMenu::Classe(k)) => {
+            choix.personnage = k;
+            menu.volet = Volet::Aucun;
+        }
+        Some(ActionMenu::Arene(k)) => {
+            choix.arene = k;
+            menu.volet = Volet::Aucun;
+        }
+        Some(ActionMenu::Volet(v)) => {
+            menu.volet = if menu.volet == v { Volet::Aucun } else { v };
+        }
         Some(ActionMenu::Talents) => page = page_talents(&dj, &sauvegarde, choix.personnage),
         Some(ActionMenu::Collection) => {
             page = Page::Collection(collection::monde_de_l_arene(&dj, choix.arene));
@@ -415,9 +445,10 @@ pub fn gerer(
         lancement::memoriser(&dj, &sauvegarde, choix);
     }
     if page != menu.page {
-        // Une page quittée oublie sa saisie et son message
+        // Une page quittée oublie sa saisie, son message et son volet
         menu.saisie = None;
         menu.message = None;
+        menu.volet = Volet::Aucun;
     }
     commandes.entity(menu.racine).despawn();
     menu.choix = choix;

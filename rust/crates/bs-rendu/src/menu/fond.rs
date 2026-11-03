@@ -1,6 +1,7 @@
-//! Fond de l'accueil (styles.css `#menu-fond`, `.menu-voile`) : la photo de l'arène
-//! choisie en plein écran, recadrée comme `background-size: cover`, qui apparaît en
-//! fondu à chaque changement d'arène, sous un voile qui assombrit les bords. Elle est
+//! Fond de l'accueil : la scène de l'arène choisie (son village vu de l'entrée,
+//! src/assets/accueil, photographiée avec `BS_SCENE`) en plein écran, recadrée comme
+//! `background-size: cover`, qui apparaît en fondu à chaque changement d'arène, sous un
+//! voile léger (plus sombre derrière le logo et le choix de partie). Elle est
 //! dessinée par une caméra 2D sous celle du héros (ordre −1), sur sa propre couche.
 //! `Couvrir` recadre de même une image d'interface (vignettes des arènes).
 
@@ -8,9 +9,31 @@ use bevy::camera::visibility::RenderLayers;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 
+use std::collections::HashMap;
+
 use super::{ElementMenu, Menu, Page};
-use crate::chargement::{Photos, photo};
+use crate::chargement::decoder;
 use crate::lancement::DonneesJeu;
+
+/// Scènes de l'accueil, par arène.
+const SCENES: [(&str, &[u8]); 4] = [
+    (
+        "prairie",
+        include_bytes!("../../../../../src/assets/accueil/prairie.webp"),
+    ),
+    (
+        "mine",
+        include_bytes!("../../../../../src/assets/accueil/mine.webp"),
+    ),
+    (
+        "nether",
+        include_bytes!("../../../../../src/assets/accueil/nether.webp"),
+    ),
+    (
+        "map_mushroom",
+        include_bytes!("../../../../../src/assets/accueil/map_mushroom.webp"),
+    ),
+];
 
 /// Couche de rendu de la photo (les autres caméras ne la voient pas).
 const COUCHE: usize = 1;
@@ -50,19 +73,19 @@ pub fn creer(commandes: &mut Commands, fond: Color) {
     ));
     let sombre = |a: f32| Color::srgba_u8(6, 8, 14, (a * 255.0) as u8);
     let arret = |a: f32, p: f32| ColorStop::new(sombre(a), Val::Percent(p));
+    // Logo et raccourcis à gauche : un peu d'ombre derrière eux, la scène reste lisible
     let cotes = LinearGradient::to_right(vec![
-        arret(0.92, 0.0),
-        arret(0.55, 26.0),
-        arret(0.05, 40.0),
-        arret(0.05, 60.0),
-        arret(0.55, 74.0),
-        arret(0.92, 100.0),
+        arret(0.55, 0.0),
+        arret(0.2, 22.0),
+        arret(0.0, 36.0),
+        arret(0.0, 80.0),
+        arret(0.3, 100.0),
     ]);
     let haut_bas = LinearGradient::to_bottom(vec![
         arret(0.35, 0.0),
-        arret(0.0, 18.0),
-        arret(0.0, 60.0),
-        arret(0.85, 100.0),
+        arret(0.0, 20.0),
+        arret(0.0, 62.0),
+        arret(0.7, 100.0),
     ]);
     commandes.spawn((
         Name::new("voile du menu"),
@@ -94,7 +117,10 @@ fn recadrage(taille_image: Vec2, cible: Vec2) -> Rect {
 pub fn suivre(
     menu: Res<Menu>,
     dj: Res<DonneesJeu>,
-    (mut photos, mut images): (ResMut<Photos>, ResMut<Assets<Image>>),
+    (mut scenes, mut images): (
+        Local<HashMap<&'static str, Handle<Image>>>,
+        ResMut<Assets<Image>>,
+    ),
     temps: Res<Time>,
     fenetres: Query<&Window, With<PrimaryWindow>>,
     mut q: Query<(&mut Sprite, &mut Visibility), With<PhotoFond>>,
@@ -104,9 +130,9 @@ pub fn suivre(
     };
     let voulue = (menu.page == Page::Accueil)
         .then(|| {
-            photo(
+            scene(
                 &mut images,
-                &mut photos,
+                &mut scenes,
                 &dj.arenes[menu.choix.arene].def.id,
             )
         })
@@ -135,6 +161,21 @@ pub fn suivre(
     if sprite.custom_size != voulue {
         sprite.custom_size = voulue;
     }
+}
+
+/// Scène de l'arène, décodée à la première demande puis gardée.
+fn scene(
+    images: &mut Assets<Image>,
+    scenes: &mut HashMap<&'static str, Handle<Image>>,
+    id: &str,
+) -> Option<Handle<Image>> {
+    let (cle, octets) = SCENES.iter().find(|(s, _)| *s == id)?;
+    if let Some(h) = scenes.get(cle) {
+        return Some(h.clone());
+    }
+    let h = decoder(images, octets, id)?;
+    scenes.insert(cle, h.clone());
+    Some(h)
 }
 
 /// Recadre les images `Couvrir` à la taille de leur nœud.

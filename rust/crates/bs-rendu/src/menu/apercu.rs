@@ -22,8 +22,11 @@ use crate::textures::Textures;
 const ANGLE_INITIAL: f32 = 0.45;
 /// Radians par pixel glissé.
 const SENSIBILITE: f32 = 0.012;
-/// Place du héros sur l'accueil (sur la page Profil : l'origine).
-const POSITION_ACCUEIL: Vec3 = Vec3::new(0.0, 0.45, -1.8);
+/// Place du héros sur l'accueil : au premier plan, à gauche du choix de partie, les
+/// pieds sur le chemin (sur la page Profil : l'origine).
+const POSITION_ACCUEIL: Vec3 = Vec3::new(-2.3, -0.45, -2.2);
+/// Sur l'accueil, le héros se tourne vers la droite (vers les mobs).
+const TOUR_ACCUEIL: f32 = 0.5;
 
 /// Héros affiché : ce qu'il porte, ses rendus une fois les textures arrivées.
 #[derive(Resource)]
@@ -167,13 +170,14 @@ pub fn animer(
     let j = rendus.joueur();
     animation.avancer(&j.modele, temps.delta_secs().min(0.1), 0.0);
     calculer_rotations(&j.modele, animation, &mut j.pose.rotations);
-    // Accueil : plus loin et plus haut, au-dessus des textes du centre
-    j.pose.position = if menu.page == Page::Accueil {
+    // Accueil : au premier plan, à gauche
+    let accueil = menu.page == Page::Accueil;
+    j.pose.position = if accueil {
         POSITION_ACCUEIL
     } else {
         Vec3::ZERO
     };
-    j.pose.angle = *angle;
+    j.pose.angle = *angle + if accueil { TOUR_ACCUEIL } else { 0.0 };
     j.ajouter(&mut commandes, &mut q);
     rendus.poser_armure(&mut commandes, &mut q);
     for r in &mut rendus.liste {

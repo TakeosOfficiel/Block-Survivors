@@ -1,7 +1,7 @@
-//! Panneau de l'arène de l'accueil : les arènes dans l'ordre, la choisie dépliée (grande
-//! vignette, liseré d'or, coche, puis description, mobs, boss à venir et records collés
-//! dessous), les autres en lignes de 52 (miniature, nom, ou cadenas et condition) ;
-//! en bas, le bouton de la Collection (classée par monde).
+//! Volet des arènes de l'accueil : à gauche les arènes dans l'ordre, en lignes de 52
+//! (miniature, nom, ou cadenas et condition de déblocage), la choisie marquée d'un
+//! liseré d'or ; à droite la choisie dépliée (grande vignette, description, mobs, boss à
+//! venir, records) et le bouton de la Collection (classée par monde).
 
 use bevy::prelude::*;
 use bs_donnees::arenes::Arene;
@@ -23,7 +23,7 @@ pub(super) fn construire(
     dj: &DonneesJeu,
     sauvegarde: &Sauvegarde,
     choix: ChoixPartie,
-    parent: Entity,
+    (parent, detail): (Entity, Entity),
 ) {
     p.section(parent, "Arène");
     let liste = p.noeud(
@@ -35,14 +35,11 @@ pub(super) fn construire(
         },
     );
     for (k, a) in dj.arenes.iter().enumerate() {
-        if k == choix.arene {
-            choisie(p, dj, sauvegarde, a.def, liste);
-        } else {
-            ligne(p, sauvegarde, a.def, k, liste);
-        }
+        ligne(p, sauvegarde, a.def, (k, k == choix.arene), liste);
     }
+    choisie(p, dj, sauvegarde, dj.arenes[choix.arene].def, detail);
     let b = p.bouton(
-        parent,
+        detail,
         "Collection",
         Relief::SECONDAIRE,
         ActionMenu::Collection,
@@ -53,7 +50,7 @@ pub(super) fn construire(
 }
 
 /// Photo de l'arène couvrant son parent (grisée si `gris`).
-fn photo(p: &mut Pinceau, a: &Arene, gris: bool, parent: Entity) {
+pub(super) fn photo(p: &mut Pinceau, a: &Arene, gris: bool, parent: Entity) {
     if let Some(image) = p.ic.photos.decodee(&a.id) {
         let g = if gris { 0.3 } else { 1.0 };
         p.c.spawn((
@@ -69,7 +66,7 @@ fn photo(p: &mut Pinceau, a: &Arene, gris: bool, parent: Entity) {
     }
 }
 
-/// Arène choisie : grande vignette (photo, voile, nom, coche) et ses détails.
+/// Arène choisie : grande vignette (photo, voile, nom) et ses détails.
 fn choisie(p: &mut Pinceau, dj: &DonneesJeu, sauvegarde: &Sauvegarde, a: &Arene, parent: Entity) {
     let bloc = p.noeud(
         parent,
@@ -86,7 +83,7 @@ fn choisie(p: &mut Pinceau, dj: &DonneesJeu, sauvegarde: &Sauvegarde, a: &Arene,
     let v = p.noeud(
         bloc,
         Node {
-            height: Val::Px(88.0),
+            height: Val::Px(150.0),
             flex_shrink: 0.0,
             overflow: Overflow::clip(),
             ..default()
@@ -106,16 +103,26 @@ fn choisie(p: &mut Pinceau, dj: &DonneesJeu, sauvegarde: &Sauvegarde, a: &Arene,
     let bas = Some(Val::Px(8.0));
     let n = p.noeud(
         v,
-        place(Some(Val::Px(12.0)), Some(Val::Px(34.0)), None, bas),
+        place(Some(Val::Px(12.0)), Some(Val::Px(12.0)), None, bas),
     );
-    p.texte(n, &a.nom, true, T_CORPS + 1.0, IVOIRE);
-    let n = p.noeud(v, place(None, Some(Val::Px(10.0)), None, bas));
-    p.texte(n, "✓", true, 20.0, OR_VIF);
+    p.texte(n, &a.nom, true, charte::T_SECTION, IVOIRE);
     details(p, dj, sauvegarde, a, bloc);
 }
 
-/// Autre arène : miniature, nom, ou cadenas et condition si verrouillée.
-fn ligne(p: &mut Pinceau, sauvegarde: &Sauvegarde, a: &Arene, k: usize, parent: Entity) {
+/// Ligne d'une arène : miniature, nom, ou cadenas et condition si verrouillée ; la
+/// choisie avec liseré et coche.
+fn ligne(
+    p: &mut Pinceau,
+    sauvegarde: &Sauvegarde,
+    a: &Arene,
+    (k, choisie): (usize, bool),
+    parent: Entity,
+) {
+    let relief = if choisie {
+        Relief::CHOISI
+    } else {
+        Relief::SECONDAIRE
+    };
     let verrou = sauvegarde.progression.verrou(TypeDeblocage::Arene, &a.id);
     let mut l = p.c.spawn((
         Node {
@@ -128,13 +135,16 @@ fn ligne(p: &mut Pinceau, sauvegarde: &Sauvegarde, a: &Arene, k: usize, parent: 
             border_radius: BorderRadius::all(Val::Px(2.0)),
             ..default()
         },
-        Relief::SECONDAIRE.composants(),
+        relief.composants(),
         ChildOf(parent),
     ));
     if verrou.is_none() {
         l.insert((Button, ActionMenu::Arene(k)));
     }
     let l = l.id();
+    if choisie {
+        super::classes::lisere(p, l);
+    }
     let mini = p.noeud(
         l,
         Node {
@@ -160,6 +170,8 @@ fn ligne(p: &mut Pinceau, sauvegarde: &Sauvegarde, a: &Arene, k: usize, parent: 
     if let Some(v) = verrou {
         p.texte(textes, &v.texte, false, T_AIDE - 1.0, AIDE);
         charte::cadenas(p.c, l, 14.0, AIDE);
+    } else if choisie {
+        p.texte(l, "✓", true, 20.0, OR_VIF);
     }
 }
 

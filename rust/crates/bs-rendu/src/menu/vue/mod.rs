@@ -10,6 +10,7 @@ mod arenes;
 mod bas;
 mod classes;
 mod colonne;
+mod logo;
 mod volet;
 
 pub use colonne::survoler_liens;
@@ -151,64 +152,12 @@ pub fn construire(
             ..place(Some(Val::Px(MARGE)), None, Some(Val::Px(HAUT + 12.0)), None)
         },
     );
-    logo(&mut p, gauche);
+    logo::construire(&mut p, gauche);
     colonne::construire(&mut p, dj, sauvegarde, choix, gauche);
     profil(&mut p, dj, sauvegarde, choix, racine);
     bas::construire(&mut p, sauvegarde, racine);
     volet::construire(&mut p, dj, sauvegarde, (choix, ouvert), racine);
     racine
-}
-
-/// Une ligne du logo : ombre décalée d'un pixel de police, lettres cerclées de noir,
-/// moitié haute plus claire (relief de pierre ou d'or).
-fn ligne_logo(p: &mut Pinceau, parent: Entity, t: &str, (bas, haut): (Color, Color), taille: f32) {
-    let l = p.noeud(parent, Node::default());
-    let d = Some(Val::Px(taille));
-    let ombre = TextePixel::nouveau(t, Color::srgb_u8(0x14, 0x0e, 0x08), taille).contour();
-    p.c.spawn((ombre, place(d, None, d, None), ChildOf(l)));
-    p.c.spawn((TextePixel::nouveau(t, bas, taille).contour(), ChildOf(l)));
-    let moitie = p.noeud(
-        l,
-        Node {
-            width: Val::Percent(100.0),
-            height: Val::Percent(52.0),
-            overflow: Overflow::clip(),
-            ..place(Some(Val::ZERO), None, Some(Val::ZERO), None)
-        },
-    );
-    let clair = TextePixel::nouveau(t, haut, taille).contour();
-    p.c.spawn((
-        clair,
-        Node {
-            flex_shrink: 0.0,
-            ..default()
-        },
-        ChildOf(moitie),
-    ));
-}
-
-/// Logo sur deux lignes : BLOCK en pierre claire, SURVIVORS en or, de même largeur.
-fn logo(p: &mut Pinceau, parent: Entity) {
-    let l = p.noeud(
-        parent,
-        Node {
-            flex_direction: FlexDirection::Column,
-            align_items: AlignItems::FlexStart,
-            row_gap: Val::Px(8.0),
-            margin: UiRect::bottom(Val::Px(36.0)),
-            ..default()
-        },
-    );
-    let pierre = (
-        Color::srgb_u8(0xa9, 0xa9, 0xa2),
-        Color::srgb_u8(0xee, 0xec, 0xe4),
-    );
-    ligne_logo(p, l, "BLOCK", pierre, 11.0);
-    let or = (
-        Color::srgb_u8(0xd2, 0x8c, 0x1c),
-        Color::srgb_u8(0xff, 0xd8, 0x5a),
-    );
-    ligne_logo(p, l, "SURVIVORS", or, 6.1);
 }
 
 /// En haut à droite : « Apparence », le dé du pseudo, le profil (visage, pseudo).

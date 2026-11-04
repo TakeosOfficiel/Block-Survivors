@@ -1,8 +1,8 @@
 //! Fond de l'accueil : la scène de l'arène choisie (son village vu de l'entrée,
 //! src/assets/accueil, photographiée avec `BS_SCENE`) en plein écran, recadrée comme
-//! `background-size: cover` (aussi sous la page des Talents), qui apparaît en fondu à
-//! chaque changement d'arène, sous un voile léger (profond à gauche, derrière la
-//! colonne du menu). Elle est dessinée par une caméra 2D sous celle du héros (ordre −1), sur sa propre couche.
+//! `background-size: cover`, qui apparaît en fondu à chaque changement d'arène, sous un
+//! voile léger (profond à gauche, derrière la colonne du menu). Elle est
+//! dessinée par une caméra 2D sous celle du héros (ordre −1), sur sa propre couche.
 //! `Couvrir` recadre de même une image d'interface (vignettes des arènes).
 
 use bevy::camera::visibility::RenderLayers;
@@ -155,7 +155,7 @@ pub fn suivre(
     let Ok((mut sprite, mut visible)) = q.single_mut() else {
         return;
     };
-    let voulue = matches!(menu.page, Page::Accueil | Page::Talents(_))
+    let voulue = (menu.page == Page::Accueil)
         .then(|| {
             scene(
                 &mut images,

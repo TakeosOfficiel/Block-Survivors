@@ -1,15 +1,16 @@
-//! Page des Talents du menu, posée sur la scène de l'accueil et à sa charte : à gauche
-//! l'arbre choisi en arcs (`arcs`), du talent de base, en bas, vers les talents finaux ;
+//! Page des Talents du menu, plein écran sur fond sobre, à la charte de l'accueil : à
+//! gauche l'arbre choisi en branches (`branches`) : le tronc en bas, puis une colonne
+//! colorée par branche qui monte jusqu'aux talents finaux ;
 //! à droite un panneau charbon (`cote`) avec les classes, les deux arbres (qui se
 //! partagent les points), les points restants et la fiche du talent choisi (`fiche`).
 //! Un clic choisit une case, un second clic sur la même l'apprend. « ‹ Retour » et
 //! « Réinitialiser » en bas à gauche ; Échap ramène à l'accueil.
 
-mod arcs;
+mod branches;
 mod cote;
 mod fiche;
 
-pub use arcs::survoler_cases;
+pub use branches::survoler_cases;
 
 use bevy::prelude::*;
 use bs_donnees::progression::{Arbre, Noeud};
@@ -207,7 +208,7 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones) -> En
                 column_gap: Val::Px(24.0),
                 ..default()
             },
-            BackgroundColor(Color::srgba(0.02, 0.03, 0.05, 0.9)),
+            BackgroundColor(charte::FOND),
         ))
         .id();
     let gauche = commandes
@@ -223,7 +224,7 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones) -> En
             ChildOf(racine),
         ))
         .id();
-    arcs::construire(commandes, c, ic, gauche);
+    branches::construire(commandes, c, ic, gauche);
     cote::construire(commandes, c, ic, racine);
     cote::pied(commandes, c, ic, racine);
     racine

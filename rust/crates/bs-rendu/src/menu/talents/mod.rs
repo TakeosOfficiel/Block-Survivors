@@ -7,10 +7,11 @@
 //! « Réinitialiser » en bas à gauche ; Échap ramène à l'accueil.
 
 mod branches;
+mod case;
 mod cote;
 mod fiche;
 
-pub use branches::survoler_cases;
+pub use case::survoler_cases;
 
 use bevy::prelude::*;
 use bs_donnees::progression::{Arbre, Noeud};

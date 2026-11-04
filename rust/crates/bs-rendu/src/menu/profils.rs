@@ -200,20 +200,13 @@ fn scene(
     aide(c, ic, d, t);
 
     let s = section(c, ic, d, "TRANSFERT");
-    let r = air::rangee(c, s, 18.0);
-    air::lien(
-        c,
-        ic,
-        r,
-        "Exporter ce profil",
-        (18.0, OR_VIF),
-        p(ActionProfils::Exporter),
-    );
+    let export = p(ActionProfils::Exporter);
+    air::lien(c, ic, s, "Exporter ce profil", (20.0, OR_VIF), export);
     aide(
         c,
         ic,
-        r,
-        "ou glisse un fichier .bssave sur la fenêtre pour l'importer",
+        s,
+        "Pour importer : glisse un fichier .bssave sur la fenêtre.",
     );
     if let Some(m) = &menu.message {
         let couleur = if m.starts_with("Profil exporté") {

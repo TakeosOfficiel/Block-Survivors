@@ -9,7 +9,8 @@ use std::f64::consts::PI;
 use bs_commun::maths::{cos, longueur, sin};
 use bs_donnees::Intervalle;
 use bs_donnees::arenes::ChoixEnnemi;
-use bs_donnees::regles::CalendrierBoss;
+use bs_donnees::regles::{Apparitions, CalendrierBoss};
+use bs_monde::{BLOQUE_MARCHE, CarteMonde};
 
 use crate::evenements::Evenement;
 use crate::partie::Partie;
@@ -27,9 +28,36 @@ fn arrondi_js(x: f32) -> f32 {
 }
 
 /// Directeur des apparitions ordinaires.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct DirecteurApparitions {
     minuterie: f32,
+    /// Part du plafond d'ennemis simultanés, selon la surface marchable de la map.
+    facteur_surface: f32,
+}
+
+impl Default for DirecteurApparitions {
+    fn default() -> Self {
+        Self {
+            minuterie: 0.0,
+            facteur_surface: 1.0,
+        }
+    }
+}
+
+impl DirecteurApparitions {
+    /// Plafond réduit au prorata sur une map plus petite que `surface_reference`.
+    pub fn selon_surface(carte: &CarteMonde, a: &Apparitions) -> Self {
+        let marchables = carte
+            .drapeaux
+            .iter()
+            .filter(|&&f| f & BLOQUE_MARCHE == 0)
+            .count() as f32;
+        let facteur = (marchables / a.surface_reference).clamp(a.facteur_surface_min, 1.0);
+        Self {
+            facteur_surface: facteur,
+            ..Self::default()
+        }
+    }
 }
 
 /// Boss ou mini-boss.
@@ -73,8 +101,9 @@ impl Partie {
         }
         self.directeur.minuterie += interpoler(&a.intervalle, t);
 
-        let places =
-            libm::floorf(interpoler(&a.max_simultanes, t)) as i32 - self.ennemis.nombre as i32;
+        let places = libm::floorf(interpoler(&a.max_simultanes, t) * self.directeur.facteur_surface)
+            as i32
+            - self.ennemis.nombre as i32;
         if places <= 0 {
             return;
         }
@@ -313,5 +342,24 @@ impl Partie {
         if secousse > 0.0 {
             self.ev.secousse(secousse);
         }
+    }
+}
+
+#[cfg(test)]
+mod essais {
+    use super::*;
+
+    /// Une arène du jeu garde tout son plafond ; une petite map en reçoit moins, sans
+    /// descendre sous le minimum.
+    #[test]
+    fn plafond_selon_surface() {
+        let d = bs_donnees::Donnees::embarquees().expect("données embarquées");
+        let a = &d.regles.apparitions;
+        let grande = DirecteurApparitions::selon_surface(&CarteMonde::nouvelle(60, 60), a);
+        assert_eq!(grande.facteur_surface, 1.0);
+        let petite = DirecteurApparitions::selon_surface(&CarteMonde::nouvelle(30, 30), a);
+        assert!((petite.facteur_surface - 900.0 / a.surface_reference).abs() < 1e-6);
+        let minuscule = DirecteurApparitions::selon_surface(&CarteMonde::nouvelle(5, 5), a);
+        assert_eq!(minuscule.facteur_surface, a.facteur_surface_min);
     }
 }

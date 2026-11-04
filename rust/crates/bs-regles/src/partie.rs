@@ -109,6 +109,7 @@ impl Partie {
     ) -> Self {
         let etat = EtatPartie::nouvel(d, arene, index_personnage);
         let flux = ChampDeFlux::nouveau(&carte);
+        let directeur = DirecteurApparitions::selon_surface(&carte, &d.regles.apparitions);
         let demi_cote = arene.largeur.max(arene.profondeur) / 2.0 + 1.0;
         let vue = VueCamera::nouvelle(etat.joueur.x, etat.joueur.z, 1280.0 / 720.0);
         let passifs = Passifs::nouveaux(etat.personnage.bonus);
@@ -138,7 +139,7 @@ impl Partie {
             equipement: Equipement::nouveau(d),
             butin: Butin::default(),
             armes: SystemesArmes::nouveaux(d),
-            directeur: DirecteurApparitions::default(),
+            directeur,
             directeur_boss: DirecteurBoss::nouveau(SorteBoss::Boss, &d.regles.boss),
             directeur_mini_boss: DirecteurBoss::nouveau(SorteBoss::MiniBoss, &d.regles.mini_boss),
             prolongation: false,

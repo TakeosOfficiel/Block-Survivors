@@ -20,6 +20,22 @@ pub struct Apparitions {
     pub multiplicateur_pv: Intervalle,
     pub distance_min: f32,
     pub dispersion_groupe: f32,
+    /// Surface marchable (cases) à partir de laquelle une map reçoit tous ses mobs ;
+    /// en dessous, le plafond `max_simultanes` baisse au prorata (absent du jeu TS).
+    #[serde(default = "surface_reference")]
+    pub surface_reference: f32,
+    /// Part minimale du plafond gardée sur une toute petite map.
+    #[serde(default = "facteur_surface_min")]
+    pub facteur_surface_min: f32,
+}
+
+/// Un peu moins que les arènes du jeu (60 × 60, environ 3 400 cases marchables).
+fn surface_reference() -> f32 {
+    3000.0
+}
+
+fn facteur_surface_min() -> f32 {
+    0.3
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

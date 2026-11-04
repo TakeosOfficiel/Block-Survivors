@@ -245,7 +245,13 @@ fn bandeau(commandes: &mut Commands, c: &Contexte, liste: Entity, k: usize, cart
         carte.famille.nom().to_uppercase()
     };
     c.ecrit(commandes, gauche, &surtitre, (Style::Grasse, 13.0, famille));
-    c.ecrit(commandes, gauche, &carte.nom, (Style::Logo, 30.0, IVOIRE));
+    // Nom long (« Amulette du héros du village ») : plus petit, pour tenir sur une ligne
+    let taille = if carte.nom.chars().count() > 22 {
+        24.0
+    } else {
+        30.0
+    };
+    c.ecrit(commandes, gauche, &carte.nom, (Style::Logo, taille, IVOIRE));
     let filet = commandes
         .spawn((
             Node {
@@ -283,7 +289,9 @@ fn bandeau(commandes: &mut Commands, c: &Contexte, liste: Entity, k: usize, cart
         }
     }
     let d = (Style::Normale, 16.0, DESCRIPTION);
-    c.ecrit(commandes, droite, &carte.description, d);
+    // Espace insécable avant « % » et « s » : jamais seuls en début de ligne
+    let description = insecable(&carte.description);
+    c.ecrit(commandes, droite, &description, d);
     // Autres lignes côte à côte (à la ligne si trop long), pour garder les bandeaux fins
     let suite = commandes
         .spawn((
@@ -304,6 +312,25 @@ fn bandeau(commandes: &mut Commands, c: &Contexte, liste: Entity, k: usize, cart
             c.ecrit(commandes, rangee, valeur, (Style::Grasse, 14.0, VERT_GAIN));
         }
     }
+}
+
+/// Remplace l'espace avant une unité (« % », « s », « PV ») par une espace insécable.
+fn insecable(t: &str) -> String {
+    let mut r = String::with_capacity(t.len() + 8);
+    let mut reste = t;
+    while let Some(i) = reste.find(' ') {
+        let (avant, apres) = reste.split_at(i);
+        let suite = &apres[1..];
+        r.push_str(avant);
+        let unite = ["%", "s ", "s.", "s,", "PV"]
+            .iter()
+            .any(|u| suite.starts_with(u))
+            || suite == "s";
+        r.push(if unite { '\u{a0}' } else { ' ' });
+        reste = suite;
+    }
+    r.push_str(reste);
+    r
 }
 
 /// « Dégâts : 10 → 15 » en (« Dégâts : 10 → », « 15 ») ; sans flèche, tout au début.

@@ -23,6 +23,22 @@ use crate::materiau::{ATTRIBUTE_VENT, AnimationTexture, MateriauBloc, Parametres
 use crate::textures::Textures;
 use crate::{PartieEnCours, SourceArene, modeles};
 
+/// Vitesse des textures animées vanilla absentes des blocs du jeu (images par seconde,
+/// d'après le `frametime` de leur `.mcmeta`) ; les autres bandes d'images vont à
+/// `IMAGES_PAR_SECONDE_DEFAUT`.
+const ANIMATIONS_VANILLA: &[(&str, f32)] = &[
+    ("block/prismarine", 0.07),
+    ("block/sea_lantern", 4.0),
+    ("block/lantern", 2.5),
+    ("block/soul_lantern", 2.5),
+    ("block/fire_0", 20.0),
+    ("block/fire_1", 20.0),
+    ("block/soul_fire_0", 20.0),
+    ("block/soul_fire_1", 20.0),
+    ("block/nether_portal", 20.0),
+];
+const IMAGES_PAR_SECONDE_DEFAUT: f32 = 10.0;
+
 /// Map en cours d'import (phase de chargement).
 #[derive(Resource)]
 pub struct Import {
@@ -180,7 +196,7 @@ pub fn construire_carte(
             RenduTexture::Decoupe => 0.5,
             RenduTexture::Translucide => 0.02,
         };
-        // Bande d'images : la première seulement, sauf texture animée d'un bloc du jeu
+        // Bande d'images : toutes les images défilent (réglage du jeu, sinon vanilla)
         let images_bande = image(m.texture).map_or(1, |i| (i.height() / i.width().max(1)).max(1));
         parametres.animation.x = images_bande as f32;
         parametres.animation.w = if rendu == RenduTexture::Translucide {
@@ -207,11 +223,20 @@ pub fn construire_carte(
                 .then_some(b.animation.as_ref())
                 .flatten()
         });
-        if let Some(a) = animation {
+        let animation = match animation {
+            Some(a) => Some((a.images_par_seconde, a.aller_retour)),
+            // Bande d'images d'un bloc vanilla sans réglage dans le jeu : animée quand même
+            None if images_bande > 1 => {
+                let vitesse = ANIMATIONS_VANILLA.iter().find(|(c, _)| c == chemin);
+                Some((vitesse.map_or(IMAGES_PAR_SECONDE_DEFAUT, |v| v.1), false))
+            }
+            None => None,
+        };
+        if let Some((images_par_seconde, aller_retour)) = animation {
             entite.insert(AnimationTexture {
                 materiau,
-                images_par_seconde: a.images_par_seconde,
-                aller_retour: a.aller_retour,
+                images_par_seconde,
+                aller_retour,
             });
         }
     }

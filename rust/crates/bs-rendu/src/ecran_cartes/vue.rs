@@ -103,11 +103,15 @@ pub fn construire(
         .entry::<Node>()
         .and_modify(move |mut n| {
             n.align_items = AlignItems::Stretch;
-            if style == "liste" {
-                n.flex_direction = FlexDirection::Column;
-                n.row_gap = Val::Px(4.0);
-            } else if style == "jeu" {
-                n.column_gap = Val::Px(30.0);
+            match style.as_str() {
+                "inventaire" => n.column_gap = Val::Px(36.0),
+                "parchemin" | "verre" => n.column_gap = Val::Px(28.0),
+                "bandes" => {
+                    n.column_gap = Val::Px(14.0);
+                    n.width = Val::Percent(100.0);
+                    n.flex_grow = 1.0;
+                }
+                _ => {}
             }
         });
     let style = std::env::var("BS_CARTES_STYLE").unwrap_or_default();
@@ -123,8 +127,10 @@ pub fn construire(
             continue;
         }
         match style.as_str() {
-            "liste" => propositions::ligne(commandes, c, liste, k, carte),
-            "jeu" => propositions::carte_jeu(commandes, c, liste, (k, nombre), carte),
+            "inventaire" => propositions::inventaire(commandes, c, liste, k, carte),
+            "parchemin" => propositions::parchemin(commandes, c, liste, (k, nombre), carte),
+            "bandes" => propositions::bande(commandes, c, liste, k, carte),
+            "verre" => propositions::verre(commandes, c, liste, k, carte),
             _ => construire_carte(commandes, c, liste, k, carte),
         }
     }

@@ -217,8 +217,7 @@ fn maitrise(
         .expect("classe choisie");
     let prog = &sauvegarde.progression;
     let m = prog.maitrise(id);
-    let arbre = prog.arbre_actif(id);
-    let libres = prog.points_libres(id, arbre);
+    let libres = prog.points_libres(id);
     let bloc = p.noeud(
         parent,
         Node {
@@ -250,8 +249,12 @@ fn maitrise(
         ..default()
     });
     barre_xp(p, bloc, &m);
-    let nom = d.talents.arbres.get(id).and_then(|a| a.get(arbre));
-    let t = nom.map_or("Talents".to_owned(), |a| format!("Talents · {}", a.nom));
+    // Points mis dans chaque arbre, façon « 17 / 11 »
+    let t = format!(
+        "Talents · {} / {}",
+        prog.points(id, 0, None),
+        prog.points(id, 1, None)
+    );
     let b = p.bouton(bloc, &t, Relief::SECONDAIRE, ActionMenu::Talents);
     p.c.entity(b).entry::<Node>().and_modify(|mut n| {
         n.margin = UiRect::top(Val::Px(6.0));

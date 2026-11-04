@@ -230,7 +230,7 @@ pub(super) fn construire(
     let (b, icone) = lien(p, parent, "Talents", T_SECTION, ActionMenu::Talents);
     p.icone(icone, LIVRE, 40.0);
     let prog = &sauvegarde.progression;
-    let libres = prog.points_libres(id, prog.arbre_actif(id));
+    let libres = prog.points_libres(id);
     if libres > 0 {
         pastille(p, b, libres);
     }

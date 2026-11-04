@@ -26,7 +26,8 @@ pub struct Presentation {
     pub skin: String,
     pub bras_fins: bool,
     pub skin_importe: Option<String>,
-    /// Arbre de talents actif du personnage et ses talents.
+    /// Ancien arbre actif : les deux arbres jouent désormais, gardé à 0 pour le format.
+    #[serde(default)]
     pub arbre: usize,
     pub talents: Vec<NoeudActif>,
     /// Pièces d'armure de la Collection (bonus dans l'arène de leur monde).
@@ -39,7 +40,7 @@ impl Presentation {
             .talents
             .iter()
             .map(|n| (n.noeud.as_str(), n.rang, n.option));
-        BonusTalents::depuis_noeuds(&d.talents, &self.personnage, self.arbre, actifs)
+        BonusTalents::depuis_noeuds(&d.talents, &self.personnage, actifs)
     }
 }
 

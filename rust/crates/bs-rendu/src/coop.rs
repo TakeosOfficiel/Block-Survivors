@@ -122,7 +122,7 @@ pub fn presentation(d: &Donnees, s: &Sauvegarde, personnage: usize) -> Presentat
         .personnages
         .get_index(personnage)
         .map_or("", |(id, _)| id.as_str());
-    let (arbre, talents) = s.progression.noeuds_actifs(id);
+    let talents = s.progression.noeuds_actifs(id);
     let armures = PIECES
         .iter()
         .zip(s.collection.portees())
@@ -143,7 +143,7 @@ pub fn presentation(d: &Donnees, s: &Sauvegarde, personnage: usize) -> Presentat
         skin: skin.into(),
         bras_fins: s.profil.bras_fins,
         skin_importe,
-        arbre,
+        arbre: 0,
         talents,
         armures,
     }

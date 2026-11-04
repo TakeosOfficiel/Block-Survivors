@@ -4,13 +4,14 @@
 //! talent final actif, arme de départ active), arbre actif, records qui débloquent
 //! personnages et arènes.
 //!
-//! Chaque niveau de maîtrise donne un point de talent ; un rang coûte un point. La
-//! maîtrise plafonne (`niveau_max`) bien en dessous des rangs d'un arbre : on ne prend
-//! pas tout, il faut choisir ses branches. Un seul talent final par arbre, et l'option
-//! d'un talent à choix est fixée à l'achat (réinitialiser pour changer). Les deux
-//! arbres d'une classe ont chacun tous les points (double spécialisation). Une sauvegarde
-//! d'une version plus ancienne perd ses talents (records et arbre actif gardés), comme
-//! un arbre qui dépasse ces règles (ancienne maîtrise sans plafond).
+//! Chaque niveau de maîtrise donne un point de talent ; un rang coûte un point. Les
+//! deux arbres d'une classe se partagent les points et jouent tous deux en partie ; la
+//! maîtrise plafonne (`niveau_max`) bien en dessous de leurs rangs : on ne prend pas
+//! tout, il faut choisir. Chaque rangée d'un arbre s'ouvre avec les points qui y sont
+//! dépensés (`paliers`), un seul talent final par arbre, et l'option d'un talent à
+//! choix est fixée à l'achat (réinitialiser pour changer). Une sauvegarde d'une version
+//! plus ancienne perd ses talents (records gardés), comme une classe qui dépasse ces
+//! règles (ancienne maîtrise sans plafond, points propres à chaque arbre).
 //! `bonus` donne les effets en jeu de l'arbre actif (bonus.rs).
 
 use std::collections::BTreeMap;
@@ -275,10 +276,15 @@ impl Progression {
         self.etat_maitrise(xp as u64)
     }
 
-    /// Points de talent encore libres dans cet arbre.
-    pub fn points_libres(&self, personnage: &str, arbre: usize) -> u32 {
+    /// Points de talent encore libres de la classe (partagés par ses deux arbres).
+    pub fn points_libres(&self, personnage: &str) -> u32 {
         let niveau = self.maitrise(personnage).niveau;
-        niveau.saturating_sub(self.points(personnage, arbre, None))
+        niveau.saturating_sub(self.points_classe(personnage))
+    }
+
+    /// Rangs achetés dans les deux arbres de la classe.
+    pub fn points_classe(&self, personnage: &str) -> u32 {
+        (0..2).map(|a| self.points(personnage, a, None)).sum()
     }
 
     // --- Records et déblocages ---

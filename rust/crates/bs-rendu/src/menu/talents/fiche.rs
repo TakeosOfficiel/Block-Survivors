@@ -1,79 +1,52 @@
-//! Fiche du talent consulté, écrite à l'encre sur une page du livre de Minecraft posée
-//! à droite : une grande icône, le nom, le type et la branche, le rang en crans ; l'effet (ou les deux
-//! options d'un talent à choix, la retenue marquée d'un trait d'or) ; les conditions
-//! (prérequis, palier, coût) cochées ou barrées ; en bas un seul bouton vert
-//! « Apprendre · 1 point » quand l'achat est possible, sinon l'état en texte, plus les
-//! réglage de l'arme de départ en lien. Un talent final écarté par un autre ou des
-//! points épuisés à la maîtrise maximale le disent.
+//! Fiche du talent choisi, en infobulle sombre des jeux de rôle en ligne, à droite des
+//! arbres : nom, rang, genre ; l'effet en doré (ou les deux options d'un talent à
+//! choix, à choisir avant l'achat) ; en rouge ce qui manque (points dans l'arbre,
+//! prérequis, autre talent final, points restants) ; puis « Apprendre » en vert (ou un
+//! second clic sur la case) et le réglage de l'arme de départ.
 
 use bevy::prelude::*;
 use bs_donnees::progression::{Noeud, TypeNoeud};
 use bs_sauvegarde::progression::RefusAchat;
 
-use super::{ActionTalent, Contexte, bouton, ecrire, lien, rangee, schema};
-use crate::ecrans::charte::{MARGE, T_AIDE, T_CORPS, T_SECTION};
+use super::{ActionTalent, Contexte, bouton, ecrire, lien, rangee};
+use crate::ecrans::charte::{AIDE, IVOIRE, OR_VIF, ROUGE, T_AIDE, T_CORPS};
 use crate::menu::{ActionMenu, Icones};
 
-const ORANGE: Color = Color::srgb_u8(0xa8, 0x5a, 0x00);
-/// Encres de la page.
-const ENCRE: Color = Color::srgb_u8(0x3b, 0x26, 0x14);
-const ENCRE_PALE: Color = Color::srgb_u8(0x7d, 0x65, 0x4b);
-const VERT_GAIN: Color = Color::srgb_u8(0x2b, 0x7a, 0x33);
-const ROUGE: Color = Color::srgb_u8(0xb0, 0x2e, 0x26);
-const OR_VIF: Color = Color::srgb_u8(0xa3, 0x6e, 0x00);
-/// Page du livre dans `gui/book` (px) et son agrandissement.
-const PAGE: Rect = Rect {
-    min: Vec2::new(20.0, 1.0),
-    max: Vec2::new(166.0, 181.0),
-};
-const ECHELLE: f32 = 2.6;
+/// Texte d'effet, doré comme dans les infobulles des jeux de rôle.
+const DORE: Color = Color::srgb_u8(0xff, 0xd1, 0x4a);
+const ORANGE: Color = Color::srgb_u8(0xff, 0x9a, 0x3c);
+const LARGEUR: f32 = 330.0;
 
-/// Fiche du talent consulté.
 pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, parent: Entity) {
     let prog = &c.sauvegarde.progression;
     let (p, a, n) = (c.id(), c.etat.arbre, c.noeud());
-    let def = c.arbre();
     let rang = prog.rang(p, a, n);
-    // Page posée à droite, centrée en hauteur
-    let colonne = commandes
+    let f = commandes
         .spawn((
             Node {
+                width: Val::Px(LARGEUR),
                 flex_shrink: 0.0,
+                align_self: AlignSelf::FlexStart,
                 flex_direction: FlexDirection::Column,
-                justify_content: JustifyContent::Center,
-                padding: UiRect::new(Val::Px(8.0), Val::Px(MARGE), Val::ZERO, Val::Px(8.0)),
+                row_gap: Val::Px(8.0),
+                padding: UiRect::all(Val::Px(16.0)),
+                border: UiRect::all(Val::Px(2.0)),
+                border_radius: BorderRadius::all(Val::Px(6.0)),
                 ..default()
             },
+            BackgroundColor(Color::srgba_u8(0x07, 0x0a, 0x1a, 0xf2)),
+            BorderColor::all(Color::srgb_u8(0x9a, 0xa0, 0xb4)),
+            BoxShadow::new(
+                Color::srgba(0.0, 0.0, 0.0, 0.7),
+                Val::ZERO,
+                Val::Px(6.0),
+                Val::ZERO,
+                Val::Px(18.0),
+            ),
             ChildOf(parent),
         ))
         .id();
-    let f = commandes
-        .spawn((
-            ImageNode {
-                image: ic.icone("gui/book"),
-                rect: Some(PAGE),
-                ..default()
-            },
-            Node {
-                width: Val::Px(PAGE.width() * ECHELLE),
-                height: Val::Px(PAGE.height() * ECHELLE),
-                flex_direction: FlexDirection::Column,
-                row_gap: Val::Px(10.0),
-                padding: UiRect::new(Val::Px(40.0), Val::Px(26.0), Val::Px(26.0), Val::Px(24.0)),
-                ..default()
-            },
-            BoxShadow::new(
-                Color::srgba(0.0, 0.0, 0.0, 0.6),
-                Val::Px(6.0),
-                Val::Px(10.0),
-                Val::ZERO,
-                Val::Px(20.0),
-            ),
-            ChildOf(colonne),
-        ))
-        .id();
-    // En tête : icône, nom, type · branche, crans du rang
-    let tete = rangee(commandes, f, 14.0);
+    let tete = rangee(commandes, f, 12.0);
     let icone = n
         .options
         .as_ref()
@@ -81,8 +54,8 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, paren
     commandes.spawn((
         ImageNode::new(ic.icone(icone)),
         Node {
-            width: Val::Px(56.0),
-            height: Val::Px(56.0),
+            width: Val::Px(40.0),
+            height: Val::Px(40.0),
             flex_shrink: 0.0,
             ..default()
         },
@@ -92,91 +65,87 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, paren
         .spawn((
             Node {
                 flex_direction: FlexDirection::Column,
-                row_gap: Val::Px(2.0),
+                flex_shrink: 1.0,
                 ..default()
             },
             ChildOf(tete),
         ))
         .id();
-    ecrire(commandes, ic, noms, &n.nom, (true, T_SECTION + 4.0, ENCRE));
+    ecrire(commandes, ic, noms, &n.nom, (true, 19.0, IVOIRE));
     let genre = match n.genre {
         TypeNoeud::Bonus => "Bonus",
         TypeNoeud::Capacite => "Capacité",
         TypeNoeud::Choix => "Talent à choix",
         TypeNoeud::Final => "Talent final",
     };
-    let meta = rangee(commandes, noms, 6.0);
-    ecrire(
-        commandes,
-        ic,
-        meta,
-        &format!("{genre} ·"),
-        (false, T_AIDE, ENCRE_PALE),
-    );
-    let branche = def.branches.get(&n.branche).map_or("", String::as_str);
-    let couleur = schema::couleur_branche(n.branche).darker(0.3);
-    ecrire(commandes, ic, meta, branche, (true, T_AIDE, couleur));
-    crans(commandes, ic, f, rang, n.rang_max);
-
-    effet(commandes, c, ic, f, n);
-    conditions(commandes, c, ic, f, n);
-    actions(commandes, c, ic, f, n);
+    let t = format!("Rang {rang}/{} · {genre}", n.rang_max);
+    ecrire(commandes, ic, noms, &t, (false, T_AIDE, AIDE));
+    effet(commandes, c, ic, f, n, rang);
+    manques(commandes, c, ic, f, n);
+    actions(commandes, c, ic, f, n, rang);
 }
 
-/// Vrai si la mécanique du talent n'est pas encore jouée.
 fn en_preparation(c: &Contexte, m: &Option<String>) -> bool {
     let pretes = &c.dj.d.talents.mecaniques_pretes;
     m.as_ref().is_some_and(|m| !pretes.iter().any(|x| x == m))
 }
 
-/// Effet du talent, ou ses deux options (à choisir avant l'achat, fixées ensuite).
-fn effet(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity, n: &Noeud) {
-    let prog = &c.sauvegarde.progression;
-    let (p, a) = (c.id(), c.etat.arbre);
-    let rang = prog.rang(p, a, n);
+/// Effet, ou les deux options (cliquables tant que le talent n'est pas appris).
+fn effet(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity, n: &Noeud, rang: u32) {
     let Some(options) = &n.options else {
-        let e = ecrire(commandes, ic, f, &n.effet, (false, T_CORPS + 1.0, ENCRE));
-        commandes.entity(e).insert(Node {
-            margin: UiRect::top(Val::Px(6.0)),
-            ..default()
-        });
+        ecrire(commandes, ic, f, &n.effet, (false, T_CORPS - 1.0, DORE));
         if en_preparation(c, &n.gains.mecanique) {
             let t = "Effet en préparation : il arrive dans une prochaine version.";
             ecrire(commandes, ic, f, t, (false, T_AIDE, ORANGE));
         }
         return;
     };
-    // Choisie avant l'achat, fixée ensuite (réinitialiser pour changer)
-    let choisie = prog.option(p, a, n);
+    let t = if rang > 0 {
+        "Option retenue (réinitialiser pour changer) :"
+    } else {
+        "Choisis une option, définitive une fois apprise :"
+    };
+    ecrire(commandes, ic, f, t, (false, T_AIDE, AIDE));
+    let choisie = c.sauvegarde.progression.option(c.id(), c.etat.arbre, n);
     for (i, o) in options.iter().enumerate() {
-        let jouee = i == choisie;
+        let retenue = i == choisie;
         let b = commandes
             .spawn((
                 Node {
-                    column_gap: Val::Px(12.0),
-                    padding: UiRect::new(Val::Px(12.0), Val::Px(8.0), Val::Px(8.0), Val::Px(8.0)),
-                    border: UiRect::left(Val::Px(3.0)),
+                    column_gap: Val::Px(10.0),
+                    padding: UiRect::all(Val::Px(8.0)),
+                    border: UiRect::all(Val::Px(1.0)),
+                    border_radius: BorderRadius::all(Val::Px(4.0)),
                     ..default()
                 },
-                BorderColor::all(if jouee { OR_VIF } else { Color::NONE }),
-                BackgroundColor(if jouee {
-                    Color::srgba(0.64, 0.43, 0.0, 0.14)
+                BorderColor::all(if retenue {
+                    DORE.with_alpha(0.8)
                 } else {
-                    Color::srgba(0.23, 0.15, 0.08, 0.06)
+                    Color::srgba(1.0, 1.0, 1.0, 0.12)
+                }),
+                BackgroundColor(if retenue {
+                    Color::srgba(1.0, 0.82, 0.29, 0.08)
+                } else {
+                    Color::NONE
                 }),
                 ChildOf(f),
             ))
             .id();
-        if rang == 0 && !jouee {
+        if rang == 0 && !retenue {
             commandes
                 .entity(b)
                 .insert((Button, ActionMenu::Talent(ActionTalent::Option(i))));
         }
+        let teinte = if retenue || rang == 0 {
+            Color::WHITE
+        } else {
+            Color::srgb(0.4, 0.4, 0.4)
+        };
         commandes.spawn((
-            ImageNode::new(ic.icone(&o.icone)),
+            ImageNode::new(ic.icone(&o.icone)).with_color(teinte),
             Node {
-                width: Val::Px(32.0),
-                height: Val::Px(32.0),
+                width: Val::Px(28.0),
+                height: Val::Px(28.0),
                 flex_shrink: 0.0,
                 ..default()
             },
@@ -187,106 +156,37 @@ fn effet(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity, n: 
                 Node {
                     flex_direction: FlexDirection::Column,
                     flex_shrink: 1.0,
-                    row_gap: Val::Px(3.0),
+                    row_gap: Val::Px(2.0),
                     ..default()
                 },
                 ChildOf(b),
             ))
             .id();
-        let nom = if jouee && rang > 0 {
-            format!("✓ {}", o.nom)
-        } else if jouee {
-            format!("› {}", o.nom)
-        } else {
-            o.nom.clone()
-        };
-        ecrire(commandes, ic, textes, &nom, (true, T_CORPS, ENCRE));
-        ecrire(commandes, ic, textes, &o.effet, (false, T_AIDE, ENCRE_PALE));
+        let couleur = if retenue { IVOIRE } else { AIDE };
+        ecrire(commandes, ic, textes, &o.nom, (true, T_AIDE, couleur));
+        let couleur = if retenue { DORE } else { AIDE };
+        ecrire(
+            commandes,
+            ic,
+            textes,
+            &o.effet,
+            (false, T_AIDE - 1.0, couleur),
+        );
         if en_preparation(c, &o.gains.mecanique) {
-            ecrire(
-                commandes,
-                ic,
-                textes,
-                "Effet en préparation",
-                (false, T_AIDE, ORANGE),
-            );
+            let t = "Effet en préparation";
+            ecrire(commandes, ic, textes, t, (false, T_AIDE - 1.0, ORANGE));
         }
     }
 }
 
-/// Ligne de condition : coche verte ou croix rouge, libellé, détail.
-fn condition(
-    commandes: &mut Commands,
-    ic: &Icones,
-    f: Entity,
-    ok: Option<bool>,
-    libelle: &str,
-    detail: &str,
-) {
-    let l = rangee(commandes, f, 8.0);
-    commandes.entity(l).entry::<Node>().and_modify(|mut n| {
-        n.align_items = AlignItems::FlexStart;
-    });
-    let (marque, couleur) = match ok {
-        Some(true) => ("✓", VERT_GAIN),
-        Some(false) => ("×", ROUGE),
-        None => ("·", ENCRE_PALE),
-    };
-    ecrire(commandes, ic, l, marque, (true, T_CORPS, couleur));
-    let textes = rangee(commandes, l, 6.0);
-    commandes
-        .entity(textes)
-        .entry::<Node>()
-        .and_modify(|mut n| {
-            n.flex_wrap = FlexWrap::Wrap;
-            n.flex_shrink = 1.0;
-        });
-    ecrire(commandes, ic, textes, libelle, (true, T_AIDE, ENCRE));
-    let c = if ok == Some(false) { ROUGE } else { ENCRE_PALE };
-    ecrire(commandes, ic, textes, detail, (false, T_AIDE, c));
-}
-
-/// Prérequis, palier et coût, avec leur état.
-fn conditions(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity, n: &Noeud) {
+/// Ce qui manque pour apprendre, en rouge (rien si le talent est ouvert).
+fn manques(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity, n: &Noeud) {
     let prog = &c.sauvegarde.progression;
     let (p, a) = (c.id(), c.etat.arbre);
     let def = c.arbre();
-    let bloc = commandes
-        .spawn((
-            Node {
-                flex_direction: FlexDirection::Column,
-                row_gap: Val::Px(4.0),
-                margin: UiRect::top(Val::Px(10.0)),
-                ..default()
-            },
-            ChildOf(f),
-        ))
-        .id();
-    let rempli = |id: &String| {
-        def.noeuds
-            .iter()
-            .find(|x| &x.id == id)
-            .is_some_and(|x| prog.complet(p, a, x))
-    };
-    let (ok, detail) = if n.libre {
-        (None, "talent libre".to_owned())
-    } else if n.prerequis.is_empty() {
-        (None, "racine de l'arbre".to_owned())
-    } else {
-        let noms: Vec<&str> = n
-            .prerequis
-            .iter()
-            .map(|id| {
-                def.noeuds
-                    .iter()
-                    .find(|x| &x.id == id)
-                    .map_or(id.as_str(), |x| &x.nom)
-            })
-            .collect();
-        let ok = n.prerequis.iter().any(rempli);
-        (Some(ok), format!("{} complet", noms.join(" ou ")))
-    };
-    condition(commandes, ic, bloc, ok, "Prérequis", &detail);
+    if prog.complet(p, a, n) {
+        return;
+    }
     let palier =
         c.dj.d
             .talents
@@ -294,63 +194,65 @@ fn conditions(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity
             .iter()
             .rev()
             .find(|x| n.ligne >= x.ligne);
-    if let Some(palier) = palier {
-        let ok = prog.palier_atteint(p, a, palier.ligne);
-        let achetes = palier.rangs.min(prog.points(p, a, Some(palier.ligne)));
-        let t = format!("{achetes}/{} rangs achetés au-dessus", palier.rangs);
-        condition(commandes, ic, bloc, Some(ok), "Palier", &t);
+    if let Some(x) = palier.filter(|x| !prog.palier_atteint(p, a, x.ligne)) {
+        let mis = prog.points(p, a, Some(x.ligne));
+        let t = format!(
+            "Nécessite {} points en {} ({mis}/{})",
+            x.rangs, def.nom, x.rangs
+        );
+        ecrire(commandes, ic, f, &t, (false, T_AIDE, ROUGE));
     }
-    condition(
-        commandes,
-        ic,
-        bloc,
-        None,
-        "Coût",
-        "1 point de talent par rang",
-    );
-    let activation = match n.genre {
-        TypeNoeud::Final => {
-            Some("Un seul talent final par arbre : l'apprendre ferme les deux autres.")
+    if !n.libre {
+        for id in &n.prerequis {
+            let Some(x) = def.noeuds.iter().find(|x| &x.id == id) else {
+                continue;
+            };
+            if !prog.complet(p, a, x) {
+                let t = format!(
+                    "Nécessite {} ({}/{})",
+                    x.nom,
+                    prog.rang(p, a, x),
+                    x.rang_max
+                );
+                ecrire(commandes, ic, f, &t, (false, T_AIDE, ROUGE));
+            }
         }
+    }
+    let note = match n.genre {
+        TypeNoeud::Final => Some("Un seul talent final par arbre : il ferme les deux autres."),
         _ if n.gains.arme_depart.is_some() => {
-            Some("Une seule arme de départ en plus par arbre ; désactivable sans perdre l'achat.")
-        }
-        _ if n.options.is_some() => {
-            Some("Choisis l'option avant d'apprendre : elle est définitive.")
+            Some("Arme de départ en plus, désactivable sans perdre l'achat.")
         }
         _ => None,
     };
-    if let Some(t) = activation {
-        ecrire(commandes, ic, bloc, t, (false, T_AIDE, ENCRE_PALE));
+    if let Some(t) = note {
+        ecrire(commandes, ic, f, t, (false, T_AIDE, AIDE));
     }
 }
 
-/// Réglages puis action principale, collés au bas de la fiche.
-fn actions(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity, n: &Noeud) {
+/// Action en bas : apprendre, ou l'état ; réglage de l'arme de départ.
+fn actions(
+    commandes: &mut Commands,
+    c: &Contexte,
+    ic: &mut Icones,
+    f: Entity,
+    n: &Noeud,
+    rang: u32,
+) {
     let prog = &c.sauvegarde.progression;
     let (p, a) = (c.id(), c.etat.arbre);
-    let rang = prog.rang(p, a, n);
     let actif = prog.actif(p, a, n);
     let bas = commandes
         .spawn((
             Node {
                 flex_direction: FlexDirection::Column,
-                row_gap: Val::Px(10.0),
-                margin: UiRect::top(Val::Auto),
+                row_gap: Val::Px(8.0),
+                margin: UiRect::top(Val::Px(6.0)),
                 ..default()
             },
             ChildOf(f),
         ))
         .id();
-    if rang > 0 && !actif {
-        ecrire(
-            commandes,
-            ic,
-            bas,
-            "Acheté mais inactif dans cet arbre.",
-            (false, T_AIDE, ORANGE),
-        );
-    }
     if rang > 0 && n.gains.arme_depart.is_some() {
         let t = if actif {
             "Désactiver l'arme de départ ›"
@@ -358,10 +260,11 @@ fn actions(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity, n
             "Activer l'arme de départ ›"
         };
         let action = Some(ActionMenu::Talent(ActionTalent::BasculerArme));
-        lien(commandes, ic, bas, t, (T_CORPS, ENCRE), action);
+        lien(commandes, ic, bas, t, (T_CORPS, IVOIRE), action);
     }
     let perso = &c.dj.d.personnages.personnages[c.etat.personnage];
-    match prog.refus_achat(p, a, n) {
+    let texte = |t: &str, couleur| (t.to_owned(), couleur);
+    let etat = match prog.refus_achat(p, a, n) {
         None => {
             let t = if rang == 0 {
                 "Apprendre · 1 point"
@@ -369,69 +272,20 @@ fn actions(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity, n
                 "Rang suivant · 1 point"
             };
             bouton(commandes, ic, bas, t, ActionTalent::Acheter);
+            let t = "ou clique encore sur la case";
+            ecrire(commandes, ic, bas, t, (false, T_AIDE - 1.0, AIDE));
+            return;
         }
-        Some(RefusAchat::Max) => {
-            ecrire(commandes, ic, bas, "✓ Appris", (true, T_SECTION, OR_VIF));
-        }
-        Some(RefusAchat::Verrou) => {
-            ecrire(
-                commandes,
-                ic,
-                bas,
-                "Prérequis non remplis",
-                (true, T_CORPS, ROUGE),
-            );
-        }
-        Some(RefusAchat::Exclusif) => {
-            let t = "Un autre talent final est appris";
-            ecrire(commandes, ic, bas, t, (true, T_CORPS, ROUGE));
-            let t = "Réinitialise l'arbre pour changer de voie.";
-            ecrire(commandes, ic, bas, t, (false, T_AIDE, ENCRE_PALE));
-        }
+        Some(RefusAchat::Max) => texte("✓ Appris", OR_VIF),
+        Some(RefusAchat::Verrou) => return,
+        Some(RefusAchat::Exclusif) => texte("Un autre talent final est appris", ROUGE),
         Some(RefusAchat::Points) if prog.maitrise(p).au_max() => {
-            let t = "Tous les points sont dépensés";
-            ecrire(commandes, ic, bas, t, (true, T_CORPS, ENCRE_PALE));
-            let t = "Maîtrise au maximum : réinitialise l'arbre pour changer de voie.";
-            ecrire(commandes, ic, bas, t, (false, T_AIDE, ENCRE_PALE));
+            texte("Tous les points sont dépensés", AIDE)
         }
-        Some(RefusAchat::Points) => {
-            ecrire(
-                commandes,
-                ic,
-                bas,
-                "Aucun point disponible",
-                (true, T_CORPS, ENCRE_PALE),
-            );
-            let t = format!("Joue {} pour gagner de la maîtrise.", perso.nom);
-            ecrire(commandes, ic, bas, &t, (false, T_AIDE, OR_VIF));
-        }
-    }
-}
-
-/// Rang en crans : un trait par rang, d'or s'il est acquis.
-fn crans(commandes: &mut Commands, ic: &Icones, f: Entity, rang: u32, max: u32) {
-    let l = rangee(commandes, f, 4.0);
-    for i in 0..max {
-        let couleur = if i < rang {
-            OR_VIF
-        } else {
-            Color::srgba(0.23, 0.15, 0.08, 0.18)
-        };
-        commandes.spawn((
-            Node {
-                width: Val::Px(26.0),
-                height: Val::Px(5.0),
-                border_radius: BorderRadius::all(Val::Px(2.0)),
-                ..default()
-            },
-            BackgroundColor(couleur),
-            ChildOf(l),
-        ));
-    }
-    let t = format!("Rang {rang}/{max}");
-    let e = ecrire(commandes, ic, l, &t, (false, T_AIDE, ENCRE_PALE));
-    commandes.entity(e).insert(Node {
-        margin: UiRect::left(Val::Px(6.0)),
-        ..default()
-    });
+        Some(RefusAchat::Points) => (
+            format!("Plus de point : joue {} pour en gagner", perso.nom),
+            AIDE,
+        ),
+    };
+    ecrire(commandes, ic, bas, &etat.0, (true, T_AIDE, etat.1));
 }

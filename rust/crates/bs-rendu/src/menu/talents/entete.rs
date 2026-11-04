@@ -1,16 +1,13 @@
 //! Haut et bas de la page des Talents, sans cadres : le titre, les classes en liens
 //! (icône d'arme et nom, soulignés d'or si choisis, cadenas si fermées) et, à droite,
-//! les points disponibles en grand ; au-dessus de l'arbre, les deux spécialisations
-//! (icône, nom, rangs, « Équipée ») et « Équiper » quand on consulte l'autre ; en bas,
-//! les liens « Retour » et « Réinitialiser » (confirmé en deux temps).
+//! les points restants de la classe en grand et la maîtrise ; en bas, les liens
+//! « Retour » et « Réinitialiser » (les deux arbres, confirmé en deux temps).
 
 use bevy::prelude::*;
 use bs_donnees::progression::TypeDeblocage;
 
 use super::{ActionTalent, Contexte, ETEINT, ecrire, lien, rangee, souligner};
-use crate::ecrans::charte::{
-    self, AIDE, IVOIRE, MARGE, OR_VIF, ROUGE, T_AIDE, T_CORPS, T_SECTION, VERT_GAIN,
-};
+use crate::ecrans::charte::{self, AIDE, IVOIRE, MARGE, OR_VIF, ROUGE, T_AIDE, T_CORPS, T_SECTION};
 use crate::menu::{ActionMenu, Icones};
 
 fn icone(commandes: &mut Commands, ic: &mut Icones, parent: Entity, i: &str, cote: f32) {
@@ -32,7 +29,7 @@ fn icone(commandes: &mut Commands, ic: &mut Icones, parent: Entity, i: &str, cot
 pub(super) fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, racine: Entity) {
     let d = c.dj.d;
     let prog = &c.sauvegarde.progression;
-    let (p, a) = (c.id(), c.etat.arbre);
+    let p = c.id();
     let e = rangee(commandes, racine, 40.0);
     commandes.entity(e).entry::<Node>().and_modify(|mut n| {
         n.padding = UiRect::new(Val::Px(MARGE), Val::Px(MARGE), Val::Px(18.0), Val::Px(6.0));
@@ -83,10 +80,10 @@ pub(super) fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones
             ChildOf(e),
         ))
         .id();
-    let libres = prog.points_libres(p, a);
+    let libres = prog.points_libres(p);
     let s = if libres > 1 { "s" } else { "" };
     let couleur = if libres > 0 { OR_VIF } else { AIDE };
-    let t = format!("{libres} point{s} disponible{s}");
+    let t = format!("{libres} point{s} restant{s}");
     let points = ecrire(commandes, ic, droite, &t, (true, T_SECTION + 2.0, couleur));
     if libres > 0 {
         commandes.entity(points).insert(TextShadow {
@@ -94,69 +91,18 @@ pub(super) fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones
             color: OR_VIF.with_alpha(0.35),
         });
     }
-    let perso = &d.personnages.personnages[c.etat.personnage];
     let m = prog.maitrise(p);
     let max = d.talents.maitrise.niveau_max;
-    let depenses = prog.points(p, a, None);
-    let t = format!("{depenses} / {max} points dépensés");
-    ecrire(commandes, ic, droite, &t, (false, T_AIDE, AIDE));
-    let plafond = if m.au_max() { " (max)" } else { "" };
-    let t = format!("{} · Maîtrise {}{plafond}", perso.nom, m.niveau);
-    let m = rangee(commandes, droite, 6.0);
-    ecrire(commandes, ic, m, &t, (false, T_AIDE, AIDE));
-    icone(commandes, ic, m, &d.talents.maitrise.icone, 18.0);
-}
-
-/// Les deux spécialisations au-dessus de l'arbre.
-pub(super) fn specialisations(
-    commandes: &mut Commands,
-    c: &Contexte,
-    ic: &mut Icones,
-    parent: Entity,
-) {
-    let d = c.dj.d;
-    let prog = &c.sauvegarde.progression;
-    let (p, a) = (c.id(), c.etat.arbre);
-    let actif = prog.arbre_actif(p);
-    let r = rangee(commandes, parent, 56.0);
-    commandes.entity(r).entry::<Node>().and_modify(|mut n| {
-        n.margin = UiRect::top(Val::Px(10.0));
-    });
-    for (k, def) in d.talents.arbres[p].iter().enumerate() {
-        let choisie = k == a;
-        let couleur = if choisie { IVOIRE } else { ETEINT };
-        let action = (!choisie).then_some(ActionMenu::Talent(ActionTalent::Arbre(k)));
-        let b = lien(
-            commandes,
-            ic,
-            r,
-            &def.nom,
-            (T_SECTION + 4.0, couleur),
-            action,
-        );
-        icone(commandes, ic, b, &def.icone, 34.0);
-        let rangs = prog.points(p, k, None);
-        let s = if rangs > 1 { "s" } else { "" };
-        let t = format!("{rangs} rang{s}");
-        ecrire(commandes, ic, b, &t, (false, T_AIDE, AIDE));
-        if k == actif {
-            ecrire(commandes, ic, b, "✓ Équipée", (true, T_AIDE, VERT_GAIN));
-        }
-        if choisie {
-            souligner(commandes, b);
-        }
-    }
-    if a != actif {
-        let t = format!("Équiper {}", d.talents.arbres[p][a].nom);
-        let action = Some(ActionMenu::Talent(ActionTalent::Utiliser));
-        lien(commandes, ic, r, &t, (T_CORPS, VERT_GAIN), action);
-    }
+    let t = format!("Maîtrise {} / {max} · un point par niveau", m.niveau);
+    let l = rangee(commandes, droite, 6.0);
+    ecrire(commandes, ic, l, &t, (false, T_AIDE, AIDE));
+    icone(commandes, ic, l, &d.talents.maitrise.icone, 18.0);
 }
 
 /// « ‹ Retour » à gauche ; « Réinitialiser » à droite, en deux temps.
 pub(super) fn pied(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, racine: Entity) {
     let prog = &c.sauvegarde.progression;
-    let (p, a) = (c.id(), c.etat.arbre);
+    let p = c.id();
     let r = rangee(commandes, racine, 8.0);
     commandes.entity(r).entry::<Node>().and_modify(|mut n| {
         n.justify_content = JustifyContent::SpaceBetween;
@@ -172,11 +118,11 @@ pub(super) fn pied(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, raci
     );
     ecrire(commandes, ic, retour, "Échap", (false, T_AIDE, AIDE));
     let droite = rangee(commandes, r, 24.0);
-    let valeur = prog.points(p, a, None);
+    let valeur = prog.points_classe(p);
     let s = if valeur > 1 { "s" } else { "" };
     let reinit = Some(ActionMenu::Talent(ActionTalent::Reinitialiser));
     if c.etat.confirmation {
-        let t = format!("Rendre {valeur} point{s} de {} ?", c.arbre().nom);
+        let t = format!("Rendre les {valeur} point{s} des deux arbres ?");
         ecrire(commandes, ic, droite, &t, (false, T_CORPS, ROUGE));
         let annuler = Some(ActionMenu::Talent(ActionTalent::Annuler));
         lien(commandes, ic, droite, "Annuler", (T_CORPS, IVOIRE), annuler);

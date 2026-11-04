@@ -1,15 +1,15 @@
-//! Page des Talents du menu, plein écran sans cadres : un mur de blocs (la texture de
-//! l'arbre, `fond` dans les données) assombri sur les bords ; en haut
-//! le titre, les classes en liens soulignés et les points disponibles (`entete`) ;
-//! sous eux les deux spécialisations, puis l'arbre au centre (`schema`, défilant) ; la
-//! fiche du talent consulté flotte à droite (`fiche`). « Retour » et « Réinitialiser »
-//! sont de simples liens en bas. Échap ramène au menu.
+//! Page des Talents du menu, à la manière des jeux de rôle en ligne : en haut le titre,
+//! les classes et les points restants (`entete`) ; au centre les deux arbres de la
+//! classe côte à côte, en grilles (`grille`), qui se partagent les points, et la fiche
+//! du talent choisi en infobulle (`fiche`). Un clic choisit une case, un second clic
+//! sur la même l'apprend. « Retour » et « Réinitialiser » (les deux arbres) sont des
+//! liens en bas. Échap ramène au menu.
 
 mod entete;
 mod fiche;
-mod schema;
+mod grille;
 
-pub use schema::survoler_cases;
+pub use grille::survoler_cases;
 
 use bevy::prelude::*;
 use bs_donnees::progression::{Arbre, Noeud};
@@ -42,10 +42,9 @@ pub struct EtatTalents {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ActionTalent {
     Classe(usize),
-    Arbre(usize),
-    Noeud(usize),
+    /// Case d'un arbre : la choisir, ou l'apprendre si elle l'est déjà.
+    Noeud(usize, usize),
     Acheter,
-    Utiliser,
     Reinitialiser,
     Annuler,
     Option(usize),
@@ -98,24 +97,20 @@ pub fn agir(
     match action {
         ActionTalent::Classe(k) => {
             etat.personnage = k;
-            let id =
-                dj.d.personnages
-                    .personnages
-                    .get_index(k)
-                    .map_or("", |(i, _)| i);
-            etat.arbre = prog.arbre_actif(id);
+            etat.arbre = 0;
             etat.noeud = 0;
         }
-        ActionTalent::Arbre(k) => {
-            etat.arbre = k;
-            etat.noeud = 0;
+        ActionTalent::Noeud(arbre, k) if (arbre, k) == (a, etat.noeud) => {
+            prog.acheter(p, a, n);
         }
-        ActionTalent::Noeud(k) => etat.noeud = k,
+        ActionTalent::Noeud(arbre, k) => (etat.arbre, etat.noeud) = (arbre, k),
         ActionTalent::Acheter => {
             prog.acheter(p, a, n);
         }
-        ActionTalent::Utiliser => prog.choisir_arbre(p, a),
-        ActionTalent::Reinitialiser if confirmee => prog.reinitialiser(p, a),
+        ActionTalent::Reinitialiser if confirmee => {
+            prog.reinitialiser(p, 0);
+            prog.reinitialiser(p, 1);
+        }
         ActionTalent::Reinitialiser => etat.confirmation = true,
         ActionTalent::Annuler => {}
         ActionTalent::Option(i) => prog.choisir_option(p, a, n, i),
@@ -211,9 +206,9 @@ pub(super) fn bouton(
     b
 }
 
-/// Fond de la page : la texture de bloc de l'arbre en mur (tuiles de 64), assombrie
-/// vers les bords et sous l'en-tête.
-fn mur(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, racine: Entity) {
+/// Fond de la page : de l'ardoise des profondeurs en tuiles, très assombrie, voilée
+/// vers les bords.
+fn mur(commandes: &mut Commands, ic: &mut Icones, racine: Entity) {
     let plein = || Node {
         position_type: PositionType::Absolute,
         width: Val::Percent(100.0),
@@ -222,8 +217,8 @@ fn mur(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, racine: Entity) 
     };
     commandes.spawn((
         ImageNode {
-            image: ic.icone(&c.arbre().fond),
-            color: Color::srgb(0.62, 0.62, 0.62),
+            image: ic.icone("block/deepslate_tiles"),
+            color: Color::srgb(0.22, 0.22, 0.24),
             image_mode: NodeImageMode::Tiled {
                 tile_x: true,
                 tile_y: true,
@@ -236,23 +231,16 @@ fn mur(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, racine: Entity) 
     ));
     let noir = |a: f32| Color::srgba(0.0, 0.0, 0.0, a);
     let halo = RadialGradient::new(
-        UiPosition::TOP_LEFT.at_percent(38.0, 55.0),
+        UiPosition::CENTER,
         RadialGradientShape::FarthestCorner,
         vec![
-            ColorStop::new(noir(0.25), Val::Percent(0.0)),
-            ColorStop::new(noir(0.55), Val::Percent(60.0)),
-            ColorStop::new(noir(0.85), Val::Percent(100.0)),
+            ColorStop::new(noir(0.1), Val::Percent(0.0)),
+            ColorStop::new(noir(0.75), Val::Percent(100.0)),
         ],
     );
-    let haut = LinearGradient::to_bottom(vec![
-        ColorStop::new(noir(0.7), Val::Percent(0.0)),
-        ColorStop::new(noir(0.0), Val::Percent(22.0)),
-        ColorStop::new(noir(0.0), Val::Percent(85.0)),
-        ColorStop::new(noir(0.6), Val::Percent(100.0)),
-    ]);
     commandes.spawn((
         plein(),
-        BackgroundGradient(vec![halo.into(), haut.into()]),
+        BackgroundGradient(vec![halo.into()]),
         ChildOf(racine),
     ));
 }
@@ -271,34 +259,34 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones) -> En
             BackgroundColor(charte::FOND),
         ))
         .id();
-    mur(commandes, c, ic, racine);
+    mur(commandes, ic, racine);
     entete::construire(commandes, c, ic, racine);
     let corps = commandes
         .spawn((
             Node {
                 flex_grow: 1.0,
                 min_height: Val::ZERO,
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
                 ..default()
             },
             ChildOf(racine),
         ))
         .id();
-    let centre = commandes
+    // Arbres et fiche alignés en haut, l'ensemble centré dans la page.
+    let rang = commandes
         .spawn((
             Node {
-                flex_grow: 1.0,
-                min_width: Val::ZERO,
-                flex_direction: FlexDirection::Column,
-                align_items: AlignItems::Center,
-                row_gap: Val::Px(14.0),
+                align_items: AlignItems::FlexStart,
+                column_gap: Val::Px(22.0),
                 ..default()
             },
             ChildOf(corps),
         ))
         .id();
-    entete::specialisations(commandes, c, ic, centre);
-    schema::construire(commandes, c, ic, centre);
-    fiche::construire(commandes, c, ic, corps);
+    grille::construire(commandes, c, ic, rang, 0);
+    grille::construire(commandes, c, ic, rang, 1);
+    fiche::construire(commandes, c, ic, rang);
     entete::pied(commandes, c, ic, racine);
     racine
 }

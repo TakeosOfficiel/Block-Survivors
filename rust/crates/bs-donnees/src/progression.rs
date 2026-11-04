@@ -352,20 +352,20 @@ pub struct NoeudActif {
 }
 
 impl BonusTalents {
-    /// Cumule les effets des talents `actifs` de l'arbre `arbre` du personnage (inconnus
-    /// ignorés, rangs bornés au maximum).
+    /// Cumule les effets des talents `actifs` du personnage, pris dans ses deux arbres
+    /// (identifiants uniques par classe ; inconnus ignorés, rangs bornés au maximum).
     pub fn depuis_noeuds<'a>(
         talents: &'static Talents,
         personnage: &str,
-        arbre: usize,
         actifs: impl IntoIterator<Item = (&'a str, u32, usize)>,
     ) -> Self {
         let mut b = Self::default();
-        let Some(arbre) = talents.arbres.get(personnage).and_then(|a| a.get(arbre)) else {
+        let Some(arbres) = talents.arbres.get(personnage) else {
             return b;
         };
         for (id, rang, option) in actifs {
-            let Some(noeud) = arbre.noeuds.iter().find(|n| n.id == id) else {
+            let mut noeuds = arbres.iter().flat_map(|a| a.noeuds.iter());
+            let Some(noeud) = noeuds.find(|n| n.id == id) else {
                 continue;
             };
             let rang = rang.min(noeud.rang_max);

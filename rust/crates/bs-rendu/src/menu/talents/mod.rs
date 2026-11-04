@@ -1,15 +1,15 @@
-//! Page des Talents du menu, plein écran sur fond sobre, à la charte de l'accueil : à
-//! gauche l'arbre choisi en branches (`branches`) : le tronc en bas, puis une colonne
-//! colorée par branche qui monte jusqu'aux talents finaux ;
-//! à droite un panneau charbon (`cote`) avec les classes, les deux arbres (qui se
-//! partagent les points), les points restants et la fiche du talent choisi (`fiche`).
-//! Un clic choisit une case, un second clic sur la même l'apprend. « ‹ Retour » et
-//! « Réinitialiser » en bas à gauche ; Échap ramène à l'accueil.
+//! Page des Talents du menu, plein écran et à l'air libre (aucun panneau ni case) : à
+//! gauche l'arbre choisi en radar (`radar`) : le talent de base en bas, un anneau par
+//! ligne, un secteur coloré par branche, des pastilles rondes (`case`) ; à droite
+//! (`cote`) les classes, les deux arbres (qui se partagent les points), les points
+//! restants et la fiche du talent choisi (`fiche`). Un clic choisit une pastille, un
+//! second clic sur la même l'apprend. « ‹ Retour » et « Réinitialiser » en bas à
+//! gauche ; Échap ramène à l'accueil.
 
-mod branches;
 mod case;
 mod cote;
 mod fiche;
+mod radar;
 
 pub use case::survoler_cases;
 
@@ -180,6 +180,10 @@ pub(super) fn bouton(
     let h = charte::H_PRINCIPAL + 8.0;
     let b = charte::bouton_relief(commandes, parent, Relief::PRINCIPAL, h, ());
     commandes.entity(b).insert(ActionMenu::Talent(action));
+    // Arrondi : pas de bouton carré sur cette page
+    commandes.entity(b).entry::<Node>().and_modify(|mut n| {
+        n.border_radius = BorderRadius::MAX;
+    });
     commandes.spawn((
         Text::new(t),
         TextFont {
@@ -209,7 +213,15 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones) -> En
                 column_gap: Val::Px(24.0),
                 ..default()
             },
-            BackgroundColor(charte::FOND),
+            BackgroundGradient::from(RadialGradient::new(
+                UiPosition::TOP_LEFT.at_percent(33.0, 80.0),
+                RadialGradientShape::FarthestCorner,
+                vec![
+                    ColorStop::new(Color::srgb_u8(0x1b, 0x2a, 0x3c), Val::Percent(0.0)),
+                    ColorStop::new(Color::srgb_u8(0x0b, 0x11, 0x19), Val::Percent(55.0)),
+                    ColorStop::new(Color::srgb_u8(0x05, 0x07, 0x0a), Val::Percent(100.0)),
+                ],
+            )),
         ))
         .id();
     let gauche = commandes
@@ -225,7 +237,7 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones) -> En
             ChildOf(racine),
         ))
         .id();
-    branches::construire(commandes, c, ic, gauche);
+    radar::construire(commandes, c, ic, gauche);
     cote::construire(commandes, c, ic, racine);
     cote::pied(commandes, c, ic, racine);
     racine

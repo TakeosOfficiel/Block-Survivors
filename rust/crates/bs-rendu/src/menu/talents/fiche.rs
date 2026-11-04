@@ -1,4 +1,4 @@
-//! Fiche du talent choisi, dans le panneau de droite : nom, rang, genre ; l'effet (ou
+//! Fiche du talent choisi, à droite, sans cadre : nom, rang, genre ; l'effet (ou
 //! les deux options d'un talent à choix, à choisir avant l'achat) ; en rouge ce qui
 //! manque (points dans l'arbre, prérequis, autre talent final, points restants) ; puis,
 //! collé en bas, le grand « Apprendre » vert de l'accueil (ou un second clic sur la
@@ -87,21 +87,9 @@ fn effet(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity, n: 
             .spawn((
                 Node {
                     column_gap: Val::Px(10.0),
-                    padding: UiRect::all(Val::Px(8.0)),
-                    border: UiRect::all(Val::Px(1.0)),
-                    border_radius: BorderRadius::all(Val::Px(4.0)),
+                    padding: UiRect::vertical(Val::Px(4.0)),
                     ..default()
                 },
-                BorderColor::all(if retenue {
-                    DORE.with_alpha(0.8)
-                } else {
-                    Color::srgba(1.0, 1.0, 1.0, 0.12)
-                }),
-                BackgroundColor(if retenue {
-                    Color::srgba(1.0, 0.82, 0.29, 0.08)
-                } else {
-                    Color::NONE
-                }),
                 ChildOf(f),
             ))
             .id();

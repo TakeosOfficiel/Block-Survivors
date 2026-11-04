@@ -1,24 +1,22 @@
 //! Page Nouveautés du menu (src/ui/ecranNouveautes.ts) : le journal des versions, lu dans
 //! CHANGELOG.md à la compilation (les plus récentes), défilant à la molette. Tant qu'il
 //! n'a pas été ouvert pour la version installée, le bouton du menu porte « Nouveau ! ».
-//! La dernière version est dépliée, les autres repliées (un clic les déplie) ; chaque
-//! section montre ses premiers points en Inter 18 (docs/CHARTE-UI.md).
+//! En menu de console (`console`) : à gauche les versions en grands intitulés (l'ouverte
+//! dorée, un clic sur une autre l'ouvre) ; à droite ses sections et tous ses points,
+//! en pastilles rondes, sans cadre.
 
 use bevy::prelude::*;
 use bs_sauvegarde::Stockage;
 
-use super::{ActionMenu, Icones};
-use crate::ecrans::charte::{self, AIDE, IVOIRE, OR_VIF, Relief, T_AIDE, T_CORPS, T_SECTION};
+use super::console::{self, Police, aide, ecrit, intitule, surtitre};
+use super::{ActionMenu, Icones, air};
+use crate::ecrans::charte::{IVOIRE, OR_VIF};
 use crate::ecrans::vues::Defilant;
-use crate::hud::police::TextePixel;
 
 const JOURNAL: &str = include_str!("../../../../../CHANGELOG.md");
 const CLE: &str = "block-survivors.version-vue";
 /// Versions affichées (les plus récentes).
 const NOMBRE_VERSIONS: usize = 4;
-const LARGEUR: f32 = 820.0;
-/// Points affichés par section (sections courtes).
-const LIGNES_PAR_SECTION: usize = 6;
 
 /// Une version du journal : son titre et ses sections (titre, lignes).
 #[derive(Debug, PartialEq)]
@@ -70,158 +68,98 @@ pub fn marquer_lues(stockage: &Stockage) {
     stockage.ecrire(CLE, &bs_commun::VERSION);
 }
 
-/// Texte Inter à la largeur du panneau.
-fn texte(
-    c: &mut Commands,
-    ic: &mut Icones,
-    parent: Entity,
-    t: &str,
-    (gras, taille, couleur): (bool, f32, Color),
-) -> Entity {
-    let t = ic.polices.texte(t, gras, taille, couleur);
-    c.spawn((t, ChildOf(parent))).id()
+/// Titre « Version 0.6.0 — date » coupé en numéro et date.
+fn numero(titre: &str) -> (&str, &str) {
+    let t = titre.strip_prefix("Version ").unwrap_or(titre);
+    t.split_once(" — ").unwrap_or((t, ""))
+}
+
+/// Point du journal : pastille dorée (pâle et en retrait pour un sous-point) et texte.
+fn point(c: &mut Commands, ic: &Icones, parent: Entity, l: &Ligne) {
+    let r = air::rangee(c, parent, 14.0);
+    let retrait = if l.sous { 28.0 } else { 0.0 };
+    c.entity(r).entry::<Node>().and_modify(move |mut n| {
+        n.align_items = AlignItems::FlexStart;
+        n.margin = UiRect::left(Val::Px(retrait));
+    });
+    let (cote, couleur, taille, texte) = if l.sous {
+        (5.0, OR_VIF.with_alpha(0.45), 15.0, IVOIRE.with_alpha(0.7))
+    } else {
+        (7.0, OR_VIF, 17.0, IVOIRE)
+    };
+    let p = air::point(c, r, cote, couleur);
+    c.entity(p)
+        .entry::<Node>()
+        .and_modify(move |mut n| n.margin = UiRect::top(Val::Px(taille * 0.5)));
+    let propre = l.texte.replace("**", "").replace('`', "");
+    let e = ecrit(c, ic, r, &propre, (Police::Normale, taille, texte));
+    c.entity(e).insert(Node {
+        flex_shrink: 1.0,
+        ..default()
+    });
 }
 
 /// Construit la page, la version `ouverte` dépliée ; renvoie sa racine.
 pub fn construire(c: &mut Commands, ic: &mut Icones, ouverte: usize) -> Entity {
-    let racine = c
-        .spawn((
-            Name::new("nouveautés"),
-            Node {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                flex_direction: FlexDirection::Column,
-                align_items: AlignItems::Center,
-                padding: UiRect::all(Val::Px(charte::MARGE)),
-                row_gap: Val::Px(16.0),
-                ..default()
-            },
-            BackgroundColor(charte::FOND),
-        ))
-        .id();
-    c.spawn((
-        TextePixel::nouveau("Nouveautés", IVOIRE, 4.0),
-        ChildOf(racine),
-    ));
-    let panneau = charte::panneau(
-        c,
+    let console::Page {
         racine,
-        Node {
-            width: Val::Px(LARGEUR),
-            max_width: Val::Percent(100.0),
-            flex_grow: 1.0,
-            min_height: Val::ZERO,
-            padding: UiRect::new(Val::Px(16.0), Val::Px(8.0), Val::Px(16.0), Val::Px(16.0)),
-            ..default()
-        },
-    );
+        gauche,
+        scene: d,
+    } = console::page(c, ic, ("nouveautés", "NOUVEAUTÉS"), (460.0, 820.0));
+    let versions = lire_journal(JOURNAL);
+    for (k, v) in versions.iter().take(NOMBRE_VERSIONS).enumerate() {
+        let (num, date) = numero(&v.titre);
+        let n: usize = v.sections.iter().map(|(_, l)| l.len()).sum();
+        let pluriel = if n > 1 { "s" } else { "" };
+        let aide = match (k, date.is_empty()) {
+            (0, _) => format!("La plus récente · {n} changement{pluriel}"),
+            (_, true) => format!("{n} changement{pluriel}"),
+            (_, false) => format!("{date} · {n} changement{pluriel}"),
+        };
+        let action = (k != ouverte).then_some(ActionMenu::Version(k));
+        intitule(c, ic, gauche, (num, &aide), (64.0, action));
+    }
+    let Some(v) = versions.get(ouverte) else {
+        return racine;
+    };
+    let (num, date) = numero(&v.titre);
+    let t = if date.is_empty() {
+        format!("VERSION {num}")
+    } else {
+        format!("VERSION {num} · {date}")
+    };
+    surtitre(c, ic, d, &t);
+    // Journal défilant à la molette
     let zone = c
         .spawn((
             Defilant,
             Node {
                 flex_direction: FlexDirection::Column,
-                row_gap: Val::Px(8.0),
+                flex_grow: 1.0,
                 min_height: Val::ZERO,
-                padding: UiRect::right(Val::Px(12.0)),
+                max_height: Val::Px(520.0),
+                row_gap: Val::Px(10.0),
+                padding: UiRect::right(Val::Px(16.0)),
                 overflow: Overflow::scroll_y(),
                 ..default()
             },
             ScrollPosition::default(),
-            ChildOf(panneau),
+            ChildOf(d),
         ))
         .id();
-    for (k, v) in lire_journal(JOURNAL)
-        .iter()
-        .take(NOMBRE_VERSIONS)
-        .enumerate()
-    {
-        let deplie = k == ouverte;
-        // En-tête : bouton qui déplie la version (« ⌄ » si ouverte, « › » sinon)
-        let relief = if deplie {
-            Relief::CHOISI
-        } else {
-            Relief::SECONDAIRE
-        };
-        let b = charte::bouton_relief(
-            c,
-            zone,
-            relief,
-            charte::H_SECONDAIRE,
-            ActionMenu::Version(k),
-        );
-        c.entity(b).entry::<Node>().and_modify(|mut n| {
-            n.justify_content = JustifyContent::SpaceBetween;
-            n.flex_shrink = 0.0;
+    for (k, (section, lignes)) in v.sections.iter().enumerate() {
+        let e = ecrit(c, ic, zone, section, (Police::Logo, 30.0, OR_VIF));
+        c.entity(e).insert(Node {
+            margin: UiRect::top(Val::Px(if k == 0 { 4.0 } else { 22.0 })),
+            flex_shrink: 0.0,
+            ..default()
         });
-        let couleur = if deplie { OR_VIF } else { IVOIRE };
-        texte(c, ic, b, &v.titre, (true, T_SECTION - 2.0, couleur));
-        let resume = if deplie {
-            "⌄".to_owned()
-        } else {
-            let n: usize = v.sections.iter().map(|(_, l)| l.len()).sum();
-            format!("{n} changement{} ›", if n > 1 { "s" } else { "" })
-        };
-        texte(c, ic, b, &resume, (false, T_AIDE, AIDE));
-        if !deplie {
-            continue;
-        }
-        let corps = c
-            .spawn((
-                Node {
-                    flex_direction: FlexDirection::Column,
-                    flex_shrink: 0.0,
-                    row_gap: Val::Px(4.0),
-                    padding: UiRect::new(Val::Px(12.0), Val::Px(8.0), Val::Px(4.0), Val::Px(12.0)),
-                    ..default()
-                },
-                ChildOf(zone),
-            ))
-            .id();
-        for (section, lignes) in &v.sections {
-            let t = texte(c, ic, corps, section, (true, T_CORPS + 1.0, OR_VIF));
-            c.entity(t).insert(Node {
-                margin: UiRect::top(Val::Px(8.0)),
-                ..default()
-            });
-            // Sections courtes : les premiers points seulement
-            let principales: Vec<_> = lignes.iter().filter(|l| !l.sous).collect();
-            for l in principales.iter().take(LIGNES_PAR_SECTION) {
-                let propre = l.texte.replace("**", "").replace('`', "");
-                let t = texte(
-                    c,
-                    ic,
-                    corps,
-                    &format!("•  {propre}"),
-                    (false, T_CORPS + 1.0, IVOIRE),
-                );
-                c.entity(t).insert(Node {
-                    margin: UiRect::left(Val::Px(8.0)),
-                    ..default()
-                });
-            }
-            let reste = principales.len().saturating_sub(LIGNES_PAR_SECTION);
-            if reste > 0 {
-                let t = format!("… et {reste} autre{}", if reste > 1 { "s" } else { "" });
-                let t = texte(c, ic, corps, &t, (false, T_AIDE, AIDE));
-                c.entity(t).insert(Node {
-                    margin: UiRect::left(Val::Px(8.0)),
-                    ..default()
-                });
-            }
+        for l in lignes {
+            point(c, ic, zone, l);
         }
     }
-    let retour = charte::bouton_relief(
-        c,
-        racine,
-        Relief::SECONDAIRE,
-        charte::H_SECONDAIRE,
-        ActionMenu::Fermer,
-    );
-    c.entity(retour).entry::<Node>().and_modify(|mut n| {
-        n.width = Val::Px(200.0);
-        n.flex_shrink = 0.0;
-    });
-    texte(c, ic, retour, "Retour", (true, T_CORPS, IVOIRE));
+    let p = console::pied(c, ic, racine);
+    aide(c, ic, p, "Molette : faire défiler le journal.");
     racine
 }
 

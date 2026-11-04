@@ -1,7 +1,8 @@
 # Reste à faire — maps Minecraft et suites
 
 État au 20/10/2026, version 0.16.0 (branche `claude/trusting-meitner-tgaseg`).
-Les cases cochées sont faites ; le reste est classé par priorité.
+Les cases cochées sont faites ; le reste est classé par priorité. Mention « (Rust) » :
+fait dans la version Rust (branche `rust`, état au 04/11/2026).
 
 ## Déjà fait (0.16.0)
 
@@ -27,14 +28,14 @@ Les cases cochées sont faites ; le reste est classé par priorité.
 
 ## Tirs et murs
 
-- [ ] Vérifier que les armes ajoutées par la refonte des classes respectent les murs : seuls les projectiles du joueur et des ennemis les testent aujourd'hui. À contrôler : `ricochets`, `tornades`, `tourbillons`, `orbesArcaniques`, `orbites`, `pluies`, `meteores`, `novas`, `foudre`, `balayages`, tirs des invocations (esprit de blaze)
+- [ ] (Rust : fait pour les projectiles, les tirs des invocations, les flèches à ricochets et les orbes arcaniques ; reste les armes de zone et de mêlée, qui frappent encore à travers les murs) Vérifier que les armes ajoutées par la refonte des classes respectent les murs : seuls les projectiles du joueur et des ennemis les testent aujourd'hui. À contrôler : `ricochets`, `tornades`, `tourbillons`, `orbesArcaniques`, `orbites`, `pluies`, `meteores`, `novas`, `foudre`, `balayages`, tirs des invocations (esprit de blaze)
 - [ ] Explosions et zones d'effet : décider si un mur protège (aujourd'hui non)
 
 ## Maps : contenu et réglages
 
-- [ ] **Panneaux de configuration** posés dans la map : `[zone] Village`, `[ennemis] zombie squelette`, `[boss]` (point d'apparition des boss)
+- [ ] **Panneaux de configuration** posés dans la map : `[zone] Village`, `[ennemis] zombie squelette` (Rust : fait, voir cartes/LISEZMOI.md), `[boss]` (point d'apparition des boss : reste à faire)
 - [ ] Zones d'ennemis par défaut pour une map importée (aujourd'hui : une seule population pour toute l'arène)
-- [ ] Rapport d'import visible en jeu : liste des blocs inconnus (aujourd'hui seulement dans la console)
+- [x] (Rust) Rapport d'import visible en jeu : liste des blocs inconnus (aujourd'hui seulement dans la console)
 - [ ] Format `.litematic` (Litematica)
 - [ ] Monde entier (dossier de sauvegarde, régions `.mca`) avec choix de la zone
 - [ ] Bedrock (`.mcstructure`)
@@ -43,13 +44,13 @@ Les cases cochées sont faites ; le reste est classé par priorité.
 ## Maps : affichage
 
 - [ ] Coffres, lits, panneaux, bannières, têtes : vrais modèles (aujourd'hui une boîte simple, ou rien)
-- [ ] Textures animées dans l'atlas (eau, lave, magma, portail) : aujourd'hui figées sur la première image
+- [x] (Rust) Textures animées dans l'atlas (eau, lave, magma, portail) : aujourd'hui figées sur la première image
 - [ ] Eau qui coule (hauteurs 1 à 7) au lieu d'une eau pleine
 - [ ] Teinte selon le biome de la map (aujourd'hui toujours « plaines »)
-- [ ] Plantes et feuillage qui ondulent au vent (shaders), comme dans les arènes du jeu
-- [ ] Blocs lumineux (torches, lanternes, glowstone, lave) qui éclairent vraiment : indispensable pour les caves
-- [ ] Ombres du soleil sur tout le décor (la carte d'ombres ne couvre que l'arène et 6 blocs autour)
-- [ ] Textures gardées en cache pour jouer hors ligne (aujourd'hui téléchargées à chaque lancement)
+- [x] (Rust) Plantes et feuillage qui ondulent au vent (shaders), comme dans les arènes du jeu
+- [x] (Rust) Blocs lumineux (torches, lanternes, glowstone, lave) qui éclairent vraiment : indispensable pour les caves
+- [x] (Rust) Ombres du soleil sur tout le décor (la carte d'ombres ne couvre que l'arène et 6 blocs autour)
+- [x] (Rust) Textures gardées en cache pour jouer hors ligne (aujourd'hui téléchargées à chaque lancement)
 
 ## Relief et caves (gros chantier)
 
@@ -64,7 +65,7 @@ Les cases cochées sont faites ; le reste est classé par priorité.
 ## Équilibrage
 
 - [ ] Durée d'une partie : passer de 15 à 20 minutes (montée de difficulté `dureeMontee`, boss, fin de partie)
-- [ ] Nombre de mobs selon la surface jouable de la map (petite map = moins de mobs à la fois)
+- [x] (Rust) Nombre de mobs selon la surface jouable de la map (petite map = moins de mobs à la fois)
 
 ## Divers
 

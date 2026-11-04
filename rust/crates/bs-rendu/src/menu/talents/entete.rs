@@ -95,7 +95,13 @@ pub(super) fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones
         });
     }
     let perso = &d.personnages.personnages[c.etat.personnage];
-    let t = format!("{} · Maîtrise {}", perso.nom, prog.maitrise(p).niveau);
+    let m = prog.maitrise(p);
+    let max = d.talents.maitrise.niveau_max;
+    let depenses = prog.points(p, a, None);
+    let t = format!("{depenses} / {max} points dépensés");
+    ecrire(commandes, ic, droite, &t, (false, T_AIDE, AIDE));
+    let plafond = if m.au_max() { " (max)" } else { "" };
+    let t = format!("{} · Maîtrise {}{plafond}", perso.nom, m.niveau);
     let m = rangee(commandes, droite, 6.0);
     ecrire(commandes, ic, m, &t, (false, T_AIDE, AIDE));
     icone(commandes, ic, m, &d.talents.maitrise.icone, 18.0);

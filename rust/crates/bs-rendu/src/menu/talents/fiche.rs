@@ -1,9 +1,10 @@
 //! Fiche du talent consulté, écrite à l'encre sur une page du livre de Minecraft posée
 //! à droite : une grande icône, le nom, le type et la branche, le rang en crans ; l'effet (ou les deux
-//! options d'un talent à choix, la jouée marquée d'un trait d'or) ; les conditions
+//! options d'un talent à choix, la retenue marquée d'un trait d'or) ; les conditions
 //! (prérequis, palier, coût) cochées ou barrées ; en bas un seul bouton vert
 //! « Apprendre · 1 point » quand l'achat est possible, sinon l'état en texte, plus les
-//! réglages en liens (talent final actif, arme de départ).
+//! réglage de l'arme de départ en lien. Un talent final écarté par un autre ou des
+//! points épuisés à la maîtrise maximale le disent.
 
 use bevy::prelude::*;
 use bs_donnees::progression::{Noeud, TypeNoeud};
@@ -128,7 +129,7 @@ fn en_preparation(c: &Contexte, m: &Option<String>) -> bool {
     m.as_ref().is_some_and(|m| !pretes.iter().any(|x| x == m))
 }
 
-/// Effet du talent, ou ses deux options (choisissables une fois acheté).
+/// Effet du talent, ou ses deux options (à choisir avant l'achat, fixées ensuite).
 fn effet(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity, n: &Noeud) {
     let prog = &c.sauvegarde.progression;
     let (p, a) = (c.id(), c.etat.arbre);
@@ -145,9 +146,10 @@ fn effet(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity, n: 
         }
         return;
     };
+    // Choisie avant l'achat, fixée ensuite (réinitialiser pour changer)
     let choisie = prog.option(p, a, n);
     for (i, o) in options.iter().enumerate() {
-        let jouee = rang > 0 && i == choisie;
+        let jouee = i == choisie;
         let b = commandes
             .spawn((
                 Node {
@@ -165,7 +167,7 @@ fn effet(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity, n: 
                 ChildOf(f),
             ))
             .id();
-        if rang > 0 && !jouee {
+        if rang == 0 && !jouee {
             commandes
                 .entity(b)
                 .insert((Button, ActionMenu::Talent(ActionTalent::Option(i))));
@@ -191,8 +193,10 @@ fn effet(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity, n: 
                 ChildOf(b),
             ))
             .id();
-        let nom = if jouee {
+        let nom = if jouee && rang > 0 {
             format!("✓ {}", o.nom)
+        } else if jouee {
+            format!("› {}", o.nom)
         } else {
             o.nom.clone()
         };
@@ -306,13 +310,13 @@ fn conditions(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity
     );
     let activation = match n.genre {
         TypeNoeud::Final => {
-            Some("Un seul talent final actif par arbre, changeable avant chaque partie.")
+            Some("Un seul talent final par arbre : l'apprendre ferme les deux autres.")
         }
         _ if n.gains.arme_depart.is_some() => {
             Some("Une seule arme de départ en plus par arbre ; désactivable sans perdre l'achat.")
         }
         _ if n.options.is_some() => {
-            Some("L'achat débloque les deux options ; une seule joue à la fois.")
+            Some("Choisis l'option avant d'apprendre : elle est définitive.")
         }
         _ => None,
     };
@@ -347,27 +351,6 @@ fn actions(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity, n
             (false, T_AIDE, ORANGE),
         );
     }
-    if rang > 0 && n.genre == TypeNoeud::Final {
-        if actif {
-            ecrire(
-                commandes,
-                ic,
-                bas,
-                "✓ Talent final actif",
-                (true, T_CORPS, VERT_GAIN),
-            );
-        } else {
-            let action = Some(ActionMenu::Talent(ActionTalent::ActiverFinal));
-            lien(
-                commandes,
-                ic,
-                bas,
-                "Activer ce talent final ›",
-                (T_CORPS, ENCRE),
-                action,
-            );
-        }
-    }
     if rang > 0 && n.gains.arme_depart.is_some() {
         let t = if actif {
             "Désactiver l'arme de départ ›"
@@ -398,6 +381,18 @@ fn actions(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity, n
                 "Prérequis non remplis",
                 (true, T_CORPS, ROUGE),
             );
+        }
+        Some(RefusAchat::Exclusif) => {
+            let t = "Un autre talent final est appris";
+            ecrire(commandes, ic, bas, t, (true, T_CORPS, ROUGE));
+            let t = "Réinitialise l'arbre pour changer de voie.";
+            ecrire(commandes, ic, bas, t, (false, T_AIDE, ENCRE_PALE));
+        }
+        Some(RefusAchat::Points) if prog.maitrise(p).au_max() => {
+            let t = "Tous les points sont dépensés";
+            ecrire(commandes, ic, bas, t, (true, T_CORPS, ENCRE_PALE));
+            let t = "Maîtrise au maximum : réinitialise l'arbre pour changer de voie.";
+            ecrire(commandes, ic, bas, t, (false, T_AIDE, ENCRE_PALE));
         }
         Some(RefusAchat::Points) => {
             ecrire(

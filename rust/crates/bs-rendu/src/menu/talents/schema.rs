@@ -8,6 +8,7 @@
 
 use bevy::prelude::*;
 use bs_donnees::progression::{Branche, Noeud, TypeNoeud};
+use bs_sauvegarde::progression::RefusAchat;
 
 use super::{ActionTalent, Contexte, ecrire};
 use crate::ecrans::charte::{AIDE, IVOIRE, OR_VIF, ROUGE, VERT_GAIN, cadenas};
@@ -280,7 +281,9 @@ fn noeud(
     let prog = &c.sauvegarde.progression;
     let (p, a) = (c.id(), c.etat.arbre);
     let r = prog.rang(p, a, n);
-    let ferme = r == 0 && !prog.ouvert(p, a, n);
+    // Fermé aussi : un talent final écarté par un autre déjà appris
+    let ecarte = prog.refus_achat(p, a, n) == Some(RefusAchat::Exclusif);
+    let ferme = r == 0 && (ecarte || !prog.ouvert(p, a, n));
     // Cadenas seulement derrière un palier fermé (le reste se lit aux liaisons)
     let palier =
         c.dj.d

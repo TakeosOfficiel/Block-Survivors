@@ -49,7 +49,6 @@ pub enum ActionTalent {
     Reinitialiser,
     Annuler,
     Option(usize),
-    ActiverFinal,
     BasculerArme,
 }
 
@@ -120,7 +119,6 @@ pub fn agir(
         ActionTalent::Reinitialiser => etat.confirmation = true,
         ActionTalent::Annuler => {}
         ActionTalent::Option(i) => prog.choisir_option(p, a, n, i),
-        ActionTalent::ActiverFinal => prog.choisir_final(p, a, n),
         ActionTalent::BasculerArme => {
             let actif = prog.actif(p, a, n);
             prog.choisir_arme_depart(p, a, (!actif).then_some(n));

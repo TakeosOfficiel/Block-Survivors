@@ -1,7 +1,8 @@
 //! Talents achetés dans les deux arbres de chaque classe (src/progression/sauvegarde.ts) :
 //! rangs, paliers, prérequis, points libres, option des talents à choix, talent final et
 //! arme de départ actifs. Clés : « personnage.arbre.talent » (rangs, options) et
-//! « personnage.arbre » (réglages).
+//! « personnage.arbre » (réglages). Les points sont rares (maîtrise plafonnée) : un seul
+//! talent final par arbre, et l'option d'un talent à choix se fixe à l'achat.
 
 use bs_donnees::progression::{Arbre, Noeud, TypeNoeud};
 
@@ -84,6 +85,8 @@ impl Progression {
             Some(RefusAchat::Max)
         } else if !self.ouvert(personnage, arbre, noeud) {
             Some(RefusAchat::Verrou)
+        } else if noeud.genre == TypeNoeud::Final && self.autre_final(personnage, arbre, noeud) {
+            Some(RefusAchat::Exclusif)
         } else if self.points_libres(personnage, arbre) < 1 {
             Some(RefusAchat::Points)
         } else {
@@ -102,8 +105,21 @@ impl Progression {
         true
     }
 
+    /// Un autre talent final que `noeud` est-il appris dans l'arbre ?
+    fn autre_final(&self, personnage: &str, arbre: usize, noeud: &Noeud) -> bool {
+        let noeuds = self.noeuds(personnage, arbre).iter();
+        noeuds
+            .filter(|n| n.genre == TypeNoeud::Final && n.id != noeud.id)
+            .any(|n| self.rang(personnage, arbre, n) > 0)
+    }
+
     /// Rend tous les points de l'arbre et efface ses réglages.
     pub fn reinitialiser(&mut self, personnage: &str, arbre: usize) {
+        self.vider_arbre(personnage, arbre);
+        self.enregistrer();
+    }
+
+    fn vider_arbre(&mut self, personnage: &str, arbre: usize) {
         for n in self.noeuds(personnage, arbre) {
             let cle = self.cle_noeud(personnage, arbre, n);
             self.c.rangs.remove(&cle);
@@ -112,7 +128,30 @@ impl Progression {
         let cle = self.cle_arbre(personnage, arbre);
         self.c.finals.remove(&cle);
         self.c.armes_depart.remove(&cle);
-        self.enregistrer();
+    }
+
+    /// Vide les arbres qui sortent des règles (plus de rangs que de points, plusieurs
+    /// talents finals : sauvegarde d'avant le plafond) ; vrai si l'un l'a été.
+    pub(super) fn assainir(&mut self) -> bool {
+        let d = self.d;
+        let mut vide = false;
+        for personnage in d.talents.arbres.keys() {
+            let niveau = self.maitrise(personnage).niveau;
+            for arbre in 0..2 {
+                let noeuds = self.noeuds(personnage, arbre).iter();
+                let finals = noeuds
+                    .filter(|n| n.genre == TypeNoeud::Final && self.rang(personnage, arbre, n) > 0)
+                    .count();
+                if self.points(personnage, arbre, None) > niveau || finals > 1 {
+                    self.vider_arbre(personnage, arbre);
+                    vide = true;
+                }
+            }
+        }
+        if vide {
+            self.c.reinitialise = true;
+        }
+        vide
     }
 
     /// Option choisie (0 ou 1) d'un talent à choix.
@@ -121,7 +160,11 @@ impl Progression {
         usize::from(self.c.options.get(&cle) == Some(&1.0))
     }
 
+    /// Choisit l'option d'un talent à choix pas encore appris (fixée ensuite).
     pub fn choisir_option(&mut self, personnage: &str, arbre: usize, noeud: &Noeud, option: usize) {
+        if self.rang(personnage, arbre, noeud) > 0 {
+            return;
+        }
         let cle = self.cle_noeud(personnage, arbre, noeud);
         self.c.options.insert(cle, f64::from(u8::from(option == 1)));
         self.enregistrer();
@@ -190,5 +233,80 @@ impl Progression {
             return actif.is_some_and(|n| n.id == noeud.id);
         }
         true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::stockage::Stockage;
+
+    fn progression(nom: &str) -> Progression {
+        let d = Box::leak(Box::new(bs_donnees::Donnees::embarquees().unwrap()));
+        let dossier = std::env::temp_dir().join(format!("bs-talents-{nom}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dossier);
+        let mut p = Progression::charger(d, Stockage::nouveau(dossier), "p".into());
+        p.c.maitrise.insert("guerrier".into(), 1e9);
+        p
+    }
+
+    fn poser(p: &mut Progression, id: &str, rang: u32) {
+        let n = p.noeuds("guerrier", 0).iter().find(|n| n.id == id).unwrap();
+        let cle = p.cle_noeud("guerrier", 0, n);
+        p.c.rangs.insert(cle, f64::from(rang));
+    }
+
+    #[test]
+    fn points_rares_et_choix_definitifs() {
+        let mut p = progression("rares");
+        let max = p.d.talents.maitrise.niveau_max;
+        assert_eq!(p.maitrise("guerrier").niveau, max);
+        assert!(p.maitrise("guerrier").au_max());
+        let noeuds = p.noeuds("guerrier", 0);
+        let total: u32 = noeuds.iter().map(|n| n.rang_max).sum();
+        assert!(
+            total > max + 5,
+            "un arbre ne se remplit pas : {total} rangs"
+        );
+
+        // Tous les rangs hors finals : plus que les points, l'arbre est vidé au chargement
+        for n in noeuds.iter().filter(|n| n.genre != TypeNoeud::Final) {
+            poser(&mut p, &n.id, n.rang_max);
+        }
+        assert!(p.assainir());
+        assert_eq!(p.points("guerrier", 0, None), 0);
+        assert!(p.annoncer_reinitialisation());
+
+        // Un talent final ferme les autres
+        for n in noeuds.iter().filter(|n| n.genre != TypeNoeud::Final) {
+            poser(&mut p, &n.id, n.rang_max);
+        }
+        poser(&mut p, "f_fureur", 1);
+        let champion = noeuds.iter().find(|n| n.id == "f_champion").unwrap();
+        assert_eq!(
+            p.refus_achat("guerrier", 0, champion),
+            Some(RefusAchat::Exclusif)
+        );
+
+        // L'option se choisit avant l'achat, puis ne bouge plus
+        let elan = noeuds.iter().find(|n| n.id == "elan").unwrap();
+        p.reinitialiser("guerrier", 0);
+        p.choisir_option("guerrier", 0, elan, 1);
+        poser(&mut p, "elan", 1);
+        p.choisir_option("guerrier", 0, elan, 0);
+        assert_eq!(p.option("guerrier", 0, elan), 1);
+
+        // Plus un point une fois le plafond dépensé
+        p.reinitialiser("guerrier", 0);
+        let mut achats = 0;
+        while let Some(n) = noeuds
+            .iter()
+            .find(|n| p.refus_achat("guerrier", 0, n).is_none())
+        {
+            assert!(p.acheter("guerrier", 0, n));
+            achats += 1;
+        }
+        assert_eq!(achats, max);
+        assert_eq!(p.points_libres("guerrier", 0), 0);
     }
 }

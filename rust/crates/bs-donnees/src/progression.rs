@@ -230,6 +230,14 @@ pub struct Maitrise {
     pub icone: Texture,
     pub premier_niveau: u32,
     pub increment: u32,
+    /// Niveau plafond : chaque niveau donne un point, bien moins que les rangs d'un
+    /// arbre, si bien qu'il faut choisir ses branches.
+    #[serde(default = "niveau_max_par_defaut")]
+    pub niveau_max: u32,
+}
+
+fn niveau_max_par_defaut() -> u32 {
+    22
 }
 
 impl Maitrise {
@@ -240,10 +248,10 @@ impl Maitrise {
             + u64::from(self.increment) * (n * n.saturating_sub(1)) / 2
     }
 
-    /// Niveau de maîtrise atteint avec cette XP.
+    /// Niveau de maîtrise atteint avec cette XP (au plus `niveau_max`).
     pub fn niveau(&self, xp: u64) -> u32 {
         let mut niveau = 0;
-        while self.xp_pour_niveau(niveau + 1) <= xp {
+        while niveau < self.niveau_max && self.xp_pour_niveau(niveau + 1) <= xp {
             niveau += 1;
         }
         niveau

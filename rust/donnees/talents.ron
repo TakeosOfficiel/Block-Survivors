@@ -2471,6 +2471,7 @@
     icone: "item/experience_bottle",
     premierNiveau: 300,
     increment: 75,
+    niveauMax: 22,
   ),
   deblocages: [(
     type: arene,

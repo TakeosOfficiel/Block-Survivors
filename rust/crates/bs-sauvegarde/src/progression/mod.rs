@@ -4,9 +4,13 @@
 //! talent final actif, arme de départ active), arbre actif, records qui débloquent
 //! personnages et arènes.
 //!
-//! Chaque niveau de maîtrise donne un point de talent ; un rang coûte un point. Les deux
+//! Chaque niveau de maîtrise donne un point de talent ; un rang coûte un point. La
+//! maîtrise plafonne (`niveau_max`) bien en dessous des rangs d'un arbre : on ne prend
+//! pas tout, il faut choisir ses branches. Un seul talent final par arbre, et l'option
+//! d'un talent à choix est fixée à l'achat (réinitialiser pour changer). Les deux
 //! arbres d'une classe ont chacun tous les points (double spécialisation). Une sauvegarde
-//! d'une version plus ancienne perd ses talents (records et arbre actif gardés).
+//! d'une version plus ancienne perd ses talents (records et arbre actif gardés), comme
+//! un arbre qui dépasse ces règles (ancienne maîtrise sans plafond).
 //! `bonus` donne les effets en jeu de l'arbre actif (bonus.rs).
 
 use std::collections::BTreeMap;
@@ -33,6 +37,13 @@ pub struct EtatMaitrise {
     /// XP du début du niveau actuel et du suivant.
     pub debut_niveau: u64,
     pub fin_niveau: u64,
+}
+
+impl EtatMaitrise {
+    /// Niveau plafond atteint : plus de point à gagner.
+    pub fn au_max(&self) -> bool {
+        self.fin_niveau == self.debut_niveau
+    }
 }
 
 /// Bilan d'une partie terminée.
@@ -92,6 +103,8 @@ pub enum RefusAchat {
     Max,
     Verrou,
     Points,
+    /// Un autre talent final est déjà appris dans cet arbre.
+    Exclusif,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -193,13 +206,14 @@ impl Progression {
                 existe
             },
         };
-        let p = Self {
+        let mut p = Self {
             d,
             stockage,
             cle,
             c,
         };
-        if existe && !actuelle {
+        let assaini = p.assainir();
+        if (existe && !actuelle) || assaini {
             p.enregistrer();
         }
         p
@@ -242,11 +256,17 @@ impl Progression {
     fn etat_maitrise(&self, xp: u64) -> EtatMaitrise {
         let m = &self.d.talents.maitrise;
         let niveau = m.niveau(xp);
+        let debut_niveau = m.xp_pour_niveau(niveau);
         EtatMaitrise {
             niveau,
             xp,
-            debut_niveau: m.xp_pour_niveau(niveau),
-            fin_niveau: m.xp_pour_niveau(niveau + 1),
+            debut_niveau,
+            // Au plafond, plus de niveau suivant (barre pleine)
+            fin_niveau: if niveau >= m.niveau_max {
+                debut_niveau
+            } else {
+                m.xp_pour_niveau(niveau + 1)
+            },
         }
     }
 

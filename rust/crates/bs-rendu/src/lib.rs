@@ -336,7 +336,11 @@ impl Plugin for PluginJeu {
                     ecrans::gerer,
                     ecrans::defiler,
                     ecrans::vues::indiquer,
-                    (ecrans::style::survoler, ecrans::charte::survoler_relief),
+                    (
+                        ecrans::style::survoler,
+                        ecrans::charte::survoler_relief,
+                        menu::survoler_liens,
+                    ),
                     hud::afficher,
                     hud::compteur::afficher,
                     soleil::suivre,

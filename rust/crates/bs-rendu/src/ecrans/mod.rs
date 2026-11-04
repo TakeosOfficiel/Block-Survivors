@@ -12,6 +12,7 @@
 mod bilan;
 pub mod charte;
 mod fin;
+mod nuit;
 pub mod style;
 pub(crate) mod vues;
 
@@ -89,7 +90,12 @@ pub fn gerer(
     mut jeu: ResMut<PartieEnCours>,
     cartes: Res<EcranCartes>,
     mut sauvegarde: ResMut<Sauvegarde>,
-    (serveur, textures, dessins): (Res<AssetServer>, Res<Textures>, Res<Dessins>),
+    (serveur, textures, dessins, polices): (
+        Res<AssetServer>,
+        Res<Textures>,
+        Res<Dessins>,
+        Res<crate::polices::PolicesMenu>,
+    ),
     touches: Res<ButtonInput<KeyCode>>,
     mut focus: MessageReader<WindowFocused>,
     boutons: Query<(&Interaction, &Action), Changed<Interaction>>,
@@ -207,13 +213,14 @@ pub fn gerer(
         serveur: &serveur,
         textures: &textures,
         dessins: &dessins,
+        polices: &polices,
     };
     let p = &jeu.partie;
     ecrans.racine = match vue {
         Vue::Aucune => None,
         Vue::Pause => Some(vues::pause(&mut commandes, &c, p, coop.is_some())),
         Vue::Statistiques => Some(vues::statistiques(&mut commandes, &c, p)),
-        Vue::Confirmer(a) => Some(vues::confirmer(&mut commandes, a)),
+        Vue::Confirmer(a) => Some(vues::confirmer(&mut commandes, &c, a)),
         Vue::Fin => Some(fin::fin(
             &mut commandes,
             &c,

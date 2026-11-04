@@ -1,8 +1,9 @@
 //! Bilan d'une partie (src/ui/bilan.ts, compteurDegats.ts), pour la pause et l'écran de
 //! fin : chiffres clés sur deux colonnes, équipement porté, ennemis vaincus par type,
 //! tableau des dégâts de chaque arme avec sa jauge. Aussi le résumé en tête de ces
-//! écrans (temps, ennemis, niveau, émeraudes) : pastilles de la pause, tuiles de la fin.
-//! Construit à l'ouverture de l'écran seulement.
+//! écrans (temps, ennemis, niveau, émeraudes) : chiffres en ligne pour la pause, grands
+//! chiffres pour la fin. En Inter, sans case ni cadre (`nuit`). Construit à l'ouverture
+//! de l'écran seulement.
 
 use bevy::prelude::*;
 use bs_donnees::Donnees;
@@ -11,19 +12,17 @@ use bs_regles::partie::Partie;
 use bs_regles::textes::Famille;
 use bs_regles::textes::libelles::nombre;
 
-use super::style::{GRIS, OR_CLAIR};
+use super::charte::{AIDE, IVOIRE, VERT_GAIN};
+use super::nuit::{self, Style, TERNE, ecrit};
 use crate::dessins::Dessins;
 use crate::ecran_cartes::couleur_famille;
-use crate::hud::police::TextePixel;
+use crate::polices::PolicesMenu;
 use crate::textures::Textures;
 
 const ICONE_TEMPS: &str = "item/clock_00";
 const ICONE_TUES: &str = "item/bone";
 const ICONE_NIVEAU: &str = "item/experience_bottle";
-const CLAIR: Color = Color::srgb_u8(0xd8, 0xd8, 0xd8);
-const VERT: Color = Color::srgb_u8(0x3c, 0xb8, 0x50);
-const TAILLE: f32 = 2.0;
-const TAILLE_TABLEAU: f32 = 1.5;
+const TAILLE: f32 = 16.0;
 
 pub fn demander_textures(d: &Donnees, demander: &mut impl FnMut(&str)) {
     demander(&d.talents.maitrise.icone);
@@ -37,6 +36,7 @@ pub struct Contexte<'a> {
     pub serveur: &'a AssetServer,
     pub textures: &'a Textures,
     pub dessins: &'a Dessins,
+    pub polices: &'a PolicesMenu,
 }
 
 impl Contexte<'_> {
@@ -55,10 +55,26 @@ impl Contexte<'_> {
             },
         )
     }
+
+    /// Texte Inter (normal ou gras) ou en police du logo.
+    pub fn ecrit(
+        &self,
+        commandes: &mut Commands,
+        parent: Entity,
+        t: &str,
+        style: (Style, f32, Color),
+    ) -> Entity {
+        ecrit(commandes, self.polices, parent, t, style)
+    }
 }
 
-pub fn texte(commandes: &mut Commands, parent: Entity, t: &str, couleur: Color, taille: f32) {
-    commandes.spawn((TextePixel::nouveau(t, couleur, taille), ChildOf(parent)));
+/// Titre de section du bilan (surtitre doré, de l'air au-dessus).
+fn section(commandes: &mut Commands, c: &Contexte, parent: Entity, t: &str) {
+    let e = nuit::surtitre(commandes, c.polices, parent, t);
+    commandes.entity(e).insert(Node {
+        margin: UiRect::new(Val::ZERO, Val::ZERO, Val::Px(18.0), Val::Px(4.0)),
+        ..default()
+    });
 }
 
 /// « 05:07 »
@@ -102,80 +118,33 @@ fn resume(p: &Partie) -> [(&'static str, String, &'static str); 4] {
     ]
 }
 
-/// Résumé en pastilles (pause) : icône et valeur.
+/// Résumé en ligne (pause) : icône et valeur, séparés de pastilles.
 pub fn pastilles(commandes: &mut Commands, c: &Contexte, parent: Entity, p: &Partie) {
-    let ligne = commandes
-        .spawn((
-            Node {
-                column_gap: Val::Px(8.0),
-                ..default()
-            },
-            ChildOf(parent),
-        ))
-        .id();
-    for (icone, valeur, _) in resume(p) {
-        let pastille = commandes
-            .spawn((
-                Node {
-                    align_items: AlignItems::Center,
-                    column_gap: Val::Px(6.0),
-                    padding: UiRect::axes(Val::Px(12.0), Val::Px(6.0)),
-                    border: UiRect::all(Val::Px(1.0)),
-                    border_radius: BorderRadius::all(Val::Px(2.0)),
-                    ..default()
-                },
-                BackgroundColor(Color::srgba(1.0, 1.0, 1.0, 0.07)),
-                BorderColor::all(Color::srgba(1.0, 1.0, 1.0, 0.12)),
-                ChildOf(ligne),
-            ))
-            .id();
-        commandes.spawn((c.image(icone, 20.0), ChildOf(pastille)));
-        texte(commandes, pastille, &valeur, Color::WHITE, TAILLE);
+    let ligne = nuit::rangee(commandes, parent, 18.0);
+    for (k, (icone, valeur, _)) in resume(p).into_iter().enumerate() {
+        if k > 0 {
+            nuit::point(commandes, ligne, 5.0, TERNE);
+        }
+        let r = nuit::rangee(commandes, ligne, 8.0);
+        commandes.spawn((c.image(icone, 22.0), ChildOf(r)));
+        c.ecrit(commandes, r, &valeur, (Style::Grasse, 20.0, IVOIRE));
     }
 }
 
-/// Résumé en tuiles (fin de partie) : grande valeur, icône et libellé.
+/// Résumé en grands chiffres (fin de partie) : valeur, icône et libellé dessous.
 pub fn tuiles(commandes: &mut Commands, c: &Contexte, parent: Entity, p: &Partie) {
-    let ligne = commandes
-        .spawn((
-            Node {
-                column_gap: Val::Px(12.0),
-                ..default()
-            },
-            ChildOf(parent),
-        ))
-        .id();
+    let ligne = nuit::rangee(commandes, parent, 56.0);
     for (icone, valeur, libelle) in resume(p) {
-        let tuile = commandes
-            .spawn((
-                Node {
-                    min_width: Val::Px(130.0),
-                    padding: UiRect::axes(Val::Px(10.0), Val::Px(12.0)),
-                    flex_direction: FlexDirection::Column,
-                    align_items: AlignItems::Center,
-                    row_gap: Val::Px(6.0),
-                    border: UiRect::all(Val::Px(1.0)),
-                    border_radius: BorderRadius::all(Val::Px(2.0)),
-                    ..default()
-                },
-                BackgroundColor(Color::srgba_u8(10, 12, 18, 153)),
-                BorderColor::all(Color::srgba(1.0, 1.0, 1.0, 0.12)),
-                ChildOf(ligne),
-            ))
-            .id();
-        texte(commandes, tuile, &valeur, Color::WHITE, 3.5);
-        let bas = commandes
-            .spawn((
-                Node {
-                    align_items: AlignItems::Center,
-                    column_gap: Val::Px(5.0),
-                    ..default()
-                },
-                ChildOf(tuile),
-            ))
-            .id();
+        let tuile = nuit::colonne(commandes, ligne, 4.0);
+        commandes
+            .entity(tuile)
+            .entry::<Node>()
+            .and_modify(|mut n| n.align_items = AlignItems::Center);
+        c.ecrit(commandes, tuile, &valeur, (Style::Logo, 46.0, IVOIRE));
+        let bas = nuit::rangee(commandes, tuile, 6.0);
         commandes.spawn((c.image(icone, 16.0), ChildOf(bas)));
-        texte(commandes, bas, &libelle.to_uppercase(), GRIS, 1.5);
+        let t = libelle.to_uppercase();
+        c.ecrit(commandes, bas, &t, (Style::Grasse, 12.0, AIDE));
     }
 }
 
@@ -238,12 +207,12 @@ pub fn bilan(commandes: &mut Commands, c: &Contexte, parent: Entity, p: &Partie)
                 ChildOf(grille),
             ))
             .id();
-        texte(commandes, l, libelle, CLAIR, TAILLE);
-        texte(commandes, l, valeur, Color::WHITE, TAILLE);
+        c.ecrit(commandes, l, libelle, (Style::Normale, TAILLE, AIDE));
+        c.ecrit(commandes, l, valeur, (Style::Grasse, TAILLE, IVOIRE));
     }
 
     // Équipement porté : icône, nom coloré de sa rareté, niveau
-    texte(commandes, parent, "Équipement", OR_CLAIR, TAILLE);
+    section(commandes, c, parent, "ÉQUIPEMENT");
     let liste = rangee(commandes, parent, 16.0);
     for o in p.equipement.portes() {
         let def = &d.equipement.objets[o.objet];
@@ -265,27 +234,28 @@ pub fn bilan(commandes: &mut Commands, c: &Contexte, parent: Entity, p: &Partie)
             def.nom.clone()
         };
         let couleur = couleur_famille(Famille::Objet(def.rarete)).0;
-        texte(commandes, objet, &nom, couleur, TAILLE);
+        c.ecrit(commandes, objet, &nom, (Style::Grasse, TAILLE, couleur));
     }
     if p.equipement.portes().next().is_none() {
         let vide = "Aucun objet : ouvrez des coffres avec vos émeraudes.";
-        texte(commandes, liste, vide, GRIS, TAILLE);
+        c.ecrit(commandes, liste, vide, (Style::Normale, TAILLE, AIDE));
     }
 
     // Ennemis vaincus, par type rencontré
-    texte(commandes, parent, "Ennemis vaincus", OR_CLAIR, TAILLE);
+    section(commandes, c, parent, "ENNEMIS VAINCUS");
     let liste = rangee(commandes, parent, 14.0);
     for ((_, def), &n) in d.ennemis.iter().zip(&s.tues_par_type) {
         if n > 0 {
             let t = format!("{} ×{}", def.nom, entier(f64::from(n)));
-            texte(commandes, liste, &t, CLAIR, TAILLE);
+            c.ecrit(commandes, liste, &t, (Style::Normale, TAILLE, IVOIRE));
         }
     }
     if e.ennemis_tues == 0 {
-        texte(commandes, liste, "Aucun pour l'instant.", GRIS, TAILLE);
+        let t = "Aucun pour l'instant.";
+        c.ecrit(commandes, liste, t, (Style::Normale, TAILLE, AIDE));
     }
 
-    texte(commandes, parent, "Dégâts par arme", OR_CLAIR, TAILLE);
+    section(commandes, c, parent, "DÉGÂTS PAR ARME");
     tableau_degats(commandes, c, parent, p);
 }
 
@@ -315,23 +285,22 @@ fn tableau_degats(commandes: &mut Commands, c: &Contexte, parent: Entity, p: &Pa
             ChildOf(parent),
         ))
         .id();
-    let cellule = |commandes: &mut Commands, t: &str, couleur: Color, gauche: bool| {
-        let mut n = Node::default();
+    let cellule = |commandes: &mut Commands, t: &str, style: (Style, f32, Color), gauche: bool| {
+        let e = c.ecrit(commandes, grille, t, style);
         if gauche {
-            n.justify_self = JustifySelf::Start;
+            commandes.entity(e).insert(Node {
+                justify_self: JustifySelf::Start,
+                ..default()
+            });
         }
-        commandes.spawn((
-            TextePixel::nouveau(t, couleur, TAILLE_TABLEAU),
-            n,
-            ChildOf(grille),
-        ));
     };
     commandes.spawn((Node::default(), ChildOf(grille)));
     for (k, titre) in ["Arme", "Dégâts", "Part", "Par s", "Achevés"]
         .into_iter()
         .enumerate()
     {
-        cellule(commandes, titre, GRIS, k == 0);
+        let t = titre.to_uppercase();
+        cellule(commandes, &t, (Style::Grasse, 12.0, TERNE), k == 0);
     }
     for a in armes {
         let i = a.index;
@@ -344,19 +313,15 @@ fn tableau_degats(commandes: &mut Commands, c: &Contexte, parent: Entity, p: &Pa
         };
         let part = if total > 0.0 { dg / total * 100.0 } else { 0.0 };
         commandes.spawn((c.image(&a.def.icone, 24.0), ChildOf(grille)));
-        cellule(
-            commandes,
-            &format!("{} ({rang})", a.def.nom),
-            Color::WHITE,
-            true,
-        );
+        let nom = format!("{} · {rang}", a.def.nom);
+        cellule(commandes, &nom, (Style::Grasse, 15.0, IVOIRE), true);
         for v in [
             degats(dg),
             format!("{} %", part.round()),
             decimal(dg / duree),
             entier(f64::from(s.tues_par_arme[i])),
         ] {
-            cellule(commandes, &v, Color::WHITE, false);
+            cellule(commandes, &v, (Style::Normale, 15.0, IVOIRE), false);
         }
         // Jauge sous la ligne, de la 2e colonne à la dernière
         let jauge = commandes
@@ -377,10 +342,10 @@ fn tableau_degats(commandes: &mut Commands, c: &Contexte, parent: Entity, p: &Pa
             Node {
                 width: Val::Percent((dg / maximum * 100.0) as f32),
                 height: Val::Percent(100.0),
-                border_radius: BorderRadius::all(Val::Px(2.0)),
+                border_radius: BorderRadius::MAX,
                 ..default()
             },
-            BackgroundColor(VERT),
+            BackgroundColor(VERT_GAIN),
             ChildOf(jauge),
         ));
     }

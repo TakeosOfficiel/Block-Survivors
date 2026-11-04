@@ -130,8 +130,3 @@ pub fn survoler(
         };
     }
 }
-
-/// Titre d'écran (police du jeu, or clair).
-pub fn titre(commandes: &mut Commands, parent: Entity, texte: &str, couleur: Color, taille: f32) {
-    commandes.spawn((TextePixel::nouveau(texte, couleur, taille), ChildOf(parent)));
-}

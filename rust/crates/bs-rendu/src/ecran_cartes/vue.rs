@@ -104,21 +104,18 @@ pub fn construire(
         .and_modify(move |mut n| {
             n.align_items = AlignItems::Stretch;
             match style.as_str() {
-                "inventaire" => n.column_gap = Val::Px(36.0),
-                "parchemin" | "verre" => n.column_gap = Val::Px(28.0),
-                "bandes" => {
-                    n.column_gap = Val::Px(14.0);
+                "projecteur" => n.column_gap = Val::Px(40.0),
+                "faisceaux" => n.column_gap = Val::Px(30.0),
+                "colonnes" => n.column_gap = Val::ZERO,
+                "bandeaux" => {
+                    n.flex_direction = FlexDirection::Column;
+                    n.row_gap = Val::Px(12.0);
                     n.width = Val::Percent(100.0);
-                    n.flex_grow = 1.0;
                 }
                 _ => {}
             }
         });
     let style = std::env::var("BS_CARTES_STYLE").unwrap_or_default();
-    let nombre = cartes
-        .iter()
-        .filter(|c| c.famille != Famille::Action)
-        .count();
     let mut refus = None;
     for (k, carte) in cartes.iter().enumerate() {
         // Refus du coffre : action secondaire sous les cartes, pas une carte
@@ -127,10 +124,10 @@ pub fn construire(
             continue;
         }
         match style.as_str() {
-            "inventaire" => propositions::inventaire(commandes, c, liste, k, carte),
-            "parchemin" => propositions::parchemin(commandes, c, liste, (k, nombre), carte),
-            "bandes" => propositions::bande(commandes, c, liste, k, carte),
-            "verre" => propositions::verre(commandes, c, liste, k, carte),
+            "projecteur" => propositions::projecteur(commandes, c, liste, k, carte),
+            "faisceaux" => propositions::faisceau(commandes, c, liste, k, carte),
+            "bandeaux" => propositions::bandeau(commandes, c, liste, k, carte),
+            "colonnes" => propositions::colonne(commandes, c, liste, k, carte),
             _ => construire_carte(commandes, c, liste, k, carte),
         }
     }

@@ -1,7 +1,8 @@
-//! Présentations à l'essai des choix (variable `BS_CARTES_STYLE`) : « inventaire »
-//! (case d'inventaire et infobulle Minecraft), « parchemin » (feuillets de parchemin),
-//! « bandes » (l'écran partagé en grandes bandes verticales) et « verre » (verre dépoli).
-//! La présentation par défaut (médaillons) est dans `vue`.
+//! Présentations à l'essai des choix (variable `BS_CARTES_STYLE`) : « projecteur » (les
+//! objets seuls, le texte du choix pointé dessous), « faisceaux » (objets en lévitation
+//! dans un rayon de lumière), « bandeaux » (rubans pleine largeur fondus aux bords) et
+//! « colonnes » (mise en page de magazine, grands chiffres, filets). La présentation par
+//! défaut (médaillons) est dans `vue`.
 
 use bevy::prelude::*;
 use bs_regles::textes::{Carte, Icone};
@@ -9,9 +10,12 @@ use bs_regles::textes::{Carte, Icone};
 use super::vue::{BoutonCarte, Contexte, Halo, couleur_famille};
 use crate::ecrans::charte::{IVOIRE, VERT_GAIN};
 use crate::ecrans::nuit::{self, Style};
-use crate::hud::police::TextePixel;
 
 const DESCRIPTION: Color = Color::srgb_u8(0xc8, 0xcc, 0xd6);
+
+/// Partie d'un choix « projecteur » : texte (montré au survol) ou icône (grossie).
+#[derive(Component)]
+pub struct Projecteur(pub usize, pub bool);
 
 fn icone(commandes: &mut Commands, c: &Contexte, parent: Entity, carte: &Carte, cote: f32) {
     let image = match carte.icone {
@@ -50,311 +54,283 @@ fn bouton(commandes: &mut Commands, liste: Entity, k: usize, n: Node) -> Entity 
         .id()
 }
 
-fn centre(commandes: &mut Commands, e: Entity) {
-    commandes
-        .entity(e)
-        .insert(TextLayout::new_with_justify(Justify::Center));
+fn aligne(commandes: &mut Commands, e: Entity, j: Justify) {
+    commandes.entity(e).insert(TextLayout::new_with_justify(j));
 }
 
-/// Case d'inventaire (grise, en creux) avec l'objet, infobulle Minecraft dessous : fond
-/// violet nuit, liseré violet, nom de la couleur de la rareté, effets en bleu.
-pub fn inventaire(commandes: &mut Commands, c: &Contexte, liste: Entity, k: usize, carte: &Carte) {
-    let (famille, _) = couleur_famille(carte.famille);
-    let b = bouton(
-        commandes,
-        liste,
-        k,
-        Node {
-            width: Val::Px(360.0),
-            flex_direction: FlexDirection::Column,
-            align_items: AlignItems::Center,
-            row_gap: Val::Px(14.0),
-            ..default()
-        },
-    );
-    let case = commandes
+/// Trait fin (liseré d'or au survol) : porte le `Halo` du bouton.
+fn filet(commandes: &mut Commands, b: Entity, parent: Entity, largeur: Val, couleur: Color) {
+    let t = commandes
         .spawn((
             Node {
-                width: Val::Px(128.0),
-                height: Val::Px(128.0),
-                border: UiRect::all(Val::Px(4.0)),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
+                width: largeur,
+                height: Val::Px(3.0),
+                border_radius: BorderRadius::MAX,
+                flex_shrink: 0.0,
                 ..default()
             },
-            BackgroundColor(Color::srgb_u8(0x8b, 0x8b, 0x8b)),
-            BorderColor {
-                top: Color::srgb_u8(0x37, 0x37, 0x37),
-                left: Color::srgb_u8(0x37, 0x37, 0x37),
-                bottom: Color::WHITE,
-                right: Color::WHITE,
-            },
-            Outline::new(Val::Px(3.0), Val::Px(3.0), Color::NONE),
-            ChildOf(b),
+            BackgroundColor(couleur),
+            Outline::new(Val::Px(2.0), Val::ZERO, couleur),
+            ChildOf(parent),
         ))
         .id();
-    commandes.entity(b).insert(Halo(case, Color::NONE));
-    icone(commandes, c, case, carte, 96.0);
-    let bulle = commandes
-        .spawn((
-            Node {
-                width: Val::Percent(100.0),
-                flex_direction: FlexDirection::Column,
-                row_gap: Val::Px(6.0),
-                padding: UiRect::all(Val::Px(12.0)),
-                border: UiRect::all(Val::Px(3.0)),
-                ..default()
-            },
-            BackgroundColor(Color::srgba_u8(0x10, 0x00, 0x10, 0xf0)),
-            BorderColor {
-                top: Color::srgb_u8(0x50, 0x00, 0xff),
-                left: Color::srgb_u8(0x3c, 0x00, 0xbf),
-                right: Color::srgb_u8(0x3c, 0x00, 0xbf),
-                bottom: Color::srgb_u8(0x28, 0x00, 0x7f),
-            },
-            ChildOf(b),
-        ))
-        .id();
-    let l = 360.0 - 30.0;
-    let nom = format!("{}  [{}]", carte.nom, chiffre(k));
-    commandes.spawn((
-        TextePixel::nouveau(&nom, famille, 2.5).bloc(l),
-        ChildOf(bulle),
-    ));
-    let gris = Color::srgb_u8(0xa8, 0xa8, 0xa8);
-    let s = surtitre(carte);
-    commandes.spawn((TextePixel::nouveau(&s, gris, 2.0), ChildOf(bulle)));
-    let bleu = Color::srgb_u8(0x55, 0x55, 0xff);
-    for ligne in &carte.lignes {
-        commandes.spawn((
-            TextePixel::nouveau(ligne, bleu, 2.0).bloc(l),
-            ChildOf(bulle),
-        ));
-    }
-    let violet = Color::srgb_u8(0xaa, 0x55, 0xcc);
-    let d = &carte.description;
-    commandes.spawn((TextePixel::nouveau(d, violet, 2.0).bloc(l), ChildOf(bulle)));
+    commandes.entity(b).insert(Halo(t, couleur));
 }
 
-/// Feuillet de parchemin un peu de travers, encre brune, nom à la cire rouge.
-pub fn parchemin(
-    commandes: &mut Commands,
-    c: &Contexte,
-    liste: Entity,
-    (k, n): (usize, usize),
-    carte: &Carte,
-) {
-    let (famille, _) = couleur_famille(carte.famille);
-    let encre = Color::srgb_u8(0x3b, 0x2a, 0x14);
-    let angle = if k % 2 == 0 { -1.5 } else { 1.5 } * (n > 1) as u8 as f32;
-    let b = bouton(
-        commandes,
-        liste,
-        k,
-        Node {
-            width: Val::Px(270.0),
-            min_height: Val::Px(380.0),
-            flex_direction: FlexDirection::Column,
-            align_items: AlignItems::Center,
-            row_gap: Val::Px(10.0),
-            padding: UiRect::axes(Val::Px(22.0), Val::Px(22.0)),
-            border: UiRect::all(Val::Px(3.0)),
-            border_radius: BorderRadius::all(Val::Px(6.0)),
-            ..default()
-        },
-    );
-    commandes.entity(b).insert((
-        UiTransform {
-            rotation: Rot2::degrees(angle),
-            ..default()
-        },
-        BorderColor::all(Color::srgb_u8(0x8a, 0x64, 0x2c)),
-        Outline::new(Val::Px(3.0), Val::Px(3.0), Color::NONE),
-        BackgroundGradient::from(RadialGradient::new(
-            UiPosition::CENTER,
-            RadialGradientShape::FarthestCorner,
-            vec![
-                ColorStop::new(Color::srgb_u8(0xf3, 0xe4, 0xbc), Val::Percent(0.0)),
-                ColorStop::new(Color::srgb_u8(0xd9, 0xbf, 0x86), Val::Percent(100.0)),
-            ],
-        )),
-        Halo(b, Color::NONE),
-    ));
-    let haut = nuit::rangee(commandes, b, 8.0);
-    commandes.entity(haut).entry::<Node>().and_modify(|mut n| {
-        n.align_self = AlignSelf::Stretch;
-        n.justify_content = JustifyContent::SpaceBetween;
-    });
-    nuit::point(commandes, haut, 12.0, famille);
-    c.ecrit(
-        commandes,
-        haut,
-        &surtitre(carte),
-        (Style::Grasse, 12.0, encre),
-    );
-    c.ecrit(commandes, haut, &chiffre(k), (Style::Logo, 22.0, encre));
-    icone(commandes, c, b, carte, 88.0);
-    let cire = Color::srgb_u8(0x8e, 0x1f, 0x14);
-    let nom = c.ecrit(commandes, b, &carte.nom, (Style::Logo, 27.0, cire));
-    commandes.entity(nom).remove::<TextShadow>();
-    centre(commandes, nom);
-    let vert = Color::srgb_u8(0x2f, 0x6b, 0x1f);
+/// Description, stat clé et autres lignes, alignées selon `j`.
+fn textes(commandes: &mut Commands, c: &Contexte, p: Entity, carte: &Carte, j: Justify) {
     if let Some(cle) = carte.lignes.first() {
-        let e = c.ecrit(commandes, b, cle, (Style::Grasse, 15.0, vert));
-        centre(commandes, e);
+        let e = c.ecrit(commandes, p, cle, (Style::Grasse, 17.0, VERT_GAIN));
+        aligne(commandes, e, j);
     }
-    let d = c.ecrit(
-        commandes,
-        b,
-        &carte.description,
-        (Style::Normale, 15.0, encre),
-    );
-    centre(commandes, d);
+    let d = (Style::Normale, 16.0, DESCRIPTION);
+    let d = c.ecrit(commandes, p, &carte.description, d);
+    aligne(commandes, d, j);
 }
 
-/// Grande bande verticale du haut en bas de l'écran, lueur de la famille montant du bas,
-/// grand numéro en filigrane, trait de la famille dessous (or au survol).
-pub fn bande(commandes: &mut Commands, c: &Contexte, liste: Entity, k: usize, carte: &Carte) {
+/// Projecteur : l'objet seul, grand, son nom ; le reste n'apparaît qu'au survol (le
+/// premier est montré d'abord), l'objet pointé grossit.
+pub fn projecteur(commandes: &mut Commands, c: &Contexte, liste: Entity, k: usize, carte: &Carte) {
     let (famille, lueur) = couleur_famille(carte.famille);
     let b = bouton(
         commandes,
         liste,
         k,
         Node {
-            flex_grow: 1.0,
-            flex_basis: Val::ZERO,
-            max_width: Val::Px(420.0),
+            width: Val::Px(320.0),
             flex_direction: FlexDirection::Column,
             align_items: AlignItems::Center,
-            justify_content: JustifyContent::FlexEnd,
             row_gap: Val::Px(10.0),
-            padding: UiRect::new(Val::Px(24.0), Val::Px(24.0), Val::Px(20.0), Val::Px(30.0)),
             ..default()
         },
     );
-    commandes
-        .entity(b)
-        .insert(BackgroundGradient::from(LinearGradient::to_top(vec![
-            ColorStop::new(famille.with_alpha(lueur + 0.25), Val::Percent(0.0)),
-            ColorStop::new(famille.with_alpha(lueur * 0.4), Val::Percent(55.0)),
-            ColorStop::new(Color::NONE, Val::Percent(100.0)),
-        ])));
-    let filigrane = commandes
+    let lumiere = commandes
         .spawn((
+            Projecteur(k, false),
             Node {
-                position_type: PositionType::Absolute,
-                top: Val::Px(0.0),
+                width: Val::Px(220.0),
+                height: Val::Px(220.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
                 ..default()
             },
+            UiTransform::from_scale(Vec2::splat(if k == 0 { 1.15 } else { 0.9 })),
+            BackgroundGradient::from(RadialGradient::new(
+                UiPosition::CENTER,
+                RadialGradientShape::ClosestSide,
+                vec![
+                    ColorStop::new(famille.with_alpha(lueur * 1.6), Val::Percent(0.0)),
+                    ColorStop::new(Color::NONE, Val::Percent(100.0)),
+                ],
+            )),
             ChildOf(b),
         ))
         .id();
-    c.ecrit(
-        commandes,
-        filigrane,
-        &chiffre(k),
-        (Style::Logo, 150.0, IVOIRE.with_alpha(0.12)),
-    );
-    icone(commandes, c, b, carte, 120.0);
-    c.ecrit(
+    icone(commandes, c, lumiere, carte, 140.0);
+    let s = c.ecrit(
         commandes,
         b,
         &surtitre(carte),
         (Style::Grasse, 14.0, famille),
     );
-    let nom = c.ecrit(commandes, b, &carte.nom, (Style::Logo, 38.0, IVOIRE));
-    centre(commandes, nom);
-    if let Some(cle) = carte.lignes.first() {
-        let e = c.ecrit(commandes, b, cle, (Style::Grasse, 17.0, VERT_GAIN));
-        centre(commandes, e);
-    }
-    let d = c.ecrit(
-        commandes,
-        b,
-        &carte.description,
-        (Style::Normale, 16.0, DESCRIPTION),
-    );
-    centre(commandes, d);
-    let trait_ = commandes
+    aligne(commandes, s, Justify::Center);
+    let nom = c.ecrit(commandes, b, &carte.nom, (Style::Logo, 34.0, IVOIRE));
+    aligne(commandes, nom, Justify::Center);
+    filet(commandes, b, b, Val::Px(40.0), famille);
+    let detail = commandes
         .spawn((
+            Projecteur(k, true),
             Node {
-                width: Val::Percent(60.0),
-                height: Val::Px(5.0),
-                margin: UiRect::top(Val::Px(10.0)),
-                border_radius: BorderRadius::MAX,
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                row_gap: Val::Px(8.0),
+                min_height: Val::Px(110.0),
                 ..default()
             },
-            BackgroundColor(famille),
-            Outline::new(Val::Px(3.0), Val::ZERO, famille),
+            if k == 0 {
+                Visibility::Inherited
+            } else {
+                Visibility::Hidden
+            },
             ChildOf(b),
         ))
         .id();
-    commandes.entity(b).insert(Halo(trait_, famille));
+    textes(commandes, c, detail, carte, Justify::Center);
+    let t = format!("Touche {}", chiffre(k));
+    c.ecrit(commandes, detail, &t, (Style::Grasse, 13.0, nuit::TERNE));
 }
 
-/// Plaque de verre dépoli : blanc très léger, bord fin, texte aligné à gauche.
-pub fn verre(commandes: &mut Commands, c: &Contexte, liste: Entity, k: usize, carte: &Carte) {
+/// Au survol d'un choix « projecteur » : son texte paraît, son objet grossit.
+pub fn projeter(
+    survols: Query<(&Interaction, &BoutonCarte), Changed<Interaction>>,
+    mut parties: Query<(&Projecteur, &mut Visibility, &mut UiTransform)>,
+) {
+    for (i, b) in &survols {
+        if *i == Interaction::None {
+            continue;
+        }
+        for (p, mut v, mut t) in &mut parties {
+            let choisi = p.0 == b.0;
+            if p.1 {
+                v.set_if_neq(if choisi {
+                    Visibility::Inherited
+                } else {
+                    Visibility::Hidden
+                });
+            } else {
+                t.scale = Vec2::splat(if choisi { 1.15 } else { 0.9 });
+            }
+        }
+    }
+}
+
+/// Faisceau : l'objet flotte dans un rayon de lumière de sa couleur, fondu vers le
+/// haut, le texte dessous.
+pub fn faisceau(commandes: &mut Commands, c: &Contexte, liste: Entity, k: usize, carte: &Carte) {
     let (famille, _) = couleur_famille(carte.famille);
     let b = bouton(
         commandes,
         liste,
         k,
         Node {
-            width: Val::Px(280.0),
-            min_height: Val::Px(360.0),
+            width: Val::Px(300.0),
             flex_direction: FlexDirection::Column,
+            align_items: AlignItems::Center,
             row_gap: Val::Px(10.0),
-            padding: UiRect::all(Val::Px(24.0)),
-            border: UiRect::all(Val::Px(1.0)),
-            border_radius: BorderRadius::all(Val::Px(28.0)),
             ..default()
         },
     );
-    commandes.entity(b).insert((
-        BackgroundColor(Color::srgba(1.0, 1.0, 1.0, 0.08)),
-        BorderColor::all(Color::srgba(1.0, 1.0, 1.0, 0.22)),
-        Outline::new(Val::Px(2.0), Val::Px(3.0), Color::NONE),
-        Halo(b, Color::NONE),
-    ));
-    let haut = nuit::rangee(commandes, b, 12.0);
-    commandes.entity(haut).entry::<Node>().and_modify(|mut n| {
-        n.justify_content = JustifyContent::SpaceBetween;
-    });
-    let fond = commandes
+    // Rayon : bande étroite, de la couleur de la famille en bas, fondue en haut
+    let colonne = commandes
         .spawn((
             Node {
-                width: Val::Px(84.0),
-                height: Val::Px(84.0),
-                justify_content: JustifyContent::Center,
+                width: Val::Px(130.0),
+                height: Val::Px(250.0),
+                flex_direction: FlexDirection::Column,
+                justify_content: JustifyContent::FlexEnd,
                 align_items: AlignItems::Center,
-                border_radius: BorderRadius::all(Val::Px(22.0)),
+                padding: UiRect::bottom(Val::Px(30.0)),
+                border_radius: BorderRadius::top(Val::Px(65.0)),
                 ..default()
             },
-            BackgroundColor(famille.with_alpha(0.28)),
-            ChildOf(haut),
+            BackgroundGradient::from(LinearGradient::to_top(vec![
+                ColorStop::new(famille.with_alpha(0.6), Val::Percent(0.0)),
+                ColorStop::new(famille.with_alpha(0.18), Val::Percent(45.0)),
+                ColorStop::new(Color::NONE, Val::Percent(100.0)),
+            ])),
+            ChildOf(b),
         ))
         .id();
-    icone(commandes, c, fond, carte, 60.0);
+    icone(commandes, c, colonne, carte, 120.0);
+    let s = format!("{}   ·   {}", chiffre(k), surtitre(carte));
+    c.ecrit(commandes, b, &s, (Style::Grasse, 14.0, famille));
+    let nom = c.ecrit(commandes, b, &carte.nom, (Style::Logo, 32.0, IVOIRE));
+    aligne(commandes, nom, Justify::Center);
+    textes(commandes, c, b, carte, Justify::Center);
+    filet(commandes, b, b, Val::Px(70.0), famille);
+}
+
+/// Bandeau : ruban horizontal sur toute la largeur, couleur de la famille fondue aux
+/// deux bords ; chiffre, objet, nom à gauche, effets à droite.
+pub fn bandeau(commandes: &mut Commands, c: &Contexte, liste: Entity, k: usize, carte: &Carte) {
+    let (famille, lueur) = couleur_famille(carte.famille);
+    let b = bouton(
+        commandes,
+        liste,
+        k,
+        Node {
+            width: Val::Percent(100.0),
+            min_height: Val::Px(120.0),
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+    );
+    let a = (lueur * 1.5).min(0.5);
+    commandes
+        .entity(b)
+        .insert(BackgroundGradient::from(LinearGradient::to_right(vec![
+            ColorStop::new(Color::NONE, Val::Percent(0.0)),
+            ColorStop::new(famille.with_alpha(a), Val::Percent(30.0)),
+            ColorStop::new(famille.with_alpha(a * 0.6), Val::Percent(70.0)),
+            ColorStop::new(Color::NONE, Val::Percent(100.0)),
+        ])));
+    let ligne = nuit::rangee(commandes, b, 28.0);
+    commandes
+        .entity(ligne)
+        .entry::<Node>()
+        .and_modify(|mut n| n.width = Val::Px(1000.0));
     c.ecrit(
         commandes,
-        haut,
+        ligne,
         &chiffre(k),
-        (Style::Logo, 30.0, IVOIRE.with_alpha(0.4)),
+        (Style::Logo, 64.0, IVOIRE.with_alpha(0.35)),
     );
+    icone(commandes, c, ligne, carte, 88.0);
+    let gauche = nuit::colonne(commandes, ligne, 4.0);
+    commandes
+        .entity(gauche)
+        .entry::<Node>()
+        .and_modify(|mut n| {
+            n.width = Val::Px(380.0);
+            n.align_items = AlignItems::FlexStart;
+        });
+    c.ecrit(
+        commandes,
+        gauche,
+        &surtitre(carte),
+        (Style::Grasse, 14.0, famille),
+    );
+    c.ecrit(commandes, gauche, &carte.nom, (Style::Logo, 34.0, IVOIRE));
+    filet(commandes, b, gauche, Val::Px(60.0), famille);
+    let droite = nuit::colonne(commandes, ligne, 6.0);
+    commandes
+        .entity(droite)
+        .entry::<Node>()
+        .and_modify(|mut n| {
+            n.flex_grow = 1.0;
+            n.flex_shrink = 1.0;
+            n.align_items = AlignItems::FlexStart;
+        });
+    textes(commandes, c, droite, carte, Justify::Left);
+}
+
+/// Colonne de magazine : grand chiffre de la couleur de la famille, objet, nom, filet,
+/// texte aligné à gauche ; filets verticaux entre les colonnes.
+pub fn colonne(commandes: &mut Commands, c: &Contexte, liste: Entity, k: usize, carte: &Carte) {
+    let (famille, _) = couleur_famille(carte.famille);
+    let b = bouton(
+        commandes,
+        liste,
+        k,
+        Node {
+            width: Val::Px(330.0),
+            flex_direction: FlexDirection::Column,
+            align_items: AlignItems::FlexStart,
+            row_gap: Val::Px(10.0),
+            padding: UiRect::horizontal(Val::Px(34.0)),
+            border: UiRect::left(Val::Px(if k > 0 { 1.0 } else { 0.0 })),
+            ..default()
+        },
+    );
+    commandes
+        .entity(b)
+        .insert(BorderColor::all(IVOIRE.with_alpha(0.18)));
+    let haut = nuit::rangee(commandes, b, 18.0);
+    commandes
+        .entity(haut)
+        .entry::<Node>()
+        .and_modify(|mut n| n.align_items = AlignItems::FlexEnd);
+    c.ecrit(commandes, haut, &chiffre(k), (Style::Logo, 110.0, famille));
+    icone(commandes, c, haut, carte, 72.0);
     c.ecrit(
         commandes,
         b,
         &surtitre(carte),
-        (Style::Grasse, 12.0, famille),
+        (Style::Grasse, 14.0, famille),
     );
-    c.ecrit(commandes, b, &carte.nom, (Style::Logo, 28.0, IVOIRE));
-    if let Some(cle) = carte.lignes.first() {
-        c.ecrit(commandes, b, cle, (Style::Grasse, 15.0, VERT_GAIN));
-    }
-    c.ecrit(
-        commandes,
-        b,
-        &carte.description,
-        (Style::Normale, 15.0, DESCRIPTION),
-    );
+    let nom = c.ecrit(commandes, b, &carte.nom, (Style::Logo, 36.0, IVOIRE));
+    aligne(commandes, nom, Justify::Left);
+    filet(commandes, b, b, Val::Px(56.0), famille);
+    textes(commandes, c, b, carte, Justify::Left);
 }

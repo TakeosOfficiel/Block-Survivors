@@ -17,6 +17,7 @@ use bs_regles::equipement::ChoixEquipement;
 use bs_regles::partie::Partie;
 use bs_regles::textes::{Carte, Choix};
 
+pub use propositions::projeter;
 pub(crate) use vue::couleur_famille;
 pub use vue::{BoutonCarte, BoutonRelancer};
 

@@ -6,6 +6,7 @@
 //! (`panneau`) s'ouvre du menu principal et de la pause.
 
 mod panneau;
+mod vue;
 
 use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy::light::DirectionalLightShadowMap;

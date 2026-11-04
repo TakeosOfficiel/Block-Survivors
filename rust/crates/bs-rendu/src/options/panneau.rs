@@ -1,20 +1,19 @@
-//! Panneau des options (src/ui/panneauOptions.ts), par-dessus le menu ou la pause : un
-//! curseur pour le volume général et un pour chaque famille de sons (clic ou glissé), des
-//! bascules pour le reste, « Terminé » ou Échap pour fermer. Construit une fois à
+//! Panneau des options (src/ui/panneauOptions.ts), par-dessus le menu ou la pause (vue :
+//! `vue`) : un rail pour le volume général et un pour chaque famille de sons (clic ou
+//! glissé), des bascules pour le reste, « Retour » ou Échap pour fermer. Construit une fois à
 //! l'ouverture ; les libellés et les curseurs suivent les options sans le refaire (un
 //! curseur reste saisi pendant qu'on le glisse).
 
 use bevy::prelude::*;
-use bevy::ui::{FocusPolicy, RelativeCursorPosition};
+use bevy::ui::RelativeCursorPosition;
 
-use super::{CATEGORIES, Options};
-use crate::ecrans::style::{self, GRIS, OR, OR_CLAIR};
-use crate::hud::police::{TextePixel, ecrire};
+use super::Options;
+use super::vue::{HALO, Survol, TERNE};
+use crate::ecrans::charte::OR_VIF;
+use crate::polices::PolicesMenu;
 
-const LARGEUR: f32 = 560.0;
-const LARGEUR_CURSEUR: f32 = 256.0;
 const LIBELLES_CATEGORIES: [&str; 4] = ["Joueur", "Armes", "Créatures", "Interface"];
-const LIBELLES_OMBRES: [&str; 3] = ["NON", "OUI", "OUI (fines)"];
+const LIBELLES_OMBRES: [&str; 3] = ["Non", "Oui", "Fines"];
 
 /// Panneau ouvert (sa racine) ; `ouvrir` le demande pour l'image suivante.
 #[derive(Resource, Default)]
@@ -58,48 +57,58 @@ pub(super) enum ActionOptions {
 
 /// Curseur de volume (sa barre suit la valeur).
 #[derive(Component)]
-pub(super) struct Curseur(usize);
+pub(super) struct Curseur(pub(super) usize);
 
 #[derive(Component)]
-pub(super) struct Barre(usize);
+pub(super) struct Barre(pub(super) usize);
 
 /// Texte d'un réglage.
 #[derive(Component)]
-pub(super) struct Libelle(Reglage);
+pub(super) struct Libelle(pub(super) Reglage);
 
-fn libelle(o: &Options, r: Reglage) -> String {
-    let oui = |b: bool| if b { "OUI" } else { "NON" };
+/// Nom d'un réglage.
+pub(super) fn nom(r: Reglage) -> &'static str {
     match r {
-        Reglage::Volume(0) => match (o.volume * 100.0).round() as u32 {
-            0 => "Volume général : désactivé".to_owned(),
-            p => format!("Volume général : {p} %"),
-        },
-        Reglage::Volume(k) => match (o.volumes[k - 1] * 100.0).round() as u32 {
-            0 => format!("{} : NON", LIBELLES_CATEGORIES[k - 1]),
-            p => format!("{} : {p} %", LIBELLES_CATEGORIES[k - 1]),
-        },
-        Reglage::Fps => format!("Compteur de FPS : {}", oui(o.afficher_fps)),
-        Reglage::Secousses => format!("Secousses de l'écran : {}", oui(o.secousses)),
-        Reglage::Ombres => format!("Ombres et vent : {}", LIBELLES_OMBRES[o.ombres]),
-        Reglage::Chiffres => format!("Chiffres des dégâts : {}", oui(o.chiffres_degats)),
-        Reglage::Compteur => format!("Compteur (Tab) : {}", oui(o.compteur_degats)),
-        Reglage::Vue => {
-            let vue = if o.troisieme_personne {
-                "3E PERSONNE"
-            } else {
-                "DE DESSUS"
-            };
-            format!("Vue (F5) : {vue}")
-        }
-        Reglage::Beta => format!("Versions bêta : {}", oui(o.beta)),
-        Reglage::Allies => format!(
-            "Effets des autres joueurs (multi) : {}",
-            oui(o.effets_allies)
-        ),
+        Reglage::Volume(0) => "Volume général",
+        Reglage::Volume(k) => LIBELLES_CATEGORIES[k - 1],
+        Reglage::Fps => "Compteur de FPS",
+        Reglage::Secousses => "Secousses de l'écran",
+        Reglage::Ombres => "Ombres et vent",
+        Reglage::Chiffres => "Chiffres des dégâts",
+        Reglage::Compteur => "Compteur de dégâts (Tab)",
+        Reglage::Vue => "Vue (F5)",
+        Reglage::Beta => "Versions bêta",
+        Reglage::Allies => "Effets des autres joueurs",
     }
 }
 
-fn volume(o: &Options, k: usize) -> f32 {
+/// Valeur affichée d'un réglage, et s'il est actif (en or).
+pub(super) fn valeur(o: &Options, r: Reglage) -> (String, bool) {
+    let oui = |b: bool| (if b { "Oui" } else { "Non" }.to_owned(), b);
+    match r {
+        Reglage::Volume(k) => match (volume(o, k) * 100.0).round() as u32 {
+            0 => ("Muet".to_owned(), false),
+            p => (format!("{p} %"), true),
+        },
+        Reglage::Fps => oui(o.afficher_fps),
+        Reglage::Secousses => oui(o.secousses),
+        Reglage::Ombres => (LIBELLES_OMBRES[o.ombres].to_owned(), o.ombres > 0),
+        Reglage::Chiffres => oui(o.chiffres_degats),
+        Reglage::Compteur => oui(o.compteur_degats),
+        Reglage::Vue => {
+            let t = if o.troisieme_personne {
+                "3e personne"
+            } else {
+                "De dessus"
+            };
+            (t.to_owned(), true)
+        }
+        Reglage::Beta => oui(o.beta),
+        Reglage::Allies => oui(o.effets_allies),
+    }
+}
+
+pub(super) fn volume(o: &Options, k: usize) -> f32 {
     if k == 0 { o.volume } else { o.volumes[k - 1] }
 }
 
@@ -112,12 +121,28 @@ pub(super) fn gerer(
     touches: Res<ButtonInput<KeyCode>>,
     boutons: Query<(&Interaction, &ActionOptions), Changed<Interaction>>,
     curseurs: Query<(&Interaction, &Curseur, &RelativeCursorPosition)>,
+    (polices, mut survols, mut essai): (
+        Res<PolicesMenu>,
+        Query<(&Interaction, &mut BackgroundColor), (With<Survol>, Changed<Interaction>)>,
+        Local<bool>,
+    ),
 ) {
+    // Capture d'écran : BS_MENU=options ouvre le panneau d'emblée
+    if !std::mem::replace(&mut *essai, true) && std::env::var("BS_MENU").as_deref() == Ok("options")
+    {
+        panneau.demande = true;
+    }
+    for (i, mut fond) in &mut survols {
+        fond.0 = match i {
+            Interaction::None => Color::NONE,
+            _ => HALO,
+        };
+    }
     if std::mem::take(&mut panneau.demande) {
         if let Some(r) = panneau.racine.take() {
             commandes.entity(r).despawn();
         }
-        panneau.racine = Some(construire(&mut commandes, &options));
+        panneau.racine = Some(super::vue::construire(&mut commandes, &polices, &options));
         return;
     }
     let Some(racine) = panneau.racine else {
@@ -170,14 +195,18 @@ pub(super) fn gerer(
 /// Libellés et barres à jour des options.
 pub(super) fn rafraichir(
     options: Res<Options>,
-    mut libelles: Query<(&Libelle, &mut TextePixel)>,
+    mut libelles: Query<(&Libelle, &mut Text, &mut TextColor)>,
     mut barres: Query<(&Barre, &mut Node)>,
 ) {
     if !options.is_changed() {
         return;
     }
-    for (l, mut t) in &mut libelles {
-        ecrire(&mut t, &libelle(&options, l.0));
+    for (l, mut t, mut couleur) in &mut libelles {
+        let (v, actif) = valeur(&options, l.0);
+        if t.0 != v {
+            t.0 = v;
+        }
+        couleur.0 = if actif { OR_VIF } else { TERNE };
     }
     for (b, mut n) in &mut barres {
         let largeur = Val::Percent(volume(&options, b.0) * 100.0);
@@ -193,161 +222,4 @@ pub(super) fn fermer(mut commandes: Commands, mut panneau: ResMut<PanneauOptions
         commandes.entity(r).despawn();
     }
     panneau.demande = false;
-}
-
-fn curseur(commandes: &mut Commands, parent: Entity, o: &Options, k: usize) {
-    let c = commandes
-        .spawn((
-            Button,
-            Curseur(k),
-            RelativeCursorPosition::default(),
-            Node {
-                width: Val::Px(LARGEUR_CURSEUR),
-                height: Val::Px(40.0),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                border: UiRect::all(Val::Px(1.0)),
-                ..default()
-            },
-            BackgroundColor(Color::srgb_u8(0x10, 0x10, 0x10)),
-            BorderColor::all(Color::srgb_u8(0x55, 0x55, 0x55)),
-            ChildOf(parent),
-        ))
-        .id();
-    commandes.spawn((
-        Barre(k),
-        Node {
-            position_type: PositionType::Absolute,
-            left: Val::Px(0.0),
-            top: Val::Px(0.0),
-            bottom: Val::Px(0.0),
-            width: Val::Percent(volume(o, k) * 100.0),
-            ..default()
-        },
-        BackgroundColor(Color::srgb_u8(0x5a, 0x4a, 0x20)),
-        FocusPolicy::Pass,
-        ChildOf(c),
-    ));
-    commandes.spawn((
-        Libelle(Reglage::Volume(k)),
-        TextePixel::nouveau(&libelle(o, Reglage::Volume(k)), Color::WHITE, 1.5).contour(),
-        FocusPolicy::Pass,
-        ChildOf(c),
-    ));
-}
-
-fn bascule(commandes: &mut Commands, parent: Entity, o: &Options, r: Reglage) {
-    let b = style::bouton(
-        commandes,
-        parent,
-        "",
-        LARGEUR_CURSEUR,
-        false,
-        ActionOptions::Basculer(r),
-    );
-    commandes.entity(b).despawn_related::<Children>();
-    commandes.spawn((
-        Libelle(r),
-        TextePixel::nouveau(&libelle(o, r), Color::WHITE, 1.5),
-        ChildOf(b),
-    ));
-}
-
-fn grille(commandes: &mut Commands, parent: Entity) -> Entity {
-    commandes
-        .spawn((
-            Node {
-                width: Val::Percent(100.0),
-                flex_wrap: FlexWrap::Wrap,
-                justify_content: JustifyContent::SpaceBetween,
-                row_gap: Val::Px(6.0),
-                ..default()
-            },
-            ChildOf(parent),
-        ))
-        .id()
-}
-
-fn construire(commandes: &mut Commands, o: &Options) -> Entity {
-    let racine = commandes
-        .spawn((
-            Name::new("options"),
-            Node {
-                position_type: PositionType::Absolute,
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                ..default()
-            },
-            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.6)),
-            FocusPolicy::Block,
-            GlobalZIndex(30),
-        ))
-        .id();
-    let cadre = commandes
-        .spawn((
-            Node {
-                width: Val::Px(LARGEUR),
-                flex_direction: FlexDirection::Column,
-                align_items: AlignItems::Center,
-                row_gap: Val::Px(8.0),
-                padding: UiRect::all(Val::Px(12.0)),
-                border: UiRect::all(Val::Px(2.0)),
-                ..default()
-            },
-            BackgroundColor(Color::srgb_u8(0x14, 0x17, 0x1f)),
-            BorderColor::all(OR),
-            ChildOf(racine),
-        ))
-        .id();
-    style::titre(commandes, cadre, "Options", OR_CLAIR, 3.0);
-    commandes.spawn((
-        TextePixel::nouveau("Musique et sons", GRIS, 1.5),
-        ChildOf(cadre),
-    ));
-    let general = grille(commandes, cadre);
-    commandes
-        .entity(general)
-        .entry::<Node>()
-        .and_modify(|mut n| n.justify_content = JustifyContent::Center);
-    curseur(commandes, general, o, 0);
-    let sons = grille(commandes, cadre);
-    for k in 1..=CATEGORIES.len() {
-        curseur(commandes, sons, o, k);
-    }
-    commandes.spawn((
-        TextePixel::nouveau("Affichage", GRIS, 1.5),
-        Node {
-            margin: UiRect::top(Val::Px(6.0)),
-            ..default()
-        },
-        ChildOf(cadre),
-    ));
-    let affichage = grille(commandes, cadre);
-    for r in [
-        Reglage::Fps,
-        Reglage::Secousses,
-        Reglage::Ombres,
-        Reglage::Chiffres,
-        Reglage::Compteur,
-        Reglage::Vue,
-        Reglage::Allies,
-        Reglage::Beta,
-    ] {
-        bascule(commandes, affichage, o, r);
-    }
-    let fin = style::bouton(
-        commandes,
-        cadre,
-        "Terminé",
-        200.0,
-        false,
-        ActionOptions::Fermer,
-    );
-    commandes
-        .entity(fin)
-        .entry::<Node>()
-        .and_modify(|mut n| n.margin = UiRect::top(Val::Px(8.0)));
-    racine
 }

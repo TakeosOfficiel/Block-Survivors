@@ -7,7 +7,6 @@ use bevy::prelude::*;
 use super::charte;
 use crate::hud::police::TextePixel;
 
-pub const OR: Color = Color::srgb_u8(0xe0, 0xb0, 0x40);
 pub const OR_CLAIR: Color = Color::srgb_u8(0xff, 0xd7, 0x5e);
 pub const SOMBRE: Color = Color::srgb_u8(0x1a, 0x12, 0x06);
 pub const GRIS: Color = Color::srgb_u8(0x9a, 0xa0, 0xad);

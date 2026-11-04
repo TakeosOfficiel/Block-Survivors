@@ -168,6 +168,7 @@ pub fn champ(
 pub fn trait_fin(commandes: &mut Commands, parent: Entity) {
     commandes.spawn((
         Node {
+            width: Val::Percent(100.0),
             height: Val::Px(1.0),
             flex_shrink: 0.0,
             margin: UiRect::vertical(Val::Px(4.0)),

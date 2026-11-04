@@ -1,9 +1,12 @@
-//! Colonne des amis de la page Multijoueur, sans cadre : son code ami en or, l'ajout d'un
+//! Volet des amis de la page Multijoueur, à droite : replié en un lien « ‹ Amis » (avec
+//! qui est en ligne et les messages reçus), ouvert sur un voile sombre en dégradé, sans
+//! cadre : son code ami en or, l'ajout d'un
 //! ami par le sien (champ en pilule), les messages reçus (invitation, demande, ajout) et
 //! la liste des amis, chacun avec une pastille de présence et des liens d'action
 //! (rejoindre, inviter, demander ; « × » pour retirer).
 
 use bevy::prelude::*;
+use bevy::ui::FocusPolicy;
 use bs_reseau::amis::{Etat, EtatPresence};
 use bs_sauvegarde::amis::Ami;
 
@@ -79,8 +82,7 @@ fn messages(commandes: &mut Commands, ic: &Icones, col: Entity, vue: &VueMulti, 
 }
 
 /// Colonne des amis.
-pub fn construire(commandes: &mut Commands, ic: &Icones, col: Entity, menu: &Menu, vue: &VueMulti) {
-    titre(commandes, ic, col, "Amis");
+fn construire(commandes: &mut Commands, ic: &Icones, col: Entity, menu: &Menu, vue: &VueMulti) {
     let Some(amis) = vue.amis else {
         aide(commandes, ic, col, "Amis indisponibles pour l'instant.");
         return;
@@ -124,4 +126,94 @@ pub fn construire(commandes: &mut Commands, ic: &Icones, col: Entity, menu: &Men
         }
         croix(commandes, ic, l, ActionMulti::Retirer(k));
     }
+}
+
+/// Volet des amis, posé à droite de la page : replié en lien, ou ouvert.
+pub fn volet(commandes: &mut Commands, ic: &Icones, racine: Entity, menu: &Menu, vue: &VueMulti) {
+    let marge = Val::Px(crate::ecrans::charte::MARGE);
+    if !vue.annuaire.amis_ouverts {
+        let o = commandes
+            .spawn((
+                Node {
+                    position_type: PositionType::Absolute,
+                    top: marge,
+                    right: marge,
+                    flex_direction: FlexDirection::Column,
+                    align_items: AlignItems::FlexEnd,
+                    row_gap: Val::Px(2.0),
+                    ..default()
+                },
+                ChildOf(racine),
+            ))
+            .id();
+        air::lien(
+            commandes,
+            ic,
+            o,
+            "‹ Amis",
+            (22.0, IVOIRE),
+            m(ActionMulti::Amis),
+        );
+        let Some(amis) = vue.amis else { return };
+        let en_ligne = vue
+            .liste
+            .iter()
+            .filter(|a| {
+                amis.service
+                    .ami(&a.code)
+                    .is_some_and(|s| s.presence.is_some())
+            })
+            .count();
+        let l = air::rangee(commandes, o, 6.0);
+        let couleur = if en_ligne > 0 { VERT } else { AIDE };
+        air::point(commandes, l, 8.0, couleur);
+        let t = format!("{en_ligne} en ligne");
+        ecrire(commandes, ic, l, &t, (false, T_AIDE, couleur));
+        let n = amis.notes.len();
+        if n > 0 {
+            let t = format!("{n} message{}", if n > 1 { "s" } else { "" });
+            ecrire(commandes, ic, o, &t, (false, T_AIDE, OR_VIF));
+        }
+        return;
+    }
+    let v = commandes
+        .spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                top: Val::ZERO,
+                right: Val::ZERO,
+                width: Val::Px(LARGEUR + 140.0),
+                height: Val::Percent(100.0),
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::FlexEnd,
+                padding: UiRect::all(marge),
+                ..default()
+            },
+            // Voile : transparent à gauche, nuit à droite (pas de bord)
+            BackgroundGradient::from(LinearGradient::to_right(vec![
+                ColorStop::new(Color::srgba(0.0, 0.0, 0.0, 0.0), Val::Percent(0.0)),
+                ColorStop::new(Color::srgba(0.01, 0.02, 0.03, 0.85), Val::Percent(30.0)),
+                ColorStop::new(Color::srgba(0.01, 0.02, 0.03, 0.95), Val::Percent(100.0)),
+            ])),
+            FocusPolicy::Block,
+            ChildOf(racine),
+        ))
+        .id();
+    let col = air::colonne(commandes, v, 14.0);
+    commandes
+        .entity(col)
+        .entry::<Node>()
+        .and_modify(|mut n| n.width = Val::Px(LARGEUR));
+    let haut = ligne(commandes, col);
+    let g = etire(commandes, haut, 0.0);
+    titre(commandes, ic, g, "Amis");
+    air::lien(
+        commandes,
+        ic,
+        haut,
+        "Fermer ›",
+        (T_AIDE, AIDE),
+        m(ActionMulti::Amis),
+    );
+    construire(commandes, ic, col, menu, vue);
 }

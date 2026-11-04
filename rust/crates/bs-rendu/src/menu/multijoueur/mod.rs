@@ -30,6 +30,8 @@ pub enum ActionMulti {
     Creer,
     /// Déplie ou replie les succès de coop.
     Succes,
+    /// Ouvre ou ferme le volet des amis.
+    Amis,
     /// Commence la saisie d'un code.
     Code,
     /// Rejoint le salon du code saisi.
@@ -67,6 +69,8 @@ pub struct Annuaire {
     public: bool,
     /// Les succès de coop sont dépliés.
     succes_ouverts: bool,
+    /// Le volet des amis est ouvert.
+    amis_ouverts: bool,
 }
 
 impl Annuaire {
@@ -126,6 +130,7 @@ fn agir(c: &mut Contexte, menu: &mut Menu, action: ActionMulti) {
     match action {
         ActionMulti::Visibilite(public) => c.annuaire.public = public,
         ActionMulti::Succes => c.annuaire.succes_ouverts ^= true,
+        ActionMulti::Amis => c.annuaire.amis_ouverts ^= true,
         ActionMulti::Creer if c.coop.is_none() => {
             let public = c.annuaire.public;
             entrer_salon(c, choix, None, public);

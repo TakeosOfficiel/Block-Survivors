@@ -1,8 +1,9 @@
 //! Vue de la page Multijoueur, à l'air libre comme les Talents (`menu::air`) : fond nuit
-//! en dégradé, aucun panneau. À gauche, hors salon : créer (Privé / Public en pilules,
-//! grand bouton vert), rejoindre par code (champ en pilule), salons publics (lignes de
-//! texte, liens « Rejoindre ») ; dans le salon : son code en grand, les joueurs, le
-//! lancement. À droite, les amis (`vue_amis`). En bas : « ‹ Retour » et les succès de coop.
+//! en dégradé, aucun panneau, une seule colonne centrée. Hors salon : créer (Privé /
+//! Public en pilules, grand bouton vert), rejoindre par code (champ en pilule), salons
+//! publics (lignes de texte, liens « Rejoindre ») ; dans le salon : son code en grand,
+//! les joueurs, le lancement. Les amis dans un volet repliable à droite (`vue_amis`).
+//! En bas : « ‹ Retour » et les succès de coop.
 
 use bevy::prelude::*;
 use bs_reseau::PhaseCoop;
@@ -20,8 +21,6 @@ use crate::menu::air::{self, ecrire};
 use crate::menu::{ActionMenu, Icones, Menu};
 
 pub(super) const LARGEUR: f32 = 520.0;
-/// Écart entre la colonne du salon et celle des amis.
-const ENTRE: f32 = 120.0;
 
 /// Ce que la page montre de la coop.
 pub struct VueMulti<'a> {
@@ -80,12 +79,12 @@ pub(super) fn valeur(menu: &Menu, saisie: bool, invite: &str) -> (String, bool) 
     }
 }
 
-/// Grand bouton vert, collé à gauche.
+/// Grand bouton vert, centré.
 fn bouton_vert(c: &mut Commands, ic: &Icones, col: Entity, t: &str, a: Option<ActionMenu>) {
     let b = air::bouton_vert(c, ic, col, t, a);
     c.entity(b)
         .entry::<Node>()
-        .and_modify(|mut n| n.align_self = AlignSelf::FlexStart);
+        .and_modify(|mut n| n.margin = UiRect::vertical(Val::Px(6.0)));
 }
 
 /// Hors salon : créer (visibilité au choix), rejoindre par code, salons publics.
@@ -126,9 +125,8 @@ fn accueil(commandes: &mut Commands, ic: &Icones, col: Entity, menu: &Menu, vue:
     }
     air::trait_fin(commandes, col);
 
-    let l = ligne(commandes, col);
-    let g = etire(commandes, l, 0.0);
-    titre(commandes, ic, g, "Salons publics");
+    let l = air::rangee(commandes, col, 18.0);
+    titre(commandes, ic, l, "Salons publics");
     let recherche = vue.annuaire.session.is_some();
     let (t, action) = if recherche {
         ("Recherche…", None)
@@ -284,8 +282,9 @@ pub fn construire(
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
                 flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
                 padding: UiRect::all(Val::Px(charte::MARGE)),
-                row_gap: Val::Px(24.0),
+                row_gap: Val::Px(28.0),
                 ..default()
             },
             BackgroundColor(charte::FOND),
@@ -296,52 +295,36 @@ pub fn construire(
         TextePixel::nouveau("Multijoueur", IVOIRE, 3.0),
         ChildOf(racine),
     ));
-    let corps = commandes
-        .spawn((
-            Node {
-                column_gap: Val::Px(ENTRE),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::FlexStart,
-                flex_grow: 1.0,
-                min_height: Val::ZERO,
-                overflow: Overflow::clip_y(),
-                ..default()
-            },
-            ChildOf(racine),
-        ))
-        .id();
-    let colonne = |commandes: &mut Commands, largeur: f32| {
-        let c = air::colonne(commandes, corps, 14.0);
-        commandes
-            .entity(c)
-            .entry::<Node>()
-            .and_modify(move |mut n| n.width = Val::Px(largeur));
-        c
-    };
-    let gauche = colonne(commandes, LARGEUR);
-    let droite = colonne(commandes, super::vue_amis::LARGEUR);
+    // Une seule colonne centrée ; les amis dans un volet à droite
+    let col = air::colonne(commandes, racine, 16.0);
+    commandes.entity(col).entry::<Node>().and_modify(|mut n| {
+        n.width = Val::Px(LARGEUR);
+        n.align_items = AlignItems::Center;
+        n.margin = UiRect::top(Val::Px(12.0));
+        n.flex_shrink = 1.0;
+        n.min_height = Val::ZERO;
+        n.overflow = Overflow::clip_y();
+    });
     match vue.coop {
-        Some(coop) => salon(commandes, ic, gauche, (dj, menu), coop),
-        None => accueil(commandes, ic, gauche, menu, vue),
+        Some(coop) => salon(commandes, ic, col, (dj, menu), coop),
+        None => accueil(commandes, ic, col, menu, vue),
     }
-    super::vue_amis::construire(commandes, ic, droite, menu, vue);
     if let Some(t) = vue.message {
-        let e = ecrire(commandes, ic, racine, t, (false, T_CORPS, charte::ROUGE));
-        commandes.entity(e).insert(Node {
-            align_self: AlignSelf::Center,
-            ..default()
-        });
+        ecrire(commandes, ic, racine, t, (false, T_CORPS, charte::ROUGE));
     }
     let pied = air::rangee(commandes, racine, 48.0);
-    commandes
-        .entity(pied)
-        .entry::<Node>()
-        .and_modify(|mut n| n.align_items = AlignItems::FlexEnd);
+    commandes.entity(pied).entry::<Node>().and_modify(|mut n| {
+        n.align_items = AlignItems::FlexEnd;
+        n.position_type = PositionType::Absolute;
+        n.left = Val::Px(charte::MARGE);
+        n.bottom = Val::Px(charte::MARGE);
+    });
     // Retour : ferme la page (et quitte le salon, comme Échap)
     let retour = Some(ActionMenu::Fermer);
     air::lien(commandes, ic, pied, "‹ Retour", (T_CORPS, IVOIRE), retour);
     if vue.coop.is_none() {
         succes(commandes, ic, pied, dj, vue);
     }
+    super::vue_amis::volet(commandes, ic, racine, menu, vue);
     racine
 }

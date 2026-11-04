@@ -21,7 +21,7 @@ pub use vue::{BoutonCarte, BoutonRelancer};
 
 use crate::PartieEnCours;
 use crate::dessins::Dessins;
-use crate::ecrans::charte::{self, Relief};
+use crate::ecrans::charte;
 use crate::textures::Textures;
 
 /// Délai avant qu'un clic ou une touche soit accepté (s).
@@ -187,19 +187,18 @@ pub fn gerer(
     ));
 }
 
-/// Carte survolée : soulevée, liseré d'or vif (les autres n'en ont pas).
-#[allow(clippy::type_complexity)]
+/// Carte survolée : soulevée, médaillon cerclé d'or vif (les autres gardent leur couleur).
 pub fn survoler(
-    mut cartes: Query<
-        (&Interaction, &mut UiTransform, &mut Outline),
-        (Changed<Interaction>, With<BoutonCarte>, Without<Relief>),
-    >,
+    cartes: Query<(&Interaction, &mut UiTransform, &vue::Halo), Changed<Interaction>>,
+    mut halos: Query<&mut Outline>,
 ) {
-    for (i, mut t, mut bord) in &mut cartes {
+    for (i, mut t, halo) in cartes {
         let survol = *i != Interaction::None;
         let y = if survol { -SOULEVEMENT } else { 0.0 };
         t.translation = Val2::px(0.0, y);
-        bord.color = if survol { charte::OR_VIF } else { Color::NONE };
+        if let Ok(mut o) = halos.get_mut(halo.0) {
+            o.color = if survol { charte::OR_VIF } else { halo.1 };
+        }
     }
 }
 

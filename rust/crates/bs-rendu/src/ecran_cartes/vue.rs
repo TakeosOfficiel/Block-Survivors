@@ -19,11 +19,16 @@ use crate::textures::Textures;
 
 const DESCRIPTION: Color = Color::srgb_u8(0xc8, 0xcc, 0xd6);
 const STATS: Color = Color::srgb_u8(0xcf, 0xe9, 0xc8);
-const LARGEUR_CARTE: f32 = 260.0;
+const LARGEUR_CARTE: f32 = 290.0;
+const MEDAILLON: f32 = 150.0;
 
 /// Carte cliquable (index dans la liste).
 #[derive(Component)]
 pub struct BoutonCarte(pub usize);
+
+/// Médaillon d'une carte (liseré d'or au survol) et sa couleur au repos.
+#[derive(Component)]
+pub struct Halo(pub Entity, pub Color);
 
 /// Bouton « Relancer ».
 #[derive(Component)]
@@ -70,19 +75,19 @@ pub fn construire(
     cartes: &[Carte],
     relances: Option<u32>,
 ) -> Entity {
-    let racine = voile(commandes, (sombre(0.5), sombre(0.88)));
+    let racine = voile(commandes, (sombre(0.86), sombre(0.96)));
     commandes
         .entity(racine)
-        .insert((Name::new("écran de cartes"), GlobalZIndex(10)))
+        .insert(Name::new("écran de cartes"))
         .entry::<Node>()
         .and_modify(|mut n| {
             n.row_gap = Val::Px(26.0);
             // Au-dessus des cœurs et de la barre d'XP
-            n.padding.bottom = Val::Px(110.0);
+            n.padding.bottom = Val::Px(40.0);
         });
     nuit::titre(commandes, c.polices, racine, titre, OR_VIF);
 
-    let liste = nuit::rangee(commandes, racine, 24.0);
+    let liste = nuit::rangee(commandes, racine, 56.0);
     commandes
         .entity(liste)
         .entry::<Node>()
@@ -123,71 +128,27 @@ fn construire_carte(
     carte: &Carte,
 ) {
     let (famille, lueur) = couleur_famille(carte.famille);
-    let teinte = famille.with_alpha(lueur);
     let bouton = commandes
         .spawn((
             Button,
             BoutonCarte(k),
             Node {
                 width: Val::Px(LARGEUR_CARTE),
-                min_height: Val::Px(360.0),
-                padding: UiRect::new(Val::Px(22.0), Val::Px(22.0), Val::Px(20.0), Val::Px(22.0)),
-                border_radius: BorderRadius::all(Val::Px(26.0)),
                 flex_direction: FlexDirection::Column,
                 align_items: AlignItems::Center,
-                row_gap: Val::Px(10.0),
+                row_gap: Val::Px(8.0),
                 ..default()
             },
-            Outline::new(Val::Px(2.0), Val::Px(4.0), Color::NONE),
-            BackgroundColor(sombre(0.84)),
-            BackgroundGradient::from(LinearGradient::to_bottom(vec![
-                ColorStop::new(teinte, Val::Percent(0.0)),
-                ColorStop::new(Color::NONE, Val::Percent(55.0)),
-            ])),
             ChildOf(liste),
         ))
         .id();
-    // Famille en surtitre (pastille ronde) et touche dans un rond
-    let haut = nuit::rangee(commandes, bouton, 8.0);
-    commandes.entity(haut).entry::<Node>().and_modify(|mut n| {
-        n.align_self = AlignSelf::Stretch;
-    });
-    nuit::point(commandes, haut, 9.0, famille);
-    let nom_famille = carte.famille.nom().to_uppercase();
-    let f = c.ecrit(
-        commandes,
-        haut,
-        &nom_famille,
-        (Style::Grasse, 13.0, famille),
-    );
-    commandes.entity(f).insert(Node {
-        flex_grow: 1.0,
-        ..default()
-    });
-    let touche = commandes
+    // Médaillon rond : lueur de la famille, icône, touche en bas
+    let medaillon = commandes
         .spawn((
             Node {
-                width: Val::Px(26.0),
-                height: Val::Px(26.0),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                border_radius: BorderRadius::MAX,
-                ..default()
-            },
-            BackgroundColor(Color::srgba(1.0, 1.0, 1.0, 0.1)),
-            ChildOf(haut),
-        ))
-        .id();
-    let chiffre = (b'1' + k as u8) as char;
-    let chiffre = chiffre.encode_utf8(&mut [0; 4]).to_owned();
-    c.ecrit(commandes, touche, &chiffre, (Style::Grasse, 13.0, AIDE));
-    // Icône dans un halo rond
-    let halo = commandes
-        .spawn((
-            Node {
-                width: Val::Px(104.0),
-                height: Val::Px(104.0),
-                margin: UiRect::top(Val::Px(4.0)),
+                width: Val::Px(MEDAILLON),
+                height: Val::Px(MEDAILLON),
+                margin: UiRect::bottom(Val::Px(10.0)),
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
                 border_radius: BorderRadius::MAX,
@@ -198,13 +159,21 @@ fn construire_carte(
                 UiPosition::CENTER,
                 RadialGradientShape::ClosestSide,
                 vec![
-                    ColorStop::new(famille.with_alpha(lueur + 0.2), Val::Percent(0.0)),
+                    ColorStop::new(
+                        famille.with_alpha((lueur * 2.2).min(0.85)),
+                        Val::Percent(0.0),
+                    ),
+                    ColorStop::new(famille.with_alpha(lueur * 0.9), Val::Percent(62.0)),
                     ColorStop::new(Color::NONE, Val::Percent(100.0)),
                 ],
             )),
+            Outline::new(Val::Px(3.0), Val::Px(4.0), famille.with_alpha(0.35)),
             ChildOf(bouton),
         ))
         .id();
+    commandes
+        .entity(bouton)
+        .insert(Halo(medaillon, famille.with_alpha(0.35)));
     let image = match carte.icone {
         Icone::Texture(chemin) => c.textures.obtenir(c.serveur, chemin),
         Icone::Objet(i) => c.dessins.objets.get(i).cloned(),
@@ -213,85 +182,69 @@ fn construire_carte(
         commandes.spawn((
             ImageNode::new(h),
             Node {
-                width: Val::Px(60.0),
-                height: Val::Px(60.0),
+                width: Val::Px(76.0),
+                height: Val::Px(76.0),
                 ..default()
             },
-            ChildOf(halo),
+            ChildOf(medaillon),
         ));
     }
-    // Nom (hauteur fixe : deux lignes), stat clé dessous
-    let zone_nom = commandes
+    let touche = commandes
         .spawn((
             Node {
-                min_height: Val::Px(60.0),
-                align_self: AlignSelf::Stretch,
-                flex_shrink: 0.0,
-                align_items: AlignItems::Center,
+                position_type: PositionType::Absolute,
+                bottom: Val::Px(-12.0),
+                width: Val::Px(30.0),
+                height: Val::Px(30.0),
                 justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                border_radius: BorderRadius::MAX,
                 ..default()
             },
-            ChildOf(bouton),
+            BackgroundColor(sombre(0.95)),
+            Outline::new(Val::Px(2.0), Val::ZERO, famille),
+            ChildOf(medaillon),
         ))
         .id();
-    let nom = c.ecrit(commandes, zone_nom, &carte.nom, (Style::Logo, 25.0, IVOIRE));
+    let chiffre = (b'1' + k as u8) as char;
+    let chiffre = chiffre.encode_utf8(&mut [0; 4]).to_owned();
+    c.ecrit(commandes, touche, &chiffre, (Style::Logo, 16.0, IVOIRE));
+    // Famille (ou étiquette) en surtitre coloré, nom, stat clé, description
+    let surtitre = if carte.etiquette != carte.famille.nom() {
+        carte.etiquette.to_uppercase()
+    } else {
+        carte.famille.nom().to_uppercase()
+    };
+    c.ecrit(commandes, bouton, &surtitre, (Style::Grasse, 13.0, famille));
+    let nom = c.ecrit(commandes, bouton, &carte.nom, (Style::Logo, 30.0, IVOIRE));
     commandes
         .entity(nom)
         .insert(TextLayout::new_with_justify(Justify::Center));
     if let Some(cle) = carte.lignes.first() {
-        let e = c.ecrit(commandes, bouton, cle, (Style::Grasse, 15.0, VERT_GAIN));
+        let e = c.ecrit(commandes, bouton, cle, (Style::Grasse, 16.0, VERT_GAIN));
         commandes
             .entity(e)
             .insert(TextLayout::new_with_justify(Justify::Center));
     }
-    if carte.etiquette != carte.famille.nom() {
-        let pastille = commandes
-            .spawn((
-                Node {
-                    padding: UiRect::axes(Val::Px(12.0), Val::Px(4.0)),
-                    border_radius: BorderRadius::MAX,
-                    ..default()
-                },
-                BackgroundColor(teinte),
-                ChildOf(bouton),
-            ))
-            .id();
-        let t = carte.etiquette.to_uppercase();
-        c.ecrit(commandes, pastille, &t, (Style::Grasse, 12.0, famille));
-    }
-    let d = c.ecrit(
-        commandes,
-        bouton,
-        &carte.description,
-        (Style::Normale, 15.0, DESCRIPTION),
-    );
+    let d = (Style::Normale, 15.0, DESCRIPTION);
+    let d = c.ecrit(commandes, bouton, &carte.description, d);
     commandes
         .entity(d)
         .insert(TextLayout::new_with_justify(Justify::Center));
-    // Les autres lignes en pied (la première est la stat clé, sous le nom)
-    if carte.lignes.len() < 2 {
-        return;
-    }
-    let stats = nuit::colonne(commandes, bouton, 5.0);
-    commandes.entity(stats).entry::<Node>().and_modify(|mut n| {
-        n.margin = UiRect::top(Val::Auto);
-        n.align_self = AlignSelf::Stretch;
-        n.padding = UiRect::top(Val::Px(10.0));
-    });
+    // Les autres lignes (la première est la stat clé)
     for l in carte.lignes.iter().skip(1) {
         // « Dégâts : 10 → 15 » : la nouvelle valeur ressort ; à la ligne si trop long
         let ligne = commandes
             .spawn((
                 Node {
                     flex_wrap: FlexWrap::Wrap,
+                    justify_content: JustifyContent::Center,
                     column_gap: Val::Px(4.0),
-                    align_items: AlignItems::Center,
                     ..default()
                 },
-                ChildOf(stats),
+                ChildOf(bouton),
             ))
             .id();
-        nuit::point(commandes, ligne, 5.0, famille.with_alpha(0.8));
         let (debut, valeur) = match l.rfind("→ ") {
             Some(i) => l.split_at(i + "→ ".len()),
             None => (l.as_str(), ""),

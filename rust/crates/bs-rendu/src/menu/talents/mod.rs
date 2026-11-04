@@ -1,4 +1,5 @@
-//! Page des Talents du menu, plein écran sans cadres : un fond sombre teinté, en haut
+//! Page des Talents du menu, plein écran sans cadres : un mur de blocs (la texture de
+//! l'arbre, `fond` dans les données) assombri sur les bords ; en haut
 //! le titre, les classes en liens soulignés et les points disponibles (`entete`) ;
 //! sous eux les deux spécialisations, puis l'arbre au centre (`schema`, défilant) ; la
 //! fiche du talent consulté flotte à droite (`fiche`). « Retour » et « Réinitialiser »
@@ -7,6 +8,8 @@
 mod entete;
 mod fiche;
 mod schema;
+
+pub use schema::survoler_cases;
 
 use bevy::prelude::*;
 use bs_donnees::progression::{Arbre, Noeud};
@@ -210,18 +213,54 @@ pub(super) fn bouton(
     b
 }
 
-/// Construit la page ; renvoie sa racine.
-pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones) -> Entity {
-    // Fond : halo violet d'enchantement derrière l'arbre, bords presque noirs
-    let fond = RadialGradient::new(
-        UiPosition::TOP_LEFT.at_percent(36.0, 58.0),
+/// Fond de la page : la texture de bloc de l'arbre en mur (tuiles de 64), assombrie
+/// vers les bords et sous l'en-tête.
+fn mur(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, racine: Entity) {
+    let plein = || Node {
+        position_type: PositionType::Absolute,
+        width: Val::Percent(100.0),
+        height: Val::Percent(100.0),
+        ..default()
+    };
+    commandes.spawn((
+        ImageNode {
+            image: ic.icone(&c.arbre().fond),
+            color: Color::srgb(0.62, 0.62, 0.62),
+            image_mode: NodeImageMode::Tiled {
+                tile_x: true,
+                tile_y: true,
+                stretch_value: 4.0,
+            },
+            ..default()
+        },
+        plein(),
+        ChildOf(racine),
+    ));
+    let noir = |a: f32| Color::srgba(0.0, 0.0, 0.0, a);
+    let halo = RadialGradient::new(
+        UiPosition::TOP_LEFT.at_percent(38.0, 55.0),
         RadialGradientShape::FarthestCorner,
         vec![
-            ColorStop::new(Color::srgb_u8(0x24, 0x1f, 0x36), Val::Percent(0.0)),
-            ColorStop::new(Color::srgb_u8(0x12, 0x13, 0x1b), Val::Percent(45.0)),
-            ColorStop::new(Color::srgb_u8(0x07, 0x08, 0x0b), Val::Percent(100.0)),
+            ColorStop::new(noir(0.25), Val::Percent(0.0)),
+            ColorStop::new(noir(0.55), Val::Percent(60.0)),
+            ColorStop::new(noir(0.85), Val::Percent(100.0)),
         ],
     );
+    let haut = LinearGradient::to_bottom(vec![
+        ColorStop::new(noir(0.7), Val::Percent(0.0)),
+        ColorStop::new(noir(0.0), Val::Percent(22.0)),
+        ColorStop::new(noir(0.0), Val::Percent(85.0)),
+        ColorStop::new(noir(0.6), Val::Percent(100.0)),
+    ]);
+    commandes.spawn((
+        plein(),
+        BackgroundGradient(vec![halo.into(), haut.into()]),
+        ChildOf(racine),
+    ));
+}
+
+/// Construit la page ; renvoie sa racine.
+pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones) -> Entity {
     let racine = commandes
         .spawn((
             Name::new("talents"),
@@ -232,9 +271,9 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones) -> En
                 ..default()
             },
             BackgroundColor(charte::FOND),
-            BackgroundGradient::from(fond),
         ))
         .id();
+    mur(commandes, c, ic, racine);
     entete::construire(commandes, c, ic, racine);
     let corps = commandes
         .spawn((

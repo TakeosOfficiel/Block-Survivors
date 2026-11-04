@@ -206,8 +206,15 @@ pub struct Arbre {
     pub nom: String,
     pub description: String,
     pub icone: Texture,
+    /// Bloc dont la texture tapisse le fond de l'arbre dans le menu.
+    #[serde(default = "fond_par_defaut")]
+    pub fond: Texture,
     pub branches: indexmap::IndexMap<Branche, String>,
     pub noeuds: Vec<Noeud>,
+}
+
+fn fond_par_defaut() -> Texture {
+    "block/deepslate_tiles".to_owned()
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -16,6 +16,7 @@
       nom: "Gladiateur",
       description: "Frapper fort, frapper juste.",
       icone: "item/diamond_sword",
+      fond: "block/polished_blackstone_bricks",
       branches: {
         tronc: "Tronc",
         gauche: "Puissance",
@@ -316,6 +317,7 @@
       nom: "Gardien",
       description: "Encaisser, tenir, survivre.",
       icone: "item/iron_chestplate",
+      fond: "block/stone_bricks",
       branches: {
         tronc: "Tronc",
         gauche: "Épines",
@@ -609,6 +611,7 @@
       nom: "Tireuse d'élite",
       description: "Chaque flèche compte.",
       icone: "item/spectral_arrow",
+      fond: "block/spruce_planks",
       branches: {
         tronc: "Tronc",
         gauche: "Perforation",
@@ -913,6 +916,7 @@
       nom: "Rôdeuse",
       description: "Rapide, insaisissable, prévoyante.",
       icone: "item/rabbit_foot",
+      fond: "block/moss_block",
       branches: {
         tronc: "Tronc",
         gauche: "Pièges",
@@ -1220,6 +1224,7 @@
       nom: "Pyromancien",
       description: "Tout brûle.",
       icone: "item/fire_charge",
+      fond: "block/nether_bricks",
       branches: {
         tronc: "Tronc",
         gauche: "Cendres",
@@ -1567,6 +1572,7 @@
       nom: "Arcaniste",
       description: "La foudre et le savoir.",
       icone: "item/enchanted_book",
+      fond: "block/purpur_block",
       branches: {
         tronc: "Tronc",
         gauche: "Foudre",
@@ -1861,6 +1867,7 @@
       nom: "Maître-chien",
       description: "Une meute toujours plus grande.",
       icone: "item/bone",
+      fond: "block/dark_oak_planks",
       branches: {
         tronc: "Tronc",
         gauche: "Meute",
@@ -2145,6 +2152,7 @@
       nom: "Évocateur",
       description: "Esprits et golems à son service.",
       icone: "item/echo_shard",
+      fond: "block/deepslate_tiles",
       branches: {
         tronc: "Tronc",
         gauche: "Golem",

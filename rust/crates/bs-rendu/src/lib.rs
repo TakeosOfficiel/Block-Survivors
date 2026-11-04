@@ -256,6 +256,7 @@ impl Plugin for PluginJeu {
                         ecrans::style::survoler,
                         ecrans::charte::survoler_relief,
                         menu::survoler_liens,
+                        menu::survoler_cases,
                     ),
                     (menu::fond::suivre, menu::fond::couvrir),
                 )

@@ -1,17 +1,16 @@
-//! Arbre de talents, centré sur le fond sans panneau, défilant à la molette. Chaque
-//! palier s'ouvre sur un filet discret et son libellé à gauche (« PALIER II · 5/8
-//! rangs »). Les liaisons s'allument d'or quand le talent du dessus est complet. Les
-//! cases (56) se lisent par leur bord : or et halo si apprises, vert et halo si
-//! achetables, éteintes et creusées si fermées ; le rang est une pastille au coin, la
-//! case consultée est cerclée d'ivoire.
+//! Arbre de talents à la manière de l'écran des Progrès de Minecraft, posé sur le mur
+//! de blocs de la page et défilant à la molette. Les cadres sont ceux des progrès :
+//! carré pour un bonus ou un choix, arrondi pour une capacité, à pointes pour un
+//! talent final ; dorés une fois appris, gris sinon, assombris si fermés, avec un halo
+//! vert quand on peut les acheter. Les liaisons sont des traits cernés de noir, d'or
+//! quand le talent du dessus est complet. Chaque palier a son libellé à gauche ; le
+//! rang est une pastille au coin, la case consultée est cerclée de blanc.
 
 use bevy::prelude::*;
 use bs_donnees::progression::{Branche, Noeud, TypeNoeud};
 
 use super::{ActionTalent, Contexte, ecrire};
-use crate::ecrans::charte::{
-    AIDE, IVOIRE, OR_SOURD, OR_VIF, ROUGE, Relief, VERT_GAIN, bord_relief, cadenas,
-};
+use crate::ecrans::charte::{AIDE, IVOIRE, OR_VIF, ROUGE, VERT_GAIN, cadenas};
 use crate::ecrans::vues::Defilant;
 use crate::hud::police::TextePixel;
 use crate::menu::ActionMenu;
@@ -26,16 +25,10 @@ const BORD_X: f32 = 120.0;
 const TAILLE: f32 = 52.0;
 const COLONNES: f32 = 7.0;
 const LIGNES: u32 = 7;
-const APPRIS: Color = Color::srgb_u8(0x3a, 0x30, 0x1c);
-const APPRIS_SURVOL: Color = Color::srgb_u8(0x4a, 0x3e, 0x24);
-const OUVERT: Color = Color::srgb_u8(0x1d, 0x23, 0x2a);
-const OUVERT_SURVOL: Color = Color::srgb_u8(0x29, 0x31, 0x3a);
-const FERME: Color = Color::srgb_u8(0x10, 0x13, 0x17);
-const BORD_FERME: Color = Color::srgb_u8(0x2a, 0x30, 0x36);
-const BORD_OUVERT: Color = Color::srgb_u8(0x5a, 0x63, 0x6b);
-const LIAISON: Color = Color::srgb_u8(0x26, 0x2b, 0x33);
-const FILET: Color = Color::srgba(1.0, 1.0, 1.0, 0.07);
-const FINAL: Color = Color::srgb_u8(0x8a, 0x6c, 0xcf);
+/// Intérieur d'une liaison : ouverte, fermée.
+const LIAISON: Color = Color::srgb_u8(0xc6, 0xc6, 0xc6);
+const LIAISON_FERMEE: Color = Color::srgb_u8(0x4a, 0x4a, 0x4a);
+const FILET: Color = Color::srgba(1.0, 1.0, 1.0, 0.10);
 const CHIFFRES: [&str; 4] = ["I", "II", "III", "IV"];
 
 pub fn couleur_branche(b: Branche) -> Color {
@@ -186,14 +179,16 @@ fn paliers(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, schema: Enti
             ))
             .id();
         let nom = format!("PALIER {}", CHIFFRES.get(i).copied().unwrap_or("?"));
-        let couleur = if atteint { AIDE } else { ROUGE };
-        ecrire(commandes, ic, b, &nom, (true, 13.0, couleur));
+        let couleur = if atteint { IVOIRE } else { ROUGE };
+        let e = ecrire(commandes, ic, b, &nom, (true, 13.0, couleur));
+        commandes.entity(e).insert(TextShadow::default());
         if !atteint {
             let achetes = rangs.min(prog.points(p, a, Some(ligne)));
             let l = super::rangee(commandes, b, 5.0);
             cadenas(commandes, l, 9.0, ROUGE);
             let t = format!("{achetes}/{rangs} rangs");
-            ecrire(commandes, ic, l, &t, (false, 13.0, ROUGE));
+            let e = ecrire(commandes, ic, l, &t, (true, 13.0, ROUGE));
+            commandes.entity(e).insert(TextShadow::default());
         }
     }
 }
@@ -203,17 +198,32 @@ fn anneau(commandes: &mut Commands, b: Entity) {
     commandes.spawn((
         Node {
             position_type: PositionType::Absolute,
-            left: Val::Px(-8.0),
-            right: Val::Px(-8.0),
-            top: Val::Px(-8.0),
-            bottom: Val::Px(-10.0),
+            left: Val::Px(-6.0),
+            right: Val::Px(-6.0),
+            top: Val::Px(-6.0),
+            bottom: Val::Px(-6.0),
             border: UiRect::all(Val::Px(2.0)),
             border_radius: BorderRadius::all(Val::Px(10.0)),
             ..default()
         },
-        BorderColor::all(IVOIRE),
+        BorderColor::all(Color::WHITE),
         ChildOf(b),
     ));
+}
+
+/// Case de l'arbre : éclaircie au survol (teinte de repos gardée).
+#[derive(Component, Clone, Copy)]
+pub struct Survol(Color);
+
+/// Survol d'une case : son cadre s'éclaire.
+pub fn survoler_cases(mut q: Query<(&Interaction, &Survol, &mut ImageNode), Changed<Interaction>>) {
+    for (i, s, mut image) in &mut q {
+        image.color = if *i == Interaction::None {
+            s.0
+        } else {
+            Color::srgb(1.25, 1.25, 1.25)
+        };
+    }
 }
 
 /// Petite marque en coin haut gauche.
@@ -273,50 +283,42 @@ fn noeud(
     let inactif = r > 0 && !prog.actif(p, a, n);
     let disponible = prog.refus_achat(p, a, n).is_none();
     let complet = r >= n.rang_max;
-    let bord = match n.genre {
-        _ if r > 0 => OR_VIF,
-        _ if disponible => VERT_GAIN,
-        _ if ferme => BORD_FERME,
-        TypeNoeud::Capacite => OR_SOURD,
-        TypeNoeud::Final => FINAL,
-        _ => BORD_OUVERT,
+    // Cadre des progrès : forme par genre, doré si appris
+    let forme = match n.genre {
+        TypeNoeud::Capacite => "goal",
+        TypeNoeud::Final => "challenge",
+        _ => "task",
     };
-    let (fond, fond_survol) = if r > 0 {
-        (APPRIS, APPRIS_SURVOL)
-    } else if ferme {
-        (FERME, OUVERT)
+    let etat = if r > 0 { "obtained" } else { "unobtained" };
+    let cadre = format!("gui/sprites/advancements/{forme}_frame_{etat}");
+    let voile = if ferme {
+        Color::srgb(0.38, 0.38, 0.40)
     } else {
-        (OUVERT, OUVERT_SURVOL)
+        Color::WHITE
     };
-    let relief = Relief {
-        fond,
-        bord,
-        fond_survol,
-        bord_survol: IVOIRE,
-        tranche: bord.darker(0.15),
-    };
-    let mut boite = absolu(coin(c, n), Vec2::splat(TAILLE));
-    boite.border = bord_relief();
-    boite.border_radius = BorderRadius::all(Val::Px(6.0));
-    boite.justify_content = JustifyContent::Center;
-    boite.align_items = AlignItems::Center;
     let b = commandes
         .spawn((
             Button,
             ActionMenu::Talent(ActionTalent::Noeud(k)),
-            boite,
-            relief.composants(),
+            ImageNode::new(ic.icone(&cadre)).with_color(voile),
+            Node {
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                border_radius: BorderRadius::all(Val::Px(8.0)),
+                ..absolu(coin(c, n), Vec2::splat(TAILLE))
+            },
+            Survol(voile),
             ChildOf(schema),
         ))
         .id();
     if r > 0 && !inactif {
         commandes
             .entity(b)
-            .insert(halo(OR_VIF.with_alpha(0.4), 14.0));
+            .insert(halo(OR_VIF.with_alpha(0.35), 14.0));
     } else if disponible {
         commandes
             .entity(b)
-            .insert(halo(VERT_GAIN.with_alpha(0.35), 12.0));
+            .insert(halo(VERT_GAIN.with_alpha(0.55), 14.0));
     }
     // Icône (éteinte si fermée ou inactive) ; talent à choix : deux moitiés
     let teinte = if ferme {
@@ -336,10 +338,10 @@ fn noeud(
                 } else {
                     teinte
                 };
-                let place = Vec2::splat(if i == 0 { 2.0 } else { TAILLE - 6.0 - 26.0 });
+                let place = Vec2::splat(if i == 0 { 5.0 } else { TAILLE - 5.0 - 22.0 });
                 commandes.spawn((
                     ImageNode::new(ic.icone(&o.icone)).with_color(t),
-                    absolu(place, Vec2::splat(24.0)),
+                    absolu(place, Vec2::splat(22.0)),
                     ChildOf(b),
                 ));
             }
@@ -348,8 +350,8 @@ fn noeud(
             commandes.spawn((
                 ImageNode::new(ic.icone(&n.icone)).with_color(teinte),
                 Node {
-                    width: Val::Px(36.0),
-                    height: Val::Px(36.0),
+                    width: Val::Px(32.0),
+                    height: Val::Px(32.0),
                     ..default()
                 },
                 ChildOf(b),

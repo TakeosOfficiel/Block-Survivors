@@ -1,8 +1,8 @@
-//! Fiche du talent choisi, en infobulle sombre des jeux de rôle en ligne, à droite des
-//! arbres : nom, rang, genre ; l'effet en doré (ou les deux options d'un talent à
-//! choix, à choisir avant l'achat) ; en rouge ce qui manque (points dans l'arbre,
-//! prérequis, autre talent final, points restants) ; puis « Apprendre » en vert (ou un
-//! second clic sur la case) et le réglage de l'arme de départ.
+//! Fiche du talent choisi, dans le panneau de droite : nom, rang, genre ; l'effet (ou
+//! les deux options d'un talent à choix, à choisir avant l'achat) ; en rouge ce qui
+//! manque (points dans l'arbre, prérequis, autre talent final, points restants) ; puis,
+//! collé en bas, le grand « Apprendre » vert de l'accueil (ou un second clic sur la
+//! case) et le réglage de l'arme de départ.
 
 use bevy::prelude::*;
 use bs_donnees::progression::{Noeud, TypeNoeud};
@@ -12,40 +12,14 @@ use super::{ActionTalent, Contexte, bouton, ecrire, lien, rangee};
 use crate::ecrans::charte::{AIDE, IVOIRE, OR_VIF, ROUGE, T_AIDE, T_CORPS};
 use crate::menu::{ActionMenu, Icones};
 
-/// Texte d'effet, doré comme dans les infobulles des jeux de rôle.
-const DORE: Color = Color::srgb_u8(0xff, 0xd1, 0x4a);
+/// Texte d'effet, doré.
+const DORE: Color = Color::srgb_u8(0xff, 0xd8, 0x6a);
 const ORANGE: Color = Color::srgb_u8(0xff, 0x9a, 0x3c);
-const LARGEUR: f32 = 330.0;
 
-pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, parent: Entity) {
+pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, f: Entity) {
     let prog = &c.sauvegarde.progression;
     let (p, a, n) = (c.id(), c.etat.arbre, c.noeud());
     let rang = prog.rang(p, a, n);
-    let f = commandes
-        .spawn((
-            Node {
-                width: Val::Px(LARGEUR),
-                flex_shrink: 0.0,
-                align_self: AlignSelf::FlexStart,
-                flex_direction: FlexDirection::Column,
-                row_gap: Val::Px(8.0),
-                padding: UiRect::all(Val::Px(16.0)),
-                border: UiRect::all(Val::Px(2.0)),
-                border_radius: BorderRadius::all(Val::Px(6.0)),
-                ..default()
-            },
-            BackgroundColor(Color::srgba_u8(0x07, 0x0a, 0x1a, 0xf2)),
-            BorderColor::all(Color::srgb_u8(0x9a, 0xa0, 0xb4)),
-            BoxShadow::new(
-                Color::srgba(0.0, 0.0, 0.0, 0.7),
-                Val::ZERO,
-                Val::Px(6.0),
-                Val::ZERO,
-                Val::Px(18.0),
-            ),
-            ChildOf(parent),
-        ))
-        .id();
     let tete = rangee(commandes, f, 12.0);
     let icone = n
         .options
@@ -71,7 +45,7 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, paren
             ChildOf(tete),
         ))
         .id();
-    ecrire(commandes, ic, noms, &n.nom, (true, 19.0, IVOIRE));
+    ecrire(commandes, ic, noms, &n.nom, (true, 20.0, IVOIRE));
     let genre = match n.genre {
         TypeNoeud::Bonus => "Bonus",
         TypeNoeud::Capacite => "Capacité",
@@ -247,7 +221,7 @@ fn actions(
             Node {
                 flex_direction: FlexDirection::Column,
                 row_gap: Val::Px(8.0),
-                margin: UiRect::top(Val::Px(6.0)),
+                margin: UiRect::top(Val::Auto),
                 ..default()
             },
             ChildOf(f),
@@ -267,16 +241,16 @@ fn actions(
     let etat = match prog.refus_achat(p, a, n) {
         None => {
             let t = if rang == 0 {
-                "Apprendre · 1 point"
+                "APPRENDRE"
             } else {
-                "Rang suivant · 1 point"
+                "RANG SUIVANT"
             };
             bouton(commandes, ic, bas, t, ActionTalent::Acheter);
             let t = "ou clique encore sur la case";
             ecrire(commandes, ic, bas, t, (false, T_AIDE - 1.0, AIDE));
             return;
         }
-        Some(RefusAchat::Max) => texte("✓ Appris", OR_VIF),
+        Some(RefusAchat::Max) => texte("Appris", OR_VIF),
         Some(RefusAchat::Verrou) => return,
         Some(RefusAchat::Exclusif) => texte("Un autre talent final est appris", ROUGE),
         Some(RefusAchat::Points) if prog.maitrise(p).au_max() => {
@@ -287,5 +261,5 @@ fn actions(
             AIDE,
         ),
     };
-    ecrire(commandes, ic, bas, &etat.0, (true, T_AIDE, etat.1));
+    ecrire(commandes, ic, bas, &etat.0, (true, T_CORPS, etat.1));
 }

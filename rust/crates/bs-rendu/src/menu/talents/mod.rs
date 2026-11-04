@@ -1,22 +1,22 @@
-//! Page des Talents du menu, à la manière des jeux de rôle en ligne : en haut le titre,
-//! les classes et les points restants (`entete`) ; au centre les deux arbres de la
-//! classe côte à côte, en grilles (`grille`), qui se partagent les points, et la fiche
-//! du talent choisi en infobulle (`fiche`). Un clic choisit une case, un second clic
-//! sur la même l'apprend. « Retour » et « Réinitialiser » (les deux arbres) sont des
-//! liens en bas. Échap ramène au menu.
+//! Page des Talents du menu, posée sur la scène de l'accueil et à sa charte : à gauche
+//! l'arbre choisi en arcs (`arcs`), du talent de base, en bas, vers les talents finaux ;
+//! à droite un panneau charbon (`cote`) avec les classes, les deux arbres (qui se
+//! partagent les points), les points restants et la fiche du talent choisi (`fiche`).
+//! Un clic choisit une case, un second clic sur la même l'apprend. « ‹ Retour » et
+//! « Réinitialiser » en bas à gauche ; Échap ramène à l'accueil.
 
-mod entete;
+mod arcs;
+mod cote;
 mod fiche;
-mod grille;
 
-pub use grille::survoler_cases;
+pub use arcs::survoler_cases;
 
 use bevy::prelude::*;
 use bs_donnees::progression::{Arbre, Noeud};
 
 use super::vue::Lien;
 use super::{ActionMenu, Icones};
-use crate::ecrans::charte::{self, IVOIRE, OR_VIF, Relief, T_CORPS};
+use crate::ecrans::charte::{self, IVOIRE, MARGE, Relief};
 use crate::ecrans::style::{OR, Teinte};
 use crate::lancement::DonneesJeu;
 use crate::sauvegarde::Sauvegarde;
@@ -26,8 +26,6 @@ pub(in crate::menu) const CHOISI: Teinte = Teinte {
     bord: OR,
     fond: Color::srgba_u8(60, 45, 10, 153),
 };
-/// Libellé d'un lien non choisi.
-pub(super) const ETEINT: Color = Color::srgb_u8(0x93, 0x9b, 0x98);
 
 /// Classe, arbre et talent affichés ; réinitialisation en attente de confirmation.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -42,6 +40,7 @@ pub struct EtatTalents {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ActionTalent {
     Classe(usize),
+    Arbre(usize),
     /// Case d'un arbre : la choisir, ou l'apprendre si elle l'est déjà.
     Noeud(usize, usize),
     Acheter,
@@ -100,6 +99,7 @@ pub fn agir(
             etat.arbre = 0;
             etat.noeud = 0;
         }
+        ActionTalent::Arbre(arbre) => (etat.arbre, etat.noeud) = (arbre, 0),
         ActionTalent::Noeud(arbre, k) if (arbre, k) == (a, etat.noeud) => {
             prog.acheter(p, a, n);
         }
@@ -167,31 +167,7 @@ pub(super) fn lien(
     b
 }
 
-/// Trait d'or sous un onglet choisi.
-pub(super) fn souligner(commandes: &mut Commands, parent: Entity) {
-    commandes.spawn((
-        Node {
-            position_type: PositionType::Absolute,
-            left: Val::ZERO,
-            right: Val::ZERO,
-            bottom: Val::Px(-6.0),
-            height: Val::Px(3.0),
-            border_radius: BorderRadius::all(Val::Px(2.0)),
-            ..default()
-        },
-        BackgroundColor(OR_VIF),
-        BoxShadow::new(
-            OR_VIF.with_alpha(0.5),
-            Val::ZERO,
-            Val::ZERO,
-            Val::ZERO,
-            Val::Px(6.0),
-        ),
-        ChildOf(parent),
-    ));
-}
-
-/// Grand bouton vert de l'action principale (seul bouton en relief de la page).
+/// Grand bouton vert de l'action principale, en police du logo, comme « JOUER ».
 pub(super) fn bouton(
     commandes: &mut Commands,
     ic: &Icones,
@@ -199,50 +175,24 @@ pub(super) fn bouton(
     t: &str,
     action: ActionTalent,
 ) -> Entity {
-    let h = charte::H_PRINCIPAL;
+    let h = charte::H_PRINCIPAL + 8.0;
     let b = charte::bouton_relief(commandes, parent, Relief::PRINCIPAL, h, ());
     commandes.entity(b).insert(ActionMenu::Talent(action));
-    ecrire(commandes, ic, b, t, (true, T_CORPS + 2.0, IVOIRE));
-    b
-}
-
-/// Fond de la page : de l'ardoise des profondeurs en tuiles, très assombrie, voilée
-/// vers les bords.
-fn mur(commandes: &mut Commands, ic: &mut Icones, racine: Entity) {
-    let plein = || Node {
-        position_type: PositionType::Absolute,
-        width: Val::Percent(100.0),
-        height: Val::Percent(100.0),
-        ..default()
-    };
     commandes.spawn((
-        ImageNode {
-            image: ic.icone("block/deepslate_tiles"),
-            color: Color::srgb(0.22, 0.22, 0.24),
-            image_mode: NodeImageMode::Tiled {
-                tile_x: true,
-                tile_y: true,
-                stretch_value: 4.0,
-            },
+        Text::new(t),
+        TextFont {
+            font: ic.polices.logo.clone(),
+            font_size: 30.0,
             ..default()
         },
-        plein(),
-        ChildOf(racine),
+        TextColor(IVOIRE),
+        TextShadow {
+            offset: Vec2::new(0.0, 3.0),
+            color: Color::srgba(0.0, 0.0, 0.0, 0.6),
+        },
+        ChildOf(b),
     ));
-    let noir = |a: f32| Color::srgba(0.0, 0.0, 0.0, a);
-    let halo = RadialGradient::new(
-        UiPosition::CENTER,
-        RadialGradientShape::FarthestCorner,
-        vec![
-            ColorStop::new(noir(0.1), Val::Percent(0.0)),
-            ColorStop::new(noir(0.75), Val::Percent(100.0)),
-        ],
-    );
-    commandes.spawn((
-        plein(),
-        BackgroundGradient(vec![halo.into()]),
-        ChildOf(racine),
-    ));
+    b
 }
 
 /// Construit la page ; renvoie sa racine.
@@ -253,40 +203,28 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones) -> En
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
-                flex_direction: FlexDirection::Column,
+                padding: UiRect::new(Val::Px(MARGE), Val::Px(MARGE), Val::Px(24.0), Val::Px(24.0)),
+                column_gap: Val::Px(24.0),
                 ..default()
             },
-            BackgroundColor(charte::FOND),
+            BackgroundColor(Color::srgba(0.02, 0.03, 0.05, 0.9)),
         ))
         .id();
-    mur(commandes, ic, racine);
-    entete::construire(commandes, c, ic, racine);
-    let corps = commandes
+    let gauche = commandes
         .spawn((
             Node {
                 flex_grow: 1.0,
-                min_height: Val::ZERO,
+                min_width: Val::ZERO,
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
+                margin: UiRect::bottom(Val::Px(40.0)),
                 ..default()
             },
             ChildOf(racine),
         ))
         .id();
-    // Arbres et fiche alignés en haut, l'ensemble centré dans la page.
-    let rang = commandes
-        .spawn((
-            Node {
-                align_items: AlignItems::FlexStart,
-                column_gap: Val::Px(22.0),
-                ..default()
-            },
-            ChildOf(corps),
-        ))
-        .id();
-    grille::construire(commandes, c, ic, rang, 0);
-    grille::construire(commandes, c, ic, rang, 1);
-    fiche::construire(commandes, c, ic, rang);
-    entete::pied(commandes, c, ic, racine);
+    arcs::construire(commandes, c, ic, gauche);
+    cote::construire(commandes, c, ic, racine);
+    cote::pied(commandes, c, ic, racine);
     racine
 }

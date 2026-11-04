@@ -1,6 +1,7 @@
 //! Mise en page de l'écran de cartes, au style des menus : voile de nuit, grand titre
-//! doré en police du logo, puis un bandeau par choix sur toute la largeur, couleur de
-//! la famille (ou de la rareté) fondue aux deux bords, sans cadre : à gauche la touche,
+//! doré en police du logo, puis un bandeau de nuit par choix, fondu aux deux bords, sans
+//! cadre : la couleur de la famille (ou de la rareté) n'est qu'une lueur derrière l'icône
+//! et deux liserés fins. À gauche la touche,
 //! l'icône, la famille et le nom ; à droite la stat clé, la description et les autres
 //! lignes « avant → après » (nouvelle valeur en vert). Le bandeau survolé glisse vers la
 //! droite et son filet passe à l'or. Sous les bandeaux, au-dessus du HUD, deux pilules
@@ -147,19 +148,57 @@ fn bandeau(commandes: &mut Commands, c: &Contexte, liste: Entity, k: usize, cart
             ChildOf(liste),
         ))
         .id();
-    let a = (lueur * 1.5).min(0.5);
-    commandes
-        .entity(b)
-        .insert(BackgroundGradient::from(LinearGradient::to_right(vec![
+    // Bande de nuit fondue aux bords, lueur de la famille derrière l'icône
+    let fond = sombre(0.62);
+    commandes.entity(b).insert(BackgroundGradient(vec![
+        Gradient::Radial(RadialGradient::new(
+            UiPosition::new(Vec2::new(-0.5, 0.0), Val::Percent(21.0), Val::ZERO),
+            RadialGradientShape::Ellipse(Val::Px(240.0), Val::Px(100.0)),
+            vec![
+                ColorStop::new(
+                    famille.with_alpha((lueur * 1.6).min(0.45)),
+                    Val::Percent(0.0),
+                ),
+                ColorStop::new(Color::NONE, Val::Percent(100.0)),
+            ],
+        )),
+        Gradient::Linear(LinearGradient::to_right(vec![
             ColorStop::new(Color::NONE, Val::Percent(0.0)),
-            ColorStop::new(famille.with_alpha(a), Val::Percent(28.0)),
-            ColorStop::new(famille.with_alpha(a * 0.55), Val::Percent(72.0)),
+            ColorStop::new(fond, Val::Percent(22.0)),
+            ColorStop::new(fond, Val::Percent(78.0)),
             ColorStop::new(Color::NONE, Val::Percent(100.0)),
-        ])));
-    let ligne = nuit::rangee(commandes, b, 26.0);
+        ])),
+    ]));
+    // Liserés fins en haut et en bas, couleur de la famille fondue
+    for haut in [true, false] {
+        let mut n = Node {
+            position_type: PositionType::Absolute,
+            left: Val::Percent(15.0),
+            right: Val::Percent(15.0),
+            height: Val::Px(1.0),
+            ..default()
+        };
+        if haut {
+            n.top = Val::ZERO
+        } else {
+            n.bottom = Val::ZERO
+        }
+        commandes.spawn((
+            n,
+            BackgroundGradient::from(LinearGradient::to_right(vec![
+                ColorStop::new(Color::NONE, Val::Percent(0.0)),
+                ColorStop::new(famille.with_alpha(0.55), Val::Percent(35.0)),
+                ColorStop::new(famille.with_alpha(0.2), Val::Percent(75.0)),
+                ColorStop::new(Color::NONE, Val::Percent(100.0)),
+            ])),
+            ChildOf(b),
+        ));
+    }
+    let ligne = nuit::rangee(commandes, b, 24.0);
     commandes.entity(ligne).entry::<Node>().and_modify(|mut n| {
         n.width = Val::Px(LARGEUR_CONTENU);
         n.max_width = Val::Percent(94.0);
+        n.justify_content = JustifyContent::FlexStart;
     });
     let chiffre = (b'1' + k as u8) as char;
     let chiffre = chiffre.encode_utf8(&mut [0; 4]).to_owned();
@@ -167,10 +206,10 @@ fn bandeau(commandes: &mut Commands, c: &Contexte, liste: Entity, k: usize, cart
         commandes,
         ligne,
         &chiffre,
-        (Style::Logo, 60.0, IVOIRE.with_alpha(0.4)),
+        (Style::Logo, 40.0, IVOIRE.with_alpha(0.22)),
     );
     commandes.entity(t).insert(Node {
-        width: Val::Px(36.0),
+        width: Val::Px(28.0),
         flex_shrink: 0.0,
         ..default()
     });
@@ -182,8 +221,8 @@ fn bandeau(commandes: &mut Commands, c: &Contexte, liste: Entity, k: usize, cart
         commandes.spawn((
             ImageNode::new(h),
             Node {
-                width: Val::Px(84.0),
-                height: Val::Px(84.0),
+                width: Val::Px(76.0),
+                height: Val::Px(76.0),
                 flex_shrink: 0.0,
                 ..default()
             },
@@ -196,7 +235,7 @@ fn bandeau(commandes: &mut Commands, c: &Contexte, liste: Entity, k: usize, cart
         .entity(gauche)
         .entry::<Node>()
         .and_modify(|mut n| {
-            n.width = Val::Px(370.0);
+            n.width = Val::Px(390.0);
             n.flex_shrink = 0.0;
             n.align_items = AlignItems::FlexStart;
         });
@@ -205,13 +244,13 @@ fn bandeau(commandes: &mut Commands, c: &Contexte, liste: Entity, k: usize, cart
     } else {
         carte.famille.nom().to_uppercase()
     };
-    c.ecrit(commandes, gauche, &surtitre, (Style::Grasse, 14.0, famille));
-    c.ecrit(commandes, gauche, &carte.nom, (Style::Logo, 34.0, IVOIRE));
+    c.ecrit(commandes, gauche, &surtitre, (Style::Grasse, 13.0, famille));
+    c.ecrit(commandes, gauche, &carte.nom, (Style::Logo, 30.0, IVOIRE));
     let filet = commandes
         .spawn((
             Node {
-                width: Val::Px(60.0),
-                height: Val::Px(3.0),
+                width: Val::Px(44.0),
+                height: Val::Px(2.0),
                 margin: UiRect::top(Val::Px(4.0)),
                 border_radius: BorderRadius::MAX,
                 ..default()
@@ -230,6 +269,8 @@ fn bandeau(commandes: &mut Commands, c: &Contexte, liste: Entity, k: usize, cart
         .and_modify(|mut n| {
             n.flex_grow = 1.0;
             n.flex_shrink = 1.0;
+            n.min_width = Val::ZERO;
+            n.flex_basis = Val::ZERO;
             n.align_items = AlignItems::FlexStart;
         });
     // Stat clé : la nouvelle valeur en vert (lisible même sur un bandeau vert)

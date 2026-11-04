@@ -119,21 +119,31 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, paren
             let longueur = d.length();
             let milieu = (de + vers) / 2.0 + Vec2::splat(TAILLE / 2.0);
             let allumee = prog.complet(p, a, parent);
-            let e = commandes
-                .spawn((
-                    absolu(
-                        milieu - Vec2::new(longueur / 2.0, 2.0),
-                        Vec2::new(longueur, 4.0),
-                    ),
-                    UiTransform::from_rotation(Rot2::radians(d.y.atan2(d.x))),
-                    BackgroundColor(if allumee { OR_VIF } else { LIAISON }),
-                    ChildOf(schema),
-                ))
-                .id();
-            if allumee {
-                commandes
-                    .entity(e)
-                    .insert(halo(OR_VIF.with_alpha(0.45), 8.0));
+            let interieur = if allumee {
+                OR_VIF
+            } else if prog.ouvert(p, a, n) || prog.rang(p, a, parent) > 0 {
+                LIAISON
+            } else {
+                LIAISON_FERMEE
+            };
+            let rotation = UiTransform::from_rotation(Rot2::radians(d.y.atan2(d.x)));
+            for (epaisseur, couleur) in [(6.0, Color::BLACK), (2.0, interieur)] {
+                let e = commandes
+                    .spawn((
+                        absolu(
+                            milieu - Vec2::new(longueur / 2.0, epaisseur / 2.0),
+                            Vec2::new(longueur, epaisseur),
+                        ),
+                        rotation,
+                        BackgroundColor(couleur),
+                        ChildOf(schema),
+                    ))
+                    .id();
+                if allumee && epaisseur < 3.0 {
+                    commandes
+                        .entity(e)
+                        .insert(halo(OR_VIF.with_alpha(0.5), 6.0));
+                }
             }
         }
     }

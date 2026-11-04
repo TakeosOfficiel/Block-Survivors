@@ -431,3 +431,42 @@ fn invocateur_talents() {
     let loups = d.armes.get_index_of("loups").unwrap();
     assert!(p.etat.stats.degats_par_arme[loups] > 0.0);
 }
+
+/// Entouré d'un anneau de murets (franchissables à pied, mais qui arrêtent les tirs), le
+/// joueur blesse moins avec la flèche à ricochets : elle s'arrête sur le muret (sans le
+/// test du décor, les dégâts sont identiques avec et sans murets).
+#[test]
+fn ricochets_arretes_par_les_murs() {
+    use bs_monde::BLOQUE_TIR;
+    let d = donnees();
+    let index = d
+        .armes
+        .get_index_of("fleche_ricochet")
+        .expect("flèche à ricochets");
+    let degats = |murets: bool| {
+        let mut p = Partie::nouvelle(d, 0, 0, 11, false);
+        p.joueur.invincible = true;
+        p.arsenal.armes.clear();
+        while p.ameliorer_arme(index) {}
+        let c = &mut p.carte;
+        for iz in 0..c.profondeur {
+            for ix in 0..c.largeur {
+                let (x, z) = (ix as f32 + 0.5 - c.demi_x, iz as f32 + 0.5 - c.demi_z);
+                let r = (x * x + z * z).sqrt();
+                if murets && (2.5..4.0).contains(&r) {
+                    c.drapeaux[iz * c.largeur + ix] |= BLOQUE_TIR;
+                }
+            }
+        }
+        for _ in 0..(40.0 / PAS_SIMULATION) as u32 {
+            p.pas(PAS_SIMULATION);
+        }
+        p.etat.stats.degats_par_arme[index]
+    };
+    let (libre, mure) = (degats(false), degats(true));
+    eprintln!("ricochets : {libre:.0} sans murets, {mure:.0} avec");
+    assert!(
+        libre > 0.0 && mure < libre * 0.9,
+        "les murets n'arrêtent pas les flèches"
+    );
+}

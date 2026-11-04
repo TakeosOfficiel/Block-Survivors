@@ -4,6 +4,8 @@
 //! Orbes givrées (ralentissent) et Flux arcanique (l'orbe repart une fois).
 //! Le jeu TS garde une référence vers l'ennemi visé ; ici on garde son index et son
 //! identifiant, et on le retrouve s'il a changé de place dans le pool.
+//! Différence avec le TS : les flèches et les orbes lancées s'arrêtent sur le décor (comme
+//! les projectiles), et une flèche ne rebondit pas vers un ennemi caché par un mur.
 
 use bs_commun::maths::{cos, longueur, sin};
 use bs_donnees::armes::Mecanique;
@@ -28,6 +30,8 @@ const RICOCHET_TOUCHES: usize = 8;
 /// Distance de rebond d'une flèche de talent, et bonus du Tir rebondissant (blocs).
 const RICOCHET_REBOND_TALENT: f32 = 4.0;
 const TIR_REBONDISSANT: f32 = 2.0;
+/// Rayon des flèches et des orbes lancées contre le décor (comme les projectiles).
+const RAYON_DECOR: f32 = 0.1;
 
 /// Ennemi visé : index dans le pool et identifiant.
 type Cible = Option<(usize, u32)>;
@@ -242,6 +246,12 @@ impl Partie {
             let pas = d.min(s.vitesse * dt);
             o.x += dx / d * pas;
             o.z += dz / d * pas;
+            // Une orbe lancée se brise sur le décor
+            if self.carte.touche_tir(o.x, o.z, RAYON_DECOR) {
+                self.ev.gerbe("impactArcane", o.x, 1.0, o.z);
+                self.armes.traque.orbes.swap_remove(i);
+                continue;
+            }
             self.armes.traque.orbes[i] = o;
         }
     }
@@ -312,6 +322,10 @@ impl Partie {
         for &k in &tampon[..n] {
             let e = &self.ennemis.pool[k as usize];
             if f.touches[..f.nb_touches].contains(&e.id) {
+                continue;
+            }
+            // Pas de rebond vers un ennemi caché derrière un mur
+            if !self.carte.ligne_de_tir(f.x, f.z, e.x, e.z, RAYON_DECOR) {
                 continue;
             }
             let d2 = (e.x - f.x) * (e.x - f.x) + (e.z - f.z) * (e.z - f.z);
@@ -415,6 +429,12 @@ impl Partie {
             }
             f.x += dir_x * pas;
             f.z += dir_z * pas;
+            // Arrêtée par le décor, comme les flèches tirées
+            if self.carte.touche_tir(f.x, f.z, RAYON_DECOR) {
+                self.ev.gerbe("impactFleche", f.x, 1.2, f.z);
+                self.armes.traque.ricochets.swap_remove(i);
+                continue;
+            }
             f.dir_x = dir_x;
             f.dir_z = dir_z;
             self.armes.traque.ricochets[i] = f;

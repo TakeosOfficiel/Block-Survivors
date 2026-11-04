@@ -28,3 +28,12 @@ délimitent ; tout le reste de la construction sert de décor.
 
 `base` reprend les ennemis, les boss et l'ambiance d'une arène du jeu
 (`prairie`, `mine` ou `nether`) ; les autres champs la remplacent.
+
+**Panneaux de réglage** (facultatifs) : un panneau dont le texte contient
+`[ennemis]` crée autour de lui une zone peuplée de ces ennemis seulement, par
+exemple `[zone] Village [ennemis] zombie squelette [rayon] 15` (les mots-clés
+peuvent être sur des lignes différentes). `[zone]` donne un nom, `[rayon]` le
+demi-côté de la zone carrée en blocs (12 par défaut). Les ennemis s'écrivent
+avec leur identifiant : `zombie`, `squelette`, `araignee`, `creeper`,
+`araignee_venimeuse`, `poisson_argent`, `piglin_zombifie`, `squelette_wither`,
+`blaze`, `cube_magma`… Un nom inconnu est signalé au début de la partie.

@@ -190,7 +190,7 @@ fn zone_jouable_et_carte_de_collision() {
     let blocs = cuire(&s.palette, &fichiers()).expect("cuisson");
     let d = bs_donnees::Donnees::embarquees().expect("données");
     let c = cartes()[0];
-    let a = importer(definition(&d, &c).expect("définition"), &s, &blocs).expect("zone");
+    let a = importer(&d, definition(&d, &c).expect("définition"), &s, &blocs).expect("zone");
     assert_eq!(
         (a.zone.largeur, a.zone.profondeur, a.zone.niveau),
         (5, 5, 1)

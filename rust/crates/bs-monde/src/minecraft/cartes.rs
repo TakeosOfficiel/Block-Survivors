@@ -10,6 +10,7 @@ use bs_donnees::arenes::{Arene, ChoixEnnemi, Monde, Point, ZoneEnnemis};
 use serde::Deserialize;
 
 use super::modeles::BlocCuit;
+use super::panneaux::zones_des_panneaux;
 use super::proprietes::{Physique, physique_de};
 use super::schematique::Schematique;
 use super::zone::{Zone, construire_carte, trouver_zone};
@@ -142,12 +143,15 @@ pub struct AreneImportee {
     pub zone: Zone,
     /// Point de la schématique placé en (0, 0, 0) dans le jeu.
     pub origine: [f32; 3],
-    /// Blocs sans modèle connu (affichés en damier rose et noir).
+    /// Blocs sans modèle connu (affichés en damier rose et noir), puis ennemis inconnus
+    /// des panneaux `[ennemis]`.
     pub inconnus: Vec<String>,
 }
 
-/// Zone jouable, carte de collision et arène complète d'une schématique aux blocs cuits.
+/// Zone jouable, carte de collision et arène complète d'une schématique aux blocs cuits
+/// (zones d'ennemis des panneaux `[ennemis]` ajoutées à celles du `.json`).
 pub fn importer(
+    d: &Donnees,
     definition: Arene,
     s: &Schematique,
     blocs: &[BlocCuit],
@@ -164,11 +168,13 @@ pub fn importer(
         z: (zone.depart_z - zone.z0) as f32 - dp + 0.5,
     });
     let origine = [zone.x0 as f32 + dl, zone.niveau as f32, zone.z0 as f32 + dp];
-    let inconnus = blocs
+    let mut inconnus: Vec<String> = blocs
         .iter()
         .filter(|b| b.inconnu)
         .map(|b| b.etat.clone())
         .collect();
+    let zones = zones_des_panneaux(d, s, &zone, &arene.ennemis, &mut inconnus);
+    arene.zones.extend(zones);
     Ok(AreneImportee {
         arene,
         carte,

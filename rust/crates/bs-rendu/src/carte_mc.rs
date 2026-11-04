@@ -39,14 +39,14 @@ const ANIMATIONS_VANILLA: &[(&str, f32)] = &[
 ];
 const IMAGES_PAR_SECONDE_DEFAUT: f32 = 10.0;
 
-/// Blocs de la map sans modèle, annoncés au joueur au début de la partie.
+/// Blocs de la map sans modèle (et ennemis inconnus des panneaux), annoncés au joueur au début de la partie.
 #[derive(Resource)]
 pub struct RapportImport(pub String);
 
 impl RapportImport {
-    /// « 3 blocs sans modèle : a, b, c » (les quatre premiers noms, puis « ... »).
+    /// « 3 élément(s) inconnu(s) : a, b, c » (les quatre premiers noms, puis « ... »).
     fn nouveau(inconnus: &[String]) -> Self {
-        let mut t = format!("Map : {} bloc(s) sans modèle : ", inconnus.len());
+        let mut t = format!("Map : {} élément(s) inconnu(s) : ", inconnus.len());
         t.push_str(&inconnus[..inconnus.len().min(4)].join(", "));
         if inconnus.len() > 4 {
             t.push_str(", ...");
@@ -129,7 +129,7 @@ pub fn avancer_import(
     };
     let s = import.schematique.take().expect("schématique lue");
     let def = import.definition.take().expect("définition lue");
-    let ai = match importer(def, &s, &blocs) {
+    let ai = match importer(import.d, def, &s, &blocs) {
         Ok(ai) => ai,
         Err(e) => panic!("map importée illisible : {e}"),
     };

@@ -8,6 +8,7 @@ pub mod cuisson;
 pub mod maillage;
 pub mod modeles;
 pub mod nbt;
+pub mod panneaux;
 pub mod proprietes;
 pub mod schematique;
 pub mod vent;

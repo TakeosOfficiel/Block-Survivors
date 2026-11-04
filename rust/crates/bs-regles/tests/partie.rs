@@ -470,3 +470,70 @@ fn ricochets_arretes_par_les_murs() {
         "les murets n'arrêtent pas les flèches"
     );
 }
+
+/// Un anneau de murets (qui arrêtent les tirs, pas la marche) protège les ennemis des coups
+/// portés au sol : épée et bouclier font nettement moins de dégâts.
+#[test]
+fn coups_au_sol_arretes_par_les_murs() {
+    use bs_monde::BLOQUE_TIR;
+    let d = donnees();
+    for (id, anneau) in [("epee", 1.5..2.5), ("heurt_bouclier", 1.5..2.5)] {
+        let index = d.armes.get_index_of(id).expect("arme connue");
+        let degats = |murets: bool| {
+            let mut p = Partie::nouvelle(d, 0, 0, 11, false);
+            p.joueur.invincible = true;
+            p.arsenal.armes.clear();
+            while p.ameliorer_arme(index) {}
+            let c = &mut p.carte;
+            for iz in 0..c.profondeur {
+                for ix in 0..c.largeur {
+                    let (x, z) = (ix as f32 + 0.5 - c.demi_x, iz as f32 + 0.5 - c.demi_z);
+                    let r = (x * x + z * z).sqrt();
+                    if murets && anneau.contains(&r) {
+                        c.drapeaux[iz * c.largeur + ix] |= BLOQUE_TIR;
+                    }
+                }
+            }
+            for _ in 0..(40.0 / PAS_SIMULATION) as u32 {
+                p.pas(PAS_SIMULATION);
+            }
+            p.etat.stats.degats_par_arme[index]
+        };
+        let (libre, mure) = (degats(false), degats(true));
+        eprintln!("{id} : {libre:.0} sans murets, {mure:.0} avec");
+        assert!(
+            libre > 0.0 && mure < libre * 0.95,
+            "les murets n'arrêtent pas {id}"
+        );
+    }
+}
+
+/// Une explosion au sol épargne l'ennemi caché derrière un mur plein, pas celui à découvert.
+#[test]
+fn explosion_arretee_par_un_mur() {
+    use bs_monde::BLOQUE_TIR;
+    let d = donnees();
+    let mut p = Partie::nouvelle(d, 0, 0, 11, false);
+    let zombie = d.ennemis.get_index_of("zombie").expect("zombie");
+    assert!(p.apparaitre(zombie, 3.0, 0.0, 1.0));
+    assert!(p.apparaitre(zombie, -3.0, 0.0, 1.0));
+    let c = &mut p.carte;
+    for iz in 0..c.profondeur {
+        let ix = (1.5 + c.demi_x) as usize;
+        c.drapeaux[iz * c.largeur + ix] |= BLOQUE_TIR;
+    }
+    p.ennemis.reconstruire_grille();
+    let pv: Vec<f32> = p.ennemis.actifs().iter().map(|e| e.pv).collect();
+    p.blesser_zone(0.0, 0.0, 5.0, 5.0, 0.0, 0);
+    let apres: Vec<f32> = p.ennemis.actifs().iter().map(|e| e.pv).collect();
+    let (cache, decouvert) = if p.ennemis.actifs()[0].x > 0.0 {
+        (0, 1)
+    } else {
+        (1, 0)
+    };
+    assert_eq!(apres[cache], pv[cache], "le mur ne protège pas");
+    assert!(
+        apres[decouvert] < pv[decouvert],
+        "l'ennemi à découvert n'est pas touché"
+    );
+}

@@ -381,6 +381,9 @@ impl Partie {
         let mut tampon = [0u32; 64];
         let n = self.ennemis.chercher(x, z, rayon, &mut tampon);
         for &e in &tampon[..n] {
+            if self.a_couvert(x, z, e as usize) {
+                continue;
+            }
             self.blesser(e as usize, degats, x, z, recul, Some(arme), Nature::Arme);
         }
     }

@@ -28,8 +28,8 @@ fait dans la version Rust (branche `rust`, état au 04/11/2026).
 
 ## Tirs et murs
 
-- [ ] (Rust : fait pour les projectiles, les tirs des invocations, les flèches à ricochets et les orbes arcaniques ; reste les armes de zone et de mêlée, qui frappent encore à travers les murs) Vérifier que les armes ajoutées par la refonte des classes respectent les murs : seuls les projectiles du joueur et des ennemis les testent aujourd'hui. À contrôler : `ricochets`, `tornades`, `tourbillons`, `orbesArcaniques`, `orbites`, `pluies`, `meteores`, `novas`, `foudre`, `balayages`, tirs des invocations (esprit de blaze)
-- [ ] Explosions et zones d'effet : décider si un mur protège (aujourd'hui non)
+- [ ] (Rust : fait ; un mur plein protège des coups portés au sol — mêlée, novas, explosions, arcs de foudre, zones des talents — mais pas de ce qui tombe du ciel : météores, pluies, impact de la foudre, lame colossale) Vérifier que les armes ajoutées par la refonte des classes respectent les murs : seuls les projectiles du joueur et des ennemis les testent aujourd'hui. À contrôler : `ricochets`, `tornades`, `tourbillons`, `orbesArcaniques`, `orbites`, `pluies`, `meteores`, `novas`, `foudre`, `balayages`, tirs des invocations (esprit de blaze)
+- [ ] (Rust : oui, sauf ce qui tombe du ciel) Explosions et zones d'effet : décider si un mur protège (aujourd'hui non)
 
 ## Maps : contenu et réglages
 

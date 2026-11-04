@@ -122,10 +122,15 @@ impl Partie {
     ) -> usize {
         let mut tampon = [0u32; 256];
         let n = self.ennemis.chercher(x, z, rayon, &mut tampon);
+        let mut touches = 0;
         for &e in &tampon[..n] {
+            if self.a_couvert(x, z, e as usize) {
+                continue;
+            }
             self.blesser_reaction(e as usize, degats, x, z, recul, arme, Nature::Arme);
+            touches += 1;
         }
-        n
+        touches
     }
 
     /// Cercle de particules au sol (anneau, onde).

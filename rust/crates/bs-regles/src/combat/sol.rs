@@ -1,7 +1,8 @@
 //! Armes qui frappent le sol : onde de choc (fissures), lame colossale qui tombe du ciel
 //! (chutes) et nova de glace (port de fissures.ts, chutes.ts, novas.ts). Les blocs
 //! soulevés sont visuels, mais tirent dans l'aléa : on garde leur compte. Talent du Mage
-//! lu ici : Zéro absolu (nova gelante, plus forte, qui enracine).
+//! lu ici : Zéro absolu (nova gelante, plus forte, qui enracine). La nova s'arrête aux murs
+//! pleins (`a_couvert`) ; la lame qui tombe du ciel, non.
 
 use bs_commun::maths::{atan2, cos, sin};
 use bs_donnees::armes::Mecanique;
@@ -334,7 +335,7 @@ impl Partie {
                 let k = self.ennemis.chercher(n.x, n.z, rayon, &mut tampon);
                 for &e in &tampon[..k] {
                     let e = e as usize;
-                    if self.immunise(e, arme.index, NOVA_IMMUNITE) {
+                    if self.a_couvert(n.x, n.z, e) || self.immunise(e, arme.index, NOVA_IMMUNITE) {
                         continue;
                     }
                     self.toucher(e, arme.index, &s, n.x, n.z, s.recul, n.facteur);
@@ -354,6 +355,9 @@ impl Partie {
                     n.prochain_sol = NOVA_PERIODE_SOL;
                     let k = self.ennemis.chercher(n.x, n.z, s.zone, &mut tampon);
                     for &e in &tampon[..k] {
+                        if self.a_couvert(n.x, n.z, e as usize) {
+                            continue;
+                        }
                         self.ralentir(e as usize, s.ralenti, NOVA_PERIODE_SOL * 2.0);
                     }
                 }

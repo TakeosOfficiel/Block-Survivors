@@ -28,6 +28,9 @@ use sol::ArmesSol;
 use traque::ArmesTraque;
 
 /// s avant de réessayer une arme qui n'a trouvé aucune cible.
+/// Rayon de l'épaisseur du coup pour la ligne de vue des coups portés au sol (blocs).
+const RAYON_COUP: f32 = 0.1;
+
 const NOUVEL_ESSAI: f32 = 0.2;
 /// Tir groupé : la Salve resserre son cône.
 const TIR_GROUPE: f32 = 0.7;
@@ -259,5 +262,13 @@ impl Partie {
             Mecanique::Piege { .. } => self.frapper_piege(i),
             Mecanique::Nova { sol_au_rang, .. } => self.frapper_nova(i, *sol_au_rang),
         }
+    }
+
+    /// Vrai si un mur plein (bloquant les tirs) sépare (x, z) de l'ennemi `e` : les coups
+    /// portés au sol (mêlée, novas, explosions, arcs) ne le traversent pas ; ce qui tombe du
+    /// ciel (météores, pluies, impact de la foudre) n'appelle pas ce test.
+    pub(crate) fn a_couvert(&self, x: f32, z: f32, e: usize) -> bool {
+        let c = &self.ennemis.pool[e];
+        !self.carte.ligne_de_tir(x, z, c.x, c.z, RAYON_COUP)
     }
 }

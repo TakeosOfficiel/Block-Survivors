@@ -102,7 +102,11 @@ impl Partie {
                 let k = k as usize;
                 let e = &self.ennemis.pool[k];
                 let d2 = (e.x - x) * (e.x - x) + (e.z - z) * (e.z - z);
-                if !e.vivant() || d2 >= meilleure_d2 || frappes[..=fait].contains(&k) {
+                if !e.vivant()
+                    || d2 >= meilleure_d2
+                    || frappes[..=fait].contains(&k)
+                    || self.a_couvert(x, z, k)
+                {
                     continue;
                 }
                 meilleur = Some(k);

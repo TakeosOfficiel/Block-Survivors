@@ -1,6 +1,7 @@
 //! Armes de corps à corps : balayage en arc, objets en orbite, heurt de bouclier et
 //! tourbillon de lames (port de balayages.ts, orbites.ts, heurts.ts, tourbillons.ts ;
-//! sans les images, purement visuelles).
+//! sans les images, purement visuelles). Un mur plein protège des balayages, heurts et
+//! tourbillons (`a_couvert`) ; les objets en orbite frappent là où ils passent.
 
 use std::f32::consts::TAU;
 
@@ -49,6 +50,9 @@ impl Partie {
         let mut cible = None;
         let mut meilleure = f32::INFINITY;
         for &k in &tampon[..n] {
+            if self.a_couvert(jx, jz, k as usize) {
+                continue;
+            }
             let e = &self.ennemis.pool[k as usize];
             let d2 = (e.x - jx) * (e.x - jx) + (e.z - jz) * (e.z - jz);
             if d2 < meilleure {
@@ -62,7 +66,7 @@ impl Partie {
         let angle = atan2(self.ennemis.pool[c].x - jx, self.ennemis.pool[c].z - jz);
         for &k in &tampon[..n] {
             let e = k as usize;
-            if self.dans_cone(e, angle, angle_arc / 2.0) {
+            if self.dans_cone(e, angle, angle_arc / 2.0) && !self.a_couvert(jx, jz, e) {
                 self.blesser(e, s.degats, jx, jz, s.recul, Some(arme.index), Nature::Arme);
             }
         }
@@ -137,7 +141,7 @@ impl Partie {
         let n = self.ennemis.chercher(jx, jz, s.zone, &mut tampon);
         for &k in &tampon[..n] {
             let e = k as usize;
-            if !self.dans_cone(e, angle, angle_cone / 2.0) {
+            if !self.dans_cone(e, angle, angle_cone / 2.0) || self.a_couvert(jx, jz, e) {
                 continue;
             }
             self.toucher(e, arme.index, &s, jx, jz, s.recul, 1.0);
@@ -217,6 +221,9 @@ impl Partie {
             t.coups_restants -= 1;
             let n = self.ennemis.chercher(jx, jz, arme.stats.zone, &mut tampon);
             for &e in &tampon[..n] {
+                if self.a_couvert(jx, jz, e as usize) {
+                    continue;
+                }
                 self.toucher(
                     e as usize,
                     arme.index,

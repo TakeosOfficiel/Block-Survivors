@@ -54,7 +54,7 @@ impl Plugin for PluginHud {
     fn build(&self, app: &mut App) {
         app.init_resource::<Police>()
             .insert_resource(UiScale(1.0))
-            .add_systems(Update, (police::charger, echelle))
+            .add_systems(Update, (police::charger, echelle, capacites::survoler))
             .add_systems(
                 PostUpdate,
                 police::dessiner.before(bevy::ui::UiSystems::Layout),
@@ -362,7 +362,7 @@ pub fn construire(
         Visibility::Hidden,
     ));
 
-    let capacites = capacites::construire(&mut commandes, racine);
+    let capacites = capacites::construire(&mut commandes, &polices, racine);
     let compteur = compteur::construire(&mut commandes, &polices, racine);
     commandes.insert_resource(Hud {
         racine,

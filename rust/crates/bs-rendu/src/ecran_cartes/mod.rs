@@ -9,7 +9,6 @@
 //! Le joueur choisit dès qu'il a touché au clavier (ou avec `BS_CARTES=1`) ; avant, le
 //! robot de démonstration choisit et joue seul.
 
-mod propositions;
 mod vue;
 
 use bevy::prelude::*;
@@ -17,7 +16,6 @@ use bs_regles::equipement::ChoixEquipement;
 use bs_regles::partie::Partie;
 use bs_regles::textes::{Carte, Choix};
 
-pub use propositions::projeter;
 pub(crate) use vue::couleur_famille;
 pub use vue::{BoutonCarte, BoutonRelancer};
 
@@ -35,8 +33,8 @@ const TOUCHES: [[KeyCode; 2]; 4] = [
     [KeyCode::Digit3, KeyCode::Numpad3],
     [KeyCode::Digit4, KeyCode::Numpad4],
 ];
-/// Carte survolée : soulevée (px).
-const SOULEVEMENT: f32 = 8.0;
+/// Bandeau survolé : glissé vers la droite (px).
+const GLISSEMENT: f32 = 14.0;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Etape {
@@ -196,8 +194,8 @@ pub fn survoler(
 ) {
     for (i, mut t, halo) in cartes {
         let survol = *i != Interaction::None;
-        let y = if survol { -SOULEVEMENT } else { 0.0 };
-        t.translation = Val2::px(0.0, y);
+        let x = if survol { GLISSEMENT } else { 0.0 };
+        t.translation = Val2::px(x, 0.0);
         if let Ok(mut o) = halos.get_mut(halo.0) {
             o.color = if survol { charte::OR_VIF } else { halo.1 };
         }

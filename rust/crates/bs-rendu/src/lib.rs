@@ -333,7 +333,6 @@ impl Plugin for PluginJeu {
                     ecran_cartes::gerer,
                     coop::envoyer_cartes,
                     ecran_cartes::survoler,
-                    ecran_cartes::projeter,
                     ecrans::gerer,
                     ecrans::defiler,
                     ecrans::vues::indiquer,

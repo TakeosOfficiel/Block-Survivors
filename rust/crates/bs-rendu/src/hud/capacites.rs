@@ -1,7 +1,8 @@
-//! Armes, bonus passifs et équipement portés, en bas à gauche (src/ui/barreCapacites.ts) :
-//! cases d'inventaire avec icône et rang (« MAX » en jaune) ; arme éveillée cerclée de
-//! violet, objet cerclé de la couleur de sa rareté, emplacement vide estompé. Une ligne
-//! n'est reconstruite que quand son contenu change.
+//! Armes, bonus passifs et équipement portés, en bas à gauche, au style des menus :
+//! tuiles de nuit arrondies avec l'icône et le rang en pastille (« MAX » en or) ; arme
+//! éveillée cerclée de violet, objet cerclé de la couleur de sa rareté, emplacement vide
+//! en simple contour. Au survol, une infobulle dit ce que c'est : nom, rang, effet. Une
+//! ligne n'est reconstruite que quand son contenu change.
 
 use bevy::prelude::*;
 use bs_donnees::Donnees;
@@ -10,9 +11,28 @@ use bs_regles::equipement::niveau_max_objet;
 use bs_regles::partie::Partie;
 
 use super::police::TextePixel;
-use super::{BLANC, JAUNE, absolu};
+use super::{BLANC, Hud, absolu};
 use crate::dessins::Dessins;
+use crate::ecrans::charte::{AIDE, IVOIRE, OR_VIF};
+use crate::ecrans::nuit::{Style, ecrit, nuit};
+use crate::polices::PolicesMenu;
 use crate::textures::Textures;
+
+/// Texte de l'infobulle d'une tuile : nom, rang, effet.
+#[derive(Component)]
+pub struct Bulle {
+    nom: String,
+    rang: String,
+    effet: String,
+}
+
+/// L'infobulle commune et ses trois textes.
+pub struct Infobulle {
+    racine: Entity,
+    nom: Entity,
+    rang: Entity,
+    effet: Entity,
+}
 
 pub fn demander_textures(d: &Donnees, demander: &mut impl FnMut(&str)) {
     for a in d.armes.values() {
@@ -34,9 +54,11 @@ pub struct Capacites {
     equipement: Ligne,
     passifs: Ligne,
     armes: Ligne,
+    polices: PolicesMenu,
+    bulle: Infobulle,
 }
 
-pub fn construire(commandes: &mut Commands, racine: Entity) -> Capacites {
+pub fn construire(commandes: &mut Commands, p: &PolicesMenu, racine: Entity) -> Capacites {
     let colonne = commandes
         .spawn((
             Node {
@@ -62,10 +84,70 @@ pub fn construire(commandes: &mut Commands, racine: Entity) -> Capacites {
         vue: Vec::new(),
         neuve: Vec::with_capacity(16),
     };
+    let (equipement, passifs, armes) = (ligne(), ligne(), ligne());
+    // Infobulle au-dessus des tuiles, cachée hors survol
+    let bulle = commandes
+        .spawn((
+            Node {
+                bottom: Val::Percent(100.0),
+                left: Val::ZERO,
+                width: Val::Px(300.0),
+                margin: UiRect::bottom(Val::Px(10.0)),
+                padding: UiRect::axes(Val::Px(14.0), Val::Px(10.0)),
+                flex_direction: FlexDirection::Column,
+                row_gap: Val::Px(3.0),
+                border_radius: BorderRadius::all(Val::Px(12.0)),
+                ..absolu()
+            },
+            BackgroundColor(nuit(0.92)),
+            Visibility::Hidden,
+            ChildOf(colonne),
+        ))
+        .id();
+    let bulle = Infobulle {
+        racine: bulle,
+        nom: ecrit(commandes, p, bulle, "", (Style::Grasse, 17.0, IVOIRE)),
+        rang: ecrit(commandes, p, bulle, "", (Style::Grasse, 12.0, OR_VIF)),
+        effet: ecrit(commandes, p, bulle, "", (Style::Normale, 14.0, AIDE)),
+    };
     Capacites {
-        equipement: ligne(),
-        passifs: ligne(),
-        armes: ligne(),
+        equipement,
+        passifs,
+        armes,
+        polices: p.clone(),
+        bulle,
+    }
+}
+
+/// Montre l'infobulle de la tuile survolée, la cache sinon.
+pub fn survoler(
+    hud: Option<Res<Hud>>,
+    tuiles: Query<(&Interaction, &Bulle), Changed<Interaction>>,
+    mut textes: Query<&mut Text>,
+    mut visibles: Query<&mut Visibility>,
+) {
+    let Some(hud) = hud else { return };
+    let b = &hud.capacites.bulle;
+    for (i, bulle) in &tuiles {
+        let montre = *i != Interaction::None;
+        if montre {
+            for (e, t) in [
+                (b.nom, &bulle.nom),
+                (b.rang, &bulle.rang),
+                (b.effet, &bulle.effet),
+            ] {
+                if let Ok(mut texte) = textes.get_mut(e) {
+                    texte.0.clone_from(t);
+                }
+            }
+        }
+        if let Ok(mut v) = visibles.get_mut(b.racine) {
+            v.set_if_neq(if montre {
+                Visibility::Inherited
+            } else {
+                Visibility::Hidden
+            });
+        }
     }
 }
 
@@ -82,56 +164,43 @@ fn couleur_rarete(r: Rarete) -> Color {
     }
 }
 
-/// Case d'inventaire 40 × 40 (bords sombres en haut à gauche, clairs en bas à droite).
-fn case(
-    commandes: &mut Commands,
-    parent: Entity,
-    contour: Option<Color>,
-    estompee: bool,
-) -> Entity {
-    let alpha = if estompee { 0.45 } else { 1.0 };
-    let sombre = Color::srgba_u8(0x37, 0x37, 0x37, (alpha * 255.0) as u8);
-    let clair = Color::srgba(1.0, 1.0, 1.0, alpha);
-    let mut e = commandes.spawn((
-        Node {
-            width: Val::Px(40.0),
-            height: Val::Px(40.0),
-            border: UiRect::all(Val::Px(2.0)),
-            justify_content: JustifyContent::Center,
-            align_items: AlignItems::Center,
-            ..default()
-        },
-        BackgroundColor(Color::srgba_u8(0x8b, 0x8b, 0x8b, (alpha * 255.0) as u8)),
-        BorderColor {
-            top: sombre,
-            left: sombre,
-            bottom: clair,
-            right: clair,
-        },
-        ChildOf(parent),
-    ));
-    if let Some(c) = contour {
-        e.insert(Outline::new(Val::Px(2.0), Val::ZERO, c));
-    }
-    e.id()
+/// Tuile 42 × 42 : fond de nuit arrondi, contour coloré (rareté, éveil) ou discret.
+fn case(commandes: &mut Commands, parent: Entity, contour: Option<Color>, vide: bool) -> Entity {
+    let fond = if vide { Color::NONE } else { nuit(0.72) };
+    let trait_ = contour.unwrap_or(IVOIRE.with_alpha(if vide { 0.18 } else { 0.1 }));
+    commandes
+        .spawn((
+            Node {
+                width: Val::Px(42.0),
+                height: Val::Px(42.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                border_radius: BorderRadius::all(Val::Px(10.0)),
+                ..default()
+            },
+            BackgroundColor(fond),
+            Outline::new(Val::Px(2.0), Val::ZERO, trait_),
+            ChildOf(parent),
+        ))
+        .id()
 }
 
-/// Icône (ou initiale du nom) et rang.
+/// Icône (ou initiale du nom), rang en pastille et infobulle.
 fn remplir_case(
     commandes: &mut Commands,
+    p: &PolicesMenu,
     c: Entity,
     icone: Option<Handle<Image>>,
-    nom: &str,
-    rang: u32,
-    max: u32,
+    (nom, effet): (&str, &str),
+    (rang, max): (u32, u32),
 ) {
     match icone {
         Some(h) => {
             commandes.spawn((
                 ImageNode::new(h),
                 Node {
-                    width: Val::Px(32.0),
-                    height: Val::Px(32.0),
+                    width: Val::Px(30.0),
+                    height: Val::Px(30.0),
                     ..default()
                 },
                 ChildOf(c),
@@ -143,18 +212,46 @@ fn remplir_case(
         }
     }
     let (texte, couleur) = if rang >= max {
-        ("MAX".to_owned(), JAUNE)
+        ("MAX".to_owned(), OR_VIF)
     } else {
-        (rang.to_string(), BLANC)
+        (rang.to_string(), IVOIRE)
     };
-    commandes.spawn((
-        TextePixel::nouveau(&texte, couleur, 2.0),
-        Node {
-            right: Val::ZERO,
-            bottom: Val::Px(-2.0),
-            ..absolu()
+    let pastille = commandes
+        .spawn((
+            Node {
+                right: Val::Px(-5.0),
+                bottom: Val::Px(-5.0),
+                min_width: Val::Px(17.0),
+                height: Val::Px(17.0),
+                padding: UiRect::horizontal(Val::Px(4.0)),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                border_radius: BorderRadius::MAX,
+                ..absolu()
+            },
+            BackgroundColor(nuit(0.95)),
+            ChildOf(c),
+        ))
+        .id();
+    ecrit(
+        commandes,
+        p,
+        pastille,
+        &texte,
+        (Style::Grasse, 11.0, couleur),
+    );
+    let rang = if rang >= max {
+        format!("Rang {rang} · maximum")
+    } else {
+        format!("Rang {rang} / {max}")
+    };
+    commandes.entity(c).insert((
+        Interaction::None,
+        Bulle {
+            nom: nom.to_owned(),
+            rang,
+            effet: effet.to_owned(),
         },
-        ChildOf(c),
     ));
 }
 
@@ -188,7 +285,11 @@ pub fn afficher(
             let c = case(commandes, l.racine, Some(couleur_rarete(def.rarete)), false);
             let max = niveau_max_objet(d, objet);
             let icone = dessins.objets.get(objet).cloned();
-            remplir_case(commandes, c, icone, &def.nom, niveau, max);
+            let i = (niveau as usize).saturating_sub(1);
+            let effet = def.description.get(i).or(def.description.first());
+            let effet = effet.map_or("", String::as_str);
+            let pol = &cap.polices;
+            remplir_case(commandes, pol, c, icone, (&def.nom, effet), (niveau, max));
         }
     }
 
@@ -209,14 +310,9 @@ pub fn afficher(
             let def = &d.passifs[index];
             let c = case(commandes, l.racine, None, false);
             let max = def.niveaux.len() as u32;
-            remplir_case(
-                commandes,
-                c,
-                textures.obtenir(serveur, &def.icone),
-                &def.nom,
-                rang,
-                max,
-            );
+            let icone = textures.obtenir(serveur, &def.icone);
+            let textes = (def.nom.as_str(), def.description.as_str());
+            remplir_case(commandes, &cap.polices, c, icone, textes, (rang, max));
         }
     }
 
@@ -235,14 +331,9 @@ pub fn afficher(
             let violet = (marque == EVEILLEE).then_some(Color::srgb_u8(0x7a, 0x3f, 0xd0));
             let c = case(commandes, l.racine, violet, false);
             let max = a.rang_max();
-            remplir_case(
-                commandes,
-                c,
-                textures.obtenir(serveur, &a.def.icone),
-                &a.def.nom,
-                rang,
-                max,
-            );
+            let icone = textures.obtenir(serveur, &a.def.icone);
+            let textes = (a.def.nom.as_str(), a.def.description.as_str());
+            remplir_case(commandes, &cap.polices, c, icone, textes, (rang, max));
         }
     }
 }

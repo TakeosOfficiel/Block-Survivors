@@ -1,10 +1,10 @@
 //! Mise en page de l'écran de cartes, au style des menus : voile de nuit, grand titre
-//! doré en police du logo, cartes sans cadre (fond de nuit arrondi, lueur de la couleur
-//! de la famille en haut, rareté pour les objets), seule la carte survolée prend un liseré
-//! d'or et se soulève. Zones fixes : famille en surtitre coloré (pastille ronde), touche
-//! dans un rond, icône dans un halo, nom, stat clé, étiquette en pilule, description,
-//! autres lignes « avant → après » (nouvelle valeur en vert). Sous les cartes :
-//! « Relancer (R) » en pilule et « Laisser les objets » (refus d'un coffre) en lien.
+//! doré en police du logo, puis un bandeau par choix sur toute la largeur, couleur de
+//! la famille (ou de la rareté) fondue aux deux bords, sans cadre : à gauche la touche,
+//! l'icône, la famille et le nom ; à droite la stat clé, la description et les autres
+//! lignes « avant → après » (nouvelle valeur en vert). Le bandeau survolé glisse vers la
+//! droite et son filet passe à l'or. Sous les bandeaux, au-dessus du HUD, deux pilules
+//! de même taille : « Relancer (R) · n » et « Laisser les objets » (refus d'un coffre).
 //! Tout est reconstruit à chaque ouverture ou relance (jamais pendant le jeu).
 
 use bevy::prelude::*;
@@ -12,23 +12,22 @@ use bs_donnees::equipement::Rarete;
 use bs_regles::textes::{Carte, Famille, Icone};
 
 use crate::dessins::Dessins;
-use crate::ecrans::charte::{AIDE, IVOIRE, OR_VIF, Relief, VERT_GAIN};
+use crate::ecrans::charte::{IVOIRE, OR_VIF, Relief, VERT_GAIN};
 use crate::ecrans::nuit::{self, Style, ecrit, nuit as sombre, voile};
 use crate::polices::PolicesMenu;
 use crate::textures::Textures;
 
-use super::propositions;
-
 const DESCRIPTION: Color = Color::srgb_u8(0xc8, 0xcc, 0xd6);
 const STATS: Color = Color::srgb_u8(0xcf, 0xe9, 0xc8);
-const LARGEUR_CARTE: f32 = 290.0;
-const MEDAILLON: f32 = 150.0;
+/// Largeur maximale d'un bandeau (fondu compris) et de son contenu.
+const LARGEUR_BANDEAU: f32 = 1500.0;
+const LARGEUR_CONTENU: f32 = 1040.0;
 
 /// Carte cliquable (index dans la liste).
 #[derive(Component)]
 pub struct BoutonCarte(pub usize);
 
-/// Médaillon d'une carte (liseré d'or au survol) et sa couleur au repos.
+/// Filet d'un bandeau (or au survol) et sa couleur au repos.
 #[derive(Component)]
 pub struct Halo(pub Entity, pub Color);
 
@@ -91,31 +90,14 @@ pub fn construire(
         .and_modify(|mut n| {
             n.row_gap = Val::Px(26.0);
             // Au-dessus des cœurs et de la barre d'XP
-            n.padding.bottom = Val::Px(40.0);
+            n.padding.bottom = Val::Px(130.0);
         });
     nuit::titre(commandes, c.polices, racine, titre, OR_VIF);
-
-    // Présentation à l'essai (BS_CARTES_STYLE) : médaillons par défaut
-    let style = std::env::var("BS_CARTES_STYLE").unwrap_or_default();
-    let liste = nuit::rangee(commandes, racine, 56.0);
-    commandes
-        .entity(liste)
-        .entry::<Node>()
-        .and_modify(move |mut n| {
-            n.align_items = AlignItems::Stretch;
-            match style.as_str() {
-                "projecteur" => n.column_gap = Val::Px(40.0),
-                "faisceaux" => n.column_gap = Val::Px(30.0),
-                "colonnes" => n.column_gap = Val::ZERO,
-                "bandeaux" => {
-                    n.flex_direction = FlexDirection::Column;
-                    n.row_gap = Val::Px(12.0);
-                    n.width = Val::Percent(100.0);
-                }
-                _ => {}
-            }
-        });
-    let style = std::env::var("BS_CARTES_STYLE").unwrap_or_default();
+    let liste = nuit::colonne(commandes, racine, 12.0);
+    commandes.entity(liste).entry::<Node>().and_modify(|mut n| {
+        n.width = Val::Percent(100.0);
+        n.align_items = AlignItems::Center;
+    });
     let mut refus = None;
     for (k, carte) in cartes.iter().enumerate() {
         // Refus du coffre : action secondaire sous les cartes, pas une carte
@@ -123,87 +105,75 @@ pub fn construire(
             refus = Some((k, carte));
             continue;
         }
-        match style.as_str() {
-            "projecteur" => propositions::projecteur(commandes, c, liste, k, carte),
-            "faisceaux" => propositions::faisceau(commandes, c, liste, k, carte),
-            "bandeaux" => propositions::bandeau(commandes, c, liste, k, carte),
-            "colonnes" => propositions::colonne(commandes, c, liste, k, carte),
-            _ => construire_carte(commandes, c, liste, k, carte),
-        }
+        bandeau(commandes, c, liste, k, carte);
     }
 
-    let bas = nuit::rangee(commandes, racine, 28.0);
+    // Actions : deux pilules de même taille, au-dessus des cœurs
+    let bas = nuit::rangee(commandes, racine, 20.0);
     if let Some(n) = relances {
         bouton_relancer(commandes, c, bas, n);
     }
     if let Some((k, carte)) = refus {
-        let t = format!("{}  ({})", carte.nom, k + 1);
-        nuit::lien(
+        let t = format!("{}  ({})", carte.nom.to_uppercase(), k + 1);
+        let b = nuit::pilule(
             commandes,
             c.polices,
             bas,
             &t,
-            (19.0, IVOIRE),
+            (Relief::SECONDAIRE, false),
             BoutonCarte(k),
         );
+        petite(commandes, b);
     }
     racine
 }
 
-fn construire_carte(
-    commandes: &mut Commands,
-    c: &Contexte,
-    liste: Entity,
-    k: usize,
-    carte: &Carte,
-) {
+/// Un choix : bandeau fondu aux bords, identité à gauche, effets à droite.
+fn bandeau(commandes: &mut Commands, c: &Contexte, liste: Entity, k: usize, carte: &Carte) {
     let (famille, lueur) = couleur_famille(carte.famille);
-    let bouton = commandes
+    let b = commandes
         .spawn((
             Button,
             BoutonCarte(k),
             Node {
-                width: Val::Px(LARGEUR_CARTE),
-                flex_direction: FlexDirection::Column,
+                width: Val::Percent(100.0),
+                max_width: Val::Px(LARGEUR_BANDEAU),
+                min_height: Val::Px(118.0),
+                padding: UiRect::vertical(Val::Px(12.0)),
+                justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
-                row_gap: Val::Px(8.0),
                 ..default()
             },
             ChildOf(liste),
         ))
         .id();
-    // Médaillon rond : lueur de la famille, icône, touche en bas
-    let medaillon = commandes
-        .spawn((
-            Node {
-                width: Val::Px(MEDAILLON),
-                height: Val::Px(MEDAILLON),
-                margin: UiRect::bottom(Val::Px(10.0)),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                border_radius: BorderRadius::MAX,
-                flex_shrink: 0.0,
-                ..default()
-            },
-            BackgroundGradient::from(RadialGradient::new(
-                UiPosition::CENTER,
-                RadialGradientShape::ClosestSide,
-                vec![
-                    ColorStop::new(
-                        famille.with_alpha((lueur * 2.2).min(0.85)),
-                        Val::Percent(0.0),
-                    ),
-                    ColorStop::new(famille.with_alpha(lueur * 0.9), Val::Percent(62.0)),
-                    ColorStop::new(Color::NONE, Val::Percent(100.0)),
-                ],
-            )),
-            Outline::new(Val::Px(3.0), Val::Px(4.0), famille.with_alpha(0.35)),
-            ChildOf(bouton),
-        ))
-        .id();
+    let a = (lueur * 1.5).min(0.5);
     commandes
-        .entity(bouton)
-        .insert(Halo(medaillon, famille.with_alpha(0.35)));
+        .entity(b)
+        .insert(BackgroundGradient::from(LinearGradient::to_right(vec![
+            ColorStop::new(Color::NONE, Val::Percent(0.0)),
+            ColorStop::new(famille.with_alpha(a), Val::Percent(28.0)),
+            ColorStop::new(famille.with_alpha(a * 0.55), Val::Percent(72.0)),
+            ColorStop::new(Color::NONE, Val::Percent(100.0)),
+        ])));
+    let ligne = nuit::rangee(commandes, b, 26.0);
+    commandes.entity(ligne).entry::<Node>().and_modify(|mut n| {
+        n.width = Val::Px(LARGEUR_CONTENU);
+        n.max_width = Val::Percent(94.0);
+    });
+    let chiffre = (b'1' + k as u8) as char;
+    let chiffre = chiffre.encode_utf8(&mut [0; 4]).to_owned();
+    let t = c.ecrit(
+        commandes,
+        ligne,
+        &chiffre,
+        (Style::Logo, 60.0, IVOIRE.with_alpha(0.4)),
+    );
+    commandes.entity(t).insert(Node {
+        width: Val::Px(36.0),
+        flex_shrink: 0.0,
+        ..default()
+    });
     let image = match carte.icone {
         Icone::Texture(chemin) => c.textures.obtenir(c.serveur, chemin),
         Icone::Objet(i) => c.dessins.objets.get(i).cloned(),
@@ -212,107 +182,115 @@ fn construire_carte(
         commandes.spawn((
             ImageNode::new(h),
             Node {
-                width: Val::Px(76.0),
-                height: Val::Px(76.0),
+                width: Val::Px(84.0),
+                height: Val::Px(84.0),
+                flex_shrink: 0.0,
                 ..default()
             },
-            ChildOf(medaillon),
+            ChildOf(ligne),
         ));
     }
-    let touche = commandes
-        .spawn((
-            Node {
-                position_type: PositionType::Absolute,
-                bottom: Val::Px(-12.0),
-                width: Val::Px(30.0),
-                height: Val::Px(30.0),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                border_radius: BorderRadius::MAX,
-                ..default()
-            },
-            BackgroundColor(sombre(0.95)),
-            Outline::new(Val::Px(2.0), Val::ZERO, famille),
-            ChildOf(medaillon),
-        ))
-        .id();
-    let chiffre = (b'1' + k as u8) as char;
-    let chiffre = chiffre.encode_utf8(&mut [0; 4]).to_owned();
-    c.ecrit(commandes, touche, &chiffre, (Style::Logo, 16.0, IVOIRE));
-    // Famille (ou étiquette) en surtitre coloré, nom, stat clé, description
+    // Identité : famille (ou étiquette), nom, filet
+    let gauche = nuit::colonne(commandes, ligne, 4.0);
+    commandes
+        .entity(gauche)
+        .entry::<Node>()
+        .and_modify(|mut n| {
+            n.width = Val::Px(370.0);
+            n.flex_shrink = 0.0;
+            n.align_items = AlignItems::FlexStart;
+        });
     let surtitre = if carte.etiquette != carte.famille.nom() {
         carte.etiquette.to_uppercase()
     } else {
         carte.famille.nom().to_uppercase()
     };
-    c.ecrit(commandes, bouton, &surtitre, (Style::Grasse, 13.0, famille));
-    let nom = c.ecrit(commandes, bouton, &carte.nom, (Style::Logo, 30.0, IVOIRE));
+    c.ecrit(commandes, gauche, &surtitre, (Style::Grasse, 14.0, famille));
+    c.ecrit(commandes, gauche, &carte.nom, (Style::Logo, 34.0, IVOIRE));
+    let filet = commandes
+        .spawn((
+            Node {
+                width: Val::Px(60.0),
+                height: Val::Px(3.0),
+                margin: UiRect::top(Val::Px(4.0)),
+                border_radius: BorderRadius::MAX,
+                ..default()
+            },
+            BackgroundColor(famille),
+            Outline::new(Val::Px(2.0), Val::ZERO, famille),
+            ChildOf(gauche),
+        ))
+        .id();
+    commandes.entity(b).insert(Halo(filet, famille));
+    // Effets : stat clé, description, autres lignes « avant → après »
+    let droite = nuit::colonne(commandes, ligne, 5.0);
     commandes
-        .entity(nom)
-        .insert(TextLayout::new_with_justify(Justify::Center));
+        .entity(droite)
+        .entry::<Node>()
+        .and_modify(|mut n| {
+            n.flex_grow = 1.0;
+            n.flex_shrink = 1.0;
+            n.align_items = AlignItems::FlexStart;
+        });
+    // Stat clé : la nouvelle valeur en vert (lisible même sur un bandeau vert)
     if let Some(cle) = carte.lignes.first() {
-        let e = c.ecrit(commandes, bouton, cle, (Style::Grasse, 16.0, VERT_GAIN));
-        commandes
-            .entity(e)
-            .insert(TextLayout::new_with_justify(Justify::Center));
-    }
-    let d = (Style::Normale, 15.0, DESCRIPTION);
-    let d = c.ecrit(commandes, bouton, &carte.description, d);
-    commandes
-        .entity(d)
-        .insert(TextLayout::new_with_justify(Justify::Center));
-    // Les autres lignes (la première est la stat clé)
-    for l in carte.lignes.iter().skip(1) {
-        // « Dégâts : 10 → 15 » : la nouvelle valeur ressort ; à la ligne si trop long
-        let ligne = commandes
-            .spawn((
-                Node {
-                    flex_wrap: FlexWrap::Wrap,
-                    justify_content: JustifyContent::Center,
-                    column_gap: Val::Px(4.0),
-                    ..default()
-                },
-                ChildOf(bouton),
-            ))
-            .id();
-        let (debut, valeur) = match l.rfind("→ ") {
-            Some(i) => l.split_at(i + "→ ".len()),
-            None => (l.as_str(), ""),
-        };
-        c.ecrit(commandes, ligne, debut, (Style::Normale, 14.0, STATS));
+        let rangee = nuit::rangee(commandes, droite, 6.0);
+        let (debut, valeur) = coupe(cle);
+        c.ecrit(commandes, rangee, debut, (Style::Grasse, 18.0, IVOIRE));
         if !valeur.is_empty() {
-            c.ecrit(commandes, ligne, valeur, (Style::Grasse, 14.0, VERT_GAIN));
+            c.ecrit(commandes, rangee, valeur, (Style::Grasse, 18.0, VERT_GAIN));
+        }
+    }
+    let d = (Style::Normale, 16.0, DESCRIPTION);
+    c.ecrit(commandes, droite, &carte.description, d);
+    // Autres lignes côte à côte (à la ligne si trop long), pour garder les bandeaux fins
+    let suite = commandes
+        .spawn((
+            Node {
+                flex_wrap: FlexWrap::Wrap,
+                column_gap: Val::Px(18.0),
+                row_gap: Val::Px(2.0),
+                ..default()
+            },
+            ChildOf(droite),
+        ))
+        .id();
+    for l in carte.lignes.iter().skip(1) {
+        let rangee = nuit::rangee(commandes, suite, 4.0);
+        let (debut, valeur) = coupe(l);
+        c.ecrit(commandes, rangee, debut, (Style::Normale, 14.0, STATS));
+        if !valeur.is_empty() {
+            c.ecrit(commandes, rangee, valeur, (Style::Grasse, 14.0, VERT_GAIN));
         }
     }
 }
 
-/// « RELANCER (R) » en pilule, restantes à côté, ou « Plus de relance » éteint.
+/// « Dégâts : 10 → 15 » en (« Dégâts : 10 → », « 15 ») ; sans flèche, tout au début.
+fn coupe(l: &str) -> (&str, &str) {
+    match l.rfind("→ ") {
+        Some(i) => l.split_at(i + "→ ".len()),
+        None => (l, ""),
+    }
+}
+
+/// « RELANCER (R) · n » en pilule, ou « Plus de relance » éteint.
 fn bouton_relancer(commandes: &mut Commands, c: &Contexte, parent: Entity, n: u32) {
     if n == 0 {
-        c.ecrit(
-            commandes,
-            parent,
-            "Plus de relance",
-            (Style::Grasse, 17.0, nuit::TERNE),
-        );
+        let t = (Style::Grasse, 17.0, nuit::TERNE);
+        c.ecrit(commandes, parent, "Plus de relance", t);
         return;
     }
-    let rangee = nuit::rangee(commandes, parent, 12.0);
+    let t = format!("RELANCER (R) · {n}");
     let relief = (Relief::SECONDAIRE, false);
-    let b = nuit::pilule(
-        commandes,
-        c.polices,
-        rangee,
-        "RELANCER (R)",
-        relief,
-        BoutonRelancer,
-    );
+    let b = nuit::pilule(commandes, c.polices, parent, &t, relief, BoutonRelancer);
+    petite(commandes, b);
+}
+
+/// Pilule d'action secondaire : moins haute que celles des menus.
+fn petite(commandes: &mut Commands, b: Entity) {
     commandes.entity(b).entry::<Node>().and_modify(|mut n| {
-        n.height = Val::Px(52.0);
-        n.min_width = Val::Px(200.0);
-        n.padding = UiRect::horizontal(Val::Px(30.0));
+        n.height = Val::Px(50.0);
+        n.min_width = Val::Px(220.0);
+        n.padding = UiRect::horizontal(Val::Px(28.0));
     });
-    let pluriel = if n > 1 { "s" } else { "" };
-    let t = format!("{n} restante{pluriel}");
-    c.ecrit(commandes, rangee, &t, (Style::Grasse, 16.0, AIDE));
 }

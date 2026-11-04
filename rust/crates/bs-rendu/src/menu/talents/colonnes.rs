@@ -1,11 +1,10 @@
-//! L'arbre choisi en radar, sans cadre ni trait de liaison : le talent de base en bas,
-//! au centre ; chaque ligne de l'arbre est un anneau pâle plus grand ; le tronc tient
-//! le premier anneau, puis chaque branche a son secteur (rangés de gauche à droite
-//! selon les colonnes des données, séparés par un vide) où ses talents montent en
-//! rayon jusqu'au final ; son nom, à sa couleur, et ses points sont écrits au bout.
-//! Les talents d'une même ligne d'une branche s'y étalent autour du milieu.
-//! Le seuil de points d'une ligne est écrit sous l'anneau, à gauche (cadenas s'il
-//! manque). Les pastilles des talents sont dans `case`.
+//! L'arbre choisi, à plat, sans cadre, sans anneau ni trait de liaison : le tronc en
+//! bas, au centre (le talent de base, puis sa ligne) ; au-dessus, une colonne par
+//! branche, rangées de gauche à droite selon les colonnes des données et séparées par
+//! un large vide, où ses talents montent ligne par ligne jusqu'au final ; son nom, à sa
+//! couleur, et ses points sont écrits en haut. Les talents d'une même ligne d'une
+//! branche s'y étalent autour du milieu. Le seuil de points d'une ligne est écrit à
+//! gauche, à sa hauteur (cadenas s'il manque). Les pastilles sont dans `case`.
 
 use bevy::prelude::*;
 use bs_donnees::progression::{Arbre, Branche, Noeud};
@@ -14,17 +13,20 @@ use super::{Contexte, case, ecrire};
 use crate::ecrans::charte::{self, AIDE, IVOIRE, OR_VIF};
 use crate::menu::Icones;
 
-/// Zone du radar et centre des anneaux (px).
+/// Zone de l'arbre, axe du tronc, hauteur de la ligne 0 (px).
 const LARGEUR: f32 = 830.0;
 const HAUTEUR: f32 = 640.0;
-const CENTRE: Vec2 = Vec2::new(LARGEUR / 2.0, 585.0);
-/// Rayon du premier anneau, pas entre anneaux.
-const RAYON_1: f32 = 90.0;
-const PAS_RAYON: f32 = 62.0;
-/// Demi-ouverture du radar, vide entre secteurs, écart des talents du tronc (degrés).
-const DEMI_OUVERTURE: f32 = 66.0;
-const VIDE: f32 = 8.0;
-const ECART_TRONC: f32 = 36.0;
+const CX: f32 = LARGEUR / 2.0 + 20.0;
+const BAS: f32 = 590.0;
+/// Pas entre lignes ; vide en plus entre le tronc (lignes 0 et 1) et les branches.
+const PAS_LIGNE: f32 = 74.0;
+const FOURCHE: f32 = 26.0;
+/// Demi-largeur des branches, vide entre deux branches, pas entre deux talents d'une
+/// ligne (au plus), écart des talents du tronc.
+const DEMI_LARGEUR: f32 = 360.0;
+const VIDE: f32 = 56.0;
+const PAS_MAX: f32 = 76.0;
+const ECART_TRONC: f32 = 66.0;
 const MAX_BRANCHES: usize = 4;
 
 /// Couleur propre à chaque branche.
@@ -38,22 +40,19 @@ pub(super) fn teinte(b: Branche) -> Color {
     }
 }
 
-fn rayon(ligne: u32) -> f32 {
-    if ligne == 0 {
-        0.0
-    } else {
-        RAYON_1 + (ligne - 1) as f32 * PAS_RAYON
-    }
+/// Hauteur de la ligne `ligne`.
+fn y(ligne: u32) -> f32 {
+    let fourche = if ligne > 1 { FOURCHE } else { 0.0 };
+    BAS - ligne as f32 * PAS_LIGNE - fourche
 }
 
-/// Point du radar à l'angle `degres` (0 = vers le haut, positif vers la droite).
-fn point(degres: f32, r: f32) -> Vec2 {
-    let a = degres.to_radians();
-    CENTRE + r * Vec2::new(a.sin(), -a.cos())
+/// Point de la ligne `ligne`, à `x` de l'axe du tronc.
+fn point(x: f32, ligne: u32) -> Vec2 {
+    Vec2::new(CX + x, y(ligne))
 }
 
-/// Secteur d'une branche : sa largeur (le plus de talents qu'elle a sur une ligne)
-/// et ses angles.
+/// Colonne d'une branche : sa largeur (le plus de talents qu'elle a sur une ligne),
+/// son bord gauche et son pas (px, depuis l'axe du tronc).
 #[derive(Clone, Copy)]
 struct Secteur {
     branche: Branche,
@@ -68,7 +67,7 @@ impl Secteur {
     }
 }
 
-/// Secteurs des branches, de gauche à droite (moyenne des colonnes).
+/// Colonnes des branches, de gauche à droite (moyenne des colonnes).
 fn secteurs(def: &Arbre) -> [Option<Secteur>; MAX_BRANCHES] {
     let mut lus = [(Branche::Tronc, 0.0_f32, 0); MAX_BRANCHES];
     let mut n = 0;
@@ -86,9 +85,9 @@ fn secteurs(def: &Arbre) -> [Option<Secteur>; MAX_BRANCHES] {
     }
     lus[..n].sort_by(|a, b| a.1.total_cmp(&b.1));
     let total: usize = lus[..n].iter().map(|x| x.2).sum();
-    let libre = 2.0 * DEMI_OUVERTURE - VIDE * n.saturating_sub(1) as f32;
-    let pas = libre / total.max(1) as f32;
-    let mut debut = -DEMI_OUVERTURE;
+    let vides = VIDE * n.saturating_sub(1) as f32;
+    let pas = ((2.0 * DEMI_LARGEUR - vides) / total.max(1) as f32).min(PAS_MAX);
+    let mut debut = -(total as f32 * pas + vides) / 2.0;
     let mut s = [None; MAX_BRANCHES];
     for (i, &(branche, _, largeur)) in lus[..n].iter().enumerate() {
         s[i] = Some(Secteur {
@@ -112,10 +111,10 @@ fn place(def: &Arbre, s: &[Option<Secteur>], n: &Noeud) -> Option<(Vec2, Color)>
         let (total, avant) = meme.fold((0, 0), |(t, a), m| {
             (t + 1, a + usize::from(m.colonne < n.colonne))
         });
-        let angle = (avant as f32 - (total - 1) as f32 / 2.0) * ECART_TRONC;
-        return Some((point(angle, rayon(n.ligne)), IVOIRE));
+        let x = (avant as f32 - (total - 1) as f32 / 2.0) * ECART_TRONC;
+        return Some((point(x, n.ligne), IVOIRE));
     }
-    // Seul sur sa ligne dans sa branche : au milieu du secteur ; sinon étalés
+    // Seul sur sa ligne dans sa branche : au milieu de la colonne ; sinon étalés
     let sec = s.iter().flatten().find(|x| x.branche == n.branche)?;
     let meme = def
         .noeuds
@@ -124,8 +123,8 @@ fn place(def: &Arbre, s: &[Option<Secteur>], n: &Noeud) -> Option<(Vec2, Color)>
     let (total, avant) = meme.fold((0, 0), |(t, a), m| {
         (t + 1, a + usize::from(m.colonne < n.colonne))
     });
-    let angle = sec.milieu() + (avant as f32 - (total - 1) as f32 / 2.0) * sec.pas;
-    Some((point(angle, rayon(n.ligne)), teinte(n.branche)))
+    let x = sec.milieu() + (avant as f32 - (total - 1) as f32 / 2.0) * sec.pas;
+    Some((point(x, n.ligne), teinte(n.branche)))
 }
 
 pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, parent: Entity) {
@@ -137,15 +136,14 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, paren
                 width: Val::Px(LARGEUR),
                 height: Val::Px(HAUTEUR),
                 flex_shrink: 0.0,
-                overflow: Overflow::clip(),
                 ..default()
             },
             ChildOf(parent),
         ))
         .id();
     let lignes = def.noeuds.iter().map(|n| n.ligne).max().unwrap_or(0);
-    for l in 1..=lignes {
-        anneau(commandes, c, ic, zone, l);
+    for l in 0..=lignes {
+        seuil(commandes, c, ic, zone, l);
     }
     for sec in s.iter().flatten() {
         bout(commandes, c, ic, zone, sec);
@@ -157,69 +155,51 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, paren
     }
 }
 
-/// Anneau pâle de la ligne `l`, et le seuil de points qui l'ouvre, sous son bord gauche.
-fn anneau(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, zone: Entity, l: u32) {
-    let prog = &c.sauvegarde.progression;
-    let ouverte = prog.palier_atteint(c.id(), c.etat.arbre, l);
-    let r = rayon(l);
-    commandes.spawn((
-        Node {
-            position_type: PositionType::Absolute,
-            left: Val::Px(CENTRE.x - r),
-            top: Val::Px(CENTRE.y - r),
-            width: Val::Px(2.0 * r),
-            height: Val::Px(2.0 * r),
-            border: UiRect::all(Val::Px(1.5)),
-            border_radius: BorderRadius::all(Val::Percent(50.0)),
-            ..default()
-        },
-        BorderColor::all(Color::srgba(
-            0.7,
-            0.8,
-            1.0,
-            if ouverte { 0.13 } else { 0.06 },
-        )),
-        ChildOf(zone),
-    ));
+/// Seuil de points qui ouvre la ligne `l`, écrit à gauche, à sa hauteur.
+fn seuil(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, zone: Entity, l: u32) {
     let palier = c.dj.d.talents.paliers.iter().find(|x| x.ligne == l);
     let Some(palier) = palier.filter(|x| x.rangs > 0) else {
         return;
     };
+    let ouverte = c
+        .sauvegarde
+        .progression
+        .palier_atteint(c.id(), c.etat.arbre, l);
     let marque = commandes
         .spawn((
             Node {
                 position_type: PositionType::Absolute,
-                left: Val::Px(CENTRE.x - r - 30.0),
-                top: Val::Px(CENTRE.y + 12.0),
-                width: Val::Px(60.0),
-                justify_content: JustifyContent::Center,
+                left: Val::ZERO,
+                top: Val::Px(y(l) - 10.0),
+                height: Val::Px(20.0),
                 align_items: AlignItems::Center,
-                column_gap: Val::Px(4.0),
+                column_gap: Val::Px(5.0),
                 ..default()
             },
             ChildOf(zone),
         ))
         .id();
     let couleur = if ouverte {
-        AIDE.with_alpha(0.55)
+        AIDE.with_alpha(0.5)
     } else {
         OR_VIF
     };
     if !ouverte {
         charte::cadenas(commandes, marque, 8.0, couleur);
     }
-    let t = palier.rangs.to_string();
+    let s = if palier.rangs > 1 { "s" } else { "" };
+    let t = format!("{} pt{s}", palier.rangs);
     ecrire(commandes, ic, marque, &t, (true, 13.0, couleur));
 }
 
-/// Nom de la branche et points qui y sont, au bout de son secteur.
+/// Nom de la branche et points qui y sont, au-dessus de son talent le plus haut.
 fn bout(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, zone: Entity, sec: &Secteur) {
     let def = c.arbre();
     let prog = &c.sauvegarde.progression;
     let (p, a) = (c.id(), c.etat.arbre);
     let noeuds = def.noeuds.iter().filter(|n| n.branche == sec.branche);
     let (haut, points) = noeuds.fold((0, 0), |(h, s), n| (h.max(n.ligne), s + prog.rang(p, a, n)));
-    let o = point(sec.milieu(), rayon(haut)) - Vec2::new(0.0, case::CASE / 2.0 + 24.0);
+    let o = point(sec.milieu(), haut) - Vec2::new(0.0, case::CASE / 2.0 + 24.0);
     let x = o.x.clamp(70.0, LARGEUR - 70.0);
     let boite = commandes
         .spawn((

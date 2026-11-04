@@ -1,15 +1,15 @@
 //! Page des Talents du menu, plein écran et à l'air libre (aucun panneau ni case) : à
-//! gauche l'arbre choisi en radar (`radar`) : le talent de base en bas, un anneau par
-//! ligne, un secteur coloré par branche, des pastilles rondes (`case`) ; à droite
+//! gauche l'arbre choisi à plat (`colonnes`) : le tronc en bas, une colonne colorée
+//! par branche au-dessus, des pastilles rondes (`case`) ; à droite
 //! (`cote`) les classes, les deux arbres (qui se partagent les points), les points
 //! restants et la fiche du talent choisi (`fiche`). Un clic choisit une pastille, un
 //! second clic sur la même l'apprend. « ‹ Retour » et « Réinitialiser » en bas à
 //! gauche ; Échap ramène à l'accueil.
 
 mod case;
+mod colonnes;
 mod cote;
 mod fiche;
-mod radar;
 
 pub use case::survoler_cases;
 
@@ -237,7 +237,7 @@ pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones) -> En
             ChildOf(racine),
         ))
         .id();
-    radar::construire(commandes, c, ic, gauche);
+    colonnes::construire(commandes, c, ic, gauche);
     cote::construire(commandes, c, ic, racine);
     cote::pied(commandes, c, ic, racine);
     racine

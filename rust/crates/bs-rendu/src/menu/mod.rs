@@ -8,6 +8,7 @@
 //! Essais : `BS_JOUER=n` lance la partie choisie aux n premières entrées au menu ;
 //! `BS_MENU=talents` (ou `collection`, `profil`, `profils`, `nouveautes`, `multijoueur`) ouvre cette page à l'entrée.
 
+mod air;
 pub mod apercu;
 mod collection;
 pub mod fond;
@@ -172,7 +173,7 @@ fn construire(
         }
         Page::Profils(_) => profils::construire(commandes, (dj, sauvegarde), ic, menu),
         Page::Nouveautes(k) => nouveautes::construire(commandes, ic, k),
-        Page::Multijoueur => multijoueur::construire(commandes, dj, menu, multi),
+        Page::Multijoueur => multijoueur::construire(commandes, dj, ic, menu, multi),
     };
     commandes.entity(racine).insert(ElementMenu);
     racine

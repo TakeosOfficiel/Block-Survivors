@@ -1,7 +1,8 @@
-//! Vue de la page Multijoueur : hors salon (créer, code, salons publics) ou dans le
-//! salon (code, joueurs, lancement), et le message de la dernière coop arrêtée ; la
-//! panneau des amis à droite (`vue_amis`) ; hors salon, les succès de coop (repliés).
-//! Couleurs et boutons de la charte (docs/CHARTE-UI.md).
+//! Vue de la page Multijoueur, à l'air libre comme les Talents (`menu::air`) : fond nuit
+//! en dégradé, aucun panneau. À gauche, hors salon : créer (Privé / Public en pilules,
+//! grand bouton vert), rejoindre par code (champ en pilule), salons publics (lignes de
+//! texte, liens « Rejoindre ») ; dans le salon : son code en grand, les joueurs, le
+//! lancement. À droite, les amis (`vue_amis`). En bas : « ‹ Retour » et les succès de coop.
 
 use bevy::prelude::*;
 use bs_reseau::PhaseCoop;
@@ -12,13 +13,15 @@ use bs_sauvegarde::progression::Progression;
 use super::{ActionMulti, Annuaire};
 use crate::amis::ReseauAmis;
 use crate::coop::Coop;
-use crate::ecrans::charte::{self, AIDE, BORD, IVOIRE, OR_VIF, Relief};
+use crate::ecrans::charte::{self, AIDE, IVOIRE, OR_VIF, T_AIDE, T_CORPS, T_SECTION};
 use crate::hud::police::TextePixel;
 use crate::lancement::{DonneesJeu, SourceMenu};
-use crate::menu::{ActionMenu, Menu};
+use crate::menu::air::{self, ecrire};
+use crate::menu::{ActionMenu, Icones, Menu};
 
-const LARGEUR: f32 = 560.0;
-const ROUGE: Color = charte::ROUGE;
+pub(super) const LARGEUR: f32 = 520.0;
+/// Écart entre la colonne du salon et celle des amis.
+const ENTRE: f32 = 120.0;
 
 /// Ce que la page montre de la coop.
 pub struct VueMulti<'a> {
@@ -30,233 +33,139 @@ pub struct VueMulti<'a> {
     pub progression: &'a Progression,
 }
 
-pub(super) fn texte(
-    commandes: &mut Commands,
-    parent: Entity,
-    t: &str,
-    couleur: Color,
-    taille: f32,
-) {
-    commandes.spawn((TextePixel::nouveau(t, couleur, taille), ChildOf(parent)));
+/// Action de la page, pour les liens.
+pub(super) fn m(a: ActionMulti) -> Option<ActionMenu> {
+    Some(ActionMenu::Multi(a))
 }
 
-/// Bouton en relief (`relief`), éteint sans action.
-pub(super) fn bouton_teinte(
-    commandes: &mut Commands,
-    parent: Entity,
-    t: &str,
-    relief: Relief,
-    action: Option<ActionMulti>,
-) -> Entity {
-    let b = charte::bouton_relief(commandes, parent, relief, 40.0, ());
-    commandes.entity(b).entry::<Node>().and_modify(|mut n| {
-        n.padding = UiRect::horizontal(Val::Px(12.0));
-        n.flex_shrink = 0.0;
+/// Titre de partie (police du logo).
+pub(super) fn titre(commandes: &mut Commands, ic: &Icones, parent: Entity, t: &str) {
+    ecrire(commandes, ic, parent, t, (true, T_SECTION, IVOIRE));
+}
+
+/// Petit texte d'aide, replié sur la largeur de la colonne.
+pub(super) fn aide(commandes: &mut Commands, ic: &Icones, parent: Entity, t: &str) {
+    let e = ecrire(commandes, ic, parent, t, (false, T_AIDE, AIDE));
+    commandes.entity(e).insert(Node {
+        max_width: Val::Px(LARGEUR),
+        ..default()
     });
-    let couleur = if action.is_some() { IVOIRE } else { AIDE };
-    texte(commandes, b, t, couleur, 1.75);
-    match action {
-        Some(a) => {
-            commandes.entity(b).insert(ActionMenu::Multi(a));
-        }
-        None => {
-            commandes
-                .entity(b)
-                .remove::<(Button, Relief)>()
-                .insert(BackgroundColor(charte::CREUX));
-        }
+}
+
+/// Rangée étirée sur la colonne.
+pub(super) fn ligne(commandes: &mut Commands, parent: Entity) -> Entity {
+    let l = air::rangee(commandes, parent, 14.0);
+    commandes.entity(l).entry::<Node>().and_modify(|mut n| {
+        n.width = Val::Percent(100.0);
+        n.min_height = Val::Px(40.0);
+    });
+    l
+}
+
+/// Bloc qui prend la place libre d'une ligne.
+pub(super) fn etire(commandes: &mut Commands, parent: Entity, ecart: f32) -> Entity {
+    let c = air::colonne(commandes, parent, ecart);
+    commandes.entity(c).entry::<Node>().and_modify(|mut n| {
+        n.flex_grow = 1.0;
+        n.flex_shrink = 1.0;
+    });
+    c
+}
+
+/// Texte d'un champ en cours de saisie (curseur) ou son invite.
+pub(super) fn valeur(menu: &Menu, saisie: bool, invite: &str) -> (String, bool) {
+    match &menu.saisie {
+        Some(s) if saisie => (format!("{s}|"), true),
+        _ => (invite.into(), false),
     }
-    b
 }
 
-pub(super) fn bouton(
-    commandes: &mut Commands,
-    parent: Entity,
-    t: &str,
-    action: Option<ActionMulti>,
-) {
-    bouton_teinte(commandes, parent, t, Relief::SECONDAIRE, action);
-}
-
-/// Champ de saisie en creux, cliquable (`action`).
-pub(super) fn champ(commandes: &mut Commands, parent: Entity, t: &str, action: ActionMulti) {
-    let c = commandes
-        .spawn((
-            Button,
-            ActionMenu::Multi(action),
-            Node {
-                flex_grow: 1.0,
-                height: Val::Px(40.0),
-                align_items: AlignItems::Center,
-                padding: UiRect::horizontal(Val::Px(10.0)),
-                border: UiRect::all(Val::Px(2.0)),
-                border_radius: BorderRadius::all(Val::Px(2.0)),
-                ..default()
-            },
-            BackgroundColor(Color::srgb_u8(0x0b, 0x0e, 0x10)),
-            BorderColor {
-                top: Color::BLACK,
-                left: Color::BLACK,
-                right: BORD,
-                bottom: BORD,
-            },
-            ChildOf(parent),
-        ))
-        .id();
-    texte(commandes, c, t, IVOIRE, 1.75);
-}
-
-/// Ligne posée dans un panneau (surface, bord de 2).
-pub(super) fn ligne(commandes: &mut Commands, parent: Entity, _largeur: f32) -> Entity {
-    commandes
-        .spawn((
-            Node {
-                align_items: AlignItems::Center,
-                column_gap: Val::Px(8.0),
-                flex_shrink: 0.0,
-                padding: UiRect::all(Val::Px(8.0)),
-                border: UiRect::all(Val::Px(2.0)),
-                border_radius: BorderRadius::all(Val::Px(2.0)),
-                ..default()
-            },
-            BackgroundColor(charte::SURFACE),
-            BorderColor::all(BORD),
-            ChildOf(parent),
-        ))
-        .id()
-}
-
-/// Rangée sans fond (boutons côte à côte).
-fn rangee(commandes: &mut Commands, parent: Entity) -> Entity {
-    commandes
-        .spawn((
-            Node {
-                align_items: AlignItems::Center,
-                column_gap: Val::Px(8.0),
-                flex_shrink: 0.0,
-                ..default()
-            },
-            ChildOf(parent),
-        ))
-        .id()
-}
-
-/// Titre de section d'un panneau, filet dessous.
-pub(super) fn section(commandes: &mut Commands, parent: Entity, t: &str) {
-    let s = commandes
-        .spawn((
-            Node {
-                margin: UiRect::top(Val::Px(4.0)),
-                padding: UiRect::bottom(Val::Px(6.0)),
-                border: UiRect::bottom(Val::Px(2.0)),
-                flex_shrink: 0.0,
-                ..default()
-            },
-            BorderColor::all(BORD),
-            ChildOf(parent),
-        ))
-        .id();
-    texte(commandes, s, t, IVOIRE, 2.0);
+/// Grand bouton vert, collé à gauche.
+fn bouton_vert(c: &mut Commands, ic: &Icones, col: Entity, t: &str, a: Option<ActionMenu>) {
+    let b = air::bouton_vert(c, ic, col, t, a);
+    c.entity(b)
+        .entry::<Node>()
+        .and_modify(|mut n| n.align_self = AlignSelf::FlexStart);
 }
 
 /// Hors salon : créer (visibilité au choix), rejoindre par code, salons publics.
-fn accueil(commandes: &mut Commands, racine: Entity, menu: &Menu, vue: &VueMulti, saisie: bool) {
-    section(commandes, racine, "Créer un salon");
+fn accueil(commandes: &mut Commands, ic: &Icones, col: Entity, menu: &Menu, vue: &VueMulti) {
+    titre(commandes, ic, col, "Créer un salon");
     let public = vue.annuaire.public;
-    let l = rangee(commandes, racine);
+    let l = air::rangee(commandes, col, 10.0);
     for (t, p) in [("Privé", false), ("Public", true)] {
-        let (relief, t) = if p == public {
-            (Relief::CHOISI, format!("✓ {t}"))
-        } else {
-            (Relief::SECONDAIRE, t.to_owned())
-        };
-        let b = bouton_teinte(commandes, l, &t, relief, Some(ActionMulti::Visibilite(p)));
-        commandes
-            .entity(b)
-            .entry::<Node>()
-            .and_modify(|mut n| n.width = Val::Px(120.0));
+        let action = (p != public).then_some(ActionMenu::Multi(ActionMulti::Visibilite(p)));
+        air::pilule(commandes, ic, l, t, p == public, action);
     }
-    let b = bouton_teinte(
-        commandes,
-        l,
-        "Créer le salon",
-        Relief::PRINCIPAL,
-        Some(ActionMulti::Creer),
-    );
-    commandes
-        .entity(b)
-        .entry::<Node>()
-        .and_modify(|mut n| n.margin = UiRect::left(Val::Auto));
-    let aide = if public {
-        "Public : visible de tous dans la liste des salons."
+    let t = if public {
+        "Visible de tous dans la liste des salons publics."
     } else {
-        "Privé : on n'entre qu'avec le code du salon."
+        "On n'y entre qu'avec le code du salon."
     };
-    texte(commandes, racine, aide, AIDE, 1.5);
+    aide(commandes, ic, col, t);
+    bouton_vert(commandes, ic, col, "CRÉER LE SALON", m(ActionMulti::Creer));
+    air::trait_fin(commandes, col);
 
-    section(commandes, racine, "Rejoindre par code");
-    let l = rangee(commandes, racine);
-    let valeur = match &menu.saisie {
-        Some(s) if saisie => format!("{s}|"),
-        _ => "Taper le code".into(),
-    };
-    champ(commandes, l, &valeur, ActionMulti::Code);
-    bouton(commandes, l, "Rejoindre", Some(ActionMulti::Rejoindre));
-    if menu.saisie.is_some() && saisie {
-        let t = "Entrée : rejoindre · Échap : annuler";
-        texte(commandes, racine, t, AIDE, 1.5);
+    titre(commandes, ic, col, "Rejoindre par code");
+    let saisie = !vue.annuaire.champ_ami;
+    let (t, actif) = valeur(menu, saisie, "Code du salon");
+    let l = air::rangee(commandes, col, 18.0);
+    let champ = ActionMenu::Multi(ActionMulti::Code);
+    air::champ(commandes, ic, l, &t, actif, champ);
+    let rejoindre = m(ActionMulti::Rejoindre);
+    air::lien(
+        commandes,
+        ic,
+        l,
+        "Rejoindre ›",
+        (T_CORPS, OR_VIF),
+        rejoindre,
+    );
+    if actif {
+        aide(commandes, ic, col, "Entrée : rejoindre · Échap : annuler");
     }
+    air::trait_fin(commandes, col);
 
-    let l = rangee(commandes, racine);
-    commandes.entity(l).insert(Node {
-        justify_content: JustifyContent::SpaceBetween,
-        align_items: AlignItems::Center,
-        flex_shrink: 0.0,
-        ..default()
-    });
-    section(commandes, l, "Salons publics");
+    let l = ligne(commandes, col);
+    let g = etire(commandes, l, 0.0);
+    titre(commandes, ic, g, "Salons publics");
     let recherche = vue.annuaire.session.is_some();
-    let t = if recherche {
-        "Recherche…"
+    let (t, action) = if recherche {
+        ("Recherche…", None)
     } else {
-        "Actualiser"
+        ("↻ Actualiser", m(ActionMulti::Actualiser))
     };
-    bouton(
-        commandes,
-        l,
-        t,
-        (!recherche).then_some(ActionMulti::Actualiser),
-    );
+    air::lien(commandes, ic, l, t, (T_AIDE, AIDE), action);
     if vue.annuaire.salons.is_empty() && !recherche {
-        texte(commandes, racine, "Aucun salon public ouvert.", AIDE, 1.5);
+        aide(
+            commandes,
+            ic,
+            col,
+            "Aucun salon public ouvert pour l'instant.",
+        );
     }
     for (k, s) in vue.annuaire.salons.iter().enumerate() {
-        let l = ligne(commandes, racine, LARGEUR);
-        let hote = String::from_utf8_lossy(&s.annonce);
-        let t = format!("{hote} · {}/{} joueurs", s.joueurs, s.places);
-        let nom = commandes
-            .spawn((
-                Node {
-                    flex_grow: 1.0,
-                    ..default()
-                },
-                ChildOf(l),
-            ))
-            .id();
-        texte(commandes, nom, &t, IVOIRE, 1.75);
+        let l = ligne(commandes, col);
         let plein = s.joueurs >= s.places;
-        bouton(
-            commandes,
-            l,
-            "Rejoindre",
-            (!plein).then_some(ActionMulti::Public(k)),
-        );
+        let couleur = if plein { AIDE } else { charte::VERT_GAIN };
+        air::point(commandes, l, 8.0, couleur);
+        let g = etire(commandes, l, 0.0);
+        let hote = String::from_utf8_lossy(&s.annonce);
+        ecrire(commandes, ic, g, &hote, (false, T_CORPS, IVOIRE));
+        let t = format!("{}/{}", s.joueurs, s.places);
+        ecrire(commandes, ic, l, &t, (false, T_AIDE, AIDE));
+        let (t, action) = if plein {
+            ("Complet", None)
+        } else {
+            ("Rejoindre ›", m(ActionMulti::Public(k)))
+        };
+        air::lien(commandes, ic, l, t, (T_CORPS, OR_VIF), action);
     }
 }
 
-/// Succès de coop : replié en « Succès coop · 2/5 », déplié au clic (gagnés en or, les
+/// Succès de coop : un lien « Succès coop · 2/5 › », dépliés au clic (gagnés en or, les
 /// autres avec leur condition).
-fn succes(commandes: &mut Commands, racine: Entity, dj: &DonneesJeu, vue: &VueMulti) {
+fn succes(commandes: &mut Commands, ic: &Icones, parent: Entity, dj: &DonneesJeu, vue: &VueMulti) {
     let (liste, p) = (&dj.d.succes, vue.progression);
     if liste.is_empty() {
         return;
@@ -265,113 +174,98 @@ fn succes(commandes: &mut Commands, racine: Entity, dj: &DonneesJeu, vue: &VueMu
     let ouverts = vue.annuaire.succes_ouverts;
     let fleche = if ouverts { "⌄" } else { "›" };
     let t = format!("Succès coop · {gagnes}/{} {fleche}", liste.len());
-    let b = bouton_teinte(
+    let col = air::colonne(commandes, parent, 4.0);
+    if ouverts {
+        for s in liste {
+            let (t, couleur) = if p.succes(&s.id) {
+                (format!("★ {} · {}", s.nom, s.texte), OR_VIF)
+            } else {
+                (format!("{} · {}", s.nom, s.texte), AIDE)
+            };
+            ecrire(commandes, ic, col, &t, (false, T_AIDE, couleur));
+        }
+    }
+    air::lien(
         commandes,
-        racine,
+        ic,
+        col,
         &t,
-        Relief::SECONDAIRE,
-        Some(ActionMulti::Succes),
+        (T_CORPS, IVOIRE),
+        m(ActionMulti::Succes),
     );
-    commandes
-        .entity(b)
-        .entry::<Node>()
-        .and_modify(|mut n| n.margin = UiRect::top(Val::Px(8.0)));
-    if !ouverts {
-        return;
-    }
-    for s in liste {
-        let (t, couleur) = if p.succes(&s.id) {
-            (format!("✓ {} · {}", s.nom, s.texte), OR_VIF)
-        } else {
-            (format!("{} · {}", s.nom, s.texte), AIDE)
-        };
-        commandes.spawn((
-            TextePixel::nouveau(&t, couleur, 1.5).bloc(LARGEUR - 40.0),
-            ChildOf(racine),
-        ));
-    }
 }
 
 /// Dans le salon : code, joueurs, lancement.
-fn salon(commandes: &mut Commands, racine: Entity, dj: &DonneesJeu, menu: &Menu, coop: &Coop) {
+fn salon(
+    c: &mut Commands,
+    ic: &Icones,
+    col: Entity,
+    (dj, menu): (&DonneesJeu, &Menu),
+    coop: &Coop,
+) {
+    let quitter = m(ActionMulti::Quitter);
     if *coop.phase() == PhaseCoop::Connexion {
-        texte(commandes, racine, "Connexion au relais…", IVOIRE, 2.0);
-        bouton(commandes, racine, "Annuler", Some(ActionMulti::Quitter));
+        titre(c, ic, col, "Connexion au relais…");
+        air::lien(c, ic, col, "Annuler", (T_CORPS, IVOIRE), quitter);
         return;
     }
+    ecrire(c, ic, col, "Code du salon", (false, T_AIDE, AIDE));
     let code = coop.code().unwrap_or_default();
-    texte(
-        commandes,
-        racine,
-        &format!("Code du salon : {code}"),
-        OR_VIF,
-        2.5,
-    );
-    texte(
-        commandes,
-        racine,
+    ecrire(c, ic, col, &code, (true, 48.0, OR_VIF));
+    aide(
+        c,
+        ic,
+        col,
         "Donnez ce code à vos amis pour qu'ils vous rejoignent.",
-        AIDE,
-        1.5,
     );
-    for j in coop.joueurs() {
-        let l = ligne(commandes, racine, LARGEUR);
+    air::trait_fin(c, col);
+
+    let joueurs = coop.joueurs();
+    titre(c, ic, col, &format!("Joueurs · {}/5", joueurs.len()));
+    for j in joueurs {
+        let l = ligne(c, col);
         let p = &j.presentation;
-        let classe =
-            dj.d.personnages
-                .personnages
-                .get(&p.personnage)
-                .map_or("?", |c| c.nom.as_str());
-        let moi = if j.index == coop.place() {
-            " (vous)"
-        } else {
-            ""
-        };
-        let hote = if j.index == 0 { "Hôte · " } else { "" };
-        texte(
-            commandes,
-            l,
-            &format!("{hote}{}{moi}", p.pseudo),
-            IVOIRE,
-            2.0,
-        );
-        texte(commandes, l, classe, AIDE, 1.5);
+        let moi = j.index == coop.place();
+        let couleur = if moi { charte::VERT_GAIN } else { IVOIRE };
+        air::point(c, l, 10.0, couleur);
+        let g = air::rangee(c, l, 10.0);
+        c.entity(g)
+            .entry::<Node>()
+            .and_modify(|mut n| n.flex_grow = 1.0);
+        ecrire(c, ic, g, &p.pseudo, (true, T_CORPS, IVOIRE));
+        if moi {
+            ecrire(c, ic, g, "(vous)", (false, T_AIDE, AIDE));
+        }
+        if j.index == 0 {
+            ecrire(c, ic, g, "★ Hôte", (false, T_AIDE, OR_VIF));
+        }
+        let classe = dj.d.personnages.personnages.get(&p.personnage);
+        let classe = classe.map_or("?", |c| c.nom.as_str());
+        ecrire(c, ic, l, classe, (false, T_AIDE, AIDE));
     }
-    let l = ligne(commandes, racine, LARGEUR);
+    air::trait_fin(c, col);
+
     if coop.est_hote() {
         let arene = &dj.arenes[menu.choix.arene];
         let generee = matches!(arene.source, SourceMenu::Generee(_));
-        texte(
-            commandes,
-            l,
-            &format!("Arène : {}", arene.def.nom),
-            IVOIRE,
-            2.0,
-        );
-        bouton_teinte(
-            commandes,
-            l,
-            "Lancer",
-            Relief::PRINCIPAL,
-            generee.then_some(ActionMulti::Lancer),
-        );
+        let t = format!("Arène : {}", arene.def.nom);
+        ecrire(c, ic, col, &t, (false, T_CORPS, IVOIRE));
         if !generee {
-            texte(commandes, l, "(arène générée seulement)", AIDE, 1.5);
+            aide(c, ic, col, "La coop ne se joue que sur une arène générée.");
         }
+        let lancer = generee.then_some(ActionMenu::Multi(ActionMulti::Lancer));
+        bouton_vert(c, ic, col, "LANCER", lancer);
     } else {
-        texte(
-            commandes,
-            l,
-            "En attente du lancement par l'hôte…",
-            AIDE,
-            2.0,
-        );
+        let t = "En attente du lancement par l'hôte…";
+        ecrire(c, ic, col, t, (false, T_CORPS, AIDE));
     }
-    bouton(
-        commandes,
-        racine,
+    air::lien(
+        c,
+        ic,
+        col,
         "Quitter le salon",
-        Some(ActionMulti::Quitter),
+        (T_CORPS, charte::ROUGE),
+        quitter,
     );
 }
 
@@ -379,6 +273,7 @@ fn salon(commandes: &mut Commands, racine: Entity, dj: &DonneesJeu, menu: &Menu,
 pub fn construire(
     commandes: &mut Commands,
     dj: &DonneesJeu,
+    ic: &Icones,
     menu: &Menu,
     vue: &VueMulti,
 ) -> Entity {
@@ -389,69 +284,64 @@ pub fn construire(
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
                 flex_direction: FlexDirection::Column,
-                align_items: AlignItems::Center,
                 padding: UiRect::all(Val::Px(charte::MARGE)),
-                row_gap: Val::Px(16.0),
+                row_gap: Val::Px(24.0),
                 ..default()
             },
             BackgroundColor(charte::FOND),
+            air::fond(),
         ))
         .id();
     commandes.spawn((
-        TextePixel::nouveau("Multijoueur", IVOIRE, 4.0),
+        TextePixel::nouveau("Multijoueur", IVOIRE, 3.0),
         ChildOf(racine),
     ));
     let corps = commandes
         .spawn((
             Node {
-                column_gap: Val::Px(24.0),
+                column_gap: Val::Px(ENTRE),
+                justify_content: JustifyContent::Center,
                 align_items: AlignItems::FlexStart,
+                flex_grow: 1.0,
                 min_height: Val::ZERO,
-                flex_shrink: 1.0,
+                overflow: Overflow::clip_y(),
                 ..default()
             },
             ChildOf(racine),
         ))
         .id();
-    let colonne = |largeur: f32| Node {
-        width: Val::Px(largeur),
-        row_gap: Val::Px(8.0),
-        max_height: Val::Percent(100.0),
-        overflow: Overflow::clip_y(),
-        ..default()
+    let colonne = |commandes: &mut Commands, largeur: f32| {
+        let c = air::colonne(commandes, corps, 14.0);
+        commandes
+            .entity(c)
+            .entry::<Node>()
+            .and_modify(move |mut n| n.width = Val::Px(largeur));
+        c
     };
-    let gauche = charte::panneau(commandes, corps, colonne(LARGEUR));
-    let droite = charte::panneau(commandes, corps, colonne(super::vue_amis::LARGEUR));
-    let saisie_salon = !vue.annuaire.champ_ami;
+    let gauche = colonne(commandes, LARGEUR);
+    let droite = colonne(commandes, super::vue_amis::LARGEUR);
     match vue.coop {
-        Some(coop) => salon(commandes, gauche, dj, menu, coop),
-        None => {
-            accueil(commandes, gauche, menu, vue, saisie_salon);
-            succes(commandes, gauche, dj, vue);
-        }
+        Some(coop) => salon(commandes, ic, gauche, (dj, menu), coop),
+        None => accueil(commandes, ic, gauche, menu, vue),
     }
-    super::vue_amis::construire(commandes, droite, menu, vue);
-    if let Some(m) = vue.message {
-        commandes.spawn((
-            TextePixel::nouveau(m, ROUGE, 1.5).bloc(LARGEUR),
-            ChildOf(racine),
-        ));
-    }
-    let retour = bouton_teinte(
-        commandes,
-        racine,
-        "Retour",
-        Relief::SECONDAIRE,
-        Some(ActionMulti::Quitter),
-    );
-    // Retour : ferme la page (et quitte le salon, comme Échap)
-    commandes.entity(retour).insert(ActionMenu::Fermer);
-    commandes
-        .entity(retour)
-        .entry::<Node>()
-        .and_modify(|mut n| {
-            n.width = Val::Px(200.0);
-            n.margin = UiRect::top(Val::Auto);
+    super::vue_amis::construire(commandes, ic, droite, menu, vue);
+    if let Some(t) = vue.message {
+        let e = ecrire(commandes, ic, racine, t, (false, T_CORPS, charte::ROUGE));
+        commandes.entity(e).insert(Node {
+            align_self: AlignSelf::Center,
+            ..default()
         });
+    }
+    let pied = air::rangee(commandes, racine, 48.0);
+    commandes
+        .entity(pied)
+        .entry::<Node>()
+        .and_modify(|mut n| n.align_items = AlignItems::FlexEnd);
+    // Retour : ferme la page (et quitte le salon, comme Échap)
+    let retour = Some(ActionMenu::Fermer);
+    air::lien(commandes, ic, pied, "‹ Retour", (T_CORPS, IVOIRE), retour);
+    if vue.coop.is_none() {
+        succes(commandes, ic, pied, dj, vue);
+    }
     racine
 }

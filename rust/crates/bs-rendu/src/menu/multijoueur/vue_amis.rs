@@ -1,18 +1,20 @@
-//! Colonne des amis de la page Multijoueur : son code ami, l'ajout d'un ami par le sien,
-//! les messages reçus (invitation, demande, ajout) et la liste des amis avec leur présence
-//! et ce qu'on peut faire avec eux (rejoindre, inviter, demander, retirer).
+//! Colonne des amis de la page Multijoueur, sans cadre : son code ami en or, l'ajout d'un
+//! ami par le sien (champ en pilule), les messages reçus (invitation, demande, ajout) et
+//! la liste des amis, chacun avec une pastille de présence et des liens d'action
+//! (rejoindre, inviter, demander ; « × » pour retirer).
 
 use bevy::prelude::*;
 use bs_reseau::amis::{Etat, EtatPresence};
 use bs_sauvegarde::amis::Ami;
 
 use super::ActionMulti;
-use super::vue::{VueMulti, bouton, ligne, texte};
+use super::vue::{VueMulti, aide, etire, ligne, m, titre, valeur};
 use crate::amis::Note;
-use crate::ecrans::charte::{AIDE, IVOIRE, OR_VIF};
-use crate::menu::Menu;
+use crate::ecrans::charte::{AIDE, IVOIRE, OR_VIF, T_AIDE, T_CORPS};
+use crate::menu::air::{self, ecrire};
+use crate::menu::{ActionMenu, Icones, Menu};
 
-pub const LARGEUR: f32 = 400.0;
+pub const LARGEUR: f32 = 420.0;
 const VERT: Color = crate::ecrans::charte::VERT_GAIN;
 const BLEU: Color = Color::srgb_u8(0x8a, 0xc8, 0xff);
 
@@ -38,126 +40,88 @@ fn statut(p: Option<&Etat>) -> (String, Color) {
     (t, BLEU)
 }
 
-/// Pseudo et statut l'un sous l'autre, prenant la place libre de la ligne.
-fn deux_lignes(commandes: &mut Commands, l: Entity, haut: &str, bas: &str, couleur: Color) {
-    let c = commandes
-        .spawn((
-            Node {
-                flex_direction: FlexDirection::Column,
-                flex_grow: 1.0,
-                row_gap: Val::Px(2.0),
-                ..default()
-            },
-            ChildOf(l),
-        ))
-        .id();
-    texte(commandes, c, haut, IVOIRE, 1.75);
-    texte(commandes, c, bas, couleur, 1.5);
+/// Pastille, pseudo et statut l'un sous l'autre ; renvoie la ligne pour ses liens.
+fn entete(
+    commandes: &mut Commands,
+    ic: &Icones,
+    parent: Entity,
+    (haut, bas): (&str, &str),
+    couleur: Color,
+) -> Entity {
+    let l = ligne(commandes, parent);
+    air::point(commandes, l, 10.0, couleur);
+    let c = etire(commandes, l, 2.0);
+    ecrire(commandes, ic, c, haut, (true, T_CORPS, IVOIRE));
+    ecrire(commandes, ic, c, bas, (false, T_AIDE, couleur));
+    l
 }
 
-fn messages(commandes: &mut Commands, racine: Entity, vue: &VueMulti, notes: &[Note]) {
+/// Lien d'action d'une ligne (or) ; « × » en pâle.
+fn action(c: &mut Commands, ic: &Icones, l: Entity, t: &str, a: ActionMulti) {
+    air::lien(c, ic, l, t, (T_CORPS, OR_VIF), m(a));
+}
+fn croix(c: &mut Commands, ic: &Icones, l: Entity, a: ActionMulti) {
+    air::lien(c, ic, l, "×", (26.0, AIDE), m(a));
+}
+
+fn messages(commandes: &mut Commands, ic: &Icones, col: Entity, vue: &VueMulti, notes: &[Note]) {
     for (k, n) in notes.iter().enumerate() {
-        let l = ligne(commandes, racine, LARGEUR);
         let qui = nom(vue.liste, n.code());
-        let (t, oui) = match n {
-            Note::Invitation { .. } => ("vous invite dans son salon", "Rejoindre"),
-            Note::Demande { .. } => ("voudrait jouer avec vous", "Inviter"),
-            Note::Ajout { pseudo, .. } => {
-                let t = format!("{pseudo} vous a ajouté");
-                deux_lignes(commandes, l, &t, n.code(), IVOIRE);
-                bouton(commandes, l, "Ajouter", Some(ActionMulti::Accepter(k)));
-                bouton(commandes, l, "x", Some(ActionMulti::Ignorer(k)));
-                continue;
-            }
+        let (haut, bas, oui) = match n {
+            Note::Invitation { .. } => (qui.to_owned(), "vous invite dans son salon", "Rejoindre"),
+            Note::Demande { .. } => (qui.to_owned(), "voudrait jouer avec vous", "Inviter"),
+            Note::Ajout { pseudo, .. } => (format!("{pseudo} vous a ajouté"), n.code(), "Ajouter"),
         };
-        deux_lignes(commandes, l, qui, t, IVOIRE);
-        bouton(commandes, l, oui, Some(ActionMulti::Accepter(k)));
-        bouton(commandes, l, "x", Some(ActionMulti::Ignorer(k)));
+        let l = entete(commandes, ic, col, (&haut, bas), OR_VIF);
+        action(commandes, ic, l, oui, ActionMulti::Accepter(k));
+        croix(commandes, ic, l, ActionMulti::Ignorer(k));
     }
 }
 
-/// Panneau des amis.
-pub fn construire(commandes: &mut Commands, racine: Entity, menu: &Menu, vue: &VueMulti) {
-    super::vue::section(commandes, racine, "Amis");
+/// Colonne des amis.
+pub fn construire(commandes: &mut Commands, ic: &Icones, col: Entity, menu: &Menu, vue: &VueMulti) {
+    titre(commandes, ic, col, "Amis");
     let Some(amis) = vue.amis else {
-        texte(commandes, racine, "Amis indisponibles.", AIDE, 1.5);
+        aide(commandes, ic, col, "Amis indisponibles pour l'instant.");
         return;
     };
-    let code = amis.service.code();
-    texte(
-        commandes,
-        racine,
-        &format!("Votre code : {code}"),
-        OR_VIF,
-        2.0,
-    );
+    let l = air::rangee(commandes, col, 12.0);
+    ecrire(commandes, ic, l, "Votre code", (false, T_AIDE, AIDE));
+    ecrire(commandes, ic, l, amis.service.code(), (true, 26.0, OR_VIF));
     if !amis.service.connecte() {
-        texte(
-            commandes,
-            racine,
-            "Relais injoignable, nouvel essai…",
-            AIDE,
-            1.5,
-        );
+        aide(commandes, ic, col, "Relais injoignable, nouvel essai…");
     }
 
-    let l = commandes
-        .spawn((
-            Node {
-                column_gap: Val::Px(8.0),
-                flex_shrink: 0.0,
-                ..default()
-            },
-            ChildOf(racine),
-        ))
-        .id();
-    let saisie = vue.annuaire.champ_ami;
-    let champ = match &menu.saisie {
-        Some(s) if saisie => format!("{s}|"),
-        _ => "Code d'un ami".into(),
-    };
-    super::vue::champ(commandes, l, &champ, ActionMulti::CodeAmi);
-    bouton(commandes, l, "Ajouter", Some(ActionMulti::AjouterAmi));
-    if menu.saisie.is_some() && saisie {
-        texte(
-            commandes,
-            racine,
-            "Entrée : ajouter · Échap : annuler",
-            AIDE,
-            1.5,
-        );
+    let (t, actif) = valeur(menu, vue.annuaire.champ_ami, "Code d'un ami");
+    let l = air::rangee(commandes, col, 18.0);
+    let champ = ActionMenu::Multi(ActionMulti::CodeAmi);
+    air::champ(commandes, ic, l, &t, actif, champ);
+    action(commandes, ic, l, "Ajouter ›", ActionMulti::AjouterAmi);
+    if actif {
+        aide(commandes, ic, col, "Entrée : ajouter · Échap : annuler");
     }
+    air::trait_fin(commandes, col);
 
-    messages(commandes, racine, vue, &amis.notes);
-
+    messages(commandes, ic, col, vue, &amis.notes);
     if vue.liste.is_empty() {
-        let t = "Aucun ami : donnez-leur votre code, ou ajoutez le leur.";
-        commandes.spawn((
-            crate::hud::police::TextePixel::nouveau(t, AIDE, 1.5).bloc(LARGEUR),
-            ChildOf(racine),
-        ));
+        let t = "Aucun ami pour l'instant : donnez-leur votre code, ou ajoutez le leur.";
+        aide(commandes, ic, col, t);
     }
     let hote = vue.coop.is_some_and(|c| c.est_hote());
     let libre = vue.coop.is_none();
     for (k, a) in vue.liste.iter().enumerate() {
-        let l = ligne(commandes, racine, LARGEUR);
         let p = amis.service.ami(&a.code).and_then(|s| s.presence.as_ref());
         let (t, couleur) = statut(p);
-        deux_lignes(commandes, l, nom(vue.liste, &a.code), &t, couleur);
+        let l = entete(commandes, ic, col, (nom(vue.liste, &a.code), &t), couleur);
         if let Some(p) = p {
             if p.salon.is_some() && libre {
-                bouton(
-                    commandes,
-                    l,
-                    "Rejoindre",
-                    Some(ActionMulti::RejoindreAmi(k)),
-                );
+                action(commandes, ic, l, "Rejoindre", ActionMulti::RejoindreAmi(k));
             } else if p.etat == EtatPresence::Menu && (libre || hote) {
-                bouton(commandes, l, "Inviter", Some(ActionMulti::Inviter(k)));
+                action(commandes, ic, l, "Inviter", ActionMulti::Inviter(k));
             } else if libre {
-                bouton(commandes, l, "Jouer ?", Some(ActionMulti::Demander(k)));
+                action(commandes, ic, l, "Jouer ?", ActionMulti::Demander(k));
             }
         }
-        bouton(commandes, l, "x", Some(ActionMulti::Retirer(k)));
+        croix(commandes, ic, l, ActionMulti::Retirer(k));
     }
 }

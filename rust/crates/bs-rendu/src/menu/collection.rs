@@ -1,27 +1,23 @@
-//! Page Collection du menu (src/ui/ecranCollection.ts) : un onglet par monde (avancée en
-//! %), sa barre de progression, son armure (pièces gagnées, ou grisées avec leur
-//! provenance ; bonus de pièce et d'ensemble), ses bagues et amulettes (« ??? » tant
-//! qu'elles ne sont pas trouvées), puis les objets de tous les mondes. Ouverte sur le
-//! monde de l'arène choisie. Charte commune (docs/CHARTE-UI.md) : onglets soulignés,
-//! compteurs par panneau, une règle de provenance par panneau plutôt que sur chaque tuile.
+//! Page Collection du menu, en « menu de console » comme le Multijoueur (`console`) : à
+//! gauche les mondes en grands intitulés (avancée en %, pièces et objets trouvés) et
+//! « Tous les mondes » ; à droite, sans cadre ni case, l'armure du monde ouvert (icônes
+//! posées sur un halo rond, nom et effet, ou grisées tant qu'elles manquent ; provenance
+//! et bonus d'ensemble), puis ses bagues et amulettes (« ??? » tant qu'elles ne sont pas
+//! trouvées) ; « Tous les mondes » montre les objets communs. Ouverte sur le monde de
+//! l'arène choisie.
 
 use bevy::prelude::*;
 use bs_donnees::arenes::Monde;
 use bs_donnees::equipement::{Piece, Rarete};
 use bs_sauvegarde::collection::{MONDES, PIECES};
 
-use super::{ActionMenu, Icones};
+use super::console::{self, Police, TERNE, aide, ecrit, intitule, surtitre};
+use super::{ActionMenu, Icones, air};
 use crate::dessins::Dessins;
-use crate::ecrans::charte::{self, AIDE, IVOIRE, OR_VIF, Relief};
-use crate::hud::police::TextePixel;
+use crate::ecrans::charte::{AIDE, IVOIRE, OR_VIF, VERT_GAIN};
 use crate::icones_armures::{self, IconePiece};
 use crate::lancement::DonneesJeu;
 use crate::sauvegarde::Sauvegarde;
-
-const LARGEUR_PANNEAU: f32 = 400.0;
-const VERT: Color = charte::VERT_GAIN;
-const GRIS: Color = AIDE;
-const TEXTE: Color = IVOIRE;
 
 /// Monde ouvert d'abord : celui de l'arène choisie.
 pub fn monde_de_l_arene(dj: &DonneesJeu, arene: usize) -> usize {
@@ -38,85 +34,44 @@ fn couleur_rarete(r: Rarete) -> Color {
     }
 }
 
-fn texte(commandes: &mut Commands, parent: Entity, t: &str, couleur: Color, taille: f32) {
-    commandes.spawn((TextePixel::nouveau(t, couleur, taille), ChildOf(parent)));
-}
-
-/// Panneau de la charte : titre et compteur (« 2/4 »), règle commune dessous.
-fn panneau(
-    commandes: &mut Commands,
-    parent: Entity,
-    (titre, compte): (&str, String),
-    regle: &str,
-) -> Entity {
-    let p = charte::panneau(
-        commandes,
-        parent,
+/// Grille à deux colonnes, sans cadre.
+fn grille(c: &mut Commands, parent: Entity) -> Entity {
+    c.spawn((
         Node {
-            width: Val::Px(LARGEUR_PANNEAU),
-            row_gap: Val::Px(8.0),
+            display: Display::Grid,
+            grid_template_columns: RepeatedGridTrack::flex(2, 1.0),
+            width: Val::Percent(100.0),
+            column_gap: Val::Px(24.0),
+            row_gap: Val::Px(12.0),
+            margin: UiRect::vertical(Val::Px(6.0)),
+            flex_shrink: 0.0,
             ..default()
         },
-    );
-    let entete = commandes
-        .spawn((
-            Node {
-                justify_content: JustifyContent::SpaceBetween,
-                padding: UiRect::bottom(Val::Px(6.0)),
-                border: UiRect::bottom(Val::Px(2.0)),
-                ..default()
-            },
-            BorderColor::all(charte::BORD),
-            ChildOf(p),
-        ))
-        .id();
-    texte(commandes, entete, titre, IVOIRE, 2.0);
-    texte(commandes, entete, &compte, OR_VIF, 2.0);
-    commandes.spawn((
-        TextePixel::nouveau(regle, GRIS, 1.5)
-            .bloc(LARGEUR_PANNEAU - 36.0)
-            .a_gauche(),
-        ChildOf(p),
-    ));
-    p
+        ChildOf(parent),
+    ))
+    .id()
 }
 
-/// Tuile : icône dans sa case, nom et description ; grisée tant qu'elle n'est pas
-/// obtenue.
-fn tuile(
-    commandes: &mut Commands,
+/// Entrée : icône sur un halo rond (éteinte si non obtenue), nom et description.
+fn entree(
+    c: &mut Commands,
+    ic: &Icones,
     parent: Entity,
     icone: IconePiece,
-    (nom, couleur_nom): (&str, Color),
-    description: &str,
+    (nom, couleur_nom, description): (&str, Color, &str),
     obtenu: bool,
 ) {
-    let t = commandes
-        .spawn((
-            Node {
-                column_gap: Val::Px(8.0),
-                align_items: AlignItems::Center,
-                ..default()
-            },
-            ChildOf(parent),
-        ))
-        .id();
-    let case = commandes
-        .spawn((
-            Node {
-                width: Val::Px(40.0),
-                height: Val::Px(40.0),
-                flex_shrink: 0.0,
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                border: UiRect::all(Val::Px(2.0)),
-                ..default()
-            },
-            BackgroundColor(charte::CREUX),
-            BorderColor::all(charte::BORD),
-            ChildOf(t),
-        ))
-        .id();
+    let t = air::rangee(c, parent, 14.0);
+    let halo = if obtenu {
+        couleur_nom.with_alpha(0.14)
+    } else {
+        Color::srgba(1.0, 1.0, 1.0, 0.04)
+    };
+    let rond = air::point(c, t, 46.0, halo);
+    c.entity(rond).entry::<Node>().and_modify(|mut n| {
+        n.justify_content = JustifyContent::Center;
+        n.align_items = AlignItems::Center;
+    });
     let eteint = if obtenu {
         Color::WHITE
     } else {
@@ -129,51 +84,65 @@ fn tuile(
         ti.blue * e.blue,
         e.alpha,
     );
-    let image = commandes
+    let taille = Node {
+        width: Val::Px(32.0),
+        height: Val::Px(32.0),
+        ..default()
+    };
+    let image = c
         .spawn((
             ImageNode::new(icone.image).with_color(teinte.into()),
-            Node {
-                width: Val::Px(32.0),
-                height: Val::Px(32.0),
-                ..default()
-            },
-            ChildOf(case),
+            taille.clone(),
+            ChildOf(rond),
         ))
         .id();
     if let Some(calque) = icone.calque {
-        commandes.spawn((
+        c.spawn((
             ImageNode::new(calque).with_color(eteint),
             Node {
                 position_type: PositionType::Absolute,
-                width: Val::Px(32.0),
-                height: Val::Px(32.0),
-                ..default()
+                ..taille
             },
             ChildOf(image),
         ));
     }
-    let textes = commandes
-        .spawn((
-            Node {
-                flex_direction: FlexDirection::Column,
-                row_gap: Val::Px(3.0),
-                ..default()
-            },
-            ChildOf(t),
-        ))
-        .id();
-    let couleur = if obtenu { couleur_nom } else { GRIS };
-    texte(commandes, textes, nom, couleur, 1.5);
-    commandes.spawn((
-        TextePixel::nouveau(description, if obtenu { TEXTE } else { GRIS }, 1.5)
-            .bloc(LARGEUR_PANNEAU - 72.0)
-            .a_gauche(),
-        ChildOf(textes),
-    ));
+    let textes = air::colonne(c, t, 2.0);
+    c.entity(textes)
+        .entry::<Node>()
+        .and_modify(|mut n| n.flex_shrink = 1.0);
+    let couleur = if obtenu { couleur_nom } else { TERNE };
+    ecrit(c, ic, textes, nom, (Police::Grasse, 16.0, couleur));
+    let couleur = if obtenu { AIDE } else { AIDE.with_alpha(0.55) };
+    ecrit(c, ic, textes, description, (Police::Normale, 13.0, couleur));
+}
+
+/// Titre de section : surtitre doré à gauche, compte à droite.
+fn section(c: &mut Commands, ic: &Icones, parent: Entity, (titre, compte): (&str, &str)) {
+    let r = air::rangee(c, parent, 14.0);
+    c.entity(r)
+        .entry::<Node>()
+        .and_modify(|mut n| n.margin = UiRect::top(Val::Px(10.0)));
+    surtitre(c, ic, r, titre);
+    ecrit(c, ic, r, compte, (Police::Logo, 18.0, OR_VIF));
+}
+
+/// Fine jauge arrondie.
+fn jauge(c: &mut Commands, parent: Entity, part: f32) {
+    let fond = air::point(c, parent, 0.0, Color::srgba(1.0, 1.0, 1.0, 0.08));
+    c.entity(fond).entry::<Node>().and_modify(|mut n| {
+        n.width = Val::Percent(100.0);
+        n.height = Val::Px(4.0);
+        n.margin = UiRect::vertical(Val::Px(4.0));
+    });
+    let plein = air::point(c, fond, 0.0, OR_VIF);
+    c.entity(plein).entry::<Node>().and_modify(move |mut n| {
+        n.width = Val::Percent(part * 100.0);
+        n.height = Val::Percent(100.0);
+    });
 }
 
 /// Règle commune des pièces d'armure du monde : quel boss lâche quoi.
-fn regle_armure(d: &bs_donnees::Donnees, monde: Monde) -> String {
+fn regle_armure(d: &bs_donnees::Donnees) -> String {
     let poids = |rang: usize, piece: Piece| {
         d.armures
             .butin_boss
@@ -191,8 +160,7 @@ fn regle_armure(d: &bs_donnees::Donnees, monde: Monde) -> String {
             second.push(nom_piece(piece).to_lowercase());
         }
     }
-    let nom = d.armures.noms_mondes.get(&monde).map_or("", |n| n.as_str());
-    let mut t = format!("Lâchées parfois par les boss de « {nom} »");
+    let mut t = "Lâchées parfois par les boss".to_owned();
     if !premier.is_empty() {
         t += &format!(" · 1er boss : {}", premier.join(", "));
     }
@@ -202,181 +170,21 @@ fn regle_armure(d: &bs_donnees::Donnees, monde: Monde) -> String {
     t + "."
 }
 
-/// Construit la page sur le monde `k` ; renvoie sa racine.
-pub fn construire(
-    commandes: &mut Commands,
+/// Objets d'un monde (ou communs si `None`) dans une grille.
+fn objets(
+    c: &mut Commands,
     (dj, sauvegarde, dessins): (&DonneesJeu, &Sauvegarde, &Dessins),
-    ic: &mut Icones,
-    k: usize,
-) -> Entity {
+    ic: &Icones,
+    parent: Entity,
+    monde: Option<Monde>,
+) {
     let d = dj.d;
-    let col = &sauvegarde.collection;
-    let monde = MONDES[k.min(MONDES.len() - 1)];
-    let nom_monde = |m: Monde| d.armures.noms_mondes.get(&m).map_or("", |n| n.as_str());
-    let racine = commandes
-        .spawn((
-            Name::new("collection"),
-            Node {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                flex_direction: FlexDirection::Column,
-                align_items: AlignItems::Center,
-                padding: UiRect::all(Val::Px(charte::MARGE)),
-                row_gap: Val::Px(12.0),
-                ..default()
-            },
-            BackgroundColor(charte::FOND),
-        ))
-        .id();
-    texte(commandes, racine, "Collection", IVOIRE, 4.0);
-    // Onglets des mondes, avancée de chacun ; l'ouvert souligné d'or
-    let onglets = commandes
-        .spawn((
-            Node {
-                column_gap: Val::Px(8.0),
-                ..default()
-            },
-            ChildOf(racine),
-        ))
-        .id();
-    for (i, &m) in MONDES.iter().enumerate() {
-        let part = (col.avancee(d, m).part * 100.0).round();
-        let relief = if i == k {
-            Relief::CHOISI
-        } else {
-            Relief::SECONDAIRE
-        };
-        let b = charte::bouton_relief(commandes, onglets, relief, 40.0, ActionMenu::Monde(i));
-        commandes
-            .entity(b)
-            .entry::<Node>()
-            .and_modify(|mut n| n.min_width = Val::Px(150.0));
-        let couleur = if i == k { OR_VIF } else { IVOIRE };
-        texte(commandes, b, nom_monde(m), couleur, 2.0);
-        texte(commandes, b, &format!("{part} %"), GRIS, 1.5);
-        if i == k {
-            commandes.spawn((
-                Node {
-                    position_type: PositionType::Absolute,
-                    left: Val::Px(-2.0),
-                    right: Val::Px(-2.0),
-                    bottom: Val::Px(-4.0),
-                    height: Val::Px(3.0),
-                    ..default()
-                },
-                BackgroundColor(OR_VIF),
-                ChildOf(b),
-            ));
-        }
-    }
-    // Avancée du monde
-    let a = col.avancee(d, monde);
-    let t = format!(
-        "{} : {} / {} pièces · {} / {} objets",
-        nom_monde(monde),
-        a.pieces,
-        PIECES.len(),
-        a.objets,
-        a.total_objets
-    );
-    texte(commandes, racine, &t, TEXTE, 2.0);
-    let barre = commandes
-        .spawn((
-            Node {
-                width: Val::Px(LARGEUR_PANNEAU),
-                height: Val::Px(10.0),
-                border: UiRect::all(Val::Px(2.0)),
-                ..default()
-            },
-            BackgroundColor(charte::CREUX),
-            BorderColor::all(charte::BORD),
-            ChildOf(racine),
-        ))
-        .id();
-    commandes.spawn((
-        Node {
-            width: Val::Percent(a.part * 100.0),
-            height: Val::Percent(100.0),
-            ..default()
-        },
-        BackgroundColor(VERT),
-        ChildOf(barre),
-    ));
-
-    let corps = commandes
-        .spawn((
-            Node {
-                column_gap: Val::Px(12.0),
-                align_items: AlignItems::FlexStart,
-                ..default()
-            },
-            ChildOf(racine),
-        ))
-        .id();
-    // Armure du monde
-    let armure = &d.armures.armures[&monde];
-    let pieces = PIECES.iter().filter(|&&p| col.possede(monde, p)).count();
-    let compte = format!("{pieces}/{}", PIECES.len());
-    let p = panneau(
-        commandes,
-        corps,
-        (&armure.nom, compte),
-        &regle_armure(d, monde),
-    );
-    for piece in PIECES {
-        let def = &armure.pieces[&piece];
-        let possedee = col.possede(monde, piece);
-        let icone = icones_armures::icone(d, dessins, monde, piece, |c| ic.icone(c));
-        let nom_piece = d.armures.noms_pieces.get(&piece).map_or("", |n| n.as_str());
-        let (nom, description) = if possedee {
-            (def.nom.clone(), def.description.clone())
-        } else {
-            (nom_piece.to_owned(), "???".to_owned())
-        };
-        tuile(commandes, p, icone, (&nom, TEXTE), &description, possedee);
-    }
-    let complet = PIECES.iter().all(|&piece| col.possede(monde, piece));
-    commandes.spawn((
-        TextePixel::nouveau(
-            &armure.ensemble.description,
-            if complet { VERT } else { GRIS },
-            1.5,
-        )
-        .bloc(LARGEUR_PANNEAU - 20.0)
-        .a_gauche(),
-        ChildOf(p),
-    ));
-    // Objets du monde, puis de tous les mondes
-    let compter = |dans_monde: bool| {
-        let objets = d.equipement.objets.iter().filter(|(_, o)| match o.monde {
-            Some(m) => dans_monde && m == monde,
-            None => !dans_monde,
-        });
-        let (n, t) = objets.fold((0, 0), |(n, t), (id, _)| {
-            (n + usize::from(col.decouvert(id)), t + 1)
-        });
-        format!("{n}/{t}")
-    };
-    let regle = "Objets à trouver dans les coffres ; « ??? » tant qu'ils ne sont pas découverts.";
-    let du_monde = panneau(
-        commandes,
-        corps,
-        ("Bagues et amulettes", compter(true)),
-        regle,
-    );
-    let communs = panneau(
-        commandes,
-        corps,
-        ("De tous les mondes", compter(false)),
-        regle,
-    );
+    let g = grille(c, parent);
     for (i, (id, o)) in d.equipement.objets.iter().enumerate() {
-        let parent = match o.monde {
-            Some(m) if m == monde => du_monde,
-            Some(_) => continue,
-            None => communs,
-        };
-        let trouve = col.decouvert(id);
+        if o.monde != monde {
+            continue;
+        }
+        let trouve = sauvegarde.collection.decouvert(id);
         let icone = IconePiece {
             image: dessins.objets[i].clone(),
             calque: None,
@@ -387,37 +195,136 @@ pub fn construire(
             .raretes
             .get(&o.rarete)
             .map_or("", |r| r.nom.as_str());
+        let premiere = o.description.first().map_or("", |s| s.as_str());
         let (nom, description) = if trouve {
-            (
-                o.nom.clone(),
-                o.description.first().cloned().unwrap_or_default(),
-            )
+            (o.nom.as_str(), premiere)
         } else {
-            ("???".to_owned(), rarete.to_owned())
+            ("???", rarete)
         };
-        tuile(
-            commandes,
-            parent,
-            icone,
-            (&nom, couleur_rarete(o.rarete)),
-            &description,
-            trouve,
-        );
+        let texte = (nom, couleur_rarete(o.rarete), description);
+        entree(c, ic, g, icone, texte, trouve);
     }
-    let retour = charte::bouton_relief(
-        commandes,
-        racine,
-        Relief::SECONDAIRE,
-        charte::H_SECONDAIRE,
-        ActionMenu::Fermer,
+}
+
+/// Compte des objets découverts d'un monde (ou communs) : (trouvés, total).
+fn compte_objets(dj: &DonneesJeu, sauvegarde: &Sauvegarde, monde: Option<Monde>) -> (usize, usize) {
+    let objets =
+        dj.d.equipement
+            .objets
+            .iter()
+            .filter(|(_, o)| o.monde == monde);
+    objets.fold((0, 0), |(n, t), (id, _)| {
+        (n + usize::from(sauvegarde.collection.decouvert(id)), t + 1)
+    })
+}
+
+/// Scène d'un monde : son armure puis ses objets.
+fn scene_monde(
+    c: &mut Commands,
+    (dj, sauvegarde, dessins): (&DonneesJeu, &Sauvegarde, &Dessins),
+    ic: &mut Icones,
+    d_scene: Entity,
+    monde: Monde,
+) {
+    let d = dj.d;
+    let col = &sauvegarde.collection;
+    let armure = &d.armures.armures[&monde];
+    let pieces = PIECES.iter().filter(|&&p| col.possede(monde, p)).count();
+    surtitre(c, ic, d_scene, "ARMURE DU MONDE");
+    let r = air::rangee(c, d_scene, 16.0);
+    ecrit(c, ic, r, &armure.nom, (Police::Logo, 40.0, IVOIRE));
+    let t = format!("{pieces}/{}", PIECES.len());
+    ecrit(c, ic, r, &t, (Police::Logo, 26.0, OR_VIF));
+    jauge(c, d_scene, pieces as f32 / PIECES.len() as f32);
+    aide(c, ic, d_scene, &regle_armure(d));
+    let g = grille(c, d_scene);
+    for piece in PIECES {
+        let def = &armure.pieces[&piece];
+        let possedee = col.possede(monde, piece);
+        let icone = icones_armures::icone(d, dessins, monde, piece, |x| ic.icone(x));
+        let nom_piece = d.armures.noms_pieces.get(&piece).map_or("", |n| n.as_str());
+        let texte = if possedee {
+            (def.nom.as_str(), IVOIRE, def.description.as_str())
+        } else {
+            (nom_piece, IVOIRE, "Pas encore trouvée")
+        };
+        entree(c, ic, g, icone, texte, possedee);
+    }
+    let complet = pieces == PIECES.len();
+    let (puce, couleur) = if complet {
+        ("★ ", VERT_GAIN)
+    } else {
+        ("", TERNE)
+    };
+    let t = format!("{puce}{}", armure.ensemble.description);
+    ecrit(c, ic, d_scene, &t, (Police::Grasse, 14.0, couleur));
+
+    let (n, total) = compte_objets(dj, sauvegarde, Some(monde));
+    section(
+        c,
+        ic,
+        d_scene,
+        ("BAGUES ET AMULETTES", &format!("{n}/{total}")),
     );
-    commandes
-        .entity(retour)
-        .entry::<Node>()
-        .and_modify(|mut n| {
-            n.width = Val::Px(200.0);
-            n.margin = UiRect::top(Val::Auto);
-        });
-    texte(commandes, retour, "Retour", IVOIRE, 2.0);
-    racine
+    objets(c, (dj, sauvegarde, dessins), ic, d_scene, Some(monde));
+}
+
+/// Construit la page sur le monde `k` (`MONDES.len()` : tous les mondes) ; renvoie sa
+/// racine.
+pub fn construire(
+    commandes: &mut Commands,
+    (dj, sauvegarde, dessins): (&DonneesJeu, &Sauvegarde, &Dessins),
+    ic: &mut Icones,
+    k: usize,
+) -> Entity {
+    let c = commandes;
+    let d = dj.d;
+    let col = &sauvegarde.collection;
+    let k = k.min(MONDES.len());
+    let p = console::page(c, ic, ("collection", "COLLECTION"), (620.0, 760.0));
+    let action = |i: usize| (52.0, (i != k).then_some(ActionMenu::Monde(i)));
+    let mut total = 0.0;
+    for (i, &m) in MONDES.iter().enumerate() {
+        let a = col.avancee(d, m);
+        total += a.part;
+        let nom = d.armures.noms_mondes.get(&m).map_or("", |n| n.as_str());
+        let t = format!(
+            "{} % · {}/{} pièces · {}/{} objets",
+            (a.part * 100.0).round(),
+            a.pieces,
+            PIECES.len(),
+            a.objets,
+            a.total_objets
+        );
+        intitule(c, ic, p.gauche, (nom, &t), action(i));
+    }
+    let (n, t) = compte_objets(dj, sauvegarde, None);
+    let aide_tous = format!("{n}/{t} objets communs");
+    let ouvrir = action(MONDES.len());
+    intitule(c, ic, p.gauche, ("Tous les mondes", &aide_tous), ouvrir);
+
+    let ressources = (dj, sauvegarde, dessins);
+    match MONDES.get(k) {
+        Some(&m) => scene_monde(c, ressources, ic, p.scene, m),
+        None => {
+            surtitre(c, ic, p.scene, "OBJETS COMMUNS");
+            console::accroche(c, ic, p.scene, "Trouvables dans tous les mondes.");
+            aide(
+                c,
+                ic,
+                p.scene,
+                "Dans les coffres ; « ??? » tant qu'ils ne sont pas découverts.",
+            );
+            jauge(c, p.scene, n as f32 / t.max(1) as f32);
+            objets(c, ressources, ic, p.scene, None);
+        }
+    }
+
+    let pied = console::pied(c, ic, p.racine);
+    let r = air::rangee(c, pied, 10.0);
+    ecrit(c, ic, r, "Collection", (Police::Normale, 14.0, AIDE));
+    let part = (total / MONDES.len() as f32 * 100.0).round();
+    let t = format!("{part} %");
+    ecrit(c, ic, r, &t, (Police::Logo, 20.0, OR_VIF));
+    p.racine
 }

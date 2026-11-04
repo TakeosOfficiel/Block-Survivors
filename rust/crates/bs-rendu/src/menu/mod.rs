@@ -11,6 +11,7 @@
 mod air;
 pub mod apercu;
 mod collection;
+mod console;
 pub mod fond;
 pub mod multijoueur;
 mod nouveautes;

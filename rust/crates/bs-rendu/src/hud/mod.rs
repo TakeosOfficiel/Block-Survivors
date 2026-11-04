@@ -54,7 +54,15 @@ impl Plugin for PluginHud {
     fn build(&self, app: &mut App) {
         app.init_resource::<Police>()
             .insert_resource(UiScale(1.0))
-            .add_systems(Update, (police::charger, echelle, capacites::survoler))
+            .add_systems(
+                Update,
+                (
+                    police::charger,
+                    echelle,
+                    capacites::survoler,
+                    affichage::rapport_import,
+                ),
+            )
             .add_systems(
                 PostUpdate,
                 police::dessiner.before(bevy::ui::UiSystems::Layout),

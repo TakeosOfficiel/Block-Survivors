@@ -39,6 +39,22 @@ const ANIMATIONS_VANILLA: &[(&str, f32)] = &[
 ];
 const IMAGES_PAR_SECONDE_DEFAUT: f32 = 10.0;
 
+/// Blocs de la map sans modèle, annoncés au joueur au début de la partie.
+#[derive(Resource)]
+pub struct RapportImport(pub String);
+
+impl RapportImport {
+    /// « 3 blocs sans modèle : a, b, c » (les quatre premiers noms, puis « ... »).
+    fn nouveau(inconnus: &[String]) -> Self {
+        let mut t = format!("Map : {} bloc(s) sans modèle : ", inconnus.len());
+        t.push_str(&inconnus[..inconnus.len().min(4)].join(", "));
+        if inconnus.len() > 4 {
+            t.push_str(", ...");
+        }
+        Self(t)
+    }
+}
+
 /// Map en cours d'import (phase de chargement).
 #[derive(Resource)]
 pub struct Import {
@@ -119,6 +135,7 @@ pub fn avancer_import(
     };
     if !ai.inconnus.is_empty() {
         warn!("blocs sans modèle : {}", ai.inconnus.join(", "));
+        commandes.insert_resource(RapportImport::nouveau(&ai.inconnus));
     }
     let d = import.d;
     let arene: &'static Arene = Box::leak(Box::new(ai.arene));

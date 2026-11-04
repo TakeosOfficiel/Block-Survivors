@@ -1,5 +1,5 @@
 //! Mise à jour du HUD à chaque image (src/ui/hud.ts `majVisuel`) et après chaque pas
-//! (annonces de boss) : textes, bandeaux, voile rouge, totem qui jaillit, jauges et
+//! (annonces de boss, rapport d'import d'une map) : textes, bandeaux, voile rouge, totem qui jaillit, jauges et
 //! cases d'armes. Rien n'est réécrit tant que la valeur affichée ne change pas.
 
 use bevy::prelude::*;
@@ -53,6 +53,23 @@ pub fn recevoir(
         );
     }
     hud.prolongation_vue = jeu.partie.prolongation;
+}
+
+/// s d'affichage du rapport d'import d'une map.
+const DUREE_RAPPORT: f32 = 8.0;
+
+/// Au début d'une partie sur une map importée : blocs sans modèle, une seule fois.
+pub fn rapport_import(
+    mut commandes: Commands,
+    rapport: Option<Res<crate::carte_mc::RapportImport>>,
+    hud: Option<ResMut<Hud>>,
+    mut textes: Query<&mut TextePixel>,
+) {
+    let (Some(rapport), Some(mut hud)) = (rapport, hud) else {
+        return;
+    };
+    afficher_message(&mut hud, &mut textes, &rapport.0, DUREE_RAPPORT);
+    commandes.remove_resource::<crate::carte_mc::RapportImport>();
 }
 
 /// Message jaune au-dessus du centre pendant `duree` s.

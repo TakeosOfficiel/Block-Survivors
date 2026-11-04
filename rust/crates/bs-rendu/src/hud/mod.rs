@@ -171,6 +171,7 @@ pub fn construire(
     textures: Res<Textures>,
     mut images: ResMut<Assets<Image>>,
     jeu: Res<PartieEnCours>,
+    polices: Res<crate::polices::PolicesMenu>,
 ) {
     let d = jeu.partie.d;
     let racine = commandes
@@ -228,7 +229,7 @@ pub fn construire(
             ChildOf(haut),
         ))
         .id();
-    // Cartouche commune des cœurs et de l'expérience (posée dessous)
+    // Zone commune des cœurs et de l'expérience (posée dessous)
     let groupe = creer(
         &mut commandes,
         Node {
@@ -237,15 +238,20 @@ pub fn construire(
             margin: UiRect::left(Val::Px(-250.0)),
             width: Val::Px(500.0),
             height: Val::Px(80.0),
-            border: UiRect::all(Val::Px(2.0)),
-            border_radius: BorderRadius::all(Val::Px(2.0)),
             ..absolu()
         },
     );
-    commandes.entity(groupe).insert((
-        BackgroundColor(Color::srgba(0.063, 0.078, 0.094, 0.55)),
-        BorderColor::all(Color::srgba(0.282, 0.3, 0.337, 0.6)),
-    ));
+    // Lueur de nuit diffuse sous les cœurs et l'XP, sans cadre
+    commandes
+        .entity(groupe)
+        .insert(BackgroundGradient::from(RadialGradient::new(
+            UiPosition::CENTER,
+            RadialGradientShape::FarthestSide,
+            vec![
+                ColorStop::new(Color::srgba_u8(5, 8, 20, 110), Val::Percent(0.0)),
+                ColorStop::new(Color::NONE, Val::Percent(100.0)),
+            ],
+        )));
     let barres = barres::construire(&mut commandes, &serveur, &textures, d, racine, haut);
     let coeurs = coeurs::construire(&mut commandes, &serveur, &textures, racine);
 
@@ -357,7 +363,7 @@ pub fn construire(
     ));
 
     let capacites = capacites::construire(&mut commandes, racine);
-    let compteur = compteur::construire(&mut commandes, racine);
+    let compteur = compteur::construire(&mut commandes, &polices, racine);
     commandes.insert_resource(Hud {
         racine,
         chrono,

@@ -1,25 +1,27 @@
-//! Compteur de dégâts en jeu (src/ui/compteurDegats.ts) : un panneau compact en haut à
-//! droite, une ligne par arme (icône, barre relative à la meilleure, nom, dégâts, dégâts
-//! par seconde depuis son obtention, part du total), et le total en pied. Tab ou l'option
+//! Compteur de dégâts en jeu (src/ui/compteurDegats.ts), au style des menus : en haut à
+//! droite sur une lueur de nuit sans cadre, une ligne par arme (icône, nom, dégâts, dégâts
+//! par seconde depuis son obtention, part du total, rail vert arrondi relatif à la
+//! meilleure), et le total en pied. Tab ou l'option
 //! « Compteur » l'affiche ou le cache. Rafraîchi deux fois par seconde (temps réel) ;
-//! les lignes sont créées une fois et seulement réécrites. Le panneau n'est pas
+//! les lignes sont créées une fois et seulement réécrites. Le compteur n'est pas
 //! déplaçable (il l'est dans le jeu TS). Masqué pendant les écrans de choix.
 
 use bevy::prelude::*;
 use bs_regles::textes::libelles::nombre;
 
-use super::police::{TextePixel, ecrire};
-use super::{BLANC, GRIS, Hud, absolu};
+use super::{Hud, absolu};
 use crate::PartieEnCours;
+use crate::ecrans::charte::{AIDE, IVOIRE, OR_VIF, VERT_GAIN};
+use crate::ecrans::nuit::{Style, ecrit};
 use crate::options::Options;
+use crate::polices::PolicesMenu;
 use crate::textures::Textures;
 
 /// Lignes au plus (les armes au-delà ne sont pas montrées).
 const LIGNES: usize = 8;
-const LARGEUR: f32 = 340.0;
+const LARGEUR: f32 = 380.0;
 const ICONE: f32 = 22.0;
 const PERIODE: f32 = 0.5;
-const VERT_BARRE: Color = Color::srgba(0.33, 0.8, 0.33, 0.38);
 
 struct Ligne {
     racine: Entity,
@@ -33,7 +35,7 @@ struct Ligne {
     arme: Option<usize>,
 }
 
-/// Entités du panneau.
+/// Entités du compteur.
 pub struct Compteur {
     racine: Entity,
     lignes: [Ligne; LIGNES],
@@ -53,22 +55,22 @@ fn abreger(v: f64) -> String {
     }
 }
 
-fn texte(commandes: &mut Commands, parent: Entity, t: &str, couleur: Color) -> Entity {
-    commandes
-        .spawn((
-            TextePixel::nouveau(t, couleur, 1.5).contour(),
-            ChildOf(parent),
-        ))
-        .id()
+fn texte(
+    commandes: &mut Commands,
+    p: &PolicesMenu,
+    parent: Entity,
+    (style, taille, couleur): (Style, f32, Color),
+) -> Entity {
+    ecrit(commandes, p, parent, "", (style, taille, couleur))
 }
 
-fn ligne(commandes: &mut Commands, parent: Entity) -> Ligne {
+fn ligne(commandes: &mut Commands, p: &PolicesMenu, parent: Entity) -> Ligne {
     let racine = commandes
         .spawn((
             Node {
                 width: Val::Percent(100.0),
                 align_items: AlignItems::Center,
-                column_gap: Val::Px(6.0),
+                column_gap: Val::Px(10.0),
                 display: Display::None,
                 ..default()
             },
@@ -87,45 +89,63 @@ fn ligne(commandes: &mut Commands, parent: Entity) -> Ligne {
             ChildOf(racine),
         ))
         .id();
-    let piste = commandes
+    // Nom et chiffres, puis le rail arrondi relatif à la meilleure arme
+    let colonne = commandes
         .spawn((
             Node {
                 flex_grow: 1.0,
-                height: Val::Px(ICONE),
-                align_items: AlignItems::Center,
-                column_gap: Val::Px(8.0),
-                padding: UiRect::horizontal(Val::Px(4.0)),
+                flex_direction: FlexDirection::Column,
+                row_gap: Val::Px(4.0),
                 ..default()
             },
-            BackgroundColor(Color::srgba(1.0, 1.0, 1.0, 0.06)),
             ChildOf(racine),
         ))
         .id();
-    let barre = commandes
+    let haut = commandes
         .spawn((
             Node {
-                left: Val::Px(0.0),
-                top: Val::Px(0.0),
-                bottom: Val::Px(0.0),
-                width: Val::Percent(0.0),
-                ..absolu()
+                align_items: AlignItems::Baseline,
+                column_gap: Val::Px(8.0),
+                ..default()
             },
-            BackgroundColor(VERT_BARRE),
-            ChildOf(piste),
+            ChildOf(colonne),
         ))
         .id();
-    let nom = texte(commandes, piste, "", BLANC);
+    let nom = texte(commandes, p, haut, (Style::Grasse, 14.0, IVOIRE));
     // Espace entre le nom et les chiffres (le texte lui-même ne s'étire pas)
     commandes.spawn((
         Node {
             flex_grow: 1.0,
             ..default()
         },
-        ChildOf(piste),
+        ChildOf(haut),
     ));
-    let valeur = texte(commandes, piste, "", BLANC);
-    let dps = texte(commandes, piste, "", GRIS);
-    let part = texte(commandes, piste, "", GRIS);
+    let valeur = texte(commandes, p, haut, (Style::Grasse, 14.0, IVOIRE));
+    let dps = texte(commandes, p, haut, (Style::Normale, 12.0, AIDE));
+    let part = texte(commandes, p, haut, (Style::Normale, 12.0, AIDE));
+    let rail = commandes
+        .spawn((
+            Node {
+                height: Val::Px(4.0),
+                border_radius: BorderRadius::MAX,
+                ..default()
+            },
+            BackgroundColor(Color::srgba(1.0, 1.0, 1.0, 0.1)),
+            ChildOf(colonne),
+        ))
+        .id();
+    let barre = commandes
+        .spawn((
+            Node {
+                width: Val::Percent(0.0),
+                height: Val::Percent(100.0),
+                border_radius: BorderRadius::MAX,
+                ..default()
+            },
+            BackgroundColor(VERT_GAIN),
+            ChildOf(rail),
+        ))
+        .id();
     Ligne {
         racine,
         icone,
@@ -138,21 +158,27 @@ fn ligne(commandes: &mut Commands, parent: Entity) -> Ligne {
     }
 }
 
-/// Construit le panneau (vide) dans le HUD.
-pub fn construire(commandes: &mut Commands, parent: Entity) -> Compteur {
+/// Construit le compteur (vide) dans le HUD : lueur de nuit venue du bord droit, sans
+/// cadre.
+pub fn construire(commandes: &mut Commands, p: &PolicesMenu, parent: Entity) -> Compteur {
     let racine = commandes
         .spawn((
             Name::new("compteur de dégâts"),
             Node {
                 top: Val::Px(64.0),
-                right: Val::Px(10.0),
+                right: Val::Px(0.0),
                 width: Val::Px(LARGEUR),
                 flex_direction: FlexDirection::Column,
-                row_gap: Val::Px(3.0),
-                padding: UiRect::all(Val::Px(6.0)),
+                row_gap: Val::Px(8.0),
+                padding: UiRect::new(Val::Px(40.0), Val::Px(16.0), Val::Px(10.0), Val::Px(12.0)),
+                border_radius: BorderRadius::left(Val::Px(24.0)),
                 ..absolu()
             },
-            BackgroundColor(Color::srgba(16.0 / 255.0, 0.0, 16.0 / 255.0, 0.82)),
+            BackgroundGradient::from(LinearGradient::to_right(vec![
+                ColorStop::new(Color::NONE, Val::Percent(0.0)),
+                ColorStop::new(Color::srgba_u8(5, 8, 20, 170), Val::Percent(35.0)),
+                ColorStop::new(Color::srgba_u8(5, 8, 20, 200), Val::Percent(100.0)),
+            ])),
             Visibility::Hidden,
             ChildOf(parent),
         ))
@@ -161,15 +187,26 @@ pub fn construire(commandes: &mut Commands, parent: Entity) -> Compteur {
         .spawn((
             Node {
                 justify_content: JustifyContent::SpaceBetween,
-                margin: UiRect::bottom(Val::Px(2.0)),
+                align_items: AlignItems::Center,
                 ..default()
             },
             ChildOf(racine),
         ))
         .id();
-    texte(commandes, titre, "Dégâts", super::OR);
-    texte(commandes, titre, "Tab", GRIS);
-    let lignes = std::array::from_fn(|_| ligne(commandes, racine));
+    ecrit(commandes, p, titre, "DÉGÂTS", (Style::Grasse, 12.0, OR_VIF));
+    let touche = commandes
+        .spawn((
+            Node {
+                padding: UiRect::axes(Val::Px(8.0), Val::Px(1.0)),
+                border_radius: BorderRadius::MAX,
+                ..default()
+            },
+            BackgroundColor(Color::srgba(1.0, 1.0, 1.0, 0.1)),
+            ChildOf(titre),
+        ))
+        .id();
+    ecrit(commandes, p, touche, "Tab", (Style::Grasse, 11.0, AIDE));
+    let lignes = std::array::from_fn(|_| ligne(commandes, p, racine));
     let pied = commandes
         .spawn((
             Node {
@@ -180,8 +217,8 @@ pub fn construire(commandes: &mut Commands, parent: Entity) -> Compteur {
             ChildOf(racine),
         ))
         .id();
-    texte(commandes, pied, "Total", GRIS);
-    let total = texte(commandes, pied, "", BLANC);
+    ecrit(commandes, p, pied, "Total", (Style::Normale, 13.0, AIDE));
+    let total = texte(commandes, p, pied, (Style::Grasse, 13.0, IVOIRE));
     Compteur {
         racine,
         lignes,
@@ -190,7 +227,15 @@ pub fn construire(commandes: &mut Commands, parent: Entity) -> Compteur {
     }
 }
 
-/// Tab bascule l'option ; le panneau suit l'option et se réécrit deux fois par seconde.
+/// Remplace le texte s'il a changé.
+fn ecrire(t: &mut Mut<Text>, texte: &str) {
+    if t.0 != texte {
+        t.0.clear();
+        t.0.push_str(texte);
+    }
+}
+
+/// Tab bascule l'option ; le compteur suit l'option et se réécrit deux fois par seconde.
 #[allow(clippy::too_many_arguments)]
 pub fn afficher(
     serveur: Res<AssetServer>,
@@ -203,7 +248,7 @@ pub fn afficher(
     temps: Res<Time<Real>>,
     mut visibles: Query<&mut Visibility>,
     mut noeuds: Query<&mut Node>,
-    mut textes: Query<&mut TextePixel>,
+    mut textes: Query<&mut Text>,
     mut images: Query<&mut ImageNode>,
 ) {
     let Some(mut hud) = hud else {

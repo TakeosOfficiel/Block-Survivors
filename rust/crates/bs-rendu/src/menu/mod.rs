@@ -269,6 +269,7 @@ pub fn entrer(
         amis: None,
         liste: &sauvegarde.amis.amis,
         progression: &sauvegarde.progression,
+        pseudo: &sauvegarde.profil.pseudo,
     };
     menu.racine = construire(&mut commandes, &dj, &sauvegarde, &mut ic, &menu, &multi);
     commandes.insert_resource(menu);
@@ -472,6 +473,7 @@ pub fn gerer(
         amis: amis.as_deref(),
         liste: &sauvegarde.amis.amis,
         progression: &sauvegarde.progression,
+        pseudo: &sauvegarde.profil.pseudo,
     };
     menu.racine = construire(&mut commandes, &dj, &sauvegarde, &mut ic, &menu, &multi);
 }

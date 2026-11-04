@@ -1,26 +1,12 @@
 //! Éléments des pages « à l'air libre » (Talents, Multijoueur) : aucun panneau ni case
-//! carrée. Un fond nuit en dégradé, du texte posé, des liens qui passent à l'or au
-//! survol, des pilules arrondies (choix, champs de saisie), un trait fin pour séparer
-//! et le grand bouton vert arrondi en police du logo, comme « JOUER ».
+//! carrée. Du texte posé, des liens qui passent à l'or au survol, des champs de saisie
+//! en pilule, des pastilles rondes et le grand bouton vert arrondi en police du logo.
 
 use bevy::prelude::*;
 
 use super::vue::Lien;
 use super::{ActionMenu, Icones};
 use crate::ecrans::charte::{self, IVOIRE, OR_VIF, Relief};
-
-/// Fond nuit : halo bleu sombre vers le bas à gauche, noir aux coins.
-pub fn fond() -> BackgroundGradient {
-    BackgroundGradient::from(RadialGradient::new(
-        UiPosition::TOP_LEFT.at_percent(33.0, 80.0),
-        RadialGradientShape::FarthestCorner,
-        vec![
-            ColorStop::new(Color::srgb_u8(0x1b, 0x2a, 0x3c), Val::Percent(0.0)),
-            ColorStop::new(Color::srgb_u8(0x0b, 0x11, 0x19), Val::Percent(55.0)),
-            ColorStop::new(Color::srgb_u8(0x05, 0x07, 0x0a), Val::Percent(100.0)),
-        ],
-    ))
-}
 
 /// Texte du menu (police du logo si gras et grand, Inter sinon).
 pub fn ecrire(
@@ -84,49 +70,6 @@ pub fn lien(
     b
 }
 
-/// Pilule arrondie à bord fin : or si choisie, pâle sinon (cliquable si `action`).
-pub fn pilule(
-    commandes: &mut Commands,
-    ic: &Icones,
-    parent: Entity,
-    t: &str,
-    choisie: bool,
-    action: Option<ActionMenu>,
-) -> Entity {
-    let couleur = if choisie { OR_VIF } else { IVOIRE };
-    let b = commandes
-        .spawn((
-            Node {
-                height: Val::Px(40.0),
-                padding: UiRect::horizontal(Val::Px(22.0)),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                column_gap: Val::Px(8.0),
-                border: UiRect::all(Val::Px(1.5)),
-                border_radius: BorderRadius::MAX,
-                flex_shrink: 0.0,
-                ..default()
-            },
-            BorderColor::all(if choisie {
-                OR_VIF
-            } else {
-                Color::srgba(1.0, 1.0, 1.0, 0.2)
-            }),
-            BackgroundColor(if choisie {
-                OR_VIF.with_alpha(0.08)
-            } else {
-                Color::NONE
-            }),
-            ChildOf(parent),
-        ))
-        .id();
-    if let Some(a) = action {
-        commandes.entity(b).insert((Button, Lien(couleur), a));
-    }
-    ecrire(commandes, ic, b, t, (true, charte::T_CORPS, couleur));
-    b
-}
-
 /// Champ de saisie en pilule (un clic commence la saisie) ; `actif` : en cours.
 pub fn champ(
     commandes: &mut Commands,
@@ -162,21 +105,6 @@ pub fn champ(
     let couleur = if actif { IVOIRE } else { charte::AIDE };
     ecrire(commandes, ic, c, t, (false, charte::T_CORPS, couleur));
     c
-}
-
-/// Trait fin horizontal.
-pub fn trait_fin(commandes: &mut Commands, parent: Entity) {
-    commandes.spawn((
-        Node {
-            width: Val::Percent(100.0),
-            height: Val::Px(1.0),
-            flex_shrink: 0.0,
-            margin: UiRect::vertical(Val::Px(4.0)),
-            ..default()
-        },
-        BackgroundColor(Color::srgba(1.0, 1.0, 1.0, 0.1)),
-        ChildOf(parent),
-    ));
 }
 
 /// Pastille ronde pleine (présence, puce).

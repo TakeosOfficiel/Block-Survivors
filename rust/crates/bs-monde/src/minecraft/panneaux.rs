@@ -4,9 +4,11 @@
 //! Les mots-clés peuvent être sur des lignes différentes du panneau ; `[zone]` et
 //! `[rayon]` sont facultatifs. Un ennemi garde le moment d'arrivée et le poids qu'il a
 //! dans la population de la map ; absent de celle-ci, il vient dès le début, poids 1.
+//! `[boss] wither` et `[mini-boss] ravageur` remplacent les boss de la map, dans l'ordre
+//! des noms (puis des panneaux) ; les boss arrivent au premier panneau `[boss]`.
 
 use bs_donnees::Donnees;
-use bs_donnees::arenes::{ChoixEnnemi, ZoneEnnemis};
+use bs_donnees::arenes::{ChoixEnnemi, Point, ZoneEnnemis};
 
 use super::schematique::Schematique;
 use super::zone::Zone;
@@ -73,6 +75,67 @@ pub fn zones_des_panneaux(
         });
     }
     zones
+}
+
+/// Boss des panneaux : listes (vides s'il n'y en a pas) et lieu d'arrivée.
+pub struct BossDesPanneaux {
+    pub boss: Vec<String>,
+    pub mini: Vec<String>,
+    /// Position du premier panneau `[boss]`, en coordonnées du jeu.
+    pub arrivee: Option<Point>,
+}
+
+/// Boss et mini-boss des panneaux `[boss]` et `[mini-boss]` ; le premier panneau `[boss]`
+/// (même sans nom) fixe le lieu d'arrivée des boss.
+/// Les noms inconnus, ou qui ne sont pas des boss de cette sorte, vont dans `ignores`.
+pub fn boss_des_panneaux(
+    d: &Donnees,
+    s: &Schematique,
+    zone: &Zone,
+    ignores: &mut Vec<String>,
+) -> BossDesPanneaux {
+    let (dl, dp) = (zone.largeur as f32 / 2.0, zone.profondeur as f32 / 2.0);
+    let (mut boss, mut mini, mut arrivee) = (Vec::new(), Vec::new(), None);
+    for p in &s.panneaux {
+        let texte = p.texte.to_lowercase();
+        if arrivee.is_none() && texte.contains("[boss]") {
+            arrivee = Some(Point {
+                x: (p.x - zone.x0) as f32 - dl + 0.5,
+                z: (p.z - zone.z0) as f32 - dp + 0.5,
+            });
+        }
+        let listes = [
+            ("[boss]", apres(&texte, "[boss]"), false),
+            ("[mini-boss]", apres(&texte, "[mini-boss]"), true),
+            ("[miniboss]", apres(&texte, "[miniboss]"), true),
+        ];
+        for (cle, liste, est_mini) in listes {
+            for id in liste.into_iter().flat_map(|l| l.split([' ', ','])) {
+                if id.is_empty() {
+                    continue;
+                }
+                let convient = d.ennemis.get(id).is_some_and(|e| {
+                    if est_mini {
+                        e.mini_boss
+                    } else {
+                        e.boss.is_some()
+                    }
+                });
+                if !convient {
+                    ignores.push(format!("{cle} {id}"));
+                } else if est_mini {
+                    mini.push(id.to_owned());
+                } else {
+                    boss.push(id.to_owned());
+                }
+            }
+        }
+    }
+    BossDesPanneaux {
+        boss,
+        mini,
+        arrivee,
+    }
 }
 
 #[cfg(test)]

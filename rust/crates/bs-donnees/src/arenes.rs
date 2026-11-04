@@ -140,6 +140,9 @@ pub struct Arene {
     pub zones: Vec<ZoneEnnemis>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub depart: Option<Point>,
+    /// Lieu d'arrivée des boss et mini-boss (panneau `[boss]` d'une map), sinon hors champ.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub arrivee_boss: Option<Point>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -236,3 +236,32 @@ fn zone_jouable_et_carte_de_collision() {
     );
     assert!(pierre.vents.iter().all(|v| v[3] == VENT_AUCUN));
 }
+
+/// Panneaux `[boss]` et `[mini-boss]` : remplacent les boss de la map, les noms qui ne sont
+/// pas des boss de cette sorte sont signalés.
+#[test]
+fn boss_des_panneaux() {
+    let d = bs_donnees::Donnees::embarquees().expect("données");
+    let boss = d
+        .ennemis
+        .iter()
+        .find(|(_, e)| e.boss.is_some())
+        .expect("boss")
+        .0;
+    let mini = d.ennemis.iter().find(|(_, e)| e.mini_boss).expect("mini").0;
+    let mut s = cuvette();
+    s.panneaux.push(Panneau {
+        x: 2,
+        y: 1,
+        z: 2,
+        texte: format!("[boss] {boss} zombie [mini-boss] {mini}"),
+    });
+    let blocs = cuire(&s.palette, &fichiers()).expect("cuisson");
+    let c = cartes()[0];
+    let a = importer(&d, definition(&d, &c).expect("définition"), &s, &blocs).expect("zone");
+    assert_eq!(a.arene.boss, std::slice::from_ref(boss));
+    assert_eq!(a.arene.mini_boss, std::slice::from_ref(mini));
+    assert!(a.inconnus.iter().any(|i| i == "[boss] zombie"));
+    let arrivee = a.arene.arrivee_boss.as_ref().expect("arrivée");
+    assert_eq!((arrivee.x, arrivee.z), (-1.0, -1.0));
+}

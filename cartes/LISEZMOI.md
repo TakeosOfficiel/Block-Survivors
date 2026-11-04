@@ -37,3 +37,7 @@ demi-côté de la zone carrée en blocs (12 par défaut). Les ennemis s'écriven
 avec leur identifiant : `zombie`, `squelette`, `araignee`, `creeper`,
 `araignee_venimeuse`, `poisson_argent`, `piglin_zombifie`, `squelette_wither`,
 `blaze`, `cube_magma`… Un nom inconnu est signalé au début de la partie.
+Un panneau `[boss] wither` (et/ou `[mini-boss] ravageur`) remplace les boss de
+la map, qui arrivent dans l'ordre des noms ; un nom qui n'est pas un boss est
+signalé de la même façon. Les boss et mini-boss arrivent sur le premier panneau
+`[boss]` (qui peut ne porter aucun nom), au lieu d'un endroit hors champ.

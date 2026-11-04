@@ -10,7 +10,7 @@ use bs_donnees::arenes::{Arene, ChoixEnnemi, Monde, Point, ZoneEnnemis};
 use serde::Deserialize;
 
 use super::modeles::BlocCuit;
-use super::panneaux::zones_des_panneaux;
+use super::panneaux::{boss_des_panneaux, zones_des_panneaux};
 use super::proprietes::{Physique, physique_de};
 use super::schematique::Schematique;
 use super::zone::{Zone, construire_carte, trouver_zone};
@@ -149,7 +149,8 @@ pub struct AreneImportee {
 }
 
 /// Zone jouable, carte de collision et arène complète d'une schématique aux blocs cuits
-/// (zones d'ennemis des panneaux `[ennemis]` ajoutées à celles du `.json`).
+/// (zones d'ennemis des panneaux `[ennemis]` ajoutées à celles du `.json`, boss des
+/// panneaux `[boss]` et `[mini-boss]` à la place des siens).
 pub fn importer(
     d: &Donnees,
     definition: Arene,
@@ -175,6 +176,14 @@ pub fn importer(
         .collect();
     let zones = zones_des_panneaux(d, s, &zone, &arene.ennemis, &mut inconnus);
     arene.zones.extend(zones);
+    let b = boss_des_panneaux(d, s, &zone, &mut inconnus);
+    if !b.boss.is_empty() {
+        arene.boss = b.boss;
+    }
+    if !b.mini.is_empty() {
+        arene.mini_boss = b.mini;
+    }
+    arene.arrivee_boss = b.arrivee;
     Ok(AreneImportee {
         arene,
         carte,

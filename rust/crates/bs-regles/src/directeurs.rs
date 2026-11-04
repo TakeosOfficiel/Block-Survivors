@@ -310,7 +310,15 @@ impl Partie {
         let limite_z = self.etat.arene.profondeur / 2.0 - def.rayon - 1.0;
         let mut x = if jx > 0.0 { -limite_x } else { limite_x };
         let mut z = if jz > 0.0 { -limite_z } else { limite_z };
-        for essai in 0..64 {
+        let arrivee = self.etat.arene.arrivee_boss.as_ref().map(|p| (p.x, p.z));
+        let essais = match arrivee {
+            Some((ax, az)) if !self.carte.bloque_marche(ax, az) => {
+                (x, z) = (ax, az);
+                0
+            }
+            _ => 64,
+        };
+        for essai in 0..essais {
             let cx = ((self.alea.tirer() * 2.0 - 1.0) * f64::from(limite_x)) as f32;
             let cz = ((self.alea.tirer() * 2.0 - 1.0) * f64::from(limite_z)) as f32;
             if self.carte.bloque_marche(cx, cz) || !self.flux.atteignable(&self.carte, cx, cz) {

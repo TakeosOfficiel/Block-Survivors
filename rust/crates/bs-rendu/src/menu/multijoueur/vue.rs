@@ -1,7 +1,7 @@
 //! Vue de la page Multijoueur, à l'air libre comme les Talents (`menu::air`) : fond nuit
-//! en dégradé, aucun panneau, une seule colonne centrée. Hors salon : créer (Privé /
-//! Public en pilules, grand bouton vert), rejoindre par code (champ en pilule), salons
-//! publics (lignes de texte, liens « Rejoindre ») ; dans le salon : son code en grand,
+//! en dégradé, aucun panneau. Hors salon, trois choix côte à côte au milieu de l'écran :
+//! créer (Privé / Public en pilules, grand bouton vert), rejoindre par code (champ en
+//! pilule), salons publics (lignes de texte, liens « Rejoindre ») ; dans le salon : son code en grand,
 //! les joueurs, le lancement. Les amis dans un volet repliable à droite (`vue_amis`).
 //! En bas : « ‹ Retour » et les succès de coop.
 
@@ -21,6 +21,9 @@ use crate::menu::air::{self, ecrire};
 use crate::menu::{ActionMenu, Icones, Menu};
 
 pub(super) const LARGEUR: f32 = 520.0;
+/// Largeur d'un des trois choix hors salon, et leur écart.
+const PARTIE: f32 = 340.0;
+const ESPACE: f32 = 110.0;
 
 /// Ce que la page montre de la coop.
 pub struct VueMulti<'a> {
@@ -88,7 +91,22 @@ fn bouton_vert(c: &mut Commands, ic: &Icones, col: Entity, t: &str, a: Option<Ac
 }
 
 /// Hors salon : créer (visibilité au choix), rejoindre par code, salons publics.
-fn accueil(commandes: &mut Commands, ic: &Icones, col: Entity, menu: &Menu, vue: &VueMulti) {
+fn accueil(commandes: &mut Commands, ic: &Icones, page: Entity, menu: &Menu, vue: &VueMulti) {
+    // Trois choix côte à côte, bien espacés, sans séparation
+    let r = air::rangee(commandes, page, ESPACE);
+    commandes
+        .entity(r)
+        .entry::<Node>()
+        .and_modify(|mut n| n.align_items = AlignItems::FlexStart);
+    let partie = |commandes: &mut Commands| {
+        let c = air::colonne(commandes, r, 18.0);
+        commandes.entity(c).entry::<Node>().and_modify(|mut n| {
+            n.width = Val::Px(PARTIE);
+            n.align_items = AlignItems::Center;
+        });
+        c
+    };
+    let col = partie(commandes);
     titre(commandes, ic, col, "Créer un salon");
     let public = vue.annuaire.public;
     let l = air::rangee(commandes, col, 10.0);
@@ -103,19 +121,19 @@ fn accueil(commandes: &mut Commands, ic: &Icones, col: Entity, menu: &Menu, vue:
     };
     aide(commandes, ic, col, t);
     bouton_vert(commandes, ic, col, "CRÉER LE SALON", m(ActionMulti::Creer));
-    air::trait_fin(commandes, col);
+
+    let col = partie(commandes);
 
     titre(commandes, ic, col, "Rejoindre par code");
     let saisie = !vue.annuaire.champ_ami;
     let (t, actif) = valeur(menu, saisie, "Code du salon");
-    let l = air::rangee(commandes, col, 18.0);
     let champ = ActionMenu::Multi(ActionMulti::Code);
-    air::champ(commandes, ic, l, &t, actif, champ);
+    air::champ(commandes, ic, col, &t, actif, champ);
     let rejoindre = m(ActionMulti::Rejoindre);
     air::lien(
         commandes,
         ic,
-        l,
+        col,
         "Rejoindre ›",
         (T_CORPS, OR_VIF),
         rejoindre,
@@ -123,7 +141,8 @@ fn accueil(commandes: &mut Commands, ic: &Icones, col: Entity, menu: &Menu, vue:
     if actif {
         aide(commandes, ic, col, "Entrée : rejoindre · Échap : annuler");
     }
-    air::trait_fin(commandes, col);
+
+    let col = partie(commandes);
 
     let l = air::rangee(commandes, col, 18.0);
     titre(commandes, ic, l, "Salons publics");
@@ -295,16 +314,24 @@ pub fn construire(
         TextePixel::nouveau("Multijoueur", IVOIRE, 3.0),
         ChildOf(racine),
     ));
-    // Une seule colonne centrée ; les amis dans un volet à droite
+    // Contenu au milieu de l'écran ; les amis dans un volet à droite
     let col = air::colonne(commandes, racine, 16.0);
-    commandes.entity(col).entry::<Node>().and_modify(|mut n| {
-        n.width = Val::Px(LARGEUR);
-        n.align_items = AlignItems::Center;
-        n.margin = UiRect::top(Val::Px(12.0));
-        n.flex_shrink = 1.0;
-        n.min_height = Val::ZERO;
-        n.overflow = Overflow::clip_y();
-    });
+    let dans_salon = vue.coop.is_some();
+    commandes
+        .entity(col)
+        .entry::<Node>()
+        .and_modify(move |mut n| {
+            if dans_salon {
+                n.width = Val::Px(LARGEUR);
+            }
+            n.align_items = AlignItems::Center;
+            n.justify_content = JustifyContent::Center;
+            n.flex_grow = 1.0;
+            n.padding = UiRect::bottom(Val::Px(60.0));
+            n.flex_shrink = 1.0;
+            n.min_height = Val::ZERO;
+            n.overflow = Overflow::clip_y();
+        });
     match vue.coop {
         Some(coop) => salon(commandes, ic, col, (dj, menu), coop),
         None => accueil(commandes, ic, col, menu, vue),

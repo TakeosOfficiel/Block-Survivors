@@ -1,317 +1,284 @@
-//! L'arbre choisi, en branches : le tronc en bas, au centre (talent de base puis sa
-//! ligne), d'où part une fourche vers une colonne par branche (Puissance,
-//! Enchaînements…). Chaque colonne a sa couleur, son nom et les points qu'on y a mis ;
-//! ses talents montent ligne par ligne jusqu'au final. Les seuils de points des lignes
-//! sont écrits à gauche, cadenas tant qu'ils manquent.
-//! Les cases des talents sont dans `case`.
+//! L'arbre choisi, à l'air libre (aucun cadre) : le tronc en bas, au centre, puis les
+//! branches qui s'en écartent en éventail, chacune dans sa direction, sa couleur et
+//! reliée par ses propres traits jusqu'à son talent final ; son nom et les points qui
+//! y sont écrits au bout. Les branches sont rangées de gauche à droite selon les
+//! colonnes des données. Les seuils de points des lignes sont écrits à gauche, cadenas
+//! tant qu'ils manquent. Les cases des talents sont dans `case`.
 
 use bevy::prelude::*;
-use bs_donnees::progression::Branche;
+use bs_donnees::progression::{Arbre, Branche, Noeud};
 
-use super::case::CASE;
 use super::{Contexte, case, ecrire};
-use crate::ecrans::charte::{self, AIDE, BORD, IVOIRE, OR_SOURD, OR_VIF};
+use crate::ecrans::charte::{self, AIDE, IVOIRE, OR_VIF};
 use crate::menu::Icones;
 
-/// Pas entre lignes et entre sous-colonnes (px).
+/// Zone de l'arbre, centre du tronc, bas de la ligne 0 (px).
+const LARGEUR: f32 = 790.0;
+const HAUTEUR: f32 = 650.0;
+const CX: f32 = 430.0;
+const BAS: f32 = 600.0;
+/// Pas entre lignes ; écart en plus entre le tronc et les branches.
 const PAS_LIGNE: f32 = 80.0;
-const PAS_COLONNE: f32 = 80.0;
-/// Écart entre colonnes de branche, bandeau du nom, marge gauche des seuils.
-const ECART: f32 = 16.0;
-/// Largeur minimale d'une colonne de branche (place du nom).
-const MIN_COLONNE: f32 = 140.0;
-const ENTETE: f32 = 40.0;
-const SEUILS: f32 = 56.0;
-/// Hauteur de la fourche entre le tronc et les branches.
-const FOURCHE: f32 = 34.0;
-/// Branches au plus (gauche, centre, droite, libre) et sous-colonnes par branche.
+const FOURCHE: f32 = 24.0;
+/// Écart des branches au centre : à leur première ligne, puis en plus à chaque ligne.
+const ECART_BASE: f32 = 130.0;
+const ECART_LIGNE: f32 = 20.0;
+/// Pas entre deux talents d'une même ligne (tronc, ou branche à plusieurs colonnes).
+const PAS_COLONNE: f32 = 72.0;
 const MAX_BRANCHES: usize = 4;
 const MAX_SOUS: usize = 4;
 
 /// Couleur propre à chaque branche.
 fn teinte(b: Branche) -> Color {
     match b {
-        Branche::Gauche => Color::srgb(0.88, 0.42, 0.36),
-        Branche::Centre => Color::srgb(0.42, 0.64, 0.96),
-        Branche::Droite => Color::srgb(0.36, 0.80, 0.80),
-        Branche::Libre => Color::srgb(0.74, 0.52, 0.95),
+        Branche::Gauche => Color::srgb(0.90, 0.45, 0.38),
+        Branche::Centre => Color::srgb(0.45, 0.66, 0.98),
+        Branche::Droite => Color::srgb(0.38, 0.82, 0.80),
+        Branche::Libre => Color::srgb(0.76, 0.55, 0.97),
         Branche::Tronc => IVOIRE,
     }
 }
 
-fn absolu(x: f32, y: f32, l: f32, h: f32) -> Node {
-    Node {
-        position_type: PositionType::Absolute,
-        left: Val::Px(x),
-        top: Val::Px(y),
-        width: Val::Px(l),
-        height: Val::Px(h),
-        ..default()
-    }
-}
-
-/// Trait plein (ligne de liaison).
-fn trait_(commandes: &mut Commands, zone: Entity, (x, y, l, h): (f32, f32, f32, f32), c: Color) {
-    commandes.spawn((absolu(x, y, l, h), BackgroundColor(c), ChildOf(zone)));
-}
-
-/// Une colonne de branche : sa branche, ses colonnes de données (triées), sa place.
+/// Une branche : sa direction (−1,5 à 1,5 de la gauche à la droite) et ses colonnes
+/// de données distinctes, triées.
 #[derive(Clone, Copy)]
-struct Colonne {
+struct Voie {
     branche: Branche,
+    direction: f32,
     sous: [u32; MAX_SOUS],
     n_sous: usize,
-    x: f32,
-    largeur: f32,
 }
 
-impl Colonne {
-    fn centre_sous(&self, colonne: u32) -> f32 {
-        let i = self.sous[..self.n_sous]
+/// Plan de l'arbre : les branches et la première ligne au-dessus du tronc.
+struct Plan {
+    voies: [Option<Voie>; MAX_BRANCHES],
+    debut: u32,
+}
+
+impl Plan {
+    fn nouveau(def: &Arbre) -> Self {
+        let haut_tronc = def
+            .noeuds
             .iter()
-            .position(|&c| c == colonne)
+            .filter(|n| n.branche == Branche::Tronc)
+            .map(|n| n.ligne)
+            .max()
             .unwrap_or(0);
-        let contenu = (self.n_sous - 1) as f32 * PAS_COLONNE;
-        self.x + (self.largeur - contenu) / 2.0 + i as f32 * PAS_COLONNE
+        // (branche, moyenne des colonnes) puis tri de gauche à droite
+        let mut lues = [(Branche::Tronc, 0.0_f32); MAX_BRANCHES];
+        let mut n = 0;
+        for &b in def.branches.keys().filter(|b| **b != Branche::Tronc) {
+            let (somme, nb) = def
+                .noeuds
+                .iter()
+                .filter(|x| x.branche == b)
+                .fold((0, 0), |(s, k), x| (s + x.colonne, k + 1));
+            if nb > 0 && n < MAX_BRANCHES {
+                lues[n] = (b, somme as f32 / nb as f32);
+                n += 1;
+            }
+        }
+        lues[..n].sort_by(|a, b| a.1.total_cmp(&b.1));
+        let mut voies = [None; MAX_BRANCHES];
+        for (i, &(b, _)) in lues[..n].iter().enumerate() {
+            let mut sous = [0; MAX_SOUS];
+            let mut n_sous = 0;
+            for x in def.noeuds.iter().filter(|x| x.branche == b) {
+                if n_sous < MAX_SOUS && !sous[..n_sous].contains(&x.colonne) {
+                    sous[n_sous] = x.colonne;
+                    n_sous += 1;
+                }
+            }
+            sous[..n_sous].sort_unstable();
+            let direction = i as f32 - (n - 1) as f32 / 2.0;
+            voies[i] = Some(Voie {
+                branche: b,
+                direction,
+                sous,
+                n_sous,
+            });
+        }
+        Self {
+            voies,
+            debut: haut_tronc + 1,
+        }
     }
+
+    fn voie(&self, b: Branche) -> Option<&Voie> {
+        self.voies.iter().flatten().find(|v| v.branche == b)
+    }
+
+    fn y(&self, ligne: u32) -> f32 {
+        let fourche = if ligne >= self.debut { FOURCHE } else { 0.0 };
+        BAS - ligne as f32 * PAS_LIGNE - fourche
+    }
+
+    /// Axe de la branche `v` à la ligne `ligne`.
+    fn axe(&self, v: &Voie, ligne: u32) -> f32 {
+        let pas = ECART_BASE + ligne.saturating_sub(self.debut) as f32 * ECART_LIGNE;
+        CX + v.direction * pas
+    }
+
+    /// Centre de la case de `n` (dont la ligne du tronc compte `def` pour s'étaler).
+    fn place(&self, def: &Arbre, n: &Noeud) -> Option<Vec2> {
+        let x = if n.branche == Branche::Tronc {
+            let meme = def
+                .noeuds
+                .iter()
+                .filter(|m| m.branche == Branche::Tronc && m.ligne == n.ligne);
+            let (total, avant) = meme.fold((0, 0), |(t, a), m| {
+                (t + 1, a + usize::from(m.colonne < n.colonne))
+            });
+            CX + (avant as f32 - (total - 1) as f32 / 2.0) * PAS_COLONNE
+        } else {
+            let v = self.voie(n.branche)?;
+            let i = v.sous[..v.n_sous].iter().position(|&c| c == n.colonne)?;
+            let decalage = i as f32 - (v.n_sous - 1) as f32 / 2.0;
+            self.axe(v, n.ligne) + decalage * PAS_COLONNE
+        };
+        Some(Vec2::new(x, self.y(n.ligne)))
+    }
+}
+
+/// Trait de `a` à `b` (un nœud tourné autour de son milieu).
+fn trait_(commandes: &mut Commands, zone: Entity, (a, b): (Vec2, Vec2), couleur: Color) {
+    let d = b - a;
+    let m = (a + b) / 2.0;
+    let l = d.length();
+    commandes.spawn((
+        Node {
+            position_type: PositionType::Absolute,
+            left: Val::Px(m.x - l / 2.0),
+            top: Val::Px(m.y - 1.5),
+            width: Val::Px(l),
+            height: Val::Px(3.0),
+            ..default()
+        },
+        UiTransform::from_rotation(Rot2::radians(d.y.atan2(d.x))),
+        BackgroundColor(couleur),
+        ChildOf(zone),
+    ));
 }
 
 pub fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, parent: Entity) {
     let def = c.arbre();
     let prog = &c.sauvegarde.progression;
     let (p, a) = (c.id(), c.etat.arbre);
-    let lignes = def.noeuds.iter().map(|n| n.ligne).max().unwrap_or(0);
-    let haut_tronc = def
-        .noeuds
-        .iter()
-        .filter(|n| n.branche == Branche::Tronc)
-        .map(|n| n.ligne)
-        .max()
-        .unwrap_or(0);
-    // Colonnes de branche, dans l'ordre des données
-    let mut cols = [None::<Colonne>; MAX_BRANCHES];
-    let mut n_cols = 0;
-    let mut x = SEUILS;
-    for &b in def.branches.keys().filter(|b| **b != Branche::Tronc) {
-        let mut sous = [0; MAX_SOUS];
-        let mut n_sous = 0;
-        for n in def.noeuds.iter().filter(|n| n.branche == b) {
-            if n_sous < MAX_SOUS && !sous[..n_sous].contains(&n.colonne) {
-                sous[n_sous] = n.colonne;
-                n_sous += 1;
-            }
-        }
-        if n_sous == 0 || n_cols == MAX_BRANCHES {
-            continue;
-        }
-        sous[..n_sous].sort_unstable();
-        let largeur = (2.0 * ECART + CASE + (n_sous - 1) as f32 * PAS_COLONNE).max(MIN_COLONNE);
-        cols[n_cols] = Some(Colonne {
-            branche: b,
-            sous,
-            n_sous,
-            x,
-            largeur,
-        });
-        n_cols += 1;
-        x += largeur + ECART;
-    }
-    let largeur = x.max(SEUILS + 3.0 * PAS_COLONNE);
-    // Lignes des branches de haut en bas, puis la fourche, puis le tronc
-    let rangs_branches = lignes.saturating_sub(haut_tronc) as f32;
-    let bas_branches = ENTETE + rangs_branches * PAS_LIGNE + 8.0;
-    let hauteur = bas_branches + FOURCHE + (haut_tronc + 1) as f32 * PAS_LIGNE;
-    let y_ligne = |l: u32| {
-        if l > haut_tronc {
-            ENTETE + (lignes - l) as f32 * PAS_LIGNE + PAS_LIGNE / 2.0
-        } else {
-            bas_branches + FOURCHE + (haut_tronc - l) as f32 * PAS_LIGNE + PAS_LIGNE / 2.0
-        }
-    };
+    let plan = Plan::nouveau(def);
     let zone = commandes
         .spawn((
             Node {
-                width: Val::Px(largeur),
-                height: Val::Px(hauteur),
+                width: Val::Px(LARGEUR),
+                height: Val::Px(HAUTEUR),
                 flex_shrink: 0.0,
                 ..default()
             },
             ChildOf(parent),
         ))
         .id();
-    let milieu = SEUILS + (largeur - SEUILS - ECART) / 2.0;
-    // Fourche : du haut du tronc à chaque colonne
-    let y_fourche = bas_branches + FOURCHE / 2.0;
-    let pale = Color::srgba(1.0, 1.0, 1.0, 0.22);
-    trait_(
-        commandes,
-        zone,
-        (milieu - 1.0, y_fourche, 2.0, FOURCHE / 2.0),
-        pale,
-    );
-    let centres: Vec<f32> = cols[..n_cols]
-        .iter()
-        .flatten()
-        .map(|k| k.x + k.largeur / 2.0)
-        .collect();
-    if let (Some(g), Some(d)) = (centres.first(), centres.last()) {
-        let (g, d) = (g.min(milieu), d.max(milieu));
-        trait_(
-            commandes,
-            zone,
-            (g - 1.0, y_fourche - 1.0, d - g + 2.0, 2.0),
-            pale,
-        );
-    }
-    for k in cols[..n_cols].iter().flatten() {
-        let points: u32 = def
+    // Traits : chaque talent vers le plus proche de la ligne du dessous, dans sa
+    // branche (ou le tronc) ; le bas d'une branche part du haut du tronc.
+    let y_tronc = plan.y(plan.debut - 1);
+    let haut_tronc = Vec2::new(CX, y_tronc - case::CASE / 2.0 - 18.0);
+    let pied = Vec2::new(CX, y_tronc);
+    trait_(commandes, zone, (pied, haut_tronc), IVOIRE.with_alpha(0.5));
+    for n in &def.noeuds {
+        let Some(ici) = plan.place(def, n) else {
+            continue;
+        };
+        if n.ligne == 0 {
+            continue;
+        }
+        let meme = if n.branche == Branche::Tronc || n.ligne == plan.debut {
+            Branche::Tronc
+        } else {
+            n.branche
+        };
+        let dessous = def
             .noeuds
             .iter()
-            .filter(|n| n.branche == k.branche)
-            .map(|n| prog.rang(p, a, n))
-            .sum();
-        colonne(commandes, c, ic, zone, k, points, bas_branches);
-        let cx = k.x + k.largeur / 2.0;
-        let t = teinte(k.branche).with_alpha(if points > 0 { 0.7 } else { 0.3 });
-        trait_(
-            commandes,
-            zone,
-            (cx - 1.0, bas_branches, 2.0, y_fourche - bas_branches),
-            t,
-        );
-    }
-    // Liaisons verticales dans chaque sous-colonne (et dans le tronc)
-    for k in cols[..n_cols].iter().flatten() {
-        for &sc in &k.sous[..k.n_sous] {
-            let ls = def
-                .noeuds
-                .iter()
-                .filter(|n| n.branche == k.branche && n.colonne == sc)
-                .map(|n| n.ligne);
-            let (min, max) = ls.fold((u32::MAX, 0), |(a, b), l| (a.min(l), b.max(l)));
-            if min < max {
-                let x = k.centre_sous(sc);
-                let (y0, y1) = (y_ligne(max), y_ligne(min));
-                let t = teinte(k.branche).with_alpha(0.45);
-                trait_(commandes, zone, (x - 1.0, y0, 2.0, y1 - y0), t);
+            .filter(|m| m.branche == meme && m.ligne < n.ligne)
+            .filter_map(|m| Some((m, plan.place(def, m)?)))
+            .max_by(|(m1, p1), (m2, p2)| {
+                (m1.ligne, -(p1.x - ici.x).abs())
+                    .partial_cmp(&(m2.ligne, -(p2.x - ici.x).abs()))
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
+        let (bas, rang_bas) = match dessous {
+            Some((m, _)) if meme == Branche::Tronc && n.branche != Branche::Tronc => {
+                (haut_tronc, prog.rang(p, a, m))
             }
-        }
-    }
-    trait_(
-        commandes,
-        zone,
-        (
-            milieu - 1.0,
-            y_ligne(haut_tronc),
-            2.0,
-            y_ligne(0) - y_ligne(haut_tronc),
-        ),
-        pale,
-    );
-    if haut_tronc > 0 {
-        let y = y_ligne(haut_tronc);
-        trait_(
-            commandes,
-            zone,
-            (milieu - PAS_COLONNE / 2.0, y - 1.0, PAS_COLONNE, 2.0),
-            pale,
-        );
-    }
-    // Seuils de points, à gauche
-    for l in 0..=lignes {
-        seuil(commandes, c, ic, zone, l, y_ligne(l));
-    }
-    // Cases
-    for (k, n) in def.noeuds.iter().enumerate() {
-        let x = if n.branche == Branche::Tronc {
-            let meme: Vec<u32> = def
-                .noeuds
-                .iter()
-                .filter(|m| m.branche == Branche::Tronc && m.ligne == n.ligne)
-                .map(|m| m.colonne)
-                .collect();
-            let i = meme.iter().filter(|&&m| m < n.colonne).count() as f32;
-            milieu + (i - (meme.len() - 1) as f32 / 2.0) * PAS_COLONNE
-        } else {
-            match cols[..n_cols]
-                .iter()
-                .flatten()
-                .find(|k| k.branche == n.branche)
-            {
-                Some(k) => k.centre_sous(n.colonne),
-                None => continue,
-            }
+            Some((m, la)) => (la, prog.rang(p, a, m)),
+            None => (haut_tronc, 1),
         };
-        case::construire(
-            commandes,
-            c,
-            ic,
-            zone,
-            (k, n),
-            Vec2::new(x, y_ligne(n.ligne)),
-        );
+        let vif = prog.rang(p, a, n) > 0 && rang_bas > 0;
+        let couleur = teinte(n.branche).with_alpha(if vif { 0.85 } else { 0.28 });
+        trait_(commandes, zone, (bas, ici), couleur);
+    }
+    for v in plan.voies.iter().flatten() {
+        bout(commandes, c, ic, zone, &plan, v);
+    }
+    let lignes = def.noeuds.iter().map(|n| n.ligne).max().unwrap_or(0);
+    for l in 0..=lignes {
+        seuil(commandes, c, ic, zone, l, plan.y(l));
+    }
+    for (k, n) in def.noeuds.iter().enumerate() {
+        if let Some(centre) = plan.place(def, n) {
+            case::construire(commandes, c, ic, zone, (k, n), centre);
+        }
     }
 }
 
-/// Fond, bandeau coloré et nom d'une colonne de branche, avec les points qui y sont.
-fn colonne(
+/// Nom de la branche et points qui y sont, au-dessus de son talent le plus haut.
+fn bout(
     commandes: &mut Commands,
     c: &Contexte,
     ic: &mut Icones,
     zone: Entity,
-    k: &Colonne,
-    points: u32,
-    bas: f32,
+    plan: &Plan,
+    v: &Voie,
 ) {
-    let t = teinte(k.branche);
-    let nom = c
-        .arbre()
-        .branches
-        .get(&k.branche)
-        .map_or("", String::as_str);
-    let fond = commandes
+    let def = c.arbre();
+    let prog = &c.sauvegarde.progression;
+    let (p, a) = (c.id(), c.etat.arbre);
+    let noeuds = def.noeuds.iter().filter(|n| n.branche == v.branche);
+    let (haut, points) = noeuds.fold((0, 0), |(h, s), n| (h.max(n.ligne), s + prog.rang(p, a, n)));
+    let x = plan.axe(v, haut);
+    let y = plan.y(haut) - case::CASE / 2.0 - 52.0;
+    let boite = commandes
         .spawn((
             Node {
-                border: UiRect {
-                    top: Val::Px(3.0),
-                    ..UiRect::all(Val::Px(1.0))
-                },
-                border_radius: BorderRadius::all(Val::Px(3.0)),
-                ..absolu(k.x, 0.0, k.largeur, bas)
-            },
-            BackgroundColor(t.with_alpha(if points > 0 { 0.09 } else { 0.05 })),
-            BorderColor {
-                top: t,
-                ..BorderColor::all(t.with_alpha(0.3))
+                position_type: PositionType::Absolute,
+                left: Val::Px(x - 100.0),
+                top: Val::Px(y),
+                width: Val::Px(200.0),
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                ..default()
             },
             ChildOf(zone),
         ))
         .id();
-    let entete = commandes
-        .spawn((
-            Node {
-                width: Val::Percent(100.0),
-                height: Val::Px(ENTETE - 4.0),
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                column_gap: Val::Px(8.0),
-                ..default()
-            },
-            ChildOf(fond),
-        ))
-        .id();
-    ecrire(commandes, ic, entete, nom, (true, 18.0, t));
-    let s = points.to_string();
+    let nom = def.branches.get(&v.branche).map_or("", String::as_str);
+    let t = teinte(v.branche);
+    let e = ecrire(commandes, ic, boite, nom, (true, 19.0, t));
+    commandes.entity(e).insert(TextShadow::default());
+    let s = match points {
+        0 => "aucun point".to_owned(),
+        1 => "1 point".to_owned(),
+        n => format!("{n} points"),
+    };
+    let couleur = if points > 0 { OR_VIF } else { AIDE };
     ecrire(
         commandes,
         ic,
-        entete,
+        boite,
         &s,
-        (true, 18.0, if points > 0 { OR_VIF } else { AIDE }),
+        (false, charte::T_AIDE - 1.0, couleur),
     );
 }
 
-/// Seuil de points de la ligne `l`, en pastille à gauche (cadenas s'il manque).
+/// Seuil de points de la ligne `l`, écrit à gauche (cadenas s'il manque).
 fn seuil(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, zone: Entity, l: u32, y: f32) {
     let palier = c.dj.d.talents.paliers.iter().find(|x| x.ligne == l);
     let Some(palier) = palier.filter(|x| x.rangs > 0) else {
@@ -324,22 +291,25 @@ fn seuil(commandes: &mut Commands, c: &Contexte, ic: &mut Icones, zone: Entity, 
     let marque = commandes
         .spawn((
             Node {
+                position_type: PositionType::Absolute,
+                left: Val::ZERO,
+                top: Val::Px(y - 11.0),
+                height: Val::Px(22.0),
                 align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                column_gap: Val::Px(4.0),
-                border: UiRect::all(Val::Px(1.0)),
-                border_radius: BorderRadius::all(Val::Px(2.0)),
-                ..absolu(0.0, y - 12.0, SEUILS - 12.0, 24.0)
+                column_gap: Val::Px(5.0),
+                ..default()
             },
-            BackgroundColor(charte::PANNEAU),
-            BorderColor::all(if ouverte { BORD } else { OR_SOURD }),
             ChildOf(zone),
         ))
         .id();
-    let couleur = if ouverte { AIDE } else { OR_VIF };
+    let couleur = if ouverte {
+        AIDE.with_alpha(0.6)
+    } else {
+        OR_VIF
+    };
     if !ouverte {
         charte::cadenas(commandes, marque, 9.0, couleur);
     }
-    let t = palier.rangs.to_string();
+    let t = format!("{} pts", palier.rangs);
     ecrire(commandes, ic, marque, &t, (true, 13.0, couleur));
 }

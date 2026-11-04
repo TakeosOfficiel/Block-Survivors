@@ -17,6 +17,8 @@ use crate::ecrans::nuit::{self, Style, ecrit, nuit as sombre, voile};
 use crate::polices::PolicesMenu;
 use crate::textures::Textures;
 
+use super::propositions;
+
 const DESCRIPTION: Color = Color::srgb_u8(0xc8, 0xcc, 0xd6);
 const STATS: Color = Color::srgb_u8(0xcf, 0xe9, 0xc8);
 const LARGEUR_CARTE: f32 = 290.0;
@@ -43,7 +45,13 @@ pub struct Contexte<'a> {
 }
 
 impl Contexte<'_> {
-    fn ecrit(&self, c: &mut Commands, parent: Entity, t: &str, s: (Style, f32, Color)) -> Entity {
+    pub(super) fn ecrit(
+        &self,
+        c: &mut Commands,
+        parent: Entity,
+        t: &str,
+        s: (Style, f32, Color),
+    ) -> Entity {
         ecrit(c, self.polices, parent, t, s)
     }
 }
@@ -87,11 +95,26 @@ pub fn construire(
         });
     nuit::titre(commandes, c.polices, racine, titre, OR_VIF);
 
+    // Présentation à l'essai (BS_CARTES_STYLE) : médaillons par défaut
+    let style = std::env::var("BS_CARTES_STYLE").unwrap_or_default();
     let liste = nuit::rangee(commandes, racine, 56.0);
     commandes
         .entity(liste)
         .entry::<Node>()
-        .and_modify(|mut n| n.align_items = AlignItems::Stretch);
+        .and_modify(move |mut n| {
+            n.align_items = AlignItems::Stretch;
+            if style == "liste" {
+                n.flex_direction = FlexDirection::Column;
+                n.row_gap = Val::Px(4.0);
+            } else if style == "jeu" {
+                n.column_gap = Val::Px(30.0);
+            }
+        });
+    let style = std::env::var("BS_CARTES_STYLE").unwrap_or_default();
+    let nombre = cartes
+        .iter()
+        .filter(|c| c.famille != Famille::Action)
+        .count();
     let mut refus = None;
     for (k, carte) in cartes.iter().enumerate() {
         // Refus du coffre : action secondaire sous les cartes, pas une carte
@@ -99,7 +122,11 @@ pub fn construire(
             refus = Some((k, carte));
             continue;
         }
-        construire_carte(commandes, c, liste, k, carte);
+        match style.as_str() {
+            "liste" => propositions::ligne(commandes, c, liste, k, carte),
+            "jeu" => propositions::carte_jeu(commandes, c, liste, (k, nombre), carte),
+            _ => construire_carte(commandes, c, liste, k, carte),
+        }
     }
 
     let bas = nuit::rangee(commandes, racine, 28.0);

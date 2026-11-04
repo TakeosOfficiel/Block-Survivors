@@ -9,6 +9,7 @@
 //! Le joueur choisit dès qu'il a touché au clavier (ou avec `BS_CARTES=1`) ; avant, le
 //! robot de démonstration choisit et joue seul.
 
+mod propositions;
 mod vue;
 
 use bevy::prelude::*;

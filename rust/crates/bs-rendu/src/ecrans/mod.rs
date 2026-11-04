@@ -12,7 +12,7 @@
 mod bilan;
 pub mod charte;
 mod fin;
-mod nuit;
+pub(crate) mod nuit;
 pub mod style;
 pub(crate) mod vues;
 

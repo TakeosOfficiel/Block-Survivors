@@ -112,11 +112,6 @@ impl TextePixel {
         self.bord = Bord::Contour;
         self
     }
-
-    pub fn sans_bord(mut self) -> Self {
-        self.bord = Bord::Aucun;
-        self
-    }
 }
 
 /// Remplace le texte s'il a changé (pas de redessin sinon).

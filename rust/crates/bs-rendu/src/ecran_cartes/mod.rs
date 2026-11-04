@@ -96,6 +96,7 @@ pub fn gerer(
     serveur: Res<AssetServer>,
     textures: Res<Textures>,
     dessins: Res<Dessins>,
+    polices: Res<crate::polices::PolicesMenu>,
     touches: Res<ButtonInput<KeyCode>>,
     temps: Res<Time>,
     cartes: Query<(&Interaction, &BoutonCarte), Changed<Interaction>>,
@@ -175,6 +176,7 @@ pub fn gerer(
         serveur: &serveur,
         textures: &textures,
         dessins: &dessins,
+        polices: &polices,
     };
     e.racine = Some(vue::construire(
         &mut commandes,
@@ -185,11 +187,11 @@ pub fn gerer(
     ));
 }
 
-/// Carte survolée : soulevée, bord d'or vif (les autres restent neutres).
+/// Carte survolée : soulevée, liseré d'or vif (les autres n'en ont pas).
 #[allow(clippy::type_complexity)]
 pub fn survoler(
     mut cartes: Query<
-        (&Interaction, &mut UiTransform, &mut BorderColor),
+        (&Interaction, &mut UiTransform, &mut Outline),
         (Changed<Interaction>, With<BoutonCarte>, Without<Relief>),
     >,
 ) {
@@ -197,7 +199,7 @@ pub fn survoler(
         let survol = *i != Interaction::None;
         let y = if survol { -SOULEVEMENT } else { 0.0 };
         t.translation = Val2::px(0.0, y);
-        *bord = BorderColor::all(if survol { charte::OR_VIF } else { charte::BORD });
+        bord.color = if survol { charte::OR_VIF } else { Color::NONE };
     }
 }
 

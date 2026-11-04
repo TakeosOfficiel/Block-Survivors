@@ -135,13 +135,8 @@ pub struct Page {
     pub scene: Entity,
 }
 
-/// Fond, en-tête, liste de gauche (`gauche` px), filet doré et scène (au plus `scene` px).
-pub fn page(
-    c: &mut Commands,
-    ic: &Icones,
-    (nom, titre): (&str, &str),
-    (gauche, scene): (f32, f32),
-) -> Page {
+/// Racine plein écran : fond de nuit en dégradé et en-tête « BLOCK SURVIVORS • titre ».
+pub fn racine(c: &mut Commands, ic: &Icones, (nom, titre): (&str, &str)) -> Entity {
     let nuit = |r, g, b, p| ColorStop::new(Color::srgb_u8(r, g, b), Val::Percent(p));
     let racine = c
         .spawn((
@@ -169,6 +164,17 @@ pub fn page(
     let t = IVOIRE.with_alpha(0.9);
     ecrit(c, ic, h, titre, (Police::Logo, 30.0, t));
 
+    racine
+}
+
+/// Fond, en-tête, liste de gauche (`gauche` px), filet doré et scène (au plus `scene` px).
+pub fn page(
+    c: &mut Commands,
+    ic: &Icones,
+    (nom, titre): (&str, &str),
+    (gauche, scene): (f32, f32),
+) -> Page {
+    let racine = racine(c, ic, (nom, titre));
     let milieu = air::rangee(c, racine, 0.0);
     c.entity(milieu).entry::<Node>().and_modify(|mut n| {
         n.flex_grow = 1.0;
@@ -233,4 +239,46 @@ pub fn pied(c: &mut Commands, ic: &Icones, racine: Entity) -> Entity {
         .entry::<Node>()
         .and_modify(|mut n| n.flex_grow = 1.0);
     p
+}
+
+/// Pilule arrondie à bord fin : or si choisie, pâle sinon ; éteinte sans action.
+pub fn pilule(
+    c: &mut Commands,
+    ic: &Icones,
+    parent: Entity,
+    t: &str,
+    (choisie, action): (bool, Option<ActionMenu>),
+) -> Entity {
+    let (bord, couleur) = match (choisie, &action) {
+        (true, _) => (OR_VIF, OR_VIF),
+        (false, Some(_)) => (Color::srgba(1.0, 1.0, 1.0, 0.22), IVOIRE),
+        (false, None) => (Color::srgba(1.0, 1.0, 1.0, 0.08), TERNE),
+    };
+    let b = c
+        .spawn((
+            Node {
+                height: Val::Px(38.0),
+                padding: UiRect::horizontal(Val::Px(20.0)),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                column_gap: Val::Px(8.0),
+                border: UiRect::all(Val::Px(1.5)),
+                border_radius: BorderRadius::MAX,
+                flex_shrink: 0.0,
+                ..default()
+            },
+            BorderColor::all(bord),
+            BackgroundColor(if choisie {
+                OR_VIF.with_alpha(0.1)
+            } else {
+                Color::NONE
+            }),
+            ChildOf(parent),
+        ))
+        .id();
+    if let Some(a) = action {
+        c.entity(b).insert((Button, Lien(couleur), a));
+    }
+    ecrit(c, ic, b, t, (Police::Grasse, 15.0, couleur));
+    b
 }

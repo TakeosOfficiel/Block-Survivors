@@ -23,7 +23,6 @@ use crate::hud::police::TextePixel;
 use crate::lancement::{ChoixPartie, DonneesJeu};
 use crate::sauvegarde::Sauvegarde;
 
-pub(super) const FOND: Color = Color::srgb_u8(0x0b, 0x0e, 0x16);
 /// Marge du haut de l'écran.
 const HAUT: f32 = 24.0;
 const OMBRE: Color = Color::srgba(0.0, 0.0, 0.0, 0.85);

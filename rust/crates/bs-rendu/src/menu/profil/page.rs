@@ -1,7 +1,8 @@
-//! Construction de la page Profil : skins à gauche, pseudo et classe au centre (le
-//! héros 3D est dessous), pièces d'armure portées à droite. Charte commune
-//! (docs/CHARTE-UI.md) : bloc « Personnalisation », pseudo avec crayon, emplacements
-//! d'armure lisibles même vides.
+//! Construction de la page Profil, à la manière des pages « console » (`console`), sans
+//! cadre ni case : à gauche le pseudo en grand (clic pour le changer), la classe, les
+//! skins en visages dans des anneaux et le gabarit des bras en pilules ; au centre, le
+//! héros 3D tourne sous un halo (fond transparent : la caméra de l'aperçu est dessous) ;
+//! à droite l'armure portée, une rangée de médaillons ronds par emplacement.
 
 use bevy::prelude::*;
 use bs_donnees::arenes::Monde;
@@ -12,129 +13,20 @@ use bs_sauvegarde::profil_joueur::{
 
 use super::{ActionProfil, Skin};
 use crate::dessins::Dessins;
-use crate::ecrans::charte::{self, AIDE as GRIS, IVOIRE as TEXTE, OR_SOURD, OR_VIF};
-use crate::ecrans::style;
-use crate::hud::police::TextePixel;
+use crate::ecrans::charte::{AIDE, IVOIRE, OR_VIF, VERT_GAIN};
 use crate::icones_armures;
 use crate::lancement::DonneesJeu;
-use crate::menu::{ActionMenu, Icones};
+use crate::menu::console::{self, Police, TERNE, aide, ecrit, pilule, surtitre};
+use crate::menu::vue::Lien;
+use crate::menu::{ActionMenu, Icones, air};
 use crate::sauvegarde::Sauvegarde;
 
-const LARGEUR_SKINS: f32 = 300.0;
-const LARGEUR_ARMURE: f32 = 380.0;
-const JAUNE: Color = OR_VIF;
 const ROUGE: Color = Color::srgb_u8(0xff, 0x8a, 0x8a);
-const VERT: Color = charte::VERT_GAIN;
+/// Largeur des colonnes de part et d'autre du héros.
+const COTE: f32 = 470.0;
 
-fn texte(commandes: &mut Commands, parent: Entity, t: &str, couleur: Color, taille: f32) {
-    commandes.spawn((TextePixel::nouveau(t, couleur, taille), ChildOf(parent)));
-}
-
-fn panneau(commandes: &mut Commands, parent: Entity, largeur: f32, titre: &str) -> Entity {
-    let p = charte::panneau(
-        commandes,
-        parent,
-        Node {
-            width: Val::Px(largeur),
-            align_items: AlignItems::Center,
-            row_gap: Val::Px(6.0),
-            padding: UiRect::all(Val::Px(12.0)),
-            ..default()
-        },
-    );
-    let entete = commandes
-        .spawn((
-            Node {
-                width: Val::Percent(100.0),
-                justify_content: JustifyContent::Center,
-                padding: UiRect::bottom(Val::Px(6.0)),
-                margin: UiRect::bottom(Val::Px(4.0)),
-                border: UiRect::bottom(Val::Px(2.0)),
-                ..default()
-            },
-            BorderColor::all(charte::BORD),
-            ChildOf(p),
-        ))
-        .id();
-    texte(commandes, entete, titre, TEXTE, 2.0);
-    p
-}
-
-/// Petit crayon d'or : « ce texte se modifie ».
-fn crayon(commandes: &mut Commands, parent: Entity) {
-    let cadre = commandes
-        .spawn((
-            Node {
-                width: Val::Px(20.0),
-                height: Val::Px(20.0),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                ..default()
-            },
-            ChildOf(parent),
-        ))
-        .id();
-    let corps = commandes
-        .spawn((
-            Node {
-                width: Val::Px(5.0),
-                height: Val::Px(18.0),
-                flex_direction: FlexDirection::Column,
-                justify_content: JustifyContent::SpaceBetween,
-                ..default()
-            },
-            BackgroundColor(OR_VIF),
-            UiTransform::from_rotation(Rot2::degrees(45.0)),
-            ChildOf(cadre),
-        ))
-        .id();
-    // Gomme en haut, mine en bas
-    for (h, c) in [(4.0, charte::ROUGE), (4.0, charte::CREUX)] {
-        commandes.spawn((
-            Node {
-                height: Val::Px(h),
-                ..default()
-            },
-            BackgroundColor(c),
-            ChildOf(corps),
-        ));
-    }
-}
-
-/// Bouton compact ; `choisi` le met en avant, sans action il est éteint.
-fn bouton(
-    commandes: &mut Commands,
-    parent: Entity,
-    t: &str,
-    (largeur, hauteur): (Val, f32),
-    choisi: bool,
-    action: Option<ActionProfil>,
-) -> Entity {
-    let b = style::bouton(commandes, parent, t, 0.0, false, ());
-    let mut e = commandes.entity(b);
-    e.entry::<Node>().and_modify(move |mut n| {
-        n.width = largeur;
-        n.height = Val::Px(hauteur);
-        n.padding = UiRect::horizontal(Val::Px(6.0));
-        n.column_gap = Val::Px(8.0);
-    });
-    match action {
-        Some(a) => {
-            e.insert(ActionMenu::Profil(a));
-        }
-        None => {
-            e.remove::<(Button, style::BoutonPage)>();
-            e.insert((
-                BackgroundColor(charte::CREUX),
-                BorderColor::all(charte::BORD),
-            ));
-        }
-    }
-    if choisi {
-        let c = crate::menu::talents::CHOISI;
-        e.insert((c, BorderColor::all(c.bord), BackgroundColor(c.fond)));
-    }
-    b
+fn a(action: ActionProfil) -> Option<ActionMenu> {
+    Some(ActionMenu::Profil(action))
 }
 
 /// Visage de la skin (et son calque de chapeau), en tête de `parent`.
@@ -183,257 +75,207 @@ pub(in crate::menu) fn visage(
     commandes.entity(parent).insert_children(0, &[tete]);
 }
 
-/// Construit la page ; renvoie sa racine (centre transparent : l'aperçu 3D dessous).
-pub fn construire(
-    commandes: &mut Commands,
-    (dj, sauvegarde, dessins): (&DonneesJeu, &Sauvegarde, &Dessins),
-    ic: &mut Icones,
-    menu: (usize, Option<&str>, Option<&str>),
+/// Anneau rond (doré si choisi) prêt à recevoir une icône ; cliquable si `action`.
+fn anneau(
+    c: &mut Commands,
+    parent: Entity,
+    (cote, choisi): (f32, bool),
+    action: Option<ActionMenu>,
 ) -> Entity {
-    let (personnage, saisie, message) = menu;
-    let d = dj.d;
-    let profil = &sauvegarde.profil;
-    let classe = &d.personnages.personnages[personnage];
-    let racine = commandes
-        .spawn((
-            Name::new("profil"),
-            Node {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                flex_direction: FlexDirection::Column,
-                align_items: AlignItems::Center,
-                padding: UiRect::all(Val::Px(charte::MARGE)),
-                row_gap: Val::Px(12.0),
-                ..default()
-            },
-            BackgroundColor(charte::FOND),
-        ))
-        .id();
-    texte(commandes, racine, "Profil", TEXTE, 4.0);
-    let corps = commandes
-        .spawn((
-            Node {
-                width: Val::Percent(100.0),
-                flex_grow: 1.0,
-                justify_content: JustifyContent::SpaceBetween,
-                align_items: AlignItems::FlexStart,
-                ..default()
-            },
-            ChildOf(racine),
-        ))
-        .id();
-
-    // Skins
-    let skins = panneau(commandes, corps, LARGEUR_SKINS, "Skin");
-    let mut choix = vec![(
-        Skin::Classe,
-        "Classe".to_owned(),
-        classe.apparence.skin.clone(),
-    )];
-    for (k, nom) in NOMS_SKINS.iter().enumerate() {
-        let chemin = chemin_skin_vanilla(k, profil.bras_fins);
-        choix.push((Skin::Vanilla(k), (*nom).to_owned(), chemin));
-    }
-    if profil.skin_importe.is_some() {
-        choix.push((
-            Skin::Importe,
-            "Importée".to_owned(),
-            CHEMIN_SKIN_IMPORTE.into(),
-        ));
-    }
-    let largeur = Val::Percent(100.0);
-    for (s, nom, chemin) in choix {
-        let choisi = profil.skin == s.choix();
-        let b = bouton(
-            commandes,
-            skins,
-            &nom,
-            (largeur, 32.0),
-            choisi,
-            Some(ActionProfil::Skin(s)),
-        );
-        commandes.entity(b).entry::<Node>().and_modify(|mut n| {
-            n.justify_content = JustifyContent::FlexStart;
+    let (bord, fond) = match (choisi, action.is_some()) {
+        (true, _) => (OR_VIF, OR_VIF.with_alpha(0.12)),
+        (false, true) => (
+            Color::srgba(1.0, 1.0, 1.0, 0.2),
+            Color::srgba(1.0, 1.0, 1.0, 0.04),
+        ),
+        (false, false) => (Color::srgba(1.0, 1.0, 1.0, 0.06), Color::NONE),
+    };
+    let r = air::point(c, parent, cote, fond);
+    c.entity(r)
+        .insert(BorderColor::all(bord))
+        .entry::<Node>()
+        .and_modify(|mut n| {
+            n.border = UiRect::all(Val::Px(2.0));
+            n.justify_content = JustifyContent::Center;
+            n.align_items = AlignItems::Center;
         });
-        visage(commandes, ic, b, &chemin, 24.0);
+    if let Some(a) = action {
+        c.entity(r).insert((Button, a));
     }
-    let bras = if profil.bras_fins {
-        "Bras : fins"
-    } else {
-        "Bras : larges"
-    };
-    let action = (profil.skin != ChoixSkin::Classe).then_some(ActionProfil::Bras);
-    bouton(commandes, skins, bras, (largeur, 32.0), false, action);
-    commandes.spawn((
-        TextePixel::nouveau(
-            "Importer une skin : glissez un fichier PNG sur la fenêtre.",
-            GRIS,
-            1.5,
-        )
-        .bloc(LARGEUR_SKINS - 20.0),
-        ChildOf(skins),
-    ));
-    if let Some(m) = message {
-        let couleur = if m.starts_with("Skin refusée") {
-            ROUGE
-        } else {
-            VERT
-        };
-        commandes.spawn((
-            TextePixel::nouveau(m, couleur, 1.5).bloc(LARGEUR_SKINS - 20.0),
-            ChildOf(skins),
-        ));
-    }
+    r
+}
 
-    // Centre : bloc « Personnalisation » (le héros est dessiné dessous)
-    let centre = commandes
-        .spawn((
-            Node {
-                flex_grow: 1.0,
-                flex_direction: FlexDirection::Column,
-                align_items: AlignItems::Center,
-                ..default()
-            },
-            ChildOf(corps),
-        ))
-        .id();
-    let centre = panneau(commandes, centre, 420.0, "Personnalisation");
+/// Colonne de gauche : pseudo, classe, skins, bras.
+fn gauche(
+    c: &mut Commands,
+    (dj, sauvegarde): (&DonneesJeu, &Sauvegarde),
+    ic: &mut Icones,
+    parent: Entity,
+    (personnage, saisie, message): (usize, Option<&str>, Option<&str>),
+) {
+    let profil = &sauvegarde.profil;
+    let classe = &dj.d.personnages.personnages[personnage];
+    surtitre(c, ic, parent, "PSEUDO");
+    let b = air::rangee(c, parent, 14.0);
+    c.entity(b).insert((
+        Button,
+        Lien(OR_VIF),
+        ActionMenu::Profil(ActionProfil::Pseudo),
+    ));
     let (t, couleur) = match saisie {
-        Some(s) => (format!("{s}_"), JAUNE),
-        None if profil.pseudo.is_empty() => ("Sans pseudo".to_owned(), GRIS),
-        None => (profil.pseudo.clone(), TEXTE),
+        Some(s) => (format!("{s}|"), IVOIRE),
+        None if profil.pseudo.is_empty() => ("Sans pseudo".to_owned(), TERNE),
+        None => (profil.pseudo.clone(), OR_VIF),
     };
-    let b = bouton(
-        commandes,
-        centre,
-        "",
-        (Val::Auto, 44.0),
-        saisie.is_some(),
-        Some(ActionProfil::Pseudo),
-    );
-    commandes.entity(b).despawn_related::<Children>();
-    commandes.entity(b).entry::<Node>().and_modify(|mut n| {
-        n.padding = UiRect::horizontal(Val::Px(14.0));
-        n.column_gap = Val::Px(10.0);
-    });
-    texte(commandes, b, &t, couleur, 2.5);
-    if saisie.is_none() {
-        crayon(commandes, b);
-    }
-    let aide = if saisie.is_some() {
+    ecrit(c, ic, b, &t, (Police::Logo, 56.0, couleur));
+    let t = if saisie.is_some() {
         "Entrée : valider · Échap : annuler"
     } else {
-        "Cliquez sur le pseudo pour le changer"
+        "Clique sur ton pseudo pour le changer"
     };
-    texte(commandes, centre, aide, GRIS, 1.5);
+    aide(c, ic, parent, t);
     let nom_skin = match profil.skin {
         ChoixSkin::Classe => "skin de la classe".to_owned(),
         ChoixSkin::Importe => "skin importée".to_owned(),
         ChoixSkin::Vanilla(k) => format!("skin {}", NOMS_SKINS[k]),
     };
-    texte(
-        commandes,
-        centre,
-        &format!("{} · {nom_skin}", classe.nom),
-        OR_SOURD,
-        2.0,
+    let t = format!("{} · {nom_skin}", classe.nom);
+    ecrit(
+        c,
+        ic,
+        parent,
+        &t,
+        (Police::Grasse, 16.0, IVOIRE.with_alpha(0.8)),
     );
 
-    // Armure portée
-    armure(commandes, (dj, sauvegarde, dessins), ic, corps);
-
-    let retour = charte::bouton_relief(
-        commandes,
-        racine,
-        charte::Relief::SECONDAIRE,
-        charte::H_SECONDAIRE,
-        ActionMenu::Fermer,
-    );
-    commandes
-        .entity(retour)
+    let s = air::colonne(c, parent, 12.0);
+    c.entity(s)
         .entry::<Node>()
-        .and_modify(|mut n| {
-            n.width = Val::Px(200.0);
-        });
-    texte(commandes, retour, "Retour", TEXTE, 2.0);
-    racine
+        .and_modify(|mut n| n.margin = UiRect::top(Val::Px(26.0)));
+    surtitre(c, ic, s, "SKIN");
+    let mut choix = vec![(Skin::Classe, "Classe", classe.apparence.skin.clone())];
+    for (k, nom) in NOMS_SKINS.iter().enumerate() {
+        choix.push((
+            Skin::Vanilla(k),
+            *nom,
+            chemin_skin_vanilla(k, profil.bras_fins),
+        ));
+    }
+    if profil.skin_importe.is_some() {
+        choix.push((Skin::Importe, "Importée", CHEMIN_SKIN_IMPORTE.into()));
+    }
+    let g = c
+        .spawn((
+            Node {
+                display: Display::Grid,
+                grid_template_columns: RepeatedGridTrack::px(6, 66.0),
+                row_gap: Val::Px(12.0),
+                column_gap: Val::Px(8.0),
+                ..default()
+            },
+            ChildOf(s),
+        ))
+        .id();
+    for (skin, nom, chemin) in choix {
+        let choisi = profil.skin == skin.choix();
+        let e = air::colonne(c, g, 5.0);
+        c.entity(e)
+            .entry::<Node>()
+            .and_modify(|mut n| n.align_items = AlignItems::Center);
+        let couleur = if choisi { OR_VIF } else { TERNE };
+        if !choisi {
+            let action = ActionMenu::Profil(ActionProfil::Skin(skin));
+            c.entity(e).insert((Button, Lien(couleur), action));
+        }
+        let r = anneau(c, e, (52.0, choisi), None);
+        visage(c, ic, r, &chemin, 28.0);
+        ecrit(c, ic, e, nom, (Police::Grasse, 12.0, couleur));
+    }
+    let r = air::rangee(c, s, 10.0);
+    c.entity(r)
+        .entry::<Node>()
+        .and_modify(|mut n| n.margin = UiRect::top(Val::Px(6.0)));
+    let libre = profil.skin != ChoixSkin::Classe;
+    for (fins, t) in [(false, "Bras larges"), (true, "Bras fins")] {
+        let choisie = libre && profil.bras_fins == fins;
+        let action = (libre && !choisie).then_some(ActionMenu::Profil(ActionProfil::Bras));
+        pilule(c, ic, r, t, (choisie, action));
+    }
+    aide(
+        c,
+        ic,
+        s,
+        "Importer une skin : glisse un fichier PNG sur la fenêtre.",
+    );
+    if let Some(m) = message {
+        let couleur = if m.starts_with("Skin refusée") {
+            ROUGE
+        } else {
+            VERT_GAIN
+        };
+        ecrit(c, ic, s, m, (Police::Grasse, 14.0, couleur));
+    }
 }
 
-/// Une rangée par emplacement : rien, ou la pièce d'un monde (éteinte tant qu'elle n'est
-/// pas gagnée) ; puis l'ensemble complet porté.
+/// Colonne de droite : une rangée par emplacement (rien, ou la pièce d'un monde, éteinte
+/// tant qu'elle n'est pas gagnée), puis l'ensemble complet porté.
 fn armure(
-    commandes: &mut Commands,
+    c: &mut Commands,
     (dj, sauvegarde, dessins): (&DonneesJeu, &Sauvegarde, &Dessins),
     ic: &mut Icones,
     parent: Entity,
 ) {
     let d = dj.d;
     let col = &sauvegarde.collection;
-    let p = panneau(commandes, parent, LARGEUR_ARMURE, "Armure portée");
+    surtitre(c, ic, parent, "ARMURE PORTÉE");
     for (i, &piece) in PIECES.iter().enumerate() {
-        let rangee = commandes
-            .spawn((
-                Node {
-                    width: Val::Percent(100.0),
-                    align_items: AlignItems::Center,
-                    column_gap: Val::Px(4.0),
-                    ..default()
-                },
-                ChildOf(p),
-            ))
-            .id();
+        let rangee = air::rangee(c, parent, 10.0);
         let nom = d.armures.noms_pieces.get(&piece).map_or("", |n| n.as_str());
-        let etiquette = commandes
-            .spawn((
-                Node {
-                    width: Val::Px(110.0),
-                    ..default()
-                },
-                ChildOf(rangee),
-            ))
-            .id();
-        texte(commandes, etiquette, nom, TEXTE, 1.5);
-        let portee = col.portee(piece);
-        let rien = Some(ActionProfil::Porter(i, None));
-        bouton(
-            commandes,
+        let e = ecrit(
+            c,
+            ic,
             rangee,
-            "—",
-            (Val::Px(40.0), 40.0),
-            portee.is_none(),
-            rien,
+            nom,
+            (Police::Grasse, 15.0, IVOIRE.with_alpha(0.85)),
         );
+        c.entity(e).insert(Node {
+            width: Val::Px(110.0),
+            ..default()
+        });
+        let portee = col.portee(piece);
+        let rien = anneau(
+            c,
+            rangee,
+            (42.0, portee.is_none()),
+            a(ActionProfil::Porter(i, None)),
+        );
+        let couleur = if portee.is_none() { OR_VIF } else { AIDE };
+        ecrit(c, ic, rien, "—", (Police::Grasse, 16.0, couleur));
         for (k, &monde) in MONDES.iter().enumerate() {
             let possedee = col.possede(monde, piece);
-            let action = possedee.then_some(ActionProfil::Porter(i, Some(k)));
-            let b = bouton(
-                commandes,
-                rangee,
-                "",
-                (Val::Px(40.0), 40.0),
-                portee == Some(monde),
-                action,
-            );
-            commandes.entity(b).despawn_related::<Children>();
-            icone_piece(commandes, (d, dessins), ic, b, (monde, piece), possedee);
+            let action = possedee.then_some(ActionMenu::Profil(ActionProfil::Porter(i, Some(k))));
+            let r = anneau(c, rangee, (42.0, portee == Some(monde)), action);
+            icone_piece(c, (d, dessins), ic, r, (monde, piece), possedee);
         }
     }
-    let t = match col.ensemble_complet() {
+    let (t, couleur) = match col.ensemble_complet() {
         Some(m) => {
             let a = &d.armures.armures[&m];
-            format!("{} : {}", a.nom, a.ensemble.description)
+            (
+                format!("★ {} : {}", a.nom, a.ensemble.description),
+                VERT_GAIN,
+            )
         }
-        None => "Portez les 7 pièces d'un même monde pour son bonus d'ensemble.".to_owned(),
+        None => (
+            "Porte les 7 pièces d'un même monde pour son bonus d'ensemble.".to_owned(),
+            AIDE,
+        ),
     };
-    let couleur = if col.ensemble_complet().is_some() {
-        VERT
-    } else {
-        GRIS
-    };
-    commandes.spawn((
-        TextePixel::nouveau(&t, couleur, 1.5).bloc(LARGEUR_ARMURE - 20.0),
-        ChildOf(p),
-    ));
+    let e = ecrit(c, ic, parent, &t, (Police::Normale, 14.0, couleur));
+    c.entity(e).insert(Node {
+        margin: UiRect::top(Val::Px(6.0)),
+        ..default()
+    });
 }
 
 fn icone_piece(
@@ -445,30 +287,76 @@ fn icone_piece(
     possedee: bool,
 ) {
     let icone = icones_armures::icone(d, dessins, monde, piece, |c| ic.icone(c));
-    let eteint = if possedee { 1.0 } else { 0.5 };
+    let (eteint, alpha) = if possedee { (1.0, 1.0) } else { (0.35, 0.6) };
     let t = icone.teinte.to_srgba();
-    let teinte = Color::srgba(t.red * eteint, t.green * eteint, t.blue * eteint, 1.0);
+    let teinte = Color::srgba(t.red * eteint, t.green * eteint, t.blue * eteint, alpha);
+    let taille = Node {
+        width: Val::Px(26.0),
+        height: Val::Px(26.0),
+        ..default()
+    };
     let image = commandes
         .spawn((
             ImageNode::new(icone.image).with_color(teinte),
-            Node {
-                width: Val::Px(28.0),
-                height: Val::Px(28.0),
-                ..default()
-            },
+            taille.clone(),
             ChildOf(parent),
         ))
         .id();
     if let Some(calque) = icone.calque {
         commandes.spawn((
-            ImageNode::new(calque).with_color(Color::srgb(eteint, eteint, eteint)),
+            ImageNode::new(calque).with_color(Color::srgba(eteint, eteint, eteint, alpha)),
             Node {
                 position_type: PositionType::Absolute,
-                width: Val::Px(28.0),
-                height: Val::Px(28.0),
-                ..default()
+                ..taille
             },
             ChildOf(image),
         ));
     }
+}
+
+/// Construit la page ; renvoie sa racine (centre transparent : l'aperçu 3D dessous).
+pub fn construire(
+    commandes: &mut Commands,
+    (dj, sauvegarde, dessins): (&DonneesJeu, &Sauvegarde, &Dessins),
+    ic: &mut Icones,
+    menu: (usize, Option<&str>, Option<&str>),
+) -> Entity {
+    let c = commandes;
+    let racine = console::racine(c, ic, ("profil", "PROFIL"));
+    // Halo : le centre laisse voir le héros, la nuit s'assombrit vers les bords
+    let nuit =
+        |a: f32, p: f32| ColorStop::new(Color::srgba(0.008, 0.012, 0.03, a), Val::Percent(p));
+    c.entity(racine)
+        .remove::<BackgroundColor>()
+        .insert(BackgroundGradient::from(RadialGradient::new(
+            UiPosition::CENTER,
+            RadialGradientShape::FarthestCorner,
+            vec![
+                nuit(0.0, 0.0),
+                nuit(0.35, 30.0),
+                nuit(0.95, 75.0),
+                nuit(1.0, 100.0),
+            ],
+        )));
+    let milieu = air::rangee(c, racine, 0.0);
+    c.entity(milieu).entry::<Node>().and_modify(|mut n| {
+        n.flex_grow = 1.0;
+        n.min_height = Val::ZERO;
+        n.justify_content = JustifyContent::SpaceBetween;
+        n.align_items = AlignItems::Center;
+    });
+    let g = air::colonne(c, milieu, 10.0);
+    c.entity(g)
+        .entry::<Node>()
+        .and_modify(|mut n| n.width = Val::Px(COTE));
+    gauche(c, (dj, sauvegarde), ic, g, menu);
+    let d = air::colonne(c, milieu, 10.0);
+    c.entity(d).entry::<Node>().and_modify(|mut n| {
+        n.width = Val::Px(COTE);
+        n.align_items = AlignItems::FlexEnd;
+    });
+    armure(c, (dj, sauvegarde, dessins), ic, d);
+    let p = console::pied(c, ic, racine);
+    aide(c, ic, p, "Chaque changement est enregistré aussitôt.");
+    racine
 }

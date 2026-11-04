@@ -19,15 +19,8 @@ use bs_donnees::progression::{Arbre, Noeud};
 use super::vue::Lien;
 use super::{ActionMenu, Icones};
 use crate::ecrans::charte::{self, IVOIRE, MARGE, Relief};
-use crate::ecrans::style::{OR, Teinte};
 use crate::lancement::DonneesJeu;
 use crate::sauvegarde::Sauvegarde;
-
-/// Bouton choisi des autres pages (Collection, Profil).
-pub(in crate::menu) const CHOISI: Teinte = Teinte {
-    bord: OR,
-    fond: Color::srgba_u8(60, 45, 10, 153),
-};
 
 /// Classe, arbre et talent affichés ; réinitialisation en attente de confirmation.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

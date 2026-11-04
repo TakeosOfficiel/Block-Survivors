@@ -222,7 +222,7 @@ pub fn entrer(
         _ if message.0.is_some() => Page::Multijoueur,
         _ => Page::Accueil,
     };
-    fond::creer(&mut commandes, vue::FOND);
+    fond::creer(&mut commandes, Color::srgb_u8(0x0b, 0x14, 0x30));
     apercu::camera(&mut commandes);
     commandes.spawn((
         Name::new("caméra du menu"),

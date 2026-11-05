@@ -8,9 +8,8 @@ Chaque schématique de ce dossier devient une arène du jeu, au nom du fichier :
 - `.mcstructure` : bloc de structure de Bedrock (jeu Rust seulement ; les blocs
   courants sont traduits en blocs Java, un bloc inconnu s'affiche en damier).
 
-Dans le jeu Rust, on peut aussi glisser un `.schem`, un `.litematic`, un `.nbt` ou un `.mcstructure` sur la
-fenêtre,
-à l'accueil : la map est copiée (avec son `.json` voisin s'il existe) dans le
+Dans le jeu Rust, on peut aussi glisser un de ces fichiers sur la fenêtre, à
+l'accueil : la map est copiée (avec son `.json` voisin s'il existe) dans le
 dossier `cartes` des données du jeu et proposée parmi les arènes, sans passer
 par le dépôt.
 

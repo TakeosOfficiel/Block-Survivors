@@ -71,6 +71,12 @@ impl ChampDeFlux {
             .is_some_and(|c| self.distances[c] != INATTEIGNABLE)
     }
 
+    /// Nombre de cases à parcourir à pied (sans diagonale) de (x, z) jusqu'au joueur.
+    pub fn distance_marche(&self, carte: &CarteMonde, x: f32, z: f32) -> Option<u32> {
+        let d = self.distances[carte.cellule(x, z)?];
+        (d != INATTEIGNABLE).then_some(d as u32)
+    }
+
     /// Direction unitaire à suivre depuis (x, z) : vers la case voisine la plus proche du
     /// joueur (diagonale seulement si elle ne coupe pas un angle). `None` si aucune.
     pub fn direction(&self, carte: &CarteMonde, x: f32, z: f32) -> Option<(f32, f32)> {

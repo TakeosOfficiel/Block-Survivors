@@ -17,6 +17,9 @@ use crate::partie::Partie;
 
 /// Tirages pour trouver un point hors champ.
 const ESSAIS_APPARITION: u32 = 16;
+/// Détour à pied toléré pour un point d'apparition : au plus `DETOUR.0` fois la distance à
+/// vol d'oiseau, plus `DETOUR.1` cases (une ligne droite sans diagonale en fait 1,41 fois).
+const DETOUR: (f32, f32) = (1.5, 4.0);
 
 fn interpoler(p: &Intervalle, t: f32) -> f32 {
     p.debut + (p.fin - p.debut) * t
@@ -165,8 +168,9 @@ impl Partie {
         None
     }
 
-    /// Case libre, loin du joueur, d'où il est atteignable, et hors champ. Si la caméra
-    /// voit toute la zone accessible, garde le point valable le plus éloigné.
+    /// Case libre, loin du joueur, d'où il est atteignable sans grand détour, et hors champ.
+    /// Si la caméra voit toute la zone accessible, garde le point valable le plus éloigné ;
+    /// à défaut, un point qui oblige à un long détour (de l'autre côté d'un mur).
     fn trouver_point_hors_champ(&mut self) -> Option<(f32, f32)> {
         let (jx, jz) = (self.etat.joueur.x, self.etat.joueur.z);
         let limite_x = self.etat.arene.largeur / 2.0 - 1.0;
@@ -174,6 +178,7 @@ impl Partie {
         let distance_min = self.d.regles.apparitions.distance_min;
         let mut meilleure = -1.0;
         let mut point = None;
+        let mut detour = None;
         for _ in 0..ESSAIS_APPARITION {
             let x = ((self.alea.tirer() * 2.0 - 1.0) * f64::from(limite_x)) as f32;
             let z = ((self.alea.tirer() * 2.0 - 1.0) * f64::from(limite_z)) as f32;
@@ -184,6 +189,11 @@ impl Partie {
             {
                 continue;
             }
+            let marche = self.flux.distance_marche(&self.carte, x, z).unwrap_or(0) as f32;
+            if marche > distance * DETOUR.0 + DETOUR.1 {
+                detour.get_or_insert((x, z));
+                continue;
+            }
             if !self.vue.est_visible(x, z, 2.0) && !self.vu_par_un_autre(x, z, 2.0) {
                 return Some((x, z));
             }
@@ -192,7 +202,7 @@ impl Partie {
                 point = Some((x, z));
             }
         }
-        point
+        point.or(detour)
     }
 
     /// Fait avancer le calendrier des boss puis celui des mini-boss.
@@ -369,5 +379,34 @@ mod essais {
         assert!((petite.facteur_surface - 900.0 / a.surface_reference).abs() < 1e-6);
         let minuscule = DirecteurApparitions::selon_surface(&CarteMonde::nouvelle(5, 5), a);
         assert_eq!(minuscule.facteur_surface, a.facteur_surface_min);
+    }
+
+    /// Un long mur coupe l'arène à 3 blocs du joueur (passage tout au bout) : les ennemis
+    /// n'apparaissent presque plus de l'autre côté, loin du passage (trop loin à pied).
+    #[test]
+    fn apparition_sans_long_detour() {
+        let d: &'static _ = Box::leak(Box::new(
+            bs_donnees::Donnees::embarquees().expect("données embarquées"),
+        ));
+        let de_l_autre_cote = |mur: bool| {
+            let mut p = Partie::nouvelle(d, 0, 0, 7, false);
+            let c = &mut p.carte;
+            let ix = (3.5 + c.demi_x) as usize;
+            for iz in 0..c.profondeur - 3 {
+                c.drapeaux[iz * c.largeur + ix] &= !BLOQUE_MARCHE;
+                if mur {
+                    c.drapeaux[iz * c.largeur + ix] |= BLOQUE_MARCHE;
+                }
+            }
+            let (jx, jz) = (p.etat.joueur.x, p.etat.joueur.z);
+            p.flux.maj(&p.carte, jx, jz);
+            (0..300)
+                .filter_map(|_| p.trouver_point_hors_champ())
+                .filter(|(x, z)| *x > 4.0 && *z < 0.0)
+                .count()
+        };
+        let (libre, mure) = (de_l_autre_cote(false), de_l_autre_cote(true));
+        assert!(libre > 30, "sans mur : {libre}");
+        assert!(mure * 4 < libre, "avec mur : {mure} contre {libre}");
     }
 }

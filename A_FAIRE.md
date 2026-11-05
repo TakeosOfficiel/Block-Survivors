@@ -58,7 +58,7 @@ fait dans la version Rust (branche `rust`, état au 04/11/2026).
 - [ ] Chemin des mobs en 3D (graphe de sols au lieu de la grille plate)
 - [ ] Hauteur pour les entités, projectiles et zones d'effet (aujourd'hui tout est à plat, hauteurs écrites en dur)
 - [ ] Coupe automatique des plafonds au-dessus du joueur (caves, maisons) et murs transparents entre la caméra et le joueur
-- [ ] Apparition des mobs à une distance de marche (pas à vol d'oiseau)
+- [ ] Apparition des mobs à une distance de marche (pas à vol d'oiseau) (Rust : fait, un point qui oblige à un long détour à pied n'est pris qu'en dernier recours)
 - [ ] Largeur de passage par case : boss trop gros pour un tunnel de 2 blocs
 - [ ] Échelles et lianes
 

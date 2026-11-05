@@ -231,3 +231,90 @@ impl Lecteur<'_> {
         })
     }
 }
+
+/// Écrit `racine` en NBT de Java (gros-boutiste, non compressé).
+pub fn ecrire_nbt(nom: &str, racine: &Compound) -> Vec<u8> {
+    let mut o = vec![10];
+    ecrire_chaine(&mut o, nom);
+    ecrire_compound(&mut o, racine);
+    o
+}
+
+fn type_de(v: &Nbt) -> u8 {
+    match v {
+        Nbt::Octet(_) => 1,
+        Nbt::Court(_) => 2,
+        Nbt::Entier(_) => 3,
+        Nbt::Long(_) => 4,
+        Nbt::Flottant(_) => 5,
+        Nbt::Double(_) => 6,
+        Nbt::Octets(_) => 7,
+        Nbt::Chaine(_) => 8,
+        Nbt::Liste(_) => 9,
+        Nbt::Compound(_) => 10,
+        Nbt::Entiers(_) => 11,
+        Nbt::Longs(_) => 12,
+    }
+}
+
+fn ecrire_chaine(o: &mut Vec<u8>, s: &str) {
+    o.extend((s.len().min(u16::MAX as usize) as u16).to_be_bytes());
+    o.extend(&s.as_bytes()[..s.len().min(u16::MAX as usize)]);
+}
+
+fn ecrire_compound(o: &mut Vec<u8>, c: &Compound) {
+    for (nom, v) in &c.0 {
+        o.push(type_de(v));
+        ecrire_chaine(o, nom);
+        ecrire_valeur(o, v);
+    }
+    o.push(0);
+}
+
+fn ecrire_valeur(o: &mut Vec<u8>, v: &Nbt) {
+    match v {
+        Nbt::Octet(x) => o.push(*x as u8),
+        Nbt::Court(x) => o.extend(x.to_be_bytes()),
+        Nbt::Entier(x) => o.extend(x.to_be_bytes()),
+        Nbt::Long(x) => o.extend(x.to_be_bytes()),
+        Nbt::Flottant(x) => o.extend(x.to_be_bytes()),
+        Nbt::Double(x) => o.extend(x.to_be_bytes()),
+        Nbt::Octets(t) => {
+            o.extend((t.len() as i32).to_be_bytes());
+            o.extend(t.iter().map(|&x| x as u8));
+        }
+        Nbt::Chaine(s) => ecrire_chaine(o, s),
+        Nbt::Liste(l) => {
+            o.push(l.first().map_or(0, type_de));
+            o.extend((l.len() as i32).to_be_bytes());
+            l.iter().for_each(|x| ecrire_valeur(o, x));
+        }
+        Nbt::Compound(c) => ecrire_compound(o, c),
+        Nbt::Entiers(t) => {
+            o.extend((t.len() as i32).to_be_bytes());
+            t.iter().for_each(|x| o.extend(x.to_be_bytes()));
+        }
+        Nbt::Longs(t) => {
+            o.extend((t.len() as i32).to_be_bytes());
+            t.iter().for_each(|x| o.extend(x.to_be_bytes()));
+        }
+    }
+}
+
+#[cfg(test)]
+mod essais {
+    use super::*;
+
+    #[test]
+    fn ecrire_puis_relire() {
+        let c = Compound(vec![
+            ("a".into(), Nbt::Court(-3)),
+            ("b".into(), Nbt::Liste(vec![Nbt::Chaine("x".into())])),
+            ("c".into(), Nbt::Longs(vec![1, -1])),
+            ("d".into(), Nbt::Octets(vec![-1, 2])),
+        ]);
+        let (nom, relu) = lire_nbt(&ecrire_nbt("racine", &c)).unwrap();
+        assert_eq!(nom, "racine");
+        assert_eq!(relu, c);
+    }
+}

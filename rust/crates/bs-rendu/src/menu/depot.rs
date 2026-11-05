@@ -1,9 +1,10 @@
-//! Map glissée sur la fenêtre (à l'accueil) : copiée dans le dossier des maps du joueur,
+//! Map (ou dossier de monde) glissée sur la fenêtre (à l'accueil) : copiée dans le dossier des maps du joueur,
 //! ajoutée aux arènes et choisie, volet des arènes ouvert avec un message. Une map que
 //! l'import refuse au chargement ramène au menu avec la raison (`ImportRefuse`).
 
 use bevy::prelude::*;
 use bs_monde::minecraft::dossier::{ajouter_carte, est_une_map};
+use bs_monde::minecraft::monde_entier::est_un_monde;
 
 use super::{Menu, Page, Volet};
 use crate::lancement::DonneesJeu;
@@ -23,7 +24,7 @@ pub fn deposer_carte(
         let FileDragAndDrop::DroppedFile { path_buf, .. } = e else {
             continue;
         };
-        if menu.page != Page::Accueil || !est_une_map(path_buf) {
+        if menu.page != Page::Accueil || !(est_une_map(path_buf) || est_un_monde(path_buf)) {
             continue;
         }
         let resultat = ajouter_carte(&sauvegarde.dossier_cartes(), path_buf)

@@ -37,7 +37,7 @@ fait dans la version Rust (branche `rust`, état au 04/11/2026).
 - [ ] Zones d'ennemis par défaut pour une map importée (aujourd'hui : une seule population pour toute l'arène)
 - [x] (Rust) Rapport d'import visible en jeu : liste des blocs inconnus (aujourd'hui seulement dans la console)
 - [x] (Rust) Format `.litematic` (Litematica)
-- [ ] Monde entier (dossier de sauvegarde, régions `.mca`) avec choix de la zone
+- [ ] Monde entier (dossier de sauvegarde, régions `.mca`) avec choix de la zone (Rust : fait en glissant le dossier du monde, zone de 96 × 96 autour du panneau `depart` ; pas de choix de la taille)
 - [x] (Rust) Bedrock (`.mcstructure`) : blocs courants traduits en blocs Java
 - [x] (Rust) Importer une map depuis le jeu (glisser le fichier sur la fenêtre), sans passer par GitHub
 

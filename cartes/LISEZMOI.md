@@ -13,6 +13,11 @@ l'accueil : la map est copiée (avec son `.json` voisin s'il existe) dans le
 dossier `cartes` des données du jeu et proposée parmi les arènes, sans passer
 par le dépôt.
 
+On peut aussi y glisser le **dossier d'un monde** de Java (celui qui contient
+`level.dat`, dans `saves`, 1.16 ou plus récent) : le jeu découpe 96 × 96 blocs
+autour du panneau `depart` (sinon du point d'apparition), de 16 blocs sous le
+panneau à 48 au-dessus, et l'enregistre en `.schem` au nom du monde.
+
 **Zone jouable** : le sol plat où se trouve un panneau portant le mot
 `depart` (sinon, le centre de la schématique), et tout ce qui y est relié à
 pied au même niveau. Les murs, clôtures et reliefs qui l'entourent la

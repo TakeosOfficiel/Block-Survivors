@@ -12,6 +12,7 @@ pub mod litematic;
 pub mod maillage;
 pub mod mcstructure;
 pub mod modeles;
+pub mod monde_entier;
 pub mod nbt;
 pub mod panneaux;
 pub mod proprietes;

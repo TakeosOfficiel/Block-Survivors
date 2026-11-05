@@ -1,11 +1,13 @@
-//! Maps du joueur : un .schem, .litematic, .nbt ou .mcstructure glissé sur la fenêtre est copié (avec le .json du
-//! même nom, s'il est à côté) dans le dossier `cartes` des données du jeu, puis lu au
-//! démarrage comme les maps embarquées. Les fichiers lus restent en mémoire jusqu'à la
+//! Maps du joueur : un .schem, .litematic, .nbt ou .mcstructure glissé sur la fenêtre
+//! est copié (avec le .json du même nom, s'il est à côté) dans le dossier `cartes` des
+//! données du jeu, puis lu au démarrage comme les maps embarquées. Un dossier de monde
+//! glissé y est enregistré en .schem (zone autour du panneau « depart »). Les fichiers lus restent en mémoire jusqu'à la
 //! fin du programme (comme les maps embarquées).
 
 use std::path::{Path, PathBuf};
 
 use super::cartes::Carte;
+use super::monde_entier::{est_un_monde, extraire_monde};
 use super::schematique::lire_schematique;
 
 /// Extensions reconnues comme des maps.
@@ -56,7 +58,19 @@ pub fn cartes_du_dossier(dossier: &Path, erreurs: &mut Vec<String>) -> Vec<&'sta
 }
 
 /// Copie la map `source` (et son .json) dans `dossier`, puis la lit depuis sa copie.
+/// Un monde entier est découpé et enregistré en `<nom du monde>.schem`.
 pub fn ajouter_carte(dossier: &Path, source: &Path) -> Result<&'static Carte, String> {
+    if est_un_monde(source) {
+        let nom = source
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or("Nom de monde invalide.")?;
+        let octets = extraire_monde(source).map_err(|e| format!("{nom} : {e}"))?;
+        std::fs::create_dir_all(dossier).map_err(|e| format!("Dossier des maps : {e}"))?;
+        let cible = dossier.join(format!("{nom}.schem"));
+        std::fs::write(&cible, octets).map_err(|e| format!("Écriture de la map : {e}"))?;
+        return lire_carte(&cible);
+    }
     let carte = lire_carte(source)?;
     let nom = source.file_name().ok_or("Nom de fichier invalide.")?;
     std::fs::create_dir_all(dossier).map_err(|e| format!("Dossier des maps : {e}"))?;

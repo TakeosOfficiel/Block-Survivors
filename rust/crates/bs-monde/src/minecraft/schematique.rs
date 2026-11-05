@@ -6,6 +6,7 @@
 
 use std::collections::HashMap;
 
+use super::bannieres::{avec_motifs, motifs_java};
 use super::biomes::{GrilleBiomes, biome_dominant, grille_biomes};
 use super::litematic::lire_litematic;
 use super::mcstructure::lire_mcstructure;
@@ -191,12 +192,25 @@ fn lire_sponge(s: &Compound, version: u32) -> Result<Schematique, String> {
             .or_else(|| e.get("id"))
             .and_then(Nbt::chaine)
             .unwrap_or("");
-        if !id.contains("sign") {
-            continue;
-        }
         let Some(pos) = e.get("Pos").and_then(Nbt::entiers).filter(|p| p.len() >= 3) else {
             continue;
         };
+        if id.contains("banner") {
+            let dans = |v: i64, n: usize| usize::try_from(v).ok().filter(|&v| v < n);
+            if let (Some(x), Some(y), Some(z), Some(m)) = (
+                dans(pos[0], largeur),
+                dans(pos[1], hauteur),
+                dans(pos[2], profondeur),
+                motifs_java(e),
+            ) {
+                let i = (y * profondeur + z) * largeur + x;
+                let etat = avec_motifs(&palette.etats[blocs[i] as usize], &m);
+                blocs[i] = palette.ajouter(&etat);
+            }
+        }
+        if !id.contains("sign") {
+            continue;
+        }
         let texte = texte_de(e.get("Data").unwrap_or(&Nbt::Compound(e.clone())));
         panneaux.push(Panneau {
             x: pos[0] as i32,

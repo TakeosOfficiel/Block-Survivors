@@ -155,7 +155,7 @@ pub fn construire_maillages(
                         let couleur = if q.teinte {
                             genres[i as usize].couleur(teintes_en(x, z))
                         } else {
-                            0xffffff
+                            q.couleur
                         };
                         ajouter(
                             &mut sortie[k],
@@ -306,6 +306,7 @@ fn quad_liquide(d: Direction, b: f32, h: f32, texture: &str) -> Quad {
         normale: d.vecteur().map(|v| v as f32),
         cullface: None,
         teinte: true,
+        couleur: 0xffffff,
         ombre: true,
     }
 }

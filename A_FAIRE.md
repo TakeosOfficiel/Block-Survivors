@@ -46,7 +46,7 @@ fait dans la version Rust (branche `rust`, état au 04/11/2026).
 - [x] Coffres (simples, piégés, de l'Ender, de cuivre ; doubles, réunis aussi pour Bedrock) et lits : vrais modèles (jeu Rust)
 - [x] Panneaux (modèles vanilla) et têtes (squelette, wither, zombie, creeper, joueur) : vrais modèles (jeu Rust)
 - [x] Bannières (Rust : tissu en laine de leur couleur, sans motifs)
-- [ ] Motifs des bannières (aujourd'hui couleur de fond seulement) (têtes de dragon et de piglin : fait en Rust, chapeau des têtes de joueur et de zombie aussi)
+- [x] (Rust) Motifs des bannières (Java ancien et 1.20.5+, Bedrock, mondes entiers), têtes de dragon et de piglin, chapeau des têtes de joueur et de zombie
 - [x] (Rust) Textures animées dans l'atlas (eau, lave, magma, portail) : aujourd'hui figées sur la première image
 - [x] (Rust) Eau qui coule (hauteurs 1 à 7) au lieu d'une eau pleine (surface plate par bloc, sans pente)
 - [x] (Rust) Teinte selon le biome de la map : biome de chaque colonne du .schem (fondu sur 5 × 5 comme Minecraft, gardé aussi au découpage d'un monde), ou champ `biome` du .json pour toute la map

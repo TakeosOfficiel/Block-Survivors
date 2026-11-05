@@ -84,6 +84,9 @@ pub struct Quad {
     pub cullface: Option<Direction>,
     /// Teinte de biome (herbe, feuillage, eau…).
     pub teinte: bool,
+    /// Couleur fixe 0xRRGGBB qui multiplie la texture sans teinte de biome (calques des
+    /// bannières : clé « couleur » de la face, propre à ce jeu) ; blanc sinon.
+    pub couleur: u32,
     /// Faux : éclairée comme une face du dessus (plantes).
     pub ombre: bool,
 }
@@ -321,6 +324,10 @@ pub fn cuire_modele(modele: &ModeleResolu, rx: i32, ry: i32, uvlock: bool) -> Mo
                 normale,
                 cullface,
                 teinte: face.get("tintindex").is_some(),
+                couleur: face
+                    .get("couleur")
+                    .and_then(Value::as_u64)
+                    .map_or(0xffffff, |c| c as u32),
                 ombre,
             });
         }

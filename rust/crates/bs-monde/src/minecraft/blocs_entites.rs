@@ -4,6 +4,7 @@
 
 use serde_json::{Map, Value, json};
 
+use super::bannieres::banniere;
 use super::cuisson::{Direction, ModeleResolu};
 use super::schematique::Schematique;
 use super::tetes::{rotation_sol, tete};
@@ -137,52 +138,6 @@ fn coffre(texture: &str, moitie: Moitie) -> ModeleResolu {
     )
 }
 
-/// Bannière tournée au nord, en laine de sa couleur sur un mât de bois : debout (mât
-/// de 42 px, tissu de 20 × 40 px devant) ou au mur (contre le bloc au sud, le tissu
-/// pendant sur le bloc du dessous). Le tissu est découpé pour ne pas trop étirer la laine.
-fn banniere(couleur: &str, mur: bool) -> ModeleResolu {
-    let face = |de: [f32; 3], a: [f32; 3], t: &str, uv: [f32; 4]| {
-        let faces: Map<String, Value> = ["north", "south", "east", "west", "up", "down"]
-            .iter()
-            .map(|d| ((*d).to_owned(), json!({ "texture": t, "uv": uv })))
-            .collect();
-        json!({ "from": de, "to": a, "faces": faces })
-    };
-    let (z, haut) = if mur { (13.0, 14.0) } else { (6.0, 42.0) };
-    let mut elements = vec![face(
-        [-2.0, haut, z],
-        [18.0, haut + 2.0, z + 3.0],
-        "#bois",
-        [0.0, 0.0, 16.0, 2.0],
-    )];
-    if !mur {
-        elements.push(face(
-            [7.0, 0.0, 7.0],
-            [9.0, 42.0, 9.0],
-            "#bois",
-            [7.0, 0.0, 9.0, 16.0],
-        ));
-    }
-    let mut y = haut;
-    while y > haut - 40.0 {
-        let bas = (y - 16.0).max(haut - 40.0);
-        elements.push(face(
-            [-2.0, bas, z],
-            [18.0, y, z + 1.0],
-            "#laine",
-            [0.0, 0.0, 16.0, y - bas],
-        ));
-        y = bas;
-    }
-    ModeleResolu {
-        textures: Map::from_iter([
-            ("laine".to_owned(), json!(format!("block/{couleur}_wool"))),
-            ("bois".to_owned(), json!("block/oak_planks")),
-        ]),
-        elements,
-    }
-}
-
 /// Modèle et rotation (degrés autour de y) d'un bloc à entité, s'il en a un ici.
 pub(super) fn modele_bloc_entite(
     nom: &str,
@@ -211,10 +166,10 @@ pub(super) fn modele_bloc_entite(
     let mur = nom.replacen("_wall", "", 1);
     if let Some(couleur) = mur.strip_suffix("_banner") {
         return Some(if mur != nom {
-            (banniere(couleur, true), ry)
+            (banniere(couleur, true, propriete("motifs").as_deref()), ry)
         } else {
             let ry = rotation_sol(propriete("rotation").as_deref());
-            (banniere(couleur, false), ry)
+            (banniere(couleur, false, propriete("motifs").as_deref()), ry)
         });
     }
     let modele = tete(&mur, mur != nom)?;
@@ -312,8 +267,14 @@ mod tests {
         .unwrap();
         assert_eq!(ry, 270);
         assert!(modele_bloc_entite("zombie_wall_head", |_| None).is_some());
-        let (m, _) = modele_bloc_entite("red_wall_banner", |_| None).unwrap();
-        assert_eq!(m.textures["laine"], "block/red_wool");
+        let (m, _) = modele_bloc_entite("red_wall_banner", |k| {
+            (k == "motifs").then(|| "cross:blue".to_owned())
+        })
+        .unwrap();
+        assert_eq!(m.textures["c0"], "entity/banner/base");
+        assert_eq!(m.textures["c1"], "entity/banner/cross");
+        // Barre, puis le tissu et un calque de motif
+        assert_eq!(m.elements.len(), 3);
     }
 
     #[test]

@@ -4,6 +4,7 @@
 //! Java pour les blocs courants ; un état inconnu est laissé de côté (le modèle prend
 //! alors sa première variante compatible).
 
+use super::bannieres::{TEINTURES, avec_motifs, motifs_bedrock};
 use super::blocs_entites::apparier_coffres;
 use super::nbt::{Compound, Nbt};
 use super::schematique::{Palette, Panneau, Schematique, texte_de};
@@ -57,26 +58,6 @@ const NOMS: [(&str, &str); 44] = [
     ("glow_frame", "air"),
     ("stone_block_slab", "smooth_stone_slab"),
     ("double_stone_block_slab", "smooth_stone_slab"),
-];
-
-/// Teintures de Java, dans l'ordre de leurs numéros.
-const TEINTURES: [&str; 16] = [
-    "white",
-    "orange",
-    "magenta",
-    "light_blue",
-    "yellow",
-    "lime",
-    "pink",
-    "gray",
-    "light_gray",
-    "cyan",
-    "purple",
-    "blue",
-    "brown",
-    "green",
-    "red",
-    "black",
 ];
 
 /// Faces numérotées de Bedrock (`facing_direction`).
@@ -249,16 +230,16 @@ pub(super) fn lire_mcstructure(racine: &Compound) -> Result<Schematique, String>
         let donnees = positions
             .and_then(|p| p.compound(&i.to_string()))
             .and_then(|p| p.compound("block_entity_data"));
-        // Couleur d'une bannière : dans son entité (`Base`, teintures dans l'ordre inverse)
-        let b = match (
-            etat,
-            donnees.and_then(|d| d.get("Base")).and_then(Nbt::entier),
-        ) {
-            (Some(e), Some(c)) if e.starts_with("white_") && e.contains("banner") => {
-                let c = TEINTURES
-                    .get(15 - c.clamp(0, 15) as usize)
-                    .unwrap_or(&"white");
-                palette.ajouter(&e.replacen("white", c, 1))
+        // Bannière : couleur (`Base`, teintures dans l'ordre inverse) et motifs dans son entité
+        let b = match (etat, donnees) {
+            (Some(e), Some(d)) if e.starts_with("white_") && e.contains("banner") => {
+                let c = d.get("Base").and_then(Nbt::entier).unwrap_or(15);
+                let c = TEINTURES[15 - c.clamp(0, 15) as usize];
+                let e = e.replacen("white", c, 1);
+                palette.ajouter(&match motifs_bedrock(d) {
+                    Some(m) => avec_motifs(&e, &m),
+                    None => e,
+                })
             }
             _ => b,
         };

@@ -3,6 +3,7 @@
 //! de collision, maillages par texture. Rien ici ne télécharge ni n'affiche : les
 //! fichiers vanilla arrivent par une `SourceFichiers`, les maillages partent au rendu.
 
+pub mod bannieres;
 pub mod biomes;
 pub mod blocs_entites;
 pub mod cartes;

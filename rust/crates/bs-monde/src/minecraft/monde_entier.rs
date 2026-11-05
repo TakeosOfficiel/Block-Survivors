@@ -190,8 +190,7 @@ impl Decoupe {
                 || !e
                     .get("id")
                     .and_then(Nbt::chaine)
-                    .unwrap_or("")
-                    .contains("sign")
+                    .is_some_and(|id| id.contains("sign") || id.contains("banner"))
             {
                 continue;
             }

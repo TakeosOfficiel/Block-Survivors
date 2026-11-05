@@ -6,7 +6,7 @@
 
 use std::collections::HashMap;
 
-use super::biomes::biome_dominant;
+use super::biomes::{GrilleBiomes, biome_dominant, grille_biomes};
 use super::litematic::lire_litematic;
 use super::mcstructure::lire_mcstructure;
 use super::nbt::{Compound, Nbt, lire_nbt, lire_nbt_bedrock};
@@ -34,6 +34,8 @@ pub struct Schematique {
     pub version_donnees: i64,
     /// Biome le plus présent (« plains »…), s'il est enregistré.
     pub biome: Option<String>,
+    /// Biome de chaque colonne, quand il y en a plusieurs.
+    pub grille_biomes: Option<GrilleBiomes>,
 }
 
 impl Schematique {
@@ -212,6 +214,7 @@ fn lire_sponge(s: &Compound, version: u32) -> Result<Schematique, String> {
         panneaux,
         version_donnees: s.get("DataVersion").and_then(Nbt::entier).unwrap_or(0),
         biome: biome_dominant(s),
+        grille_biomes: grille_biomes(s, [largeur, hauteur, profondeur]),
     })
 }
 
@@ -275,6 +278,7 @@ fn lire_structure(s: &Compound) -> Result<Schematique, String> {
         panneaux,
         version_donnees: s.get("DataVersion").and_then(Nbt::entier).unwrap_or(0),
         biome: None,
+        grille_biomes: None,
     })
 }
 

@@ -49,7 +49,7 @@ fait dans la version Rust (branche `rust`, état au 04/11/2026).
 - [ ] Têtes de dragon et de piglin, motifs des bannières (aujourd'hui rien)
 - [x] (Rust) Textures animées dans l'atlas (eau, lave, magma, portail) : aujourd'hui figées sur la première image
 - [x] (Rust) Eau qui coule (hauteurs 1 à 7) au lieu d'une eau pleine (surface plate par bloc, sans pente)
-- [ ] Teinte selon le biome de la map (aujourd'hui toujours « plaines ») (Rust : fait, biome le plus présent du .schem ou champ `biome` du .json ; pas encore biome par colonne)
+- [x] (Rust) Teinte selon le biome de la map : biome de chaque colonne du .schem (fondu sur 5 × 5 comme Minecraft, gardé aussi au découpage d'un monde), ou champ `biome` du .json pour toute la map
 - [x] (Rust) Plantes et feuillage qui ondulent au vent (shaders), comme dans les arènes du jeu
 - [x] (Rust) Blocs lumineux (torches, lanternes, glowstone, lave) qui éclairent vraiment : indispensable pour les caves
 - [x] (Rust) Ombres du soleil sur tout le décor (la carte d'ombres ne couvre que l'arène et 6 blocs autour)

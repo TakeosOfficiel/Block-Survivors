@@ -7,7 +7,7 @@
 use super::biomes::Teintes;
 use super::cuisson::{Direction, ModeleCuit, Quad, V3};
 use super::modeles::{BlocCuit, Liquide, TEXTURE_EAU, TEXTURE_LAVE, Variante};
-use super::proprietes::{liquide_affiche, teinte_de};
+use super::proprietes::{Teinte, liquide_affiche, teinte_de};
 use super::schematique::Schematique;
 use super::vent::{VENT_AUCUN, mode_vent, vent_du_bloc};
 
@@ -94,15 +94,21 @@ pub fn construire_maillages(
     let liquides: Vec<Option<Liquide>> = blocs.iter().map(liquide_affiche).collect();
     let hauteurs: Vec<f32> = blocs.iter().map(hauteur_liquide).collect();
     let biome = Teintes::du_biome(s.biome.as_deref());
-    let teintes: Vec<u32> = blocs
+    // Couleurs par colonne quand la map mêle plusieurs biomes
+    let colonnes = (s.grille_biomes.as_ref()).map(|g| g.teintes(s.largeur, s.profondeur));
+    let teintes_en = |x: i32, z: i32| {
+        colonnes
+            .as_ref()
+            .map_or(&biome, |c| &c[z as usize * s.largeur + x as usize])
+    };
+    let genres: Vec<Teinte> = blocs
         .iter()
         .map(|b| {
-            let nom = if b.liquide == Some(Liquide::Eau) {
-                "water"
+            if b.liquide == Some(Liquide::Eau) {
+                Teinte::Eau
             } else {
-                &b.nom
-            };
-            teinte_de(nom, &biome)
+                teinte_de(&b.nom)
+            }
         })
         .collect();
     let mut sortie: Vec<MaillageTexture> = (0..textures.len())
@@ -147,7 +153,7 @@ pub fn construire_maillages(
                             continue;
                         };
                         let couleur = if q.teinte {
-                            teintes[i as usize]
+                            genres[i as usize].couleur(teintes_en(x, z))
                         } else {
                             0xffffff
                         };
@@ -189,7 +195,7 @@ pub fn construire_maillages(
                     continue;
                 };
                 let couleur = if liquide == Liquide::Eau {
-                    biome.eau
+                    teintes_en(x, z).eau
                 } else {
                     0xffffff
                 };

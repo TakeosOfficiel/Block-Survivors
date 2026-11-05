@@ -42,8 +42,9 @@ délimitent ; tout le reste de la construction sert de décor.
 
 `base` reprend les ennemis, les boss et l'ambiance d'une arène du jeu
 (`prairie`, `mine` ou `nether`) ; les autres champs la remplacent. L'herbe, le
-feuillage et l'eau prennent la couleur du biome le plus présent dans le `.schem`
-(plaines s'il n'y en a pas) ; `biome` en impose un autre (`forest`, `taiga`,
+feuillage et l'eau prennent la couleur du biome de chaque colonne du `.schem`,
+fondue d'un biome à l'autre (plaines s'il n'y en a pas ; dans la version
+TypeScript, le biome le plus présent) ; `biome` en impose un seul à toute la map (`forest`, `taiga`,
 `swamp`, `jungle`, `savanna`, `badlands`, `cherry_grove`, `snowy_plains`…).
 
 **Panneaux de réglage** (facultatifs) : un panneau dont le texte contient

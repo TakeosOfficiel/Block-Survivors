@@ -287,6 +287,7 @@ pub(super) fn lire_mcstructure(racine: &Compound) -> Result<Schematique, String>
         panneaux,
         version_donnees: 0,
         biome: None,
+        grille_biomes: None,
     };
     apparier_coffres(&mut s);
     Ok(s)

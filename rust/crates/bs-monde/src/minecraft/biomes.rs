@@ -1,6 +1,7 @@
 //! Biomes d'une schématique : biome le plus présent (formats Sponge 2 et 3) et couleurs
 //! d'herbe, de feuillage et d'eau qui vont avec. Sans biome connu : « plaines », comme
-//! les arènes du jeu. Toute la map prend la teinte de son biome dominant.
+//! les arènes du jeu. Quand la schématique mêle plusieurs biomes, chaque colonne garde
+//! le sien (`GrilleBiomes`), et le maillage fond les couleurs d'une colonne à l'autre.
 
 use super::nbt::{Compound, Nbt};
 
@@ -115,9 +116,16 @@ impl Default for Teintes {
     }
 }
 
-/// Biome le plus présent de la schématique (Sponge 3 : `Biomes`, Sponge 2 : `BiomePalette`
-/// et `BiomeData`), sans « minecraft: ».
-pub fn biome_dominant(s: &Compound) -> Option<String> {
+/// Biome de chaque colonne (x, z) : index dans `noms`, case z × largeur + x.
+#[derive(Debug, Clone, PartialEq)]
+pub struct GrilleBiomes {
+    pub noms: Vec<String>,
+    pub cases: Vec<u16>,
+}
+
+/// Noms des biomes par valeur et valeurs des cases (Sponge 3 : `Biomes`, Sponge 2 :
+/// `BiomePalette` et `BiomeData`), noms sans « minecraft: ».
+fn lire_biomes(s: &Compound) -> Option<(Vec<String>, Vec<usize>)> {
     let (palette, donnees) = match s.compound("Biomes") {
         Some(b) => (b.compound("Palette")?, b.get("Data")?),
         None => (s.compound("BiomePalette")?, s.get("BiomeData")?),
@@ -125,7 +133,17 @@ pub fn biome_dominant(s: &Compound) -> Option<String> {
     let Nbt::Octets(donnees) = donnees else {
         return None;
     };
-    let mut comptes = vec![0u32; palette.0.len() + 1];
+    let mut noms = Vec::new();
+    for (nom, i) in &palette.0 {
+        let Some(i) = i.entier().filter(|i| (0..4096).contains(i)) else {
+            continue;
+        };
+        if noms.len() <= i as usize {
+            noms.resize(i as usize + 1, String::new());
+        }
+        noms[i as usize] = nom.strip_prefix("minecraft:").unwrap_or(nom).to_owned();
+    }
+    let mut valeurs = Vec::with_capacity(donnees.len());
     let mut lu = 0;
     while lu < donnees.len() {
         let (mut valeur, mut decalage) = (0usize, 0);
@@ -138,16 +156,82 @@ pub fn biome_dominant(s: &Compound) -> Option<String> {
             }
             decalage += 7;
         }
-        if let Some(c) = comptes.get_mut(valeur) {
+        valeurs.push(valeur);
+    }
+    Some((noms, valeurs))
+}
+
+/// Biome le plus présent de la schématique, sans « minecraft: ».
+pub fn biome_dominant(s: &Compound) -> Option<String> {
+    let (noms, valeurs) = lire_biomes(s)?;
+    let mut comptes = vec![0u32; noms.len()];
+    for v in valeurs {
+        if let Some(c) = comptes.get_mut(v) {
             *c += 1;
         }
     }
-    let (plus, _) = comptes.iter().enumerate().max_by_key(|(_, c)| **c)?;
-    palette
-        .0
+    let (plus, _) = (comptes.iter().enumerate())
+        .filter(|(i, _)| !noms[*i].is_empty())
+        .max_by_key(|(_, c)| **c)?;
+    Some(noms[plus].clone())
+}
+
+/// Biome de chaque colonne (couche du haut pour Sponge 3, qui en donne un par bloc) ;
+/// `None` s'il n'y en a qu'un seul.
+pub fn grille_biomes(s: &Compound, taille: [usize; 3]) -> Option<GrilleBiomes> {
+    let [l, h, p] = taille;
+    let (noms, valeurs) = lire_biomes(s)?;
+    let debut = match valeurs.len() {
+        n if n == l * p => 0,
+        n if n == l * h * p && h > 0 => (h - 1) * p * l,
+        _ => return None,
+    };
+    let cases: Vec<u16> = valeurs[debut..debut + l * p]
         .iter()
-        .find(|(_, i)| i.entier() == Some(plus as i64))
-        .map(|(nom, _)| nom.strip_prefix("minecraft:").unwrap_or(nom).to_owned())
+        .map(|&v| if v < noms.len() { v as u16 } else { 0 })
+        .collect();
+    if cases.iter().all(|&c| c == cases[0]) {
+        return None;
+    }
+    Some(GrilleBiomes { noms, cases })
+}
+
+impl GrilleBiomes {
+    /// Couleurs de chaque colonne, mêlées à celles des colonnes voisines (moyenne sur
+    /// 5 × 5, comme le fondu de Minecraft) pour que les biomes ne se coupent pas net.
+    pub fn teintes(&self, largeur: usize, profondeur: usize) -> Vec<Teintes> {
+        let par_nom: Vec<Teintes> = (self.noms.iter())
+            .map(|n| Teintes::du_biome(Some(n)))
+            .collect();
+        let brut = |x: usize, z: usize| par_nom[self.cases[z * largeur + x] as usize];
+        let canal = |c: u32, k: u32| (c >> k) & 0xff;
+        let mut sortie = Vec::with_capacity(largeur * profondeur);
+        for z in 0..profondeur {
+            for x in 0..largeur {
+                let mut somme = [[0u32; 3]; 3];
+                let mut n = 0;
+                for vz in z.saturating_sub(2)..(z + 3).min(profondeur) {
+                    for vx in x.saturating_sub(2)..(x + 3).min(largeur) {
+                        let t = brut(vx, vz);
+                        for (s, c) in somme.iter_mut().zip([t.herbe, t.feuillage, t.eau]) {
+                            for (i, k) in [16, 8, 0].into_iter().enumerate() {
+                                s[i] += canal(c, k);
+                            }
+                        }
+                        n += 1;
+                    }
+                }
+                let [herbe, feuillage, eau] =
+                    somme.map(|s| ((s[0] / n) << 16) | ((s[1] / n) << 8) | (s[2] / n));
+                sortie.push(Teintes {
+                    herbe,
+                    feuillage,
+                    eau,
+                });
+            }
+        }
+        sortie
+    }
 }
 
 #[cfg(test)]

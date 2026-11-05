@@ -32,10 +32,17 @@ fn region() -> Vec<u8> {
         ),
         (
             "biomes".into(),
-            Nbt::Compound(Compound(vec![(
-                "palette".into(),
-                Nbt::Liste(vec![Nbt::Chaine("minecraft:desert".into())]),
-            )])),
+            Nbt::Compound(Compound(vec![
+                (
+                    "palette".into(),
+                    Nbt::Liste(vec![
+                        Nbt::Chaine("minecraft:desert".into()),
+                        Nbt::Chaine("minecraft:swamp".into()),
+                    ]),
+                ),
+                // Marais sur les 4 premières colonnes x du tronçon
+                ("data".into(), Nbt::Longs(vec![0x1111_1111_1111_1111])),
+            ])),
         ),
     ]);
     let panneau = Compound(vec![
@@ -83,5 +90,8 @@ fn monde_decoupe_autour_du_depart() {
     assert_eq!(s.panneaux.len(), 1);
     assert_eq!((s.panneaux[0].x, s.panneaux[0].y), (48, 16));
     assert_eq!(s.biome.as_deref(), Some("desert"));
+    let g = s.grille_biomes.as_ref().expect("deux biomes");
+    let biome = |x: usize, z: usize| g.noms[g.cases[z * 96 + x] as usize].as_str();
+    assert_eq!((biome(41, 48), biome(48, 48)), ("swamp", "desert"));
     assert_eq!(s.version_donnees, 3953);
 }

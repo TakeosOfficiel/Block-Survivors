@@ -369,6 +369,7 @@ mod tests {
             panneaux: Vec::new(),
             version_donnees: 0,
             biome: None,
+            grille_biomes: None,
         };
         apparier_coffres(&mut s);
         let etats: Vec<&str> = s

@@ -182,6 +182,7 @@ fn cuvette() -> Schematique {
         }],
         version_donnees: 0,
         biome: None,
+        grille_biomes: None,
     }
 }
 
@@ -282,6 +283,7 @@ fn eau_qui_coule() {
         panneaux: Vec::new(),
         version_donnees: 0,
         biome: None,
+        grille_biomes: None,
     };
     let blocs = cuire(&s.palette, &fichiers()).expect("cuisson");
     let tex = textures(&blocs);

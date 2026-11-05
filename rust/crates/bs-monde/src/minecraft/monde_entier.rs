@@ -120,14 +120,16 @@ fn bits_pour(n: usize, minimum: usize) -> usize {
     ((usize::BITS - n.saturating_sub(1).leading_zeros()) as usize).max(minimum)
 }
 
-/// Zone découpée : blocs, palette, panneaux et biomes comptés.
+/// Zone découpée : blocs, palette, panneaux et biome de chaque colonne.
 struct Decoupe {
     min: [i32; 3],
     taille: [usize; 3],
     palette: Palette,
     blocs: Vec<u16>,
     entites: Vec<Nbt>,
-    biomes: HashMap<String, u32>,
+    noms_biomes: Vec<String>,
+    /// Par colonne (z × largeur + x) : hauteur de la case de biome lue et son biome.
+    biomes: Vec<(i32, u16)>,
     version: i64,
 }
 
@@ -178,7 +180,7 @@ impl Decoupe {
                 self.blocs[((by * p + bz) * l + bx) as usize] =
                     passage.get(k).copied().unwrap_or(0);
             }
-            self.compter_biomes(s);
+            self.lire_biomes(s, tx, tz, y0);
         }
         for e in entites(c) {
             let Nbt::Compound(e) = e else { continue };
@@ -204,28 +206,53 @@ impl Decoupe {
         }
     }
 
-    /// Biomes de la section (1.18 et plus : 64 cases de 4 × 4 × 4).
-    fn compter_biomes(&mut self, s: &Compound) {
+    /// Biomes de la section (1.18 et plus : 64 cases de 4 × 4 × 4) : chaque colonne
+    /// garde celui de la plus haute case lue sous le haut de la zone.
+    fn lire_biomes(&mut self, s: &Compound, tx: i32, tz: i32, y0: i32) {
         let Some(b) = s.compound("biomes") else {
             return;
         };
-        let noms: Vec<&str> = liste(b, &["palette"])
+        let noms: Vec<u16> = liste(b, &["palette"])
             .iter()
             .filter_map(Nbt::chaine)
+            .map(|n| {
+                let n = n.strip_prefix("minecraft:").unwrap_or(n);
+                match self.noms_biomes.iter().position(|m| m == n) {
+                    Some(k) => k as u16,
+                    None => {
+                        self.noms_biomes.push(n.to_owned());
+                        (self.noms_biomes.len() - 1) as u16
+                    }
+                }
+            })
             .collect();
         let longs = match b.get("data") {
             Some(Nbt::Longs(l)) => l.as_slice(),
             _ => &[],
         };
         let bits = bits_pour(noms.len(), 1);
+        let [l, h, p] = self.taille.map(|t| t as i32);
         for i in 0..64 {
+            let y = y0 + (i as i32 >> 4) * 4;
+            if y >= self.min[1] + h {
+                continue;
+            }
             let k = if longs.is_empty() {
                 0
             } else {
                 valeur(longs, i, bits)
             };
-            if let Some(n) = noms.get(k) {
-                *self.biomes.entry((*n).to_owned()).or_default() += 1;
+            let Some(&n) = noms.get(k) else { continue };
+            for c in 0..16 {
+                let x = tx * 16 + (i as i32 & 3) * 4 + (c & 3) - self.min[0];
+                let z = tz * 16 + ((i as i32 >> 2) & 3) * 4 + (c >> 2) - self.min[2];
+                if x < 0 || z < 0 || x >= l || z >= p {
+                    continue;
+                }
+                let case = &mut self.biomes[(z * l + x) as usize];
+                if y > case.0 {
+                    *case = (y, n);
+                }
             }
         }
     }
@@ -249,11 +276,20 @@ impl Decoupe {
                 .map(|(i, e)| (format!("minecraft:{e}"), Nbt::Entier(i as i32)))
                 .collect(),
         );
-        let biome = self
-            .biomes
-            .iter()
-            .max_by_key(|(n, c)| (**c, std::cmp::Reverse((*n).clone())))
-            .map_or("minecraft:plains".to_owned(), |(n, _)| n.clone());
+        // Biomes par bloc (Sponge 3) : chaque colonne répète le sien sur toute sa hauteur
+        let mut noms_biomes = self.noms_biomes;
+        if noms_biomes.is_empty() {
+            noms_biomes.push("plains".to_owned());
+        }
+        let mut biomes = Vec::with_capacity(self.blocs.len());
+        for _ in 0..self.taille[1] {
+            biomes.extend(self.biomes.iter().map(|&(_, n)| n.min(127) as i8));
+        }
+        let palette_biomes = Compound(
+            (noms_biomes.iter().enumerate())
+                .map(|(i, n)| (format!("minecraft:{n}"), Nbt::Entier(i as i32)))
+                .collect(),
+        );
         let [l, h, p] = self.taille.map(|t| Nbt::Court(t as i16));
         let schematique = Compound(vec![
             ("Version".into(), Nbt::Entier(3)),
@@ -272,11 +308,8 @@ impl Decoupe {
             (
                 "Biomes".into(),
                 Nbt::Compound(Compound(vec![
-                    (
-                        "Palette".into(),
-                        Nbt::Compound(Compound(vec![(biome, Nbt::Entier(0))])),
-                    ),
-                    ("Data".into(), Nbt::Octets(vec![0])),
+                    ("Palette".into(), Nbt::Compound(palette_biomes)),
+                    ("Data".into(), Nbt::Octets(biomes)),
                 ])),
             ),
         ]);
@@ -335,7 +368,8 @@ pub fn extraire_monde(dossier: &Path) -> Result<Vec<u8>, String> {
         palette: Palette::nouvelle(),
         blocs: vec![0; taille.iter().product()],
         entites: Vec::new(),
-        biomes: HashMap::new(),
+        noms_biomes: Vec::new(),
+        biomes: vec![(i32::MIN, 0); taille[0] * taille[2]],
         version: 0,
     };
     let chemins: HashMap<_, _> = fichiers.into_iter().collect();

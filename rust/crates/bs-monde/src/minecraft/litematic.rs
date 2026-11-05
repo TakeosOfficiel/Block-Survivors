@@ -156,6 +156,7 @@ pub(super) fn lire_litematic(racine: &Compound) -> Result<Schematique, String> {
             .and_then(Nbt::entier)
             .unwrap_or(0),
         biome: None,
+        grille_biomes: None,
     })
 }
 

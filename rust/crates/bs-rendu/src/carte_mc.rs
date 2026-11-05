@@ -132,6 +132,7 @@ pub fn avancer_import(
     let def = import.definition.take().expect("définition lue");
     if def.biome.is_some() {
         s.biome.clone_from(&def.biome);
+        s.grille_biomes = None;
     }
     let ai = match importer(import.d, def, &s, &blocs) {
         Ok(ai) => ai,

@@ -5,18 +5,41 @@
 use super::biomes::Teintes;
 use super::modeles::{BlocCuit, Liquide};
 
-/// Couleur (0xRRGGBB) des faces teintées du bloc, dans un biome de ces couleurs.
-pub fn teinte_de(nom: &str, t: &Teintes) -> u32 {
+/// D'où vient la couleur des faces teintées d'un bloc.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Teinte {
+    Fixe(u32),
+    Herbe,
+    Feuillage,
+    Eau,
+}
+
+impl Teinte {
+    /// Couleur 0xRRGGBB dans un biome de ces couleurs.
+    pub fn couleur(self, t: &Teintes) -> u32 {
+        match self {
+            Teinte::Fixe(c) => c,
+            Teinte::Herbe => t.herbe,
+            Teinte::Feuillage => t.feuillage,
+            Teinte::Eau => t.eau,
+        }
+    }
+}
+
+/// Teinte des faces teintées du bloc.
+pub fn teinte_de(nom: &str) -> Teinte {
     match nom {
-        "birch_leaves" => 0x80a755,
-        "spruce_leaves" => 0x619961,
+        "birch_leaves" => Teinte::Fixe(0x80a755),
+        "spruce_leaves" => Teinte::Fixe(0x619961),
         "oak_leaves" | "jungle_leaves" | "acacia_leaves" | "dark_oak_leaves"
-        | "mangrove_leaves" | "vine" => t.feuillage,
-        "lily_pad" => 0x208030,
-        "water" | "water_cauldron" | "bubble_column" => t.eau,
-        "redstone_wire" => 0xa00000,
-        "melon_stem" | "pumpkin_stem" | "attached_melon_stem" | "attached_pumpkin_stem" => 0xbfb030,
-        _ => t.herbe,
+        | "mangrove_leaves" | "vine" => Teinte::Feuillage,
+        "lily_pad" => Teinte::Fixe(0x208030),
+        "water" | "water_cauldron" | "bubble_column" => Teinte::Eau,
+        "redstone_wire" => Teinte::Fixe(0xa00000),
+        "melon_stem" | "pumpkin_stem" | "attached_melon_stem" | "attached_pumpkin_stem" => {
+            Teinte::Fixe(0xbfb030)
+        }
+        _ => Teinte::Herbe,
     }
 }
 

@@ -1,24 +1,22 @@
 //! Ce que les fichiers de modèles ne disent pas (src/minecraft/proprietes.ts) : teinte
 //! de biome des faces teintées, collisions et effets au sol de chaque bloc. Couleurs du
-//! biome « plaines », comme les arènes du jeu.
+//! biome de la map (voir `biomes`) ; bouleau, sapin et quelques blocs ont leur couleur fixe.
 
+use super::biomes::Teintes;
 use super::modeles::{BlocCuit, Liquide};
 
-const HERBE: u32 = 0x91bd59;
-const FEUILLAGE: u32 = 0x77ab2f;
-
-/// Couleur (0xRRGGBB) des faces teintées du bloc.
-pub fn teinte_de(nom: &str) -> u32 {
+/// Couleur (0xRRGGBB) des faces teintées du bloc, dans un biome de ces couleurs.
+pub fn teinte_de(nom: &str, t: &Teintes) -> u32 {
     match nom {
         "birch_leaves" => 0x80a755,
         "spruce_leaves" => 0x619961,
         "oak_leaves" | "jungle_leaves" | "acacia_leaves" | "dark_oak_leaves"
-        | "mangrove_leaves" | "vine" => FEUILLAGE,
+        | "mangrove_leaves" | "vine" => t.feuillage,
         "lily_pad" => 0x208030,
-        "water" | "water_cauldron" | "bubble_column" => 0x3f76e4,
+        "water" | "water_cauldron" | "bubble_column" => t.eau,
         "redstone_wire" => 0xa00000,
         "melon_stem" | "pumpkin_stem" | "attached_melon_stem" | "attached_pumpkin_stem" => 0xbfb030,
-        _ => HERBE,
+        _ => t.herbe,
     }
 }
 

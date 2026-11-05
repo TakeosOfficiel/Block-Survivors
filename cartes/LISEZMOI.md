@@ -21,13 +21,17 @@ délimitent ; tout le reste de la construction sert de décor.
   "ciel": "#78a7ff",
   "brouillard": { "debut": 45, "fin": 120 },
   "lumiere": { "ambiante": 0.35, "soleil": 0.75 },
+  "biome": "swamp",
   "boss": ["geant", "seigneur_wither"],
   "ennemis": [{ "ennemi": "zombie", "depuis": 0, "poids": 6 }]
 }
 ```
 
 `base` reprend les ennemis, les boss et l'ambiance d'une arène du jeu
-(`prairie`, `mine` ou `nether`) ; les autres champs la remplacent.
+(`prairie`, `mine` ou `nether`) ; les autres champs la remplacent. L'herbe, le
+feuillage et l'eau prennent la couleur du biome le plus présent dans le `.schem`
+(plaines s'il n'y en a pas) ; `biome` en impose un autre (`forest`, `taiga`,
+`swamp`, `jungle`, `savanna`, `badlands`, `cherry_grove`, `snowy_plains`…).
 
 **Panneaux de réglage** (facultatifs) : un panneau dont le texte contient
 `[ennemis]` crée autour de lui une zone peuplée de ces ennemis seulement, par

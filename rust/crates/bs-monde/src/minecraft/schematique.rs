@@ -5,6 +5,7 @@
 
 use std::collections::HashMap;
 
+use super::biomes::biome_dominant;
 use super::nbt::{Compound, Nbt, lire_nbt};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -28,6 +29,8 @@ pub struct Schematique {
     pub panneaux: Vec<Panneau>,
     /// Version des données Minecraft du fichier (3465 = 1.20.1).
     pub version_donnees: i64,
+    /// Biome le plus présent (« plains »…), s'il est enregistré.
+    pub biome: Option<String>,
 }
 
 impl Schematique {
@@ -199,6 +202,7 @@ fn lire_sponge(s: &Compound, version: u32) -> Result<Schematique, String> {
         blocs,
         panneaux,
         version_donnees: s.get("DataVersion").and_then(Nbt::entier).unwrap_or(0),
+        biome: biome_dominant(s),
     })
 }
 
@@ -272,6 +276,7 @@ fn lire_structure(s: &Compound) -> Result<Schematique, String> {
         blocs,
         panneaux,
         version_donnees: s.get("DataVersion").and_then(Nbt::entier).unwrap_or(0),
+        biome: None,
     })
 }
 

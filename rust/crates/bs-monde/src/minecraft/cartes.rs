@@ -42,6 +42,7 @@ struct ReglagesCarte {
     lumiere: Option<ReglagesLumiere>,
     boss: Option<Vec<String>>,
     mini_boss: Option<Vec<String>>,
+    biome: Option<String>,
     ennemis: Option<Vec<ChoixEnnemi>>,
     zones: Option<Vec<ZoneEnnemis>>,
 }
@@ -129,6 +130,7 @@ pub fn definition(d: &Donnees, carte: &Carte) -> Result<Arene, String> {
     a.monde = r.monde.unwrap_or(base.monde);
     a.boss = r.boss.unwrap_or_else(|| base.boss.clone());
     a.mini_boss = r.mini_boss.unwrap_or_else(|| base.mini_boss.clone());
+    a.biome = r.biome;
     a.ennemis = r.ennemis.unwrap_or_else(|| base.ennemis.clone());
     // Les zones de l'arène de base n'ont pas de sens ici : seulement celles du réglage
     a.zones = r.zones.unwrap_or_default();

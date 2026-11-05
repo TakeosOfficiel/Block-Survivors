@@ -127,8 +127,11 @@ pub fn avancer_import(
             return;
         }
     };
-    let s = import.schematique.take().expect("schématique lue");
+    let mut s = import.schematique.take().expect("schématique lue");
     let def = import.definition.take().expect("définition lue");
+    if def.biome.is_some() {
+        s.biome.clone_from(&def.biome);
+    }
     let ai = match importer(import.d, def, &s, &blocs) {
         Ok(ai) => ai,
         Err(e) => panic!("map importée illisible : {e}"),

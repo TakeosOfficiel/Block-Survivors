@@ -143,6 +143,9 @@ pub struct Arene {
     /// Lieu d'arrivée des boss et mini-boss (panneau `[boss]` d'une map), sinon hors champ.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub arrivee_boss: Option<Point>,
+    /// Biome des teintes d'une map importée (« swamp »…), à la place de celui du fichier.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub biome: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

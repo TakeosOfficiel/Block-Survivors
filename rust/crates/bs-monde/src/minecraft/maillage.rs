@@ -3,6 +3,7 @@
 //! opaque voisin ne sont pas créées, comme dans Minecraft ; eau et lave sont des cubes
 //! abaissés de 2 pixels (sauf sous le même liquide).
 
+use super::biomes::Teintes;
 use super::cuisson::{Direction, ModeleCuit, Quad, V3};
 use super::modeles::{BlocCuit, Liquide, TEXTURE_EAU, TEXTURE_LAVE, Variante};
 use super::proprietes::{liquide_affiche, teinte_de};
@@ -90,14 +91,16 @@ pub fn construire_maillages(
         .collect();
     let modes: Vec<f32> = blocs.iter().map(mode_vent).collect();
     let liquides: Vec<Option<Liquide>> = blocs.iter().map(liquide_affiche).collect();
+    let biome = Teintes::du_biome(s.biome.as_deref());
     let teintes: Vec<u32> = blocs
         .iter()
         .map(|b| {
-            teinte_de(if b.liquide == Some(Liquide::Eau) {
+            let nom = if b.liquide == Some(Liquide::Eau) {
                 "water"
             } else {
                 &b.nom
-            })
+            };
+            teinte_de(nom, &biome)
         })
         .collect();
     let mut sortie: Vec<MaillageTexture> = (0..textures.len())
@@ -173,7 +176,7 @@ pub fn construire_maillages(
                     continue;
                 };
                 let couleur = if liquide == Liquide::Eau {
-                    teinte_de("water")
+                    biome.eau
                 } else {
                     0xffffff
                 };

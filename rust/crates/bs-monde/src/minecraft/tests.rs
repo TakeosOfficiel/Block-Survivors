@@ -181,6 +181,7 @@ fn cuvette() -> Schematique {
             texte: "Départ".into(),
         }],
         version_donnees: 0,
+        biome: None,
     }
 }
 

@@ -43,7 +43,8 @@ fait dans la version Rust (branche `rust`, état au 04/11/2026).
 
 ## Maps : affichage
 
-- [ ] Coffres, lits, panneaux, bannières, têtes : vrais modèles (aujourd'hui une boîte simple, ou rien)
+- [x] Coffres (simples, piégés, de l'Ender, de cuivre) et lits : vrais modèles (jeu Rust ; un coffre double s'affiche en deux coffres)
+- [ ] Panneaux, bannières, têtes : vrais modèles (aujourd'hui rien)
 - [x] (Rust) Textures animées dans l'atlas (eau, lave, magma, portail) : aujourd'hui figées sur la première image
 - [x] (Rust) Eau qui coule (hauteurs 1 à 7) au lieu d'une eau pleine (surface plate par bloc, sans pente)
 - [ ] Teinte selon le biome de la map (aujourd'hui toujours « plaines ») (Rust : fait, biome le plus présent du .schem ou champ `biome` du .json ; pas encore biome par colonne)

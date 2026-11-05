@@ -11,6 +11,7 @@ use std::collections::{BTreeSet, HashMap};
 
 use serde_json::{Map, Value};
 
+use super::blocs_entites::modele_bloc_entite;
 use super::cuisson::{Direction, ModeleCuit, ModeleResolu, cuire_modele};
 
 /// Texture de l'eau et de la lave (dessinées à part, comme des cubes abaissés).
@@ -169,9 +170,10 @@ impl Cuiseur<'_> {
             }
             _ => {}
         }
-        if let Some(s) = modele_de_secours(&b.nom) {
+        let entite = modele_bloc_entite(&b.nom, |k| b.propriete(k).map(str::to_owned));
+        if let Some((s, ry)) = entite.or_else(|| modele_de_secours(&b.nom).map(|s| (s, 0))) {
             b.parties = vec![vec![Variante {
-                modele: cuire_modele(&s, 0, 0, false),
+                modele: cuire_modele(&s, 0, ry, false),
                 poids: 1.0,
             }]];
             return b;
@@ -315,21 +317,6 @@ fn modele_de_secours(nom: &str) -> Option<ModeleResolu> {
             elements: vec![serde_json::json!({ "from": from, "to": to, "faces": faces })],
         }
     };
-    let coffre = ([1.0, 0.0, 1.0], [15.0, 14.0, 15.0]);
-    match nom {
-        "chest" | "trapped_chest" => {
-            return Some(boite(coffre.0, coffre.1, "block/oak_planks".into()));
-        }
-        "ender_chest" => return Some(boite(coffre.0, coffre.1, "block/obsidian".into())),
-        _ => {}
-    }
-    if let Some(couleur) = nom.strip_suffix("_bed") {
-        return Some(boite(
-            [0.0; 3],
-            [16.0, 9.0, 16.0],
-            format!("block/{couleur}_wool"),
-        ));
-    }
     if nom.ends_with("shulker_box") {
         return Some(boite([0.0; 3], [16.0; 3], format!("block/{nom}")));
     }

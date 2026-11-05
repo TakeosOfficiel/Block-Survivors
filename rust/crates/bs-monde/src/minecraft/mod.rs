@@ -4,6 +4,7 @@
 //! fichiers vanilla arrivent par une `SourceFichiers`, les maillages partent au rendu.
 
 pub mod biomes;
+pub mod blocs_entites;
 pub mod cartes;
 pub mod cuisson;
 pub mod dossier;

@@ -11,7 +11,8 @@ use super::schematique::{Palette, Panneau, Schematique, texte_de};
 const VOLUME_MAX: usize = 1 << 27;
 
 /// Noms Bedrock → Java (anciens noms compris).
-const NOMS: [(&str, &str); 40] = [
+const NOMS: [(&str, &str); 41] = [
+    ("bed", "red_bed"),
     ("grass", "grass_block"),
     ("tallgrass", "short_grass"),
     ("snow", "snow_block"),
@@ -106,6 +107,9 @@ pub(super) fn etat_java(nom: &str, states: &Compound) -> String {
         p.push(("facing", f.into()));
     } else if let Some(f) = indice(&DIRECTIONS, states, "direction") {
         p.push(("facing", f.into()));
+    }
+    if let Some(h) = states.get("head_piece_bit").and_then(Nbt::entier) {
+        p.push(("part", if h == 1 { "head" } else { "foot" }.into()));
     }
     if let Some(h) = states.get("upper_block_bit").and_then(Nbt::entier) {
         p.push(("half", if h == 1 { "upper" } else { "lower" }.into()));

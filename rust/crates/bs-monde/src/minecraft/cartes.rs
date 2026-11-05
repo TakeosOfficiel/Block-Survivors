@@ -14,6 +14,7 @@ use super::panneaux::{boss_des_panneaux, zones_des_panneaux};
 use super::proprietes::{Physique, physique_de};
 use super::schematique::Schematique;
 use super::zone::{Zone, construire_carte, trouver_zone};
+use super::zones_auto::zones_par_defaut;
 use crate::carte::CarteMonde;
 
 /// Une map embarquée (fichiers lus à la compilation, voir build.rs).
@@ -151,8 +152,9 @@ pub struct AreneImportee {
 }
 
 /// Zone jouable, carte de collision et arène complète d'une schématique aux blocs cuits
-/// (zones d'ennemis des panneaux `[ennemis]` ajoutées à celles du `.json`, boss des
-/// panneaux `[boss]` et `[mini-boss]` à la place des siens).
+/// (zones d'ennemis des panneaux `[ennemis]` ajoutées à celles du `.json`, sinon zones
+/// par défaut selon les blocs ; boss des panneaux `[boss]` et `[mini-boss]` à la place
+/// des siens).
 pub fn importer(
     d: &Donnees,
     definition: Arene,
@@ -178,6 +180,9 @@ pub fn importer(
         .collect();
     let zones = zones_des_panneaux(d, s, &zone, &arene.ennemis, &mut inconnus);
     arene.zones.extend(zones);
+    if arene.zones.is_empty() {
+        arene.zones = zones_par_defaut(d, s, blocs, &zone, &arene);
+    }
     let b = boss_des_panneaux(d, s, &zone, &mut inconnus);
     if !b.boss.is_empty() {
         arene.boss = b.boss;

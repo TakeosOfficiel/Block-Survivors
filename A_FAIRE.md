@@ -34,7 +34,7 @@ fait dans la version Rust (branche `rust`, état au 04/11/2026).
 ## Maps : contenu et réglages
 
 - [ ] **Panneaux de configuration** posés dans la map : `[zone] Village`, `[ennemis] zombie squelette` (Rust : fait, voir cartes/LISEZMOI.md), `[boss]` (Rust : fait, lieu d'arrivée et liste des boss, plus `[mini-boss]`)
-- [ ] Zones d'ennemis par défaut pour une map importée (aujourd'hui : une seule population pour toute l'arène)
+- [ ] Zones d'ennemis par défaut pour une map importée (aujourd'hui : une seule population pour toute l'arène) (Rust : fait, carrés de 12 blocs au sol du Nether → population « nether », sous terre → « mine », s'il n'y a ni zone du .json ni panneau `[ennemis]`)
 - [x] (Rust) Rapport d'import visible en jeu : liste des blocs inconnus (aujourd'hui seulement dans la console)
 - [x] (Rust) Format `.litematic` (Litematica)
 - [ ] Monde entier (dossier de sauvegarde, régions `.mca`) avec choix de la zone (Rust : fait en glissant le dossier du monde, zone de 96 × 96 autour du panneau `depart` ; pas de choix de la taille)

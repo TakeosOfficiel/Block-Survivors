@@ -59,3 +59,8 @@ Un panneau `[boss] wither` (et/ou `[mini-boss] ravageur`) remplace les boss de
 la map, qui arrivent dans l'ordre des noms ; un nom qui n'est pas un boss est
 signalé de la même façon. Les boss et mini-boss arrivent sur le premier panneau
 `[boss]` (qui peut ne porter aucun nom), au lieu d'un endroit hors champ.
+
+**Zones par défaut** (jeu Rust) : sans zone dans le `.json` ni panneau
+`[ennemis]`, les parties de la zone jouable au sol du Nether (netherrack, sable
+des âmes, briques du Nether…) prennent les ennemis de l'arène `nether`, et
+celles sous terre (sol et plafond de pierre) ceux de la `mine`.

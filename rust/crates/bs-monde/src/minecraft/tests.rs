@@ -312,3 +312,21 @@ fn eau_qui_coule() {
     assert_eq!(est.len(), 4);
     assert!(est.iter().all(|p| p[1] >= 4.0 / 9.0 - 1e-5));
 }
+
+#[test]
+fn zone_du_nether_par_defaut() {
+    let d = bs_donnees::Donnees::embarquees().expect("données");
+    let c = cartes()[0];
+    let s = cuvette();
+    let mut blocs = cuire(&s.palette, &fichiers()).expect("cuisson");
+    let a = importer(&d, definition(&d, &c).expect("définition"), &s, &blocs).expect("zone");
+    assert!(a.arene.zones.is_empty(), "sol de pierre à ciel ouvert");
+    // Même géométrie, sol de netherrack
+    blocs[1].nom = "netherrack".into();
+    let a = importer(&d, definition(&d, &c).expect("définition"), &s, &blocs).expect("zone");
+    let [z] = a.arene.zones.as_slice() else {
+        panic!("une zone attendue : {:?}", a.arene.zones);
+    };
+    assert_eq!(z.rect, [-2.5, -2.5, 2.5, 2.5]);
+    assert!(z.ennemis.iter().any(|e| e.ennemi == "piglin_zombifie"));
+}

@@ -19,6 +19,7 @@ pub mod proprietes;
 pub mod schematique;
 pub mod vent;
 pub mod zone;
+pub mod zones_auto;
 
 #[cfg(test)]
 mod tests;

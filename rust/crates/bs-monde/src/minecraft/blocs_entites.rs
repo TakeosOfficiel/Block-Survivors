@@ -6,6 +6,7 @@ use serde_json::{Map, Value, json};
 
 use super::cuisson::{Direction, ModeleResolu};
 use super::schematique::Schematique;
+use super::tetes::{rotation_sol, tete};
 
 /// Rectangle de texture en pixels (x0, y0, x1, y1) ; y0 > y1 retourne l'image.
 type Zone = [f32; 4];
@@ -136,30 +137,6 @@ fn coffre(texture: &str, moitie: Moitie) -> ModeleResolu {
     )
 }
 
-/// Tête de 8 px, face au nord, posée au sol (au centre) ou au mur (contre le bloc au
-/// sud). La texture est celle de l'entité : tête dépliée en haut à gauche.
-fn tete(texture: &str, hauteur_texture: f32, mur: bool) -> ModeleResolu {
-    use Direction::*;
-    let faces = vec![
-        (Haut, [8.0, 0.0, 16.0, 8.0]),
-        (Bas, [16.0, 0.0, 24.0, 8.0]),
-        (Est, [0.0, 8.0, 8.0, 16.0]),
-        (Nord, [8.0, 8.0, 16.0, 16.0]),
-        (Ouest, [16.0, 8.0, 24.0, 16.0]),
-        (Sud, [24.0, 8.0, 32.0, 16.0]),
-    ];
-    let (de, a) = if mur {
-        ([4.0, 4.0, 8.0], [12.0, 12.0, 16.0])
-    } else {
-        ([4.0, 0.0, 4.0], [12.0, 8.0, 12.0])
-    };
-    modele(
-        format!("entity/{texture}"),
-        [64.0, hauteur_texture],
-        &[Boite { de, a, faces }],
-    )
-}
-
 /// Bannière tournée au nord, en laine de sa couleur sur un mât de bois : debout (mât
 /// de 42 px, tissu de 20 × 40 px devant) ou au mur (contre le bloc au sud, le tissu
 /// pendant sur le bloc du dessous). Le tissu est découpé pour ne pas trop étirer la laine.
@@ -206,24 +183,6 @@ fn banniere(couleur: &str, mur: bool) -> ModeleResolu {
     }
 }
 
-/// Texture et hauteur de texture de la tête `nom` (sans « _wall »).
-fn texture_tete(nom: &str) -> Option<(&'static str, f32)> {
-    Some(match nom {
-        "skeleton_skull" => ("skeleton/skeleton", 32.0),
-        "wither_skeleton_skull" => ("skeleton/wither_skeleton", 32.0),
-        "creeper_head" => ("creeper/creeper", 32.0),
-        "zombie_head" => ("zombie/zombie", 64.0),
-        "player_head" => ("player/wide/steve", 64.0),
-        _ => return None,
-    })
-}
-
-/// Quart de tour d'une tête posée au sol : `rotation` 0 regarde au sud, 4 à l'ouest…
-fn rotation_sol(rotation: Option<&str>) -> i32 {
-    let r: i32 = rotation.and_then(|r| r.parse().ok()).unwrap_or(0);
-    (180 + (r + 2) / 4 % 4 * 90) % 360
-}
-
 /// Modèle et rotation (degrés autour de y) d'un bloc à entité, s'il en a un ici.
 pub(super) fn modele_bloc_entite(
     nom: &str,
@@ -258,12 +217,11 @@ pub(super) fn modele_bloc_entite(
             (banniere(couleur, false), ry)
         });
     }
-    let (t, h) = texture_tete(&mur)?;
+    let modele = tete(&mur, mur != nom)?;
     if mur != nom {
-        Some((tete(t, h, true), ry))
+        Some((modele, ry))
     } else {
-        let ry = rotation_sol(propriete("rotation").as_deref());
-        Some((tete(t, h, false), ry))
+        Some((modele, rotation_sol(propriete("rotation").as_deref())))
     }
 }
 

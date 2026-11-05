@@ -17,6 +17,7 @@ pub mod nbt;
 pub mod panneaux;
 pub mod proprietes;
 pub mod schematique;
+pub mod tetes;
 pub mod vent;
 pub mod zone;
 pub mod zones_auto;

@@ -111,6 +111,7 @@ pub fn avancer_import(
     json: Res<Assets<Json>>,
     mut textures: ResMut<Textures>,
     import: Option<ResMut<Import>>,
+    mut phase: ResMut<NextState<crate::Phase>>,
 ) {
     let Some(mut import) = import else {
         return;
@@ -134,7 +135,14 @@ pub fn avancer_import(
     }
     let ai = match importer(import.d, def, &s, &blocs) {
         Ok(ai) => ai,
-        Err(e) => panic!("map importée illisible : {e}"),
+        Err(e) => {
+            warn!("map importée illisible : {e}");
+            commandes.remove_resource::<Import>();
+            let refus = format!("Map refusée : {e}");
+            commandes.insert_resource(crate::menu::depot::ImportRefuse(refus));
+            phase.set(crate::Phase::Menu);
+            return;
+        }
     };
     if !ai.inconnus.is_empty() {
         warn!("blocs sans modèle : {}", ai.inconnus.join(", "));

@@ -169,7 +169,7 @@ impl Plugin for PluginJeu {
             Box::leak(Box::new(Donnees::embarquees().expect("données du jeu")));
         app.insert_non_send_resource(sons::Sons::nouveaux(d));
         let sauvegarde = sauvegarde::Sauvegarde::charger(d);
-        let dj = lancement::DonneesJeu::nouvelles(d);
+        let dj = lancement::DonneesJeu::nouvelles(d, &sauvegarde.dossier_cartes());
         // Partie lancée directement (sinon : menu principal)
         let directe = self.arene.as_deref().map(|id| {
             let arene = dj.arene(id).unwrap_or(0);
@@ -244,6 +244,8 @@ impl Plugin for PluginJeu {
                 (
                     (
                         menu::profil::saisir,
+                        menu::depot::deposer_carte,
+                        menu::depot::signaler_refus,
                         menu::multijoueur::suivre,
                         menu::gerer,
                         menu::apercu::animer,

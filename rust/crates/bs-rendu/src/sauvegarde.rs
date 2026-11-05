@@ -69,6 +69,11 @@ pub struct Sauvegarde {
 }
 
 impl Sauvegarde {
+    /// Dossier des maps du joueur (communes à tous les profils).
+    pub fn dossier_cartes(&self) -> std::path::PathBuf {
+        self.profils.stockage().dossier().join("cartes")
+    }
+
     pub fn charger(d: &'static Donnees) -> Self {
         let mut profils = Profils::charger(Stockage::du_systeme());
         let passage = bs_sauvegarde::electron::importer(&mut profils);

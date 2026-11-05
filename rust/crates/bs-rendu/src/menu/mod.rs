@@ -12,6 +12,7 @@ mod air;
 pub mod apercu;
 mod collection;
 mod console;
+pub mod depot;
 pub mod fond;
 pub mod multijoueur;
 mod nouveautes;
@@ -150,7 +151,10 @@ fn construire(
 ) -> Entity {
     let (choix, page) = (menu.choix, menu.page);
     let racine = match page {
-        Page::Accueil => vue::construire(commandes, dj, sauvegarde, ic, (choix, menu.volet)),
+        Page::Accueil => {
+            let etat = (choix, menu.volet, menu.message.as_deref());
+            vue::construire(commandes, dj, sauvegarde, ic, etat)
+        }
         Page::Talents(etat) => {
             let c = talents::Contexte {
                 dj,

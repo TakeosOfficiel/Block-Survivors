@@ -23,7 +23,7 @@ pub(super) fn construire(
     p: &mut Pinceau,
     dj: &DonneesJeu,
     sauvegarde: &Sauvegarde,
-    (choix, ouvert): (ChoixPartie, Volet),
+    (choix, ouvert, message): (ChoixPartie, Volet, Option<&str>),
     racine: Entity,
 ) {
     if ouvert == Volet::Aucun {
@@ -97,7 +97,7 @@ pub(super) fn construire(
     let colonnes = (gauche, droite);
     match ouvert {
         Volet::Classes => classes::construire(p, dj, sauvegarde, choix, colonnes),
-        Volet::Arenes => arenes::construire(p, dj, sauvegarde, choix, colonnes),
+        Volet::Arenes => arenes::construire(p, dj, sauvegarde, (choix, message), colonnes),
         Volet::Aucun => {}
     }
 }

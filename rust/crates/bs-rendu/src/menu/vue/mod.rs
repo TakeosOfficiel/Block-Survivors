@@ -129,7 +129,7 @@ pub fn construire(
     dj: &DonneesJeu,
     sauvegarde: &Sauvegarde,
     ic: &mut Icones,
-    (choix, ouvert): (ChoixPartie, Volet),
+    (choix, ouvert, message): (ChoixPartie, Volet, Option<&str>),
 ) -> Entity {
     let racine = commandes
         .spawn((
@@ -155,7 +155,7 @@ pub fn construire(
     colonne::construire(&mut p, dj, sauvegarde, choix, gauche);
     profil(&mut p, dj, sauvegarde, choix, racine);
     bas::construire(&mut p, sauvegarde, racine);
-    volet::construire(&mut p, dj, sauvegarde, (choix, ouvert), racine);
+    volet::construire(&mut p, dj, sauvegarde, (choix, ouvert, message), racine);
     racine
 }
 

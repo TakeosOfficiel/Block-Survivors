@@ -1,14 +1,17 @@
 //! Volet des arènes de l'accueil : à gauche les arènes dans l'ordre, en lignes de 52
 //! (miniature, nom, ou cadenas et condition de déblocage), la choisie marquée d'un
 //! liseré d'or ; à droite la choisie dépliée (grande vignette, description, mobs, boss à
-//! venir, records) et le bouton de la Collection (classée par monde).
+//! venir, records) et le bouton de la Collection (classée par monde). Sous la liste :
+//! comment ajouter une map, et le résultat du dernier dépôt.
 
 use bevy::prelude::*;
 use bs_donnees::arenes::Arene;
 use bs_donnees::progression::TypeDeblocage;
 
 use super::{Pinceau, place};
-use crate::ecrans::charte::{self, AIDE, IVOIRE, OR_VIF, Relief, T_AIDE, T_CORPS, VERT_GAIN};
+use crate::ecrans::charte::{
+    self, AIDE, IVOIRE, OR_VIF, ROUGE, Relief, T_AIDE, T_CORPS, VERT_GAIN,
+};
 use crate::hud::formater_temps;
 use crate::lancement::{ChoixPartie, DonneesJeu};
 use crate::menu::ActionMenu;
@@ -22,7 +25,7 @@ pub(super) fn construire(
     p: &mut Pinceau,
     dj: &DonneesJeu,
     sauvegarde: &Sauvegarde,
-    choix: ChoixPartie,
+    (choix, message): (ChoixPartie, Option<&str>),
     (parent, detail): (Entity, Entity),
 ) {
     p.section(parent, "Arène");
@@ -36,6 +39,16 @@ pub(super) fn construire(
     );
     for (k, a) in dj.arenes.iter().enumerate() {
         ligne(p, sauvegarde, a.def, (k, k == choix.arene), liste);
+    }
+    let aide = "Ajouter une map : glisse un fichier .schem ou .nbt sur la fenêtre.";
+    p.texte(parent, aide, false, T_AIDE - 1.0, AIDE);
+    if let Some(m) = message {
+        let couleur = if m.starts_with("Map refusée") {
+            ROUGE
+        } else {
+            VERT_GAIN
+        };
+        p.texte(parent, m, true, T_AIDE, couleur);
     }
     choisie(p, dj, sauvegarde, dj.arenes[choix.arene].def, detail);
     let b = p.bouton(

@@ -39,7 +39,7 @@ fait dans la version Rust (branche `rust`, état au 04/11/2026).
 - [ ] Format `.litematic` (Litematica)
 - [ ] Monde entier (dossier de sauvegarde, régions `.mca`) avec choix de la zone
 - [ ] Bedrock (`.mcstructure`)
-- [ ] Importer une map depuis le jeu (glisser le fichier sur la fenêtre), sans passer par GitHub
+- [x] (Rust) Importer une map depuis le jeu (glisser le fichier sur la fenêtre), sans passer par GitHub
 
 ## Maps : affichage
 

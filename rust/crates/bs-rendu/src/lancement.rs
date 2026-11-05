@@ -1,8 +1,8 @@
 //! Choix d'une partie et passages entre le menu et la partie (src/lancement.ts).
 //!
 //! Arènes proposées : celles du jeu, puis les maps construites dans Minecraft (dossier
-//! cartes/). Le dernier choix (classe, arène) est gardé dans le profil (clé `choix`,
-//! même JSON que le jeu TS). Au retour au menu, tout ce que la partie a créé est retiré
+//! cartes/ du dépôt, puis maps du joueur, glissées sur la fenêtre). Le dernier choix
+//! (classe, arène) est gardé dans le profil (clé `choix`, même JSON que le jeu TS). Au retour au menu, tout ce que la partie a créé est retiré
 //! (entités affichées, ressources de la partie), comme le rechargement de page du jeu TS.
 
 use bevy::prelude::*;
@@ -10,6 +10,7 @@ use bs_donnees::Donnees;
 use bs_donnees::arenes::Arene;
 use bs_monde::generer_monde;
 use bs_monde::minecraft::cartes::{Carte, cartes, definition};
+use bs_monde::minecraft::dossier::cartes_du_dossier;
 use bs_regles::partie::Partie;
 use serde_json::json;
 
@@ -39,8 +40,9 @@ pub struct DonneesJeu {
 }
 
 impl DonneesJeu {
-    pub fn nouvelles(d: &'static Donnees) -> Self {
-        let mut arenes: Vec<AreneMenu> = d
+    /// Arènes du jeu, maps embarquées puis maps du joueur (dans `dossier_cartes`).
+    pub fn nouvelles(d: &'static Donnees, dossier_cartes: &std::path::Path) -> Self {
+        let arenes: Vec<AreneMenu> = d
             .arenes
             .arenes
             .iter()
@@ -50,16 +52,37 @@ impl DonneesJeu {
                 source: SourceMenu::Generee(k),
             })
             .collect();
-        for carte in cartes() {
-            match definition(d, carte) {
-                Ok(def) => arenes.push(AreneMenu {
-                    def: Box::leak(Box::new(def)),
-                    source: SourceMenu::Carte(carte),
-                }),
-                Err(e) => warn!("map {} écartée : {e}", carte.id),
+        let mut dj = Self { d, arenes };
+        let mut erreurs = Vec::new();
+        let du_joueur = cartes_du_dossier(dossier_cartes, &mut erreurs);
+        for carte in cartes().iter().chain(du_joueur) {
+            if let Err(e) = dj.ajouter(carte) {
+                erreurs.push(e);
             }
         }
-        Self { d, arenes }
+        for e in erreurs {
+            warn!("map écartée : {e}");
+        }
+        dj
+    }
+
+    /// Ajoute une map (ou remplace celle du même identifiant) ; renvoie son index.
+    pub fn ajouter(&mut self, carte: &'static Carte) -> Result<usize, String> {
+        let def = definition(self.d, carte).map_err(|e| format!("{} : {e}", carte.id))?;
+        let a = AreneMenu {
+            def: Box::leak(Box::new(def)),
+            source: SourceMenu::Carte(carte),
+        };
+        Ok(match self.arene(carte.id) {
+            Some(k) => {
+                self.arenes[k] = a;
+                k
+            }
+            None => {
+                self.arenes.push(a);
+                self.arenes.len() - 1
+            }
+        })
     }
 
     /// Index de l'arène d'identifiant `id`.

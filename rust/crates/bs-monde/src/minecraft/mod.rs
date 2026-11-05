@@ -7,6 +7,7 @@ pub mod biomes;
 pub mod cartes;
 pub mod cuisson;
 pub mod dossier;
+pub mod litematic;
 pub mod maillage;
 pub mod modeles;
 pub mod nbt;

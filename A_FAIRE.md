@@ -36,7 +36,7 @@ fait dans la version Rust (branche `rust`, état au 04/11/2026).
 - [ ] **Panneaux de configuration** posés dans la map : `[zone] Village`, `[ennemis] zombie squelette` (Rust : fait, voir cartes/LISEZMOI.md), `[boss]` (Rust : fait, lieu d'arrivée et liste des boss, plus `[mini-boss]`)
 - [ ] Zones d'ennemis par défaut pour une map importée (aujourd'hui : une seule population pour toute l'arène)
 - [x] (Rust) Rapport d'import visible en jeu : liste des blocs inconnus (aujourd'hui seulement dans la console)
-- [ ] Format `.litematic` (Litematica)
+- [x] (Rust) Format `.litematic` (Litematica)
 - [ ] Monde entier (dossier de sauvegarde, régions `.mca`) avec choix de la zone
 - [ ] Bedrock (`.mcstructure`)
 - [x] (Rust) Importer une map depuis le jeu (glisser le fichier sur la fenêtre), sans passer par GitHub

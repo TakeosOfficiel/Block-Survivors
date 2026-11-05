@@ -3,9 +3,10 @@
 Chaque schématique de ce dossier devient une arène du jeu, au nom du fichier :
 
 - `.schem` : WorldEdit / FAWE (`//copy` puis `//schem save nom`) ;
+- `.litematic` : Litematica (jeu Rust seulement ; plusieurs régions réunies) ;
 - `.nbt` : bloc de structure.
 
-Dans le jeu Rust, on peut aussi glisser un `.schem` ou un `.nbt` sur la fenêtre,
+Dans le jeu Rust, on peut aussi glisser un `.schem`, un `.litematic` ou un `.nbt` sur la fenêtre,
 à l'accueil : la map est copiée (avec son `.json` voisin s'il existe) dans le
 dossier `cartes` des données du jeu et proposée parmi les arènes, sans passer
 par le dépôt.

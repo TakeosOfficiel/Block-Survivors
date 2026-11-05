@@ -1,4 +1,4 @@
-//! Maps du joueur : un .schem ou .nbt glissé sur la fenêtre est copié (avec le .json du
+//! Maps du joueur : un .schem, .litematic ou .nbt glissé sur la fenêtre est copié (avec le .json du
 //! même nom, s'il est à côté) dans le dossier `cartes` des données du jeu, puis lu au
 //! démarrage comme les maps embarquées. Les fichiers lus restent en mémoire jusqu'à la
 //! fin du programme (comme les maps embarquées).
@@ -9,7 +9,7 @@ use super::cartes::Carte;
 use super::schematique::lire_schematique;
 
 /// Extensions reconnues comme des maps.
-const EXTENSIONS: [&str; 2] = ["schem", "nbt"];
+const EXTENSIONS: [&str; 3] = ["schem", "litematic", "nbt"];
 
 /// Le fichier a-t-il l'extension d'une map ?
 pub fn est_une_map(chemin: &Path) -> bool {

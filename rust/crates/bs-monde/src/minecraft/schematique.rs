@@ -1,11 +1,12 @@
 //! Schématiques Minecraft (src/minecraft/schematique.ts) : .schem de WorldEdit / FAWE
-//! (formats Sponge 1, 2 et 3) et .nbt des blocs de structure. Le résultat est un
+//! (formats Sponge 1, 2 et 3), .litematic de Litematica et .nbt des blocs de structure. Le résultat est un
 //! volume de blocs indexés dans une palette d'états (« oak_stairs[facing=east] »),
 //! avec le texte des panneaux (repères posés par le constructeur).
 
 use std::collections::HashMap;
 
 use super::biomes::biome_dominant;
+use super::litematic::lire_litematic;
 use super::nbt::{Compound, Nbt, lire_nbt};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -68,9 +69,9 @@ pub fn lire_schematique(octets: &[u8]) -> Result<Schematique, String> {
         return lire_structure(&racine);
     }
     if racine.get("Regions").is_some() {
-        return Err("Fichier Litematica (.litematic) pas encore pris en charge : exporte la zone en .schem avec WorldEdit.".into());
+        return lire_litematic(&racine);
     }
-    Err("Format de schématique inconnu (attendu : .schem de WorldEdit ou .nbt de bloc de structure).".into())
+    Err("Format de schématique inconnu (attendu : .schem de WorldEdit, .litematic ou .nbt de bloc de structure).".into())
 }
 
 /// Normalise un état : sans « minecraft: », avec les noms actuels, air unique.
@@ -88,20 +89,20 @@ fn normaliser(etat: &str) -> String {
 }
 
 /// Palette normalisée (air en 0).
-struct Palette {
-    etats: Vec<String>,
+pub(super) struct Palette {
+    pub(super) etats: Vec<String>,
     index: HashMap<String, u16>,
 }
 
 impl Palette {
-    fn nouvelle() -> Self {
+    pub(super) fn nouvelle() -> Self {
         Self {
             etats: vec!["air".into()],
             index: HashMap::from([("air".into(), 0)]),
         }
     }
 
-    fn ajouter(&mut self, etat: &str) -> u16 {
+    pub(super) fn ajouter(&mut self, etat: &str) -> u16 {
         let n = normaliser(etat);
         if let Some(&i) = self.index.get(&n) {
             return i;
@@ -225,20 +226,9 @@ fn lire_structure(s: &Compound) -> Result<Schematique, String> {
     let mut palette = Palette::nouvelle();
     let passage: Vec<u16> = palette_nbt
         .iter()
-        .map(|p| {
-            let Nbt::Compound(p) = p else { return 0 };
-            let nom = p.get("Name").and_then(Nbt::chaine).unwrap_or("air");
-            let suffixe = match p.compound("Properties") {
-                Some(pr) if !pr.0.is_empty() => {
-                    let paires: Vec<String> =
-                        pr.0.iter()
-                            .map(|(k, v)| format!("{k}={}", v.chaine().unwrap_or("")))
-                            .collect();
-                    format!("[{}]", paires.join(","))
-                }
-                _ => String::new(),
-            };
-            palette.ajouter(&format!("{nom}{suffixe}"))
+        .map(|p| match p {
+            Nbt::Compound(p) => palette.ajouter(&etat_de(p)),
+            _ => 0,
         })
         .collect();
     let mut blocs = vec![0u16; largeur * hauteur * profondeur];
@@ -280,8 +270,23 @@ fn lire_structure(s: &Compound) -> Result<Schematique, String> {
     })
 }
 
+/// État d'une entrée de palette `{Name, Properties}` : « oak_stairs[facing=east] ».
+pub(super) fn etat_de(p: &Compound) -> String {
+    let nom = p.get("Name").and_then(Nbt::chaine).unwrap_or("air");
+    match p.compound("Properties") {
+        Some(pr) if !pr.0.is_empty() => {
+            let paires: Vec<String> =
+                pr.0.iter()
+                    .map(|(k, v)| format!("{k}={}", v.chaine().unwrap_or("")))
+                    .collect();
+            format!("{nom}[{}]", paires.join(","))
+        }
+        _ => nom.to_owned(),
+    }
+}
+
 /// Tout le texte d'un panneau (lignes JSON ou texte brut, faces avant et arrière).
-fn texte_de(v: &Nbt) -> String {
+pub(super) fn texte_de(v: &Nbt) -> String {
     let mut morceaux = Vec::new();
     parcourir(v, &mut morceaux);
     morceaux.join(" ").trim().to_owned()

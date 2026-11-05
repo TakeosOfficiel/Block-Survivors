@@ -11,7 +11,8 @@ use super::schematique::{Palette, Panneau, Schematique, texte_de};
 const VOLUME_MAX: usize = 1 << 27;
 
 /// Noms Bedrock → Java (anciens noms compris).
-const NOMS: [(&str, &str); 41] = [
+const NOMS: [(&str, &str); 42] = [
+    ("skull", "skeleton_skull"),
     ("bed", "red_bed"),
     ("grass", "grass_block"),
     ("tallgrass", "short_grass"),
@@ -132,6 +133,17 @@ pub(super) fn etat_java(nom: &str, states: &Compound) -> String {
         if let Some(f @ ("north" | "south" | "east" | "west")) = f.as_deref() {
             nom = nom.replace("torch", "wall_torch");
             p.push(("facing", f.into()));
+        }
+    }
+    // Têtes : face 1 (vers le haut) au sol, sinon au mur
+    if nom.ends_with("_skull") || (nom.ends_with("_head") && nom != "piston_head") {
+        let k = p.iter().position(|(c, _)| *c == "facing");
+        if let Some(k) = k {
+            if p[k].1 == "up" || p[k].1 == "down" {
+                p.remove(k);
+            } else if let Some((base, fin)) = nom.rsplit_once('_') {
+                nom = format!("{base}_wall_{fin}");
+            }
         }
     }
     if p.is_empty() {
@@ -374,5 +386,23 @@ mod tests {
         assert_eq!(s.panneaux.len(), 1);
         assert_eq!((s.panneaux[0].x, s.panneaux[0].z), (1, 0));
         assert_eq!(s.panneaux[0].texte, "[boss]");
+    }
+}
+
+#[cfg(test)]
+mod tests_tetes {
+    use super::*;
+
+    fn face(f: i32) -> Compound {
+        Compound(vec![("facing_direction".into(), Nbt::Entier(f))])
+    }
+
+    #[test]
+    fn tetes_au_sol_et_au_mur() {
+        assert_eq!(etat_java("minecraft:zombie_head", &face(1)), "zombie_head");
+        assert_eq!(
+            etat_java("minecraft:skeleton_skull", &face(2)),
+            "skeleton_wall_skull[facing=north]"
+        );
     }
 }

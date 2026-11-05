@@ -45,7 +45,7 @@ fait dans la version Rust (branche `rust`, état au 04/11/2026).
 
 - [ ] Coffres, lits, panneaux, bannières, têtes : vrais modèles (aujourd'hui une boîte simple, ou rien)
 - [x] (Rust) Textures animées dans l'atlas (eau, lave, magma, portail) : aujourd'hui figées sur la première image
-- [ ] Eau qui coule (hauteurs 1 à 7) au lieu d'une eau pleine
+- [x] (Rust) Eau qui coule (hauteurs 1 à 7) au lieu d'une eau pleine (surface plate par bloc, sans pente)
 - [ ] Teinte selon le biome de la map (aujourd'hui toujours « plaines ») (Rust : fait, biome le plus présent du .schem ou champ `biome` du .json ; pas encore biome par colonne)
 - [x] (Rust) Plantes et feuillage qui ondulent au vent (shaders), comme dans les arènes du jeu
 - [x] (Rust) Blocs lumineux (torches, lanternes, glowstone, lave) qui éclairent vraiment : indispensable pour les caves

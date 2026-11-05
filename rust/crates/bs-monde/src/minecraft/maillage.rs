@@ -1,7 +1,8 @@
 //! Maillages d'une schématique (src/minecraft/maillage.ts), sans carte graphique : un
 //! maillage par texture, en coordonnées du jeu. Les faces cachées par un bloc plein
 //! opaque voisin ne sont pas créées, comme dans Minecraft ; eau et lave sont des cubes
-//! abaissés de 2 pixels (sauf sous le même liquide).
+//! abaissés de 2 pixels (sauf sous le même liquide), plus bas encore là où elles
+//! coulent (`level` 1 à 7), avec une marche visible contre un liquide plus bas.
 
 use super::biomes::Teintes;
 use super::cuisson::{Direction, ModeleCuit, Quad, V3};
@@ -91,6 +92,7 @@ pub fn construire_maillages(
         .collect();
     let modes: Vec<f32> = blocs.iter().map(mode_vent).collect();
     let liquides: Vec<Option<Liquide>> = blocs.iter().map(liquide_affiche).collect();
+    let hauteurs: Vec<f32> = blocs.iter().map(hauteur_liquide).collect();
     let biome = Teintes::du_biome(s.biome.as_deref());
     let teintes: Vec<u32> = blocs
         .iter()
@@ -166,7 +168,18 @@ pub fn construire_maillages(
                     s.bloc(nx, ny, nz)
                         .is_some_and(|v| liquides[v as usize] == Some(liquide))
                 };
-                let haut = if meme(x, y + 1, z) { 1.0 } else { 14.0 / 16.0 };
+                // Hauteur de la surface d'un bloc de ce liquide (plein sous le même liquide)
+                let hauteur = |nx: i32, ny: i32, nz: i32| match s.bloc(nx, ny, nz) {
+                    Some(v) if liquides[v as usize] == Some(liquide) => {
+                        Some(if meme(nx, ny + 1, nz) {
+                            1.0
+                        } else {
+                            hauteurs[v as usize]
+                        })
+                    }
+                    _ => None,
+                };
+                let haut = hauteur(x, y, z).unwrap_or(1.0);
                 let texture = if liquide == Liquide::Eau {
                     TEXTURE_EAU
                 } else {
@@ -182,12 +195,17 @@ pub fn construire_maillages(
                 };
                 for d in Direction::TOUTES {
                     let [dx, dy, dz] = d.vecteur();
-                    if meme(x + dx, y + dy, z + dz) || cache(x, y, z, d, None) {
-                        continue;
-                    }
+                    // Contre le même liquide : seulement la marche qui dépasse du voisin
+                    let bas = match hauteur(x + dx, y + dy, z + dz) {
+                        Some(_) if dy != 0 => continue,
+                        Some(hv) if hv >= haut => continue,
+                        Some(hv) => hv,
+                        None if cache(x, y, z, d, None) => continue,
+                        None => 0.0,
+                    };
                     ajouter(
                         &mut sortie[k],
-                        &quad_liquide(d, haut, texture),
+                        &quad_liquide(d, bas, haut, texture),
                         o,
                         couleur,
                         [0.0, 0.0, 0.0, VENT_AUCUN],
@@ -245,24 +263,39 @@ fn ajouter(m: &mut MaillageTexture, q: &Quad, o: V3, couleur: u32, vent: [f32; 4
         .extend([base, base + 3, base + 2, base, base + 2, base + 1]);
 }
 
-/// Face d'un cube de liquide de hauteur `haut` (en blocs).
-fn quad_liquide(d: Direction, h: f32, texture: &str) -> Quad {
+/// Hauteur de la surface d'un bloc de liquide : 14/16 pour une source ou une chute,
+/// (8 - level) / 9 là où il coule (`level` 1 à 7), comme dans Minecraft.
+fn hauteur_liquide(b: &BlocCuit) -> f32 {
+    let level = b
+        .propriete("level")
+        .and_then(|l| l.parse::<u32>().ok())
+        .unwrap_or(0);
+    if (1..8).contains(&level) {
+        (8 - level) as f32 / 9.0
+    } else {
+        14.0 / 16.0
+    }
+}
+
+/// Face d'un cube de liquide de hauteur `h` (en blocs) ; une face de côté commence à
+/// `b` (marche au-dessus d'un liquide plus bas).
+fn quad_liquide(d: Direction, b: f32, h: f32, texture: &str) -> Quad {
     let c: [f32; 12] = match d {
-        Direction::Nord => [1.0, h, 0.0, 0.0, h, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
-        Direction::Sud => [0.0, h, 1.0, 1.0, h, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0],
-        Direction::Ouest => [0.0, h, 0.0, 0.0, h, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
-        Direction::Est => [1.0, h, 1.0, 1.0, h, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0],
+        Direction::Nord => [1.0, h, 0.0, 0.0, h, 0.0, 0.0, b, 0.0, 1.0, b, 0.0],
+        Direction::Sud => [0.0, h, 1.0, 1.0, h, 1.0, 1.0, b, 1.0, 0.0, b, 1.0],
+        Direction::Ouest => [0.0, h, 0.0, 0.0, h, 1.0, 0.0, b, 1.0, 0.0, b, 0.0],
+        Direction::Est => [1.0, h, 1.0, 1.0, h, 0.0, 1.0, b, 0.0, 1.0, b, 1.0],
         Direction::Haut => [0.0, h, 0.0, 1.0, h, 0.0, 1.0, h, 1.0, 0.0, h, 1.0],
         Direction::Bas => [0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
     };
-    let v_haut = if matches!(d, Direction::Haut | Direction::Bas) {
-        0.0
+    let (v_haut, v_bas) = if matches!(d, Direction::Haut | Direction::Bas) {
+        (0.0, 16.0)
     } else {
-        16.0 - h * 16.0
+        (16.0 - h * 16.0, 16.0 - b * 16.0)
     };
     Quad {
         positions: [0, 1, 2, 3].map(|k| [c[k * 3], c[k * 3 + 1], c[k * 3 + 2]]),
-        uv: [[0.0, v_haut], [16.0, v_haut], [16.0, 16.0], [0.0, 16.0]],
+        uv: [[0.0, v_haut], [16.0, v_haut], [16.0, v_bas], [0.0, v_bas]],
         texture: texture.to_owned(),
         normale: d.vecteur().map(|v| v as f32),
         cullface: None,

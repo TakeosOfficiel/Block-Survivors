@@ -266,3 +266,47 @@ fn boss_des_panneaux() {
     let arrivee = a.arene.arrivee_boss.as_ref().expect("arrivée");
     assert_eq!((arrivee.x, arrivee.z), (-1.0, -1.0));
 }
+
+/// Eau source à côté d'une eau qui coule (`level=4`) : surface plus basse, et la source
+/// montre seulement la marche qui dépasse.
+#[test]
+fn eau_qui_coule() {
+    let s = Schematique {
+        largeur: 2,
+        hauteur: 1,
+        profondeur: 1,
+        palette: ["air", "water[level=0]", "water[level=4]"]
+            .map(String::from)
+            .to_vec(),
+        blocs: vec![1, 2],
+        panneaux: Vec::new(),
+        version_donnees: 0,
+        biome: None,
+    };
+    let blocs = cuire(&s.palette, &fichiers()).expect("cuisson");
+    let tex = textures(&blocs);
+    let rendus = vec![RenduTexture::Translucide; tex.len()];
+    let m = construire_maillages(&s, &blocs, &tex, &rendus, [0.0; 3]);
+    let eau = &m[0];
+    let h_max = eau.positions.iter().map(|p| p[1]).fold(0.0, f32::max);
+    assert!((h_max - 14.0 / 16.0).abs() < 1e-5);
+    // Coulante : (8 - 4) / 9
+    let coulante: Vec<f32> = eau
+        .positions
+        .iter()
+        .filter(|p| p[0] > 1.0)
+        .map(|p| p[1])
+        .collect();
+    assert!(coulante.iter().all(|&y| y <= 4.0 / 9.0 + 1e-5));
+    // Face est de la source (x = 1) : de 4/9 à 14/16, pas jusqu'au sol
+    let est: Vec<&[f32; 3]> = eau
+        .positions
+        .iter()
+        .zip(&eau.normales)
+        .filter(|(_, n)| n[0] > 0.5)
+        .map(|(p, _)| p)
+        .filter(|p| (p[0] - 1.0).abs() < 1e-5)
+        .collect();
+    assert_eq!(est.len(), 4);
+    assert!(est.iter().all(|p| p[1] >= 4.0 / 9.0 - 1e-5));
+}

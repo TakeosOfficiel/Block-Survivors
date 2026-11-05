@@ -45,7 +45,8 @@ fait dans la version Rust (branche `rust`, état au 04/11/2026).
 
 - [x] Coffres (simples, piégés, de l'Ender, de cuivre ; doubles, réunis aussi pour Bedrock) et lits : vrais modèles (jeu Rust)
 - [x] Panneaux (modèles vanilla) et têtes (squelette, wither, zombie, creeper, joueur) : vrais modèles (jeu Rust)
-- [ ] Bannières, têtes de dragon et de piglin : vrais modèles (aujourd'hui rien)
+- [x] Bannières (Rust : tissu en laine de leur couleur, sans motifs)
+- [ ] Têtes de dragon et de piglin, motifs des bannières (aujourd'hui rien)
 - [x] (Rust) Textures animées dans l'atlas (eau, lave, magma, portail) : aujourd'hui figées sur la première image
 - [x] (Rust) Eau qui coule (hauteurs 1 à 7) au lieu d'une eau pleine (surface plate par bloc, sans pente)
 - [ ] Teinte selon le biome de la map (aujourd'hui toujours « plaines ») (Rust : fait, biome le plus présent du .schem ou champ `biome` du .json ; pas encore biome par colonne)

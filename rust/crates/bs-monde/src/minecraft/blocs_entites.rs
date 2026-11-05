@@ -1,4 +1,4 @@
-//! Blocs dessinés par une entité dans Minecraft (coffres, têtes) : leur modèle vanilla
+//! Blocs dessinés par une entité dans Minecraft (coffres, têtes, bannières) : leur modèle vanilla
 //! est vide, on le refait ici en boîtes texturées avec la texture d'entité (dépliée
 //! comme les modèles d'entités), tournées selon `facing` ou `rotation`.
 
@@ -160,6 +160,52 @@ fn tete(texture: &str, hauteur_texture: f32, mur: bool) -> ModeleResolu {
     )
 }
 
+/// Bannière tournée au nord, en laine de sa couleur sur un mât de bois : debout (mât
+/// de 42 px, tissu de 20 × 40 px devant) ou au mur (contre le bloc au sud, le tissu
+/// pendant sur le bloc du dessous). Le tissu est découpé pour ne pas trop étirer la laine.
+fn banniere(couleur: &str, mur: bool) -> ModeleResolu {
+    let face = |de: [f32; 3], a: [f32; 3], t: &str, uv: [f32; 4]| {
+        let faces: Map<String, Value> = ["north", "south", "east", "west", "up", "down"]
+            .iter()
+            .map(|d| ((*d).to_owned(), json!({ "texture": t, "uv": uv })))
+            .collect();
+        json!({ "from": de, "to": a, "faces": faces })
+    };
+    let (z, haut) = if mur { (13.0, 14.0) } else { (6.0, 42.0) };
+    let mut elements = vec![face(
+        [-2.0, haut, z],
+        [18.0, haut + 2.0, z + 3.0],
+        "#bois",
+        [0.0, 0.0, 16.0, 2.0],
+    )];
+    if !mur {
+        elements.push(face(
+            [7.0, 0.0, 7.0],
+            [9.0, 42.0, 9.0],
+            "#bois",
+            [7.0, 0.0, 9.0, 16.0],
+        ));
+    }
+    let mut y = haut;
+    while y > haut - 40.0 {
+        let bas = (y - 16.0).max(haut - 40.0);
+        elements.push(face(
+            [-2.0, bas, z],
+            [18.0, y, z + 1.0],
+            "#laine",
+            [0.0, 0.0, 16.0, y - bas],
+        ));
+        y = bas;
+    }
+    ModeleResolu {
+        textures: Map::from_iter([
+            ("laine".to_owned(), json!(format!("block/{couleur}_wool"))),
+            ("bois".to_owned(), json!("block/oak_planks")),
+        ]),
+        elements,
+    }
+}
+
 /// Texture et hauteur de texture de la tête `nom` (sans « _wall »).
 fn texture_tete(nom: &str) -> Option<(&'static str, f32)> {
     Some(match nom {
@@ -204,6 +250,14 @@ pub(super) fn modele_bloc_entite(
         return Some((coffre(t, moitie), ry));
     }
     let mur = nom.replacen("_wall", "", 1);
+    if let Some(couleur) = mur.strip_suffix("_banner") {
+        return Some(if mur != nom {
+            (banniere(couleur, true), ry)
+        } else {
+            let ry = rotation_sol(propriete("rotation").as_deref());
+            (banniere(couleur, false), ry)
+        });
+    }
     let (t, h) = texture_tete(&mur)?;
     if mur != nom {
         Some((tete(t, h, true), ry))
@@ -300,6 +354,8 @@ mod tests {
         .unwrap();
         assert_eq!(ry, 270);
         assert!(modele_bloc_entite("zombie_wall_head", |_| None).is_some());
+        let (m, _) = modele_bloc_entite("red_wall_banner", |_| None).unwrap();
+        assert_eq!(m.textures["laine"], "block/red_wool");
     }
 
     #[test]

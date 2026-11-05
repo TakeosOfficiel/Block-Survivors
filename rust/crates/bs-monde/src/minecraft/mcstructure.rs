@@ -12,7 +12,9 @@ use super::schematique::{Palette, Panneau, Schematique, texte_de};
 const VOLUME_MAX: usize = 1 << 27;
 
 /// Noms Bedrock → Java (anciens noms compris).
-const NOMS: [(&str, &str); 42] = [
+const NOMS: [(&str, &str); 44] = [
+    ("standing_banner", "white_banner"),
+    ("wall_banner", "white_wall_banner"),
     ("skull", "skeleton_skull"),
     ("bed", "red_bed"),
     ("grass", "grass_block"),
@@ -55,6 +57,26 @@ const NOMS: [(&str, &str); 42] = [
     ("glow_frame", "air"),
     ("stone_block_slab", "smooth_stone_slab"),
     ("double_stone_block_slab", "smooth_stone_slab"),
+];
+
+/// Teintures de Java, dans l'ordre de leurs numéros.
+const TEINTURES: [&str; 16] = [
+    "white",
+    "orange",
+    "magenta",
+    "light_blue",
+    "yellow",
+    "lime",
+    "pink",
+    "gray",
+    "light_gray",
+    "cyan",
+    "purple",
+    "blue",
+    "brown",
+    "green",
+    "red",
+    "black",
 ];
 
 /// Faces numérotées de Bedrock (`facing_direction`).
@@ -224,11 +246,25 @@ pub(super) fn lire_mcstructure(racine: &Compound) -> Result<Schematique, String>
             _ => 0,
         };
         let etat = k.map(|k| &etats[k]);
+        let donnees = positions
+            .and_then(|p| p.compound(&i.to_string()))
+            .and_then(|p| p.compound("block_entity_data"));
+        // Couleur d'une bannière : dans son entité (`Base`, teintures dans l'ordre inverse)
+        let b = match (
+            etat,
+            donnees.and_then(|d| d.get("Base")).and_then(Nbt::entier),
+        ) {
+            (Some(e), Some(c)) if e.starts_with("white_") && e.contains("banner") => {
+                let c = TEINTURES
+                    .get(15 - c.clamp(0, 15) as usize)
+                    .unwrap_or(&"white");
+                palette.ajouter(&e.replacen("white", c, 1))
+            }
+            _ => b,
+        };
         blocs[(y * profondeur + z) * largeur + x] = b;
         if etat.is_some_and(|e| e.contains("sign"))
-            && let Some(Nbt::Compound(donnees)) = positions
-                .and_then(|p| p.compound(&i.to_string()))
-                .and_then(|p| p.get("block_entity_data"))
+            && let Some(donnees) = donnees
         {
             let textes = ["FrontText", "BackText", "Text"]
                 .iter()

@@ -183,14 +183,19 @@ impl Cuiseur<'_> {
         };
         let mut appliques: Vec<&Value> = Vec::new();
         if let Some(Value::Object(variantes)) = json.get("variants") {
-            // Première variante dont toutes les conditions « clé=valeur » sont remplies
-            let choisie = variantes.iter().find(|(cle, _)| {
+            // Première variante dont toutes les conditions « clé=valeur » sont remplies ;
+            // sinon (état incomplet, traduit de Bedrock) la première qui ne contredit rien
+            let accepte = |cle: &str, absente_ok: bool| {
                 cle.is_empty()
                     || cle.split(',').all(|c| {
                         let (k, v) = c.split_once('=').unwrap_or((c, ""));
-                        b.propriete(k) == Some(v)
+                        b.propriete(k).map_or(absente_ok, |p| p == v)
                     })
-            });
+            };
+            let choisie = variantes
+                .iter()
+                .find(|(cle, _)| accepte(cle, false))
+                .or_else(|| variantes.iter().find(|(cle, _)| accepte(cle, true)));
             appliques.extend(choisie.map(|(_, v)| v));
         }
         if let Some(Value::Array(parties)) = json.get("multipart") {

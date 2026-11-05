@@ -1,5 +1,6 @@
 //! Schématiques Minecraft (src/minecraft/schematique.ts) : .schem de WorldEdit / FAWE
-//! (formats Sponge 1, 2 et 3), .litematic de Litematica et .nbt des blocs de structure. Le résultat est un
+//! (formats Sponge 1, 2 et 3), .litematic de Litematica, .nbt des blocs de structure
+//! et .mcstructure de Bedrock. Le résultat est un
 //! volume de blocs indexés dans une palette d'états (« oak_stairs[facing=east] »),
 //! avec le texte des panneaux (repères posés par le constructeur).
 
@@ -7,7 +8,8 @@ use std::collections::HashMap;
 
 use super::biomes::biome_dominant;
 use super::litematic::lire_litematic;
-use super::nbt::{Compound, Nbt, lire_nbt};
+use super::mcstructure::lire_mcstructure;
+use super::nbt::{Compound, Nbt, lire_nbt, lire_nbt_bedrock};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Panneau {
@@ -58,6 +60,12 @@ const RENOMMES: [(&str, &str); 2] = [("grass", "short_grass"), ("chain", "iron_c
 const AIRS: [&str; 3] = ["air", "cave_air", "void_air"];
 
 pub fn lire_schematique(octets: &[u8]) -> Result<Schematique, String> {
+    // Bedrock : petit-boutiste, reconnu à sa clé « structure »
+    if let Ok((_, r)) = lire_nbt_bedrock(octets)
+        && r.compound("structure").is_some()
+    {
+        return lire_mcstructure(&r);
+    }
     let (_, racine) = lire_nbt(octets)?;
     if let Some(s) = racine.compound("Schematic") {
         return lire_sponge(s, 3);
@@ -71,7 +79,7 @@ pub fn lire_schematique(octets: &[u8]) -> Result<Schematique, String> {
     if racine.get("Regions").is_some() {
         return lire_litematic(&racine);
     }
-    Err("Format de schématique inconnu (attendu : .schem de WorldEdit, .litematic ou .nbt de bloc de structure).".into())
+    Err("Format de schématique inconnu (attendu : .schem de WorldEdit, .litematic, .nbt de bloc de structure ou .mcstructure).".into())
 }
 
 /// Normalise un état : sans « minecraft: », avec les noms actuels, air unique.

@@ -1,6 +1,7 @@
 //! Lecture du format NBT de Minecraft (src/minecraft/nbt.ts) : gros-boutiste,
 //! compressé en gzip le plus souvent (zlib parfois). Les tableaux d'octets, d'entiers
-//! et de longs gardent leur forme typée.
+//! et de longs gardent leur forme typée. Bedrock (.mcstructure) : petit-boutiste, sans
+//! compression.
 
 use std::io::Read;
 
@@ -86,10 +87,23 @@ pub fn lire_nbt(octets: &[u8]) -> Result<(String, Compound), String> {
         _ => Ok(false),
     }
     .map_err(|e| format!("Fichier NBT illisible : {e}"))?;
-    let mut l = Lecteur {
+    lire_racine(Lecteur {
         octets: if decompresse { &brut } else { octets },
         position: 0,
-    };
+        petit: false,
+    })
+}
+
+/// NBT de Bedrock : petit-boutiste, non compressé.
+pub fn lire_nbt_bedrock(octets: &[u8]) -> Result<(String, Compound), String> {
+    lire_racine(Lecteur {
+        octets,
+        position: 0,
+        petit: true,
+    })
+}
+
+fn lire_racine(mut l: Lecteur) -> Result<(String, Compound), String> {
     if l.octet()? != 10 {
         return Err("Fichier NBT invalide : la racine doit être un compound.".into());
     }
@@ -100,6 +114,20 @@ pub fn lire_nbt(octets: &[u8]) -> Result<(String, Compound), String> {
 struct Lecteur<'a> {
     octets: &'a [u8],
     position: usize,
+    /// Petit-boutiste (Bedrock).
+    petit: bool,
+}
+
+/// Nombre de N octets dans l'ordre du fichier.
+macro_rules! nombre {
+    ($l:expr, $t:ty) => {{
+        let o = $l.prendre()?;
+        if $l.petit {
+            <$t>::from_le_bytes(o)
+        } else {
+            <$t>::from_be_bytes(o)
+        }
+    }};
 }
 
 impl Lecteur<'_> {
@@ -114,11 +142,11 @@ impl Lecteur<'_> {
     }
 
     fn octet(&mut self) -> Result<i8, String> {
-        Ok(i8::from_be_bytes(self.prendre()?))
+        Ok(nombre!(self, i8))
     }
 
     fn entier(&mut self) -> Result<i32, String> {
-        Ok(i32::from_be_bytes(self.prendre()?))
+        Ok(nombre!(self, i32))
     }
 
     fn longueur(&mut self) -> Result<usize, String> {
@@ -127,7 +155,7 @@ impl Lecteur<'_> {
     }
 
     fn chaine(&mut self) -> Result<String, String> {
-        let n = u16::from_be_bytes(self.prendre()?) as usize;
+        let n = nombre!(self, u16) as usize;
         let fin = self.position + n;
         let t = self
             .octets
@@ -153,11 +181,11 @@ impl Lecteur<'_> {
     fn valeur(&mut self, t: i8) -> Result<Nbt, String> {
         Ok(match t {
             1 => Nbt::Octet(self.octet()?),
-            2 => Nbt::Court(i16::from_be_bytes(self.prendre()?)),
+            2 => Nbt::Court(nombre!(self, i16)),
             3 => Nbt::Entier(self.entier()?),
-            4 => Nbt::Long(i64::from_be_bytes(self.prendre()?)),
-            5 => Nbt::Flottant(f32::from_be_bytes(self.prendre()?)),
-            6 => Nbt::Double(f64::from_be_bytes(self.prendre()?)),
+            4 => Nbt::Long(nombre!(self, i64)),
+            5 => Nbt::Flottant(nombre!(self, f32)),
+            6 => Nbt::Double(nombre!(self, f64)),
             7 => {
                 let n = self.longueur()?;
                 let fin = self.position + n;
@@ -191,7 +219,7 @@ impl Lecteur<'_> {
                 let n = self.longueur()?;
                 let mut v = Vec::with_capacity(n.min(1 << 20));
                 for _ in 0..n {
-                    v.push(i64::from_be_bytes(self.prendre()?));
+                    v.push(nombre!(self, i64));
                 }
                 Nbt::Longs(v)
             }

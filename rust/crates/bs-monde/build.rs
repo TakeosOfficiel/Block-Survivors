@@ -1,5 +1,5 @@
 //! Embarque les maps Minecraft du dossier cartes/ (à la racine du dépôt) : chaque
-//! .schem, .litematic ou .nbt devient une arène, réglée par le .json du même nom s'il existe.
+//! .schem, .litematic, .nbt ou .mcstructure devient une arène, réglée par le .json du même nom s'il existe.
 
 use std::fmt::Write;
 use std::path::Path;
@@ -16,7 +16,7 @@ fn main() {
         let Some(ext) = f.extension().and_then(|e| e.to_str()) else {
             continue;
         };
-        if !["schem", "litematic", "nbt"].contains(&ext) {
+        if !["schem", "litematic", "nbt", "mcstructure"].contains(&ext) {
             continue;
         }
         let id = f

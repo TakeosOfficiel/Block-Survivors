@@ -43,7 +43,7 @@ fait dans la version Rust (branche `rust`, état au 04/11/2026).
 
 ## Maps : affichage
 
-- [x] Coffres (simples, piégés, de l'Ender, de cuivre) et lits : vrais modèles (jeu Rust ; un coffre double s'affiche en deux coffres)
+- [x] Coffres (simples, piégés, de l'Ender, de cuivre ; doubles, réunis aussi pour Bedrock) et lits : vrais modèles (jeu Rust)
 - [x] Panneaux (modèles vanilla) et têtes (squelette, wither, zombie, creeper, joueur) : vrais modèles (jeu Rust)
 - [ ] Bannières, têtes de dragon et de piglin : vrais modèles (aujourd'hui rien)
 - [x] (Rust) Textures animées dans l'atlas (eau, lave, magma, portail) : aujourd'hui figées sur la première image

@@ -4,6 +4,7 @@
 //! Java pour les blocs courants ; un état inconnu est laissé de côté (le modèle prend
 //! alors sa première variante compatible).
 
+use super::blocs_entites::apparier_coffres;
 use super::nbt::{Compound, Nbt};
 use super::schematique::{Palette, Panneau, Schematique, texte_de};
 
@@ -241,7 +242,7 @@ pub(super) fn lire_mcstructure(racine: &Compound) -> Result<Schematique, String>
             });
         }
     }
-    Ok(Schematique {
+    let mut s = Schematique {
         largeur,
         hauteur,
         profondeur,
@@ -250,7 +251,9 @@ pub(super) fn lire_mcstructure(racine: &Compound) -> Result<Schematique, String>
         panneaux,
         version_donnees: 0,
         biome: None,
-    })
+    };
+    apparier_coffres(&mut s);
+    Ok(s)
 }
 
 #[cfg(test)]

@@ -40,7 +40,7 @@ pub(super) fn construire(
     for (k, a) in dj.arenes.iter().enumerate() {
         ligne(p, sauvegarde, a.def, (k, k == choix.arene), liste);
     }
-    let aide = "Ajouter une map : glisse un fichier .schem, .litematic, .nbt ou .mcstructure sur la fenêtre.";
+    let aide = "Ajouter une map : glisse un fichier .schem, .litematic, .nbt, .mcstructure ou le dossier d'un monde sur la fenêtre.";
     p.texte(parent, aide, false, T_AIDE - 1.0, AIDE);
     if let Some(m) = message {
         let couleur = if m.starts_with("Map refusée") {

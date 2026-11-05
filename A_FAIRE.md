@@ -59,7 +59,7 @@ fait dans la version Rust (branche `rust`, état au 04/11/2026).
 - [ ] Hauteur pour les entités, projectiles et zones d'effet (aujourd'hui tout est à plat, hauteurs écrites en dur)
 - [ ] Coupe automatique des plafonds au-dessus du joueur (caves, maisons) et murs transparents entre la caméra et le joueur
 - [ ] Apparition des mobs à une distance de marche (pas à vol d'oiseau) (Rust : fait, un point qui oblige à un long détour à pied n'est pris qu'en dernier recours)
-- [ ] Largeur de passage par case : boss trop gros pour un tunnel de 2 blocs
+- [ ] Largeur de passage par case : boss trop gros pour un tunnel de 2 blocs (Rust : fait, les gros ennemis prennent un passage où tient tout leur corps ; s'il n'y en a aucun, ils se faufilent quand même)
 - [ ] Échelles et lianes
 
 ## Équilibrage

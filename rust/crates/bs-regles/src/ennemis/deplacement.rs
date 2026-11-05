@@ -2,7 +2,7 @@
 //! leurs comportements : corps à corps, tireur, explosif (src/entites/comportements.ts).
 
 use bs_commun::maths::{atan2, cos, ecart_angle, facteur_lissage, longueur, racine, sin};
-use bs_donnees::entites::Comportement;
+use bs_donnees::entites::{Comportement, Ennemi as DefinitionEnnemi};
 
 use super::{Ennemi, PERIODE_VUE};
 use crate::partie::Partie;
@@ -133,6 +133,16 @@ fn appliquer_comportement(e: &mut Ennemi, dt: f32, v: &Vers, rayon_joueur: f32) 
     action
 }
 
+/// Largeur de passage (en cases) d'un gros ennemi qui se glisse contre le décor avec un
+/// rayon réduit (`rayon_decor`) : il préfère les passages où tient tout son corps.
+fn taille_passage(def: &DefinitionEnnemi) -> usize {
+    if def.rayon_decor.is_some() {
+        (def.rayon * 2.0).ceil() as usize
+    } else {
+        1
+    }
+}
+
 impl Partie {
     pub(super) fn deplacer(&mut self, index: usize, dt: f32) {
         let rayon_joueur = self.d.regles.joueur.rayon;
@@ -188,7 +198,8 @@ impl Partie {
             &self.equipe.membres[vise - 1].flux
         };
         if !e.voit_joueur
-            && let Some((cx, cz)) = flux.direction(&self.carte, e.x, e.z)
+            && let Some((cx, cz)) =
+                flux.direction_taille(&self.carte, e.x, e.z, taille_passage(def))
         {
             v.chemin_x = cx;
             v.chemin_z = cz;

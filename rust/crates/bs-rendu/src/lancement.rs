@@ -2,8 +2,9 @@
 //!
 //! Arènes proposées : celles du jeu, puis les maps construites dans Minecraft (dossier
 //! cartes/ du dépôt, puis maps du joueur, glissées sur la fenêtre). Le dernier choix
-//! (classe, arène) est gardé dans le profil (clé `choix`, même JSON que le jeu TS). Au retour au menu, tout ce que la partie a créé est retiré
-//! (entités affichées, ressources de la partie), comme le rechargement de page du jeu TS.
+//! (classe, arène) est gardé dans le profil (clé `choix`, même JSON que le jeu TS). Au
+//! retour au menu, tout ce que la partie a créé est retiré (entités affichées,
+//! ressources de la partie), comme le rechargement de page du jeu TS.
 
 use bevy::prelude::*;
 use bs_donnees::Donnees;

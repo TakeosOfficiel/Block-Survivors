@@ -55,3 +55,40 @@ fn le_flux_mene_au_joueur() {
     }
     assert_eq!(carte.cellule(x, z), carte.cellule(0.5, 0.5));
 }
+
+/// Un mur coupe la carte avec une fente d'une case tout près et une ouverture de trois
+/// cases loin : un ennemi de taille 3 fait le détour, un petit passe par la fente ; sans
+/// l'ouverture, le gros se faufile par la fente.
+#[test]
+fn gros_ennemi_par_le_passage_large() {
+    let chemin = |taille: usize, large: bool| {
+        let mut carte = bs_monde::CarteMonde::nouvelle(30, 30);
+        let l = carte.largeur;
+        for iz in 0..30 {
+            let ouvert = iz == 15 || (large && (3..6).contains(&iz));
+            if !ouvert {
+                carte.drapeaux[iz * l + 15] |= BLOQUE_MARCHE;
+            }
+        }
+        let mut flux = ChampDeFlux::nouveau(&carte);
+        // Joueur à droite du mur, ennemi à gauche, à la hauteur de la fente
+        flux.maj(&carte, 8.5, 0.5);
+        let (mut x, mut z, mut z_min) = (-8.5_f32, 0.5_f32, 0.5_f32);
+        for _ in 0..2000 {
+            let Some((dx, dz)) = flux.direction_taille(&carte, x, z, taille) else {
+                break;
+            };
+            x += dx * 0.25;
+            z += dz * 0.25;
+            z_min = z_min.min(z);
+        }
+        assert_eq!(carte.cellule(x, z), carte.cellule(8.5, 0.5));
+        z_min
+    };
+    assert!(chemin(1, true) > -1.0, "petit : par la fente");
+    assert!(chemin(3, true) < -8.0, "gros : par l'ouverture");
+    assert!(
+        chemin(3, false) > -1.0,
+        "gros sans ouverture : par la fente"
+    );
+}

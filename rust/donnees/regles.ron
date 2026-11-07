@@ -30,6 +30,8 @@
     ),
     distanceMin: 8.0,
     dispersionGroupe: 1.5,
+    surfaceReference: 3000.0,
+    facteurSurfaceMin: 0.3,
   ),
   boss: (
     premierPassage: 300.0,

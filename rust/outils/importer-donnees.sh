@@ -12,11 +12,16 @@ trap 'rm -rf "$json" "${ron:-}"' EXIT
 
 (cd "$racine" && node rust/outils/exporter-donnees.mjs "$json" > /dev/null)
 
+# Fichiers propres à la version Rust (succès ; talents refaits pour la page des
+# Talents du jeu Rust) : jamais réécrits depuis la version TS
+propres="succes talents"
+garder() { for f in $propres; do cp "$racine/rust/donnees/$f.ron" "$1/"; done; }
+
 if [[ "${1:-}" == "--verifier" ]]; then
   ron="$(mktemp -d)"
-  # Fichiers propres à la version Rust : repris tels quels
-  for f in succes; do cp "$racine/rust/donnees/$f.ron" "$ron/"; done
+  garder "$ron"
   (cd "$racine/rust" && cargo run -q -p bs-donnees --bin importer-donnees -- "$json" "$ron")
+  garder "$ron"
   if ! diff -r "$racine/rust/donnees" "$ron" > /dev/null; then
     diff -ru "$racine/rust/donnees" "$ron" | head -40
     echo "rust/donnees n'est pas à jour : lancer rust/outils/importer-donnees.sh" >&2
@@ -24,5 +29,9 @@ if [[ "${1:-}" == "--verifier" ]]; then
   fi
   echo "rust/donnees est à jour"
 else
+  sauve="$(mktemp -d)"
+  garder "$sauve"
   (cd "$racine/rust" && cargo run -q -p bs-donnees --bin importer-donnees -- "$json" donnees)
+  for f in $propres; do cp "$sauve/$f.ron" "$racine/rust/donnees/"; done
+  rm -rf "$sauve"
 fi

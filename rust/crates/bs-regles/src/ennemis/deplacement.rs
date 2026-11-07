@@ -297,7 +297,7 @@ impl Partie {
             self.carte.vitesse_sol(e.x, e.z, def.traverse_toiles)
         };
         let e = &mut self.ennemis.pool[index];
-        let h = self.carte.hauteur(e.x, e.z);
+        let h = self.carte.atteinte(e.x, e.z);
         let vitesse = def.vitesse * (1.0 - e.ralenti) * sol;
         e.x += (e.dir_x * vitesse + e.vx) * dt + sep_x * k_separation;
         e.z += (e.dir_z * vitesse + e.vz) * dt + sep_z * k_separation;

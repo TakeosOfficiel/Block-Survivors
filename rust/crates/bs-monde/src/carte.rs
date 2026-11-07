@@ -3,8 +3,8 @@
 //! collisions cercle / blocs et les lignes de vue et de tir.
 //!
 //! Chaque case a la hauteur de son sol (blocs, par rapport au niveau de départ) : on
-//! monte tout seul d'au plus `MARCHE` (un bloc, une dalle), on saute de n'importe quelle
-//! falaise ; un projectile suit le relief à hauteur de corps et s'arrête sur une paroi.
+//! monte tout seul d'au plus `MARCHE` (un bloc, une dalle), plus haut par une échelle ou
+//! une liane, on saute de n'importe quelle falaise ; un projectile suit le relief à hauteur de corps et s'arrête sur une paroi.
 
 /// Case infranchissable à pied (bloc plein ou liquide à hauteur de corps).
 pub const BLOQUE_MARCHE: u8 = 1;
@@ -31,6 +31,8 @@ pub struct CarteMonde {
     pub degats: Vec<f32>,
     /// Hauteur du sol de chaque case (0 : niveau de départ).
     pub hauteurs: Vec<f32>,
+    /// Hauteur d'échelle ou de liane dont on dispose sur la case (en plus d'une marche).
+    pub grimpe: Vec<f32>,
 }
 
 impl CarteMonde {
@@ -46,6 +48,7 @@ impl CarteMonde {
             ralentissement_hors_toiles: vec![1.0; cases],
             degats: vec![0.0; cases],
             hauteurs: vec![0.0; cases],
+            grimpe: vec![0.0; cases],
         }
     }
 
@@ -87,10 +90,18 @@ impl CarteMonde {
         h + (m - h) * 0.5
     }
 
-    /// Peut-on passer de la case `de` à la case `vers` à pied (marche assez basse) ?
+    /// Plus haut sol que l'on atteint depuis (x, z), moins une marche : la hauteur du sol,
+    /// plus celle d'une échelle ou d'une liane (à passer à `resoudre_collision`).
+    pub fn atteinte(&self, x: f32, z: f32) -> f32 {
+        self.cellule(x, z)
+            .map_or(0.0, |c| self.hauteurs[c] + self.grimpe[c])
+    }
+
+    /// Peut-on passer de la case `de` à la case `vers` à pied (marche assez basse, ou
+    /// échelle assez haute) ?
     pub fn pas_possible(&self, de: usize, vers: usize) -> bool {
         self.drapeaux[vers] & BLOQUE_MARCHE == 0
-            && self.hauteurs[vers] <= self.hauteurs[de] + MARCHE
+            && self.hauteurs[vers] <= self.hauteurs[de] + self.grimpe[de] + MARCHE
     }
 
     pub fn bloque_marche(&self, x: f32, z: f32) -> bool {
@@ -128,8 +139,8 @@ impl CarteMonde {
     }
 
     /// Repousse un cercle hors des cases infranchissables voisines (ou trop hautes pour
-    /// qui se tient à la hauteur `h`) et le garde dans l'arène ; il glisse le long des
-    /// obstacles.
+    /// qui atteint la hauteur `h`, voir `atteinte`) et le garde dans l'arène ; il glisse
+    /// le long des obstacles.
     pub fn resoudre_collision(&self, x: f32, z: f32, rayon: f32, h: f32) -> (f32, f32) {
         let limite_x = self.demi_x - rayon;
         let limite_z = self.demi_z - rayon;

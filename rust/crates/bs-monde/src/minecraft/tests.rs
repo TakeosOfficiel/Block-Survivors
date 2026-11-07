@@ -59,6 +59,17 @@ fn fichiers() -> Fichiers {
             }),
         ),
         (
+            "blockstates/ladder.json",
+            json!({ "variants": { "": { "model": "block/ladder" } } }),
+        ),
+        (
+            "models/block/ladder.json",
+            json!({
+                "textures": { "texture": "block/ladder" },
+                "elements": [{ "from": [0, 0, 15.2], "to": [16, 16, 15.2], "faces": faces("#texture") }]
+            }),
+        ),
+        (
             "blockstates/short_grass.json",
             json!({ "variants": { "": { "model": "block/short_grass" } } }),
         ),
@@ -388,4 +399,54 @@ fn relief_marches_et_falaise() {
     assert!(x >= x0 + 5.8 - 1e-4, "repoussé contre la paroi : {x}");
     let (x, _) = a.carte.resoudre_collision(x0 + 5.6, z0, 0.3, 2.0);
     assert!((x - (x0 + 5.6)).abs() < 1e-4);
+}
+
+#[test]
+fn echelle_au_pied_d_un_mur() {
+    // Couloir (z = 1) : sol, une échelle de 3 blocs contre un mur de 3, puis le haut
+    let pieds = [1, 1, 1, 4, 4];
+    let (l, h, p) = (pieds.len(), 7, 3);
+    let mut blocs = vec![0u16; l * h * p];
+    for (x, &n) in pieds.iter().enumerate() {
+        for y in 0..h {
+            for z in 0..p {
+                if y == 0 || z != 1 || y < n {
+                    blocs[(y * p + z) * l + x] = 1;
+                } else if x == 2 && y < 4 {
+                    blocs[(y * p + z) * l + x] = 2;
+                }
+            }
+        }
+    }
+    let s = Schematique {
+        largeur: l,
+        hauteur: h,
+        profondeur: p,
+        palette: ["air", "stone", "ladder"].map(String::from).to_vec(),
+        blocs,
+        panneaux: vec![Panneau {
+            x: 0,
+            y: 1,
+            z: 1,
+            texte: "depart".into(),
+        }],
+        version_donnees: 0,
+        biome: None,
+        grille_biomes: None,
+    };
+    let blocs = cuire(&s.palette, &fichiers()).expect("cuisson");
+    let d = bs_donnees::Donnees::embarquees().expect("données");
+    let c = cartes()[0];
+    let a = importer(&d, definition(&d, &c).expect("définition"), &s, &blocs).expect("zone");
+    assert_eq!(a.zone.largeur, 5);
+    assert_eq!(a.carte.hauteurs, [0.0, 0.0, 0.0, 3.0, 3.0]);
+    assert_eq!(a.carte.grimpe, [0.0, 0.0, 3.0, 0.0, 0.0]);
+    assert!(!a.carte.pas_possible(1, 3), "le mur sans échelle");
+    assert!(a.carte.pas_possible(2, 3), "en haut de l'échelle");
+    assert!(a.carte.pas_possible(3, 2), "on redescend");
+    let (x2, z2) = a.carte.centre(2);
+    let (x, _) = a
+        .carte
+        .resoudre_collision(x2 + 0.4, z2, 0.3, a.carte.atteinte(x2, z2));
+    assert!((x - (x2 + 0.4)).abs() < 1e-4, "on passe sur le mur : {x}");
 }

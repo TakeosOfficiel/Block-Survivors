@@ -63,7 +63,7 @@ fait dans la version Rust (branche `rust`, état au 04/11/2026).
 - [ ] Coupe automatique des plafonds au-dessus du joueur (caves, maisons) et murs transparents entre la caméra et le joueur
 - [ ] Apparition des mobs à une distance de marche (pas à vol d'oiseau) (Rust : fait, un point qui oblige à un long détour à pied n'est pris qu'en dernier recours)
 - [ ] Largeur de passage par case : boss trop gros pour un tunnel de 2 blocs (Rust : fait, les gros ennemis prennent un passage où tient tout leur corps ; s'il n'y en a aucun, ils se faufilent quand même)
-- [ ] Échelles et lianes
+- [ ] Échelles et lianes (Rust : fait, une colonne qui en porte fait monter d'autant de blocs, pour le joueur comme pour les mobs)
 
 ## Équilibrage
 

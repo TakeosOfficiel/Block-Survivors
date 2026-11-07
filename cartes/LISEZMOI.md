@@ -26,7 +26,8 @@ tout le reste de la construction sert de décor.
 Dans la version Rust, le relief fait partie de la zone : on monte tout seul
 une marche d'un bloc (ou d'une dalle), et l'on saute d'une falaise d'au plus
 6 blocs, sans pouvoir la remonter. Les mobs suivent les mêmes règles. Un mur
-de deux blocs, une clôture ou un muret (un bloc et demi) arrête toujours. Une
+de deux blocs, une clôture ou un muret (un bloc et demi) arrête toujours, sauf
+une échelle ou une liane posée devant : elle fait monter d'autant de blocs. Une
 colonne n'a qu'un sol : sous un pont, seul le premier niveau atteint compte.
 
 **Réglages** (facultatifs) : un fichier `.json` du même nom.

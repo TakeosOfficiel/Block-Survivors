@@ -88,7 +88,7 @@ impl Partie {
             * self.carte.vitesse_sol(j.x, j.z, false);
         j.vx += (dx * vitesse - j.vx) * k;
         j.vz += (dz * vitesse - j.vz) * k;
-        let h = self.carte.hauteur(j.x, j.z);
+        let h = self.carte.atteinte(j.x, j.z);
         j.x += j.vx * dt;
         j.z += j.vz * dt;
 

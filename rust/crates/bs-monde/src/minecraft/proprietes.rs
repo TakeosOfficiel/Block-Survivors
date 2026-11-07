@@ -62,6 +62,8 @@ pub struct Physique {
     pub degats: Option<f32>,
     /// Haut de la forme d'un bloc plein, en blocs (0,5 : dalle du bas ; 1,5 : clôture).
     pub dessus: f32,
+    /// Échelle ou liane : on y grimpe.
+    pub echelle: bool,
 }
 
 impl Physique {
@@ -72,6 +74,7 @@ impl Physique {
             toile: false,
             degats: None,
             dessus: 1.0,
+            echelle: false,
         }
     }
 }
@@ -146,6 +149,7 @@ fn effets(nom: &str) -> Physique {
         "soul_sand" | "honey_block" => p.ralentit = Some(0.6),
         "magma_block" | "fire" | "soul_fire" | "campfire" | "soul_campfire" => p.degats = Some(2.0),
         "lava" => p.degats = Some(8.0),
+        n if n == "ladder" || n.contains("vine") => p.echelle = true,
         _ => {}
     }
     p
@@ -160,7 +164,7 @@ pub fn physique_de(b: &BlocCuit) -> Physique {
     if b.nom == "barrier" || b.inconnu {
         return Physique::de(Collision::Plein);
     }
-    if traversable(&b.nom) {
+    if traversable(&b.nom) || e.echelle {
         return avec(Collision::Vide);
     }
     if b.nom.ends_with("fence_gate") && b.propriete("open") == Some("true") {

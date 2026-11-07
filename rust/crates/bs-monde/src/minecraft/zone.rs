@@ -1,7 +1,7 @@
 //! Zone jouable d'une schématique (src/minecraft/importation.ts) : à partir du point de
 //! départ (panneau « depart », sinon le centre), toutes les colonnes reliées à pied, sur
 //! un sol plein avec deux blocs libres au-dessus. On monte d'un bloc (ou d'une dalle)
-//! tout seul et l'on saute d'une falaise d'au plus `CHUTE` blocs ; une colonne n'a qu'un
+//! tout seul, plus haut par une échelle ou une liane, et l'on saute d'une falaise d'au plus `CHUTE` blocs ; une colonne n'a qu'un
 //! sol, le premier atteint. Ce qui reste hors d'atteinte (murs, clôtures, champignons
 //! géants…) devient le décor. Puis la carte de collision du rectangle de la zone.
 
@@ -32,6 +32,8 @@ pub struct Zone {
     pub niveaux: Vec<i32>,
     /// Hauteur du sol de chaque case par rapport à `niveau` (dalles comprises).
     pub sols: Vec<f32>,
+    /// Blocs d'échelle ou de liane à hauteur des pieds et au-dessus, sur chaque case.
+    pub grimpes: Vec<f32>,
     pub depart_x: i32,
     pub depart_z: i32,
 }
@@ -68,11 +70,21 @@ impl Volume<'_> {
         (y - 1) as f32 + self.physique(x, y - 1, z).map_or(1.0, |p| p.dessus)
     }
 
-    /// Niveau des pieds en arrivant en (x, z) depuis une voisine aux pieds en `y` et au
-    /// sol à `sol` : une marche plus haut, au même niveau ou en contrebas.
-    fn arrivee(&self, x: i32, z: i32, y: i32, sol: f32) -> Option<i32> {
-        if self.debout(x, y + 1, z) && self.sol(x, y + 1, z) <= sol + MARCHE {
-            return Some(y + 1);
+    /// Blocs d'échelle ou de liane empilés à partir des pieds (`y`).
+    fn grimpe(&self, x: i32, y: i32, z: i32) -> i32 {
+        (0..)
+            .take_while(|&i| self.physique(x, y + i, z).is_some_and(|p| p.echelle))
+            .count() as i32
+    }
+
+    /// Niveau des pieds en arrivant en (x, z) depuis une voisine aux pieds en `y`, au
+    /// sol à `sol` et à `grimpe` blocs d'échelle : une marche plus haut (ou le haut de
+    /// l'échelle), au même niveau ou en contrebas.
+    fn arrivee(&self, x: i32, z: i32, y: i32, sol: f32, grimpe: i32) -> Option<i32> {
+        for yy in (y + 1..=y + 1 + grimpe).rev() {
+            if self.debout(x, yy, z) && self.sol(x, yy, z) <= sol + MARCHE + grimpe as f32 {
+                return Some(yy);
+            }
         }
         for yy in (y - CHUTE..=y).rev() {
             if !self.libre(x, yy + 1, z) {
@@ -129,6 +141,7 @@ pub fn trouver_zone(s: &Schematique, physiques: &[Physique]) -> Result<Zone, Str
         } else {
             v.sol(x, y, z)
         };
+        let grimpe = v.grimpe(x, y, z);
         for (dx, dz) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
             let (nx, nz) = (x + dx, z + dz);
             if nx < 0 || nz < 0 || nx >= l || nz >= p {
@@ -138,7 +151,7 @@ pub fn trouver_zone(s: &Schematique, physiques: &[Physique]) -> Result<Zone, Str
             if etat[n] != 0 {
                 continue;
             }
-            if let Some(yy) = v.arrivee(nx, nz, y, sol) {
+            if let Some(yy) = v.arrivee(nx, nz, y, sol, grimpe) {
                 etat[n] = PRATICABLE;
                 niveaux[n] = yy;
             } else if v.collision(nx, y - 1, nz) == Some(Collision::Liquide)
@@ -158,6 +171,7 @@ pub fn trouver_zone(s: &Schematique, physiques: &[Physique]) -> Result<Zone, Str
     let mut cases = vec![0u8; largeur * profondeur];
     let mut niv = vec![niveau; largeur * profondeur];
     let mut sols = vec![0.0; largeur * profondeur];
+    let mut grimpes = vec![0.0; largeur * profondeur];
     for z in 0..profondeur {
         for x in 0..largeur {
             let i = (min_z as usize + z) * lu + min_x as usize + x;
@@ -188,6 +202,9 @@ pub fn trouver_zone(s: &Schematique, physiques: &[Physique]) -> Result<Zone, Str
         for x in 0..largeur {
             let c = z * largeur + x;
             let (wx, wz) = (min_x + x as i32, min_z + z as i32);
+            if cases[c] == PRATICABLE {
+                grimpes[c] = v.grimpe(wx, niv[c], wz) as f32;
+            }
             sols[c] = match cases[c] {
                 PRATICABLE => v.sol(wx, niv[c], wz) - niveau as f32,
                 _ => (niv[c] - niveau) as f32,
@@ -203,6 +220,7 @@ pub fn trouver_zone(s: &Schematique, physiques: &[Physique]) -> Result<Zone, Str
         cases,
         niveaux: niv,
         sols,
+        grimpes,
         depart_x,
         depart_z,
     })
@@ -220,6 +238,7 @@ pub fn construire_carte(s: &Schematique, physiques: &[Physique], zone: &Zone) ->
             let (x, z) = (zone.x0 + ix as i32, zone.z0 + iz as i32);
             let y = zone.niveaux[c];
             carte.hauteurs[c] = zone.sols[c];
+            carte.grimpe[c] = zone.grimpes[c];
             let corps = [v.physique(x, y, z), v.physique(x, y + 1, z)];
             let sol = v.physique(x, y - 1, z);
             if zone.cases[c] != PRATICABLE {

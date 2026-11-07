@@ -7,84 +7,84 @@
    "parties": 15,
    "victoires": 0,
    "survie": {
-    "moyenne": 208.4,
-    "ecart": 146.1,
-    "min": 51.2,
-    "max": 634.3
+    "moyenne": 229.4,
+    "ecart": 148.1,
+    "min": 58,
+    "max": 625
    },
    "niveau": {
-    "moyenne": 5.8,
-    "ecart": 4.4,
+    "moyenne": 6.1,
+    "ecart": 3.9,
     "min": 2,
-    "max": 19
+    "max": 17
    },
    "tues": {
-    "moyenne": 185.2,
-    "ecart": 282,
-    "min": 14,
-    "max": 1163
+    "moyenne": 181.7,
+    "ecart": 206.4,
+    "min": 10,
+    "max": 841
    },
    "degatsSubis": {
-    "moyenne": 24.1,
-    "ecart": 8.4,
+    "moyenne": 29.3,
+    "ecart": 15.7,
     "min": 18,
-    "max": 41
+    "max": 63
    },
    "puissanceParMinute": [
-    7,
-    12.9,
-    21.5,
-    29.9,
-    44,
-    68,
-    86.5,
-    111,
-    126,
-    166,
-    214
+    6.8,
+    11.5,
+    16.6,
+    28.9,
+    36.4,
+    44.5,
+    60.7,
+    80,
+    88,
+    103,
+    109
    ],
    "dpsParArme": {
     "arc": {
-     "moyenne": 7.6,
+     "moyenne": 7.4,
      "ecart": 1.7,
      "min": 5,
-     "max": 10,
+     "max": 11,
      "parties": 15
     },
     "fleche_ricochet": {
-     "moyenne": 31,
-     "ecart": 11,
-     "min": 20,
-     "max": 46,
-     "parties": 3
-    },
-    "fusee": {
-     "moyenne": 14.6,
-     "ecart": 12.8,
-     "min": 7,
+     "moyenne": 19,
+     "ecart": 10.9,
+     "min": 10,
      "max": 40,
      "parties": 5
     },
+    "fusee": {
+     "moyenne": 10.5,
+     "ecart": 2.7,
+     "min": 8,
+     "max": 15,
+     "parties": 4
+    },
     "piege_ronces": {
-     "moyenne": 6,
-     "ecart": 2.9,
+     "moyenne": 5,
+     "ecart": 3,
      "min": 2,
-     "max": 9,
-     "parties": 5
+     "max": 10,
+     "parties": 7
     },
     "pluie_fleches": {
-     "moyenne": 6.3,
-     "ecart": 4,
+     "moyenne": 9,
+     "ecart": 3.8,
      "min": 3,
-     "max": 15,
-     "parties": 6
+     "max": 14,
+     "parties": 5
     },
     "salve": {
-     "moyenne": 5.3,
-     "ecart": 1.2,
+     "moyenne": 4.6,
+     "ecart": 0.5,
      "min": 4,
-     "max": 7,
-     "parties": 3
+     "max": 5,
+     "parties": 5
     }
    }
   },
@@ -92,84 +92,85 @@
    "parties": 15,
    "victoires": 0,
    "survie": {
-    "moyenne": 174.6,
-    "ecart": 58.7,
-    "min": 56.9,
-    "max": 257.2
+    "moyenne": 193.2,
+    "ecart": 61.1,
+    "min": 93.7,
+    "max": 312.4
    },
    "niveau": {
-    "moyenne": 3.5,
-    "ecart": 1,
-    "min": 2,
-    "max": 5
+    "moyenne": 3.9,
+    "ecart": 1.1,
+    "min": 3,
+    "max": 6
    },
    "tues": {
-    "moyenne": 57.1,
-    "ecart": 34.7,
-    "min": 21,
-    "max": 133
+    "moyenne": 84.2,
+    "ecart": 44.5,
+    "min": 24,
+    "max": 159
    },
    "degatsSubis": {
-    "moyenne": 27.4,
-    "ecart": 4.3,
+    "moyenne": 26.8,
+    "ecart": 4.7,
     "min": 24,
-    "max": 36
+    "max": 40
    },
    "puissanceParMinute": [
-    4.3,
+    2.9,
     9.1,
-    14.1,
-    13.1,
-    31.5
+    15.5,
+    31.5,
+    17,
+    71
    ],
    "dpsParArme": {
     "epee": {
-     "moyenne": 5.1,
-     "ecart": 1.4,
+     "moyenne": 4.5,
+     "ecart": 1.3,
      "min": 3,
      "max": 7,
      "parties": 15
     },
     "haches": {
-     "moyenne": 2.5,
-     "ecart": 1.5,
+     "moyenne": 1,
+     "ecart": 0,
      "min": 1,
-     "max": 5,
-     "parties": 6
+     "max": 1,
+     "parties": 1
     },
     "heurt_bouclier": {
      "moyenne": 0.3,
      "ecart": 0.5,
      "min": 0,
      "max": 1,
-     "parties": 3
+     "parties": 6
     },
     "lame_colossale": {
-     "moyenne": 14,
-     "ecart": 3,
-     "min": 11,
-     "max": 17,
-     "parties": 2
+     "moyenne": 30.8,
+     "ecart": 13.9,
+     "min": 10,
+     "max": 43,
+     "parties": 6
     },
     "onde_choc": {
-     "moyenne": 12,
-     "ecart": 2.1,
-     "min": 8,
-     "max": 14,
-     "parties": 5
+     "moyenne": 6,
+     "ecart": 0,
+     "min": 6,
+     "max": 6,
+     "parties": 1
     },
     "tourbillon_lames": {
-     "moyenne": 41.5,
-     "ecart": 40.5,
+     "moyenne": 2.8,
+     "ecart": 2,
      "min": 1,
-     "max": 82,
-     "parties": 2
+     "max": 6,
+     "parties": 4
     },
     "trident": {
-     "moyenne": 7.8,
-     "ecart": 1.6,
-     "min": 5,
-     "max": 9,
+     "moyenne": 11.3,
+     "ecart": 1.3,
+     "min": 9,
+     "max": 12,
      "parties": 4
     }
    }
@@ -178,64 +179,67 @@
    "parties": 15,
    "victoires": 0,
    "survie": {
-    "moyenne": 174.1,
-    "ecart": 78.3,
-    "min": 76.2,
-    "max": 364.1
+    "moyenne": 255.2,
+    "ecart": 131.8,
+    "min": 43.1,
+    "max": 546
    },
    "niveau": {
-    "moyenne": 4.7,
-    "ecart": 2.2,
+    "moyenne": 6.9,
+    "ecart": 3.5,
     "min": 2,
-    "max": 9
+    "max": 15
    },
    "tues": {
-    "moyenne": 99.8,
-    "ecart": 87.1,
-    "min": 18,
-    "max": 311
+    "moyenne": 184.6,
+    "ecart": 156.8,
+    "min": 10,
+    "max": 610
    },
    "degatsSubis": {
-    "moyenne": 27.5,
-    "ecart": 9.7,
+    "moyenne": 31.3,
+    "ecart": 9.3,
     "min": 19,
-    "max": 52
+    "max": 50
    },
    "puissanceParMinute": [
-    7.3,
-    11.3,
-    18.4,
-    27.6,
-    36.7,
-    35.5,
-    27
+    6.9,
+    12.9,
+    14.9,
+    25.7,
+    32.3,
+    49,
+    44,
+    53,
+    77,
+    30
    ],
    "dpsParArme": {
     "esprit_blaze": {
-     "moyenne": 4,
-     "ecart": 0.8,
+     "moyenne": 4.2,
+     "ecart": 0.7,
      "min": 3,
      "max": 5,
-     "parties": 6
+     "parties": 5
     },
     "esprit_protecteur": {
      "moyenne": 0,
      "ecart": 0,
      "min": 0,
      "max": 0,
-     "parties": 5
+     "parties": 7
     },
     "golems": {
-     "moyenne": 12.7,
-     "ecart": 2.1,
+     "moyenne": 11.4,
+     "ecart": 1.5,
      "min": 10,
-     "max": 15,
-     "parties": 3
+     "max": 14,
+     "parties": 5
     },
     "loups": {
-     "moyenne": 9,
-     "ecart": 2.8,
-     "min": 6,
+     "moyenne": 9.9,
+     "ecart": 3.9,
+     "min": 4,
      "max": 16,
      "parties": 15
     },
@@ -244,14 +248,14 @@
      "ecart": 0,
      "min": 0,
      "max": 0,
-     "parties": 6
+     "parties": 7
     },
     "vex": {
-     "moyenne": 9.5,
-     "ecart": 1.5,
-     "min": 8,
-     "max": 11,
-     "parties": 2
+     "moyenne": 10,
+     "ecart": 2.7,
+     "min": 7,
+     "max": 15,
+     "parties": 8
     }
    }
   },
@@ -259,77 +263,79 @@
    "parties": 15,
    "victoires": 0,
    "survie": {
-    "moyenne": 116.7,
-    "ecart": 37.3,
-    "min": 75,
-    "max": 208.6
+    "moyenne": 150,
+    "ecart": 79.3,
+    "min": 75.5,
+    "max": 336.7
    },
    "niveau": {
-    "moyenne": 4.1,
-    "ecart": 1.2,
+    "moyenne": 4.7,
+    "ecart": 2.4,
     "min": 3,
-    "max": 7
+    "max": 10
    },
    "tues": {
-    "moyenne": 58.2,
-    "ecart": 33.1,
-    "min": 26,
-    "max": 153
+    "moyenne": 86.9,
+    "ecart": 82,
+    "min": 30,
+    "max": 291
    },
    "degatsSubis": {
-    "moyenne": 18.3,
-    "ecart": 3,
+    "moyenne": 21.8,
+    "ecart": 9,
     "min": 16,
-    "max": 25
+    "max": 46
    },
    "puissanceParMinute": [
-    7.5,
-    12.1,
-    25,
-    35
+    7,
+    11.5,
+    16.1,
+    38.8,
+    35.5,
+    53
    ],
    "dpsParArme": {
     "boules_feu": {
-     "moyenne": 6.5,
-     "ecart": 1,
-     "min": 5,
-     "max": 8,
+     "moyenne": 7.3,
+     "ecart": 1.7,
+     "min": 4,
+     "max": 11,
      "parties": 15
     },
     "eclairs": {
-     "moyenne": 6.5,
-     "ecart": 2.1,
-     "min": 5,
-     "max": 10,
-     "parties": 4
+     "moyenne": 8.5,
+     "ecart": 2.4,
+     "min": 6,
+     "max": 13,
+     "parties": 6
     },
     "meteore": {
-     "moyenne": 5.3,
-     "ecart": 0.8,
-     "min": 4,
-     "max": 6,
-     "parties": 4
+     "moyenne": 5.7,
+     "ecart": 2.1,
+     "min": 3,
+     "max": 8,
+     "parties": 3
     },
     "nova_glace": {
-     "moyenne": 3.5,
-     "ecart": 1.1,
+     "moyenne": 2.7,
+     "ecart": 0.5,
      "min": 2,
-     "max": 6,
-     "parties": 8
+     "max": 3,
+     "parties": 3
     },
     "orbes_arcaniques": {
-     "moyenne": 6.4,
-     "ecart": 0.8,
-     "min": 5,
+     "moyenne": 6.3,
+     "ecart": 0.4,
+     "min": 6,
      "max": 7,
-     "parties": 5
+     "parties": 4
     },
     "tornade_feu": {
-     "moyenne": 5.5,
-     "ecart": 0.5,
-     "min": 5,
-     "max": 6,
-     "parties": 2
+     "moyenne": 5.8,
+     "ecart": 1.1,
+     "min": 4,
+     "max": 7,
+     "parties": 4
     }
    }
   }

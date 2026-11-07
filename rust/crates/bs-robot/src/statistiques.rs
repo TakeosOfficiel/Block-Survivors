@@ -10,6 +10,9 @@ use crate::Bilan;
 
 /// Écart relatif toléré entre les moyennes, sauf si l'écart type de référence est plus large.
 pub const TOLERANCE_RELATIVE: f64 = 0.25;
+/// Erreurs types admises : une trentaine de mesures sont comparées à chaque passage ; à
+/// deux, l'une d'elles sortait presque toujours par hasard, à trois rarement.
+pub const ERREURS_TYPES: f64 = 3.0;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Resume {
@@ -123,8 +126,9 @@ pub struct Ecart {
     pub indicatif: bool,
 }
 
-/// Dans la tolérance : écart relatif d'au plus `TOLERANCE_RELATIVE`, ou d'au plus deux
-/// erreurs types de la différence des moyennes (les parties sont très dispersées).
+/// Dans la tolérance : écart relatif d'au plus `TOLERANCE_RELATIVE`, ou d'au plus
+/// `ERREURS_TYPES` erreurs types de la différence des moyennes (les parties sont très
+/// dispersées).
 fn comparer_valeurs(
     mesure: String,
     ts: &Resume,
@@ -135,7 +139,7 @@ fn comparer_valeurs(
     let variance =
         ts.ecart.powi(2) / n_ts.max(1) as f64 + rust.ecart.powi(2) / n_rust.max(1) as f64;
     let marge = (ts.moyenne.abs() * TOLERANCE_RELATIVE)
-        .max(2.0 * variance.sqrt())
+        .max(ERREURS_TYPES * variance.sqrt())
         .max(1.0);
     Ecart {
         ok: (rust.moyenne - ts.moyenne).abs() <= marge,

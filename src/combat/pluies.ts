@@ -18,6 +18,7 @@ import type { Point } from '../monde/carte';
 import { Pool } from '../utils/pool';
 import type { ArmeEquipee } from './armeEquipee';
 import type { ContexteCombat } from './contexte';
+import { alea } from '../utils/aleatoire';
 
 interface Zone {
   arme: ArmeEquipee | null;
@@ -174,15 +175,15 @@ export class Pluies {
         const f = this.fleches.acquerir();
         if (!f) break;
         // Point au hasard dans le disque (uniforme)
-        const a = Math.random() * Math.PI * 2;
-        const r = z.rayon * Math.sqrt(Math.random());
+        const a = alea() * Math.PI * 2;
+        const r = z.rayon * Math.sqrt(alea());
         f.arme = arme;
         f.x = z.x + Math.sin(a) * r;
         f.z = z.z + Math.cos(a) * r;
         f.age = 0;
         // Chaque flèche penche de son côté : la pluie a l'air désordonnée, pas une rangée au garde-à-vous
-        f.azimut = Math.random() * Math.PI * 2;
-        f.inclinaison = c.inclinaison[0] + Math.random() * (c.inclinaison[1] - c.inclinaison[0]);
+        f.azimut = alea() * Math.PI * 2;
+        f.inclinaison = c.inclinaison[0] + alea() * (c.inclinaison[1] - c.inclinaison[0]);
         f.touche = false;
       }
     }

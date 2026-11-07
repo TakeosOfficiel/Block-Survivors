@@ -1,0 +1,30 @@
+// Généré depuis la version TypeScript (src/donnees) par outils/importer-donnees.sh.
+// Tant que les deux versions coexistent, modifier src/donnees puis relancer l'import.
+#![enable(implicit_some)]
+{
+  "pomme": (
+    nom: "Pomme",
+    icone: "item/apple",
+    soin: 4.0,
+    chance: 0.02,
+    taille: 0.7,
+    couleurSecours: 16728128,
+  ),
+  "pomme_doree": (
+    nom: "Pomme dorée",
+    icone: "item/golden_apple",
+    soin: 12.0,
+    chance: 0.004,
+    taille: 0.8,
+    couleurSecours: 16765498,
+  ),
+  "emeraude": (
+    nom: "Émeraude",
+    icone: "item/emerald",
+    soin: 0.0,
+    emeraudes: (2.0, 6.0),
+    chance: 0.035,
+    taille: 0.6,
+    couleurSecours: 1564002,
+  ),
+}

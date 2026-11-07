@@ -1,0 +1,323 @@
+// Généré depuis la version TypeScript (src/donnees) par outils/importer-donnees.sh.
+// Tant que les deux versions coexistent, modifier src/donnees puis relancer l'import.
+#![enable(implicit_some)]
+{
+  "grass_block": (
+    nom: "Bloc d'herbe",
+    faces: (
+      haut: "block/grass_block_top",
+      cotes: "block/grass_block_side",
+      bas: "block/dirt",
+    ),
+    teinteHaut: 9551193,
+    rotationAleatoire: true,
+    couleurSecours: 9551193,
+  ),
+  "dirt": (
+    nom: "Terre",
+    faces: (
+      haut: "block/dirt",
+      cotes: "block/dirt",
+      bas: "block/dirt",
+    ),
+    couleurSecours: 8806467,
+  ),
+  "dirt_path": (
+    nom: "Chemin de terre",
+    faces: (
+      haut: "block/dirt_path_top",
+      cotes: "block/dirt_path_side",
+      bas: "block/dirt",
+    ),
+    couleurSecours: 9730629,
+  ),
+  "gravel": (
+    nom: "Gravier",
+    faces: (
+      haut: "block/gravel",
+      cotes: "block/gravel",
+      bas: "block/gravel",
+    ),
+    rotationAleatoire: true,
+    couleurSecours: 8748925,
+  ),
+  "cobblestone": (
+    nom: "Pierre",
+    faces: (
+      haut: "block/cobblestone",
+      cotes: "block/cobblestone",
+      bas: "block/cobblestone",
+    ),
+    couleurSecours: 8355711,
+  ),
+  "mossy_cobblestone": (
+    nom: "Pierre moussue",
+    faces: (
+      haut: "block/mossy_cobblestone",
+      cotes: "block/mossy_cobblestone",
+      bas: "block/mossy_cobblestone",
+    ),
+    couleurSecours: 7305826,
+  ),
+  "oak_planks": (
+    nom: "Planches de chêne",
+    faces: (
+      haut: "block/oak_planks",
+      cotes: "block/oak_planks",
+      bas: "block/oak_planks",
+    ),
+    couleurSecours: 10650447,
+  ),
+  "oak_log": (
+    nom: "Bûche de chêne",
+    faces: (
+      haut: "block/oak_log_top",
+      cotes: "block/oak_log",
+      bas: "block/oak_log_top",
+    ),
+    couleurSecours: 7033394,
+  ),
+  "oak_leaves": (
+    nom: "Feuilles de chêne",
+    faces: (
+      haut: "block/oak_leaves",
+      cotes: "block/oak_leaves",
+      bas: "block/oak_leaves",
+    ),
+    decoupe: true,
+    ondule: feuillage,
+    teinte: 7842607,
+    couleurSecours: 5212714,
+  ),
+  "hay_block": (
+    nom: "Botte de foin",
+    faces: (
+      haut: "block/hay_block_top",
+      cotes: "block/hay_block_side",
+      bas: "block/hay_block_top",
+    ),
+    couleurSecours: 13148714,
+  ),
+  "water": (
+    nom: "Eau",
+    faces: (
+      haut: "block/water_still",
+      cotes: "block/water_still",
+      bas: "block/water_still",
+    ),
+    forme: liquide,
+    teinte: 4159204,
+    animation: (
+      imagesParSeconde: 10.0,
+    ),
+    couleurSecours: 4159204,
+  ),
+  "short_grass": (
+    nom: "Herbes",
+    faces: (
+      haut: "block/short_grass",
+      cotes: "block/short_grass",
+      bas: "block/short_grass",
+    ),
+    forme: croix,
+    decoupe: true,
+    ondule: plante,
+    teinte: 9551193,
+    couleurSecours: 7313978,
+  ),
+  "dandelion": (
+    nom: "Pissenlit",
+    faces: (
+      haut: "block/dandelion",
+      cotes: "block/dandelion",
+      bas: "block/dandelion",
+    ),
+    forme: croix,
+    decoupe: true,
+    ondule: plante,
+    couleurSecours: 16765498,
+  ),
+  "poppy": (
+    nom: "Coquelicot",
+    faces: (
+      haut: "block/poppy",
+      cotes: "block/poppy",
+      bas: "block/poppy",
+    ),
+    forme: croix,
+    decoupe: true,
+    ondule: plante,
+    couleurSecours: 13643818,
+  ),
+  "stone": (
+    nom: "Roche",
+    faces: (
+      haut: "block/stone",
+      cotes: "block/stone",
+      bas: "block/stone",
+    ),
+    couleurSecours: 8224125,
+  ),
+  "andesite": (
+    nom: "Andésite",
+    faces: (
+      haut: "block/andesite",
+      cotes: "block/andesite",
+      bas: "block/andesite",
+    ),
+    couleurSecours: 8947848,
+  ),
+  "stone_bricks": (
+    nom: "Briques de pierre",
+    faces: (
+      haut: "block/stone_bricks",
+      cotes: "block/stone_bricks",
+      bas: "block/stone_bricks",
+    ),
+    couleurSecours: 8026746,
+  ),
+  "mossy_stone_bricks": (
+    nom: "Briques de pierre moussues",
+    faces: (
+      haut: "block/mossy_stone_bricks",
+      cotes: "block/mossy_stone_bricks",
+      bas: "block/mossy_stone_bricks",
+    ),
+    couleurSecours: 7305826,
+  ),
+  "coal_ore": (
+    nom: "Minerai de charbon",
+    faces: (
+      haut: "block/coal_ore",
+      cotes: "block/coal_ore",
+      bas: "block/coal_ore",
+    ),
+    couleurSecours: 5921370,
+  ),
+  "iron_ore": (
+    nom: "Minerai de fer",
+    faces: (
+      haut: "block/iron_ore",
+      cotes: "block/iron_ore",
+      bas: "block/iron_ore",
+    ),
+    couleurSecours: 10127994,
+  ),
+  "diamond_ore": (
+    nom: "Minerai de diamant",
+    faces: (
+      haut: "block/diamond_ore",
+      cotes: "block/diamond_ore",
+      bas: "block/diamond_ore",
+    ),
+    couleurSecours: 7000016,
+  ),
+  "bedrock": (
+    nom: "Bedrock",
+    faces: (
+      haut: "block/bedrock",
+      cotes: "block/bedrock",
+      bas: "block/bedrock",
+    ),
+    couleurSecours: 4210752,
+  ),
+  "glowstone": (
+    nom: "Pierre lumineuse",
+    faces: (
+      haut: "block/glowstone",
+      cotes: "block/glowstone",
+      bas: "block/glowstone",
+    ),
+    lumineux: true,
+    couleurSecours: 15777888,
+  ),
+  "cobweb": (
+    nom: "Toile d'araignée",
+    faces: (
+      haut: "block/cobweb",
+      cotes: "block/cobweb",
+      bas: "block/cobweb",
+    ),
+    forme: croix,
+    decoupe: true,
+    ralentit: 0.35,
+    toile: true,
+    couleurSecours: 14540253,
+  ),
+  "netherrack": (
+    nom: "Netherrack",
+    faces: (
+      haut: "block/netherrack",
+      cotes: "block/netherrack",
+      bas: "block/netherrack",
+    ),
+    couleurSecours: 7287860,
+  ),
+  "nether_bricks": (
+    nom: "Briques du Nether",
+    faces: (
+      haut: "block/nether_bricks",
+      cotes: "block/nether_bricks",
+      bas: "block/nether_bricks",
+    ),
+    couleurSecours: 2888728,
+  ),
+  "soul_sand": (
+    nom: "Sable des âmes",
+    faces: (
+      haut: "block/soul_sand",
+      cotes: "block/soul_sand",
+      bas: "block/soul_sand",
+    ),
+    ralentit: 0.6,
+    couleurSecours: 5324847,
+  ),
+  "magma": (
+    nom: "Bloc de magma",
+    faces: (
+      haut: "block/magma",
+      cotes: "block/magma",
+      bas: "block/magma",
+    ),
+    lumineux: true,
+    degats: 1.0,
+    animation: (
+      imagesParSeconde: 2.5,
+    ),
+    couleurSecours: 9058832,
+  ),
+  "lava": (
+    nom: "Lave",
+    faces: (
+      haut: "block/lava_still",
+      cotes: "block/lava_still",
+      bas: "block/lava_still",
+    ),
+    forme: liquide,
+    lumineux: true,
+    animation: (
+      imagesParSeconde: 10.0,
+      allerRetour: true,
+    ),
+    couleurSecours: 14178832,
+  ),
+  "obsidian": (
+    nom: "Obsidienne",
+    faces: (
+      haut: "block/obsidian",
+      cotes: "block/obsidian",
+      bas: "block/obsidian",
+    ),
+    couleurSecours: 1314846,
+  ),
+  "crying_obsidian": (
+    nom: "Obsidienne pleureuse",
+    faces: (
+      haut: "block/crying_obsidian",
+      cotes: "block/crying_obsidian",
+      bas: "block/crying_obsidian",
+    ),
+    lumineux: true,
+    couleurSecours: 2755152,
+  ),
+}

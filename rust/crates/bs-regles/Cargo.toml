@@ -1,0 +1,16 @@
+[package]
+name = "bs-regles"
+description = "Simulation pure (aucun Bevy) : joueur, ennemis, armes ; pas fixe, déterministe"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+bs-commun.workspace = true
+bs-donnees.workspace = true
+bs-monde.workspace = true
+libm.workspace = true
+
+[lints]
+workspace = true

@@ -11,7 +11,8 @@ name: Application Windows et Linux
 
 on:
   push:
-    branches: ['**']
+    # La branche rust (migration, rust/) a sa propre CI : rust.yml
+    branches-ignore: ['rust']
   workflow_dispatch:
 
 permissions:

@@ -1,0 +1,27 @@
+// Succès de coop (propre à la version Rust : pas d'équivalent TypeScript).
+[(
+  id: "ensemble",
+  nom: "Ensemble",
+  texte: "Finir une arène à plusieurs",
+  condition: (joueurs: 2, victoire: true),
+), (
+  id: "chasse_groupe",
+  nom: "Chasse en groupe",
+  texte: "Vaincre un boss à plusieurs",
+  condition: (joueurs: 2, boss: 1),
+), (
+  id: "tenir_bon",
+  nom: "Tenir bon",
+  texte: "Survivre 10:00 à plusieurs",
+  condition: (joueurs: 2, survie: 600.0),
+), (
+  id: "escouade",
+  nom: "Escouade",
+  texte: "Finir une arène à 4",
+  condition: (joueurs: 4, victoire: true),
+), (
+  id: "meme_uniforme",
+  nom: "Même uniforme",
+  texte: "Vaincre un boss à 4 de la même classe",
+  condition: (joueurs: 4, boss: 1, meme_classe: true),
+)]

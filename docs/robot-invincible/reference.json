@@ -1,0 +1,366 @@
+{
+ "graines": 3,
+ "duree": 1200,
+ "invincible": true,
+ "reference": {
+  "archer/prairie": {
+   "parties": 3,
+   "victoires": 3,
+   "survie": {
+    "moyenne": 996.4,
+    "ecart": 13.4,
+    "min": 977.9,
+    "max": 1009.1
+   },
+   "niveau": {
+    "moyenne": 31.3,
+    "ecart": 2.1,
+    "min": 29,
+    "max": 34
+   },
+   "tues": {
+    "moyenne": 3956,
+    "ecart": 162.3,
+    "min": 3741,
+    "max": 4133
+   },
+   "degatsSubis": {
+    "moyenne": 0,
+    "ecart": 0,
+    "min": 0,
+    "max": 0
+   },
+   "puissanceParMinute": [
+    7.7,
+    14.3,
+    27.7,
+    35.3,
+    43.3,
+    60.3,
+    78.7,
+    107,
+    129.3,
+    150.7,
+    220.3,
+    289.7,
+    369,
+    532.7,
+    656,
+    722.7,
+    796
+   ],
+   "dpsParArme": {
+    "arc": {
+     "moyenne": 38,
+     "ecart": 9.1,
+     "min": 26,
+     "max": 48,
+     "parties": 3
+    },
+    "fleche_ricochet": {
+     "moyenne": 51.5,
+     "ecart": 19.5,
+     "min": 32,
+     "max": 71,
+     "parties": 2
+    },
+    "fusee": {
+     "moyenne": 94,
+     "ecart": 26,
+     "min": 68,
+     "max": 120,
+     "parties": 2
+    },
+    "piege_ronces": {
+     "moyenne": 85,
+     "ecart": 20,
+     "min": 65,
+     "max": 105,
+     "parties": 2
+    },
+    "pluie_fleches": {
+     "moyenne": 82,
+     "ecart": 31,
+     "min": 51,
+     "max": 113,
+     "parties": 2
+    },
+    "salve": {
+     "moyenne": 14,
+     "ecart": 0,
+     "min": 14,
+     "max": 14,
+     "parties": 1
+    }
+   }
+  },
+  "guerrier/prairie": {
+   "parties": 3,
+   "victoires": 3,
+   "survie": {
+    "moyenne": 950.1,
+    "ecart": 70.9,
+    "min": 900,
+    "max": 1050.4
+   },
+   "niveau": {
+    "moyenne": 29,
+    "ecart": 1.4,
+    "min": 28,
+    "max": 31
+   },
+   "tues": {
+    "moyenne": 3567.3,
+    "ecart": 907.5,
+    "min": 2765,
+    "max": 4836
+   },
+   "degatsSubis": {
+    "moyenne": 0,
+    "ecart": 0,
+    "min": 0,
+    "max": 0
+   },
+   "puissanceParMinute": [
+    5.7,
+    8.3,
+    23,
+    35.3,
+    36.7,
+    60.3,
+    78.3,
+    95.3,
+    115.7,
+    191,
+    234.3,
+    283.3,
+    397.7,
+    516.3,
+    692.7,
+    837,
+    777,
+    837
+   ],
+   "dpsParArme": {
+    "epee": {
+     "moyenne": 35.7,
+     "ecart": 25,
+     "min": 16,
+     "max": 71,
+     "parties": 3
+    },
+    "haches": {
+     "moyenne": 32,
+     "ecart": 15,
+     "min": 17,
+     "max": 47,
+     "parties": 2
+    },
+    "heurt_bouclier": {
+     "moyenne": 2,
+     "ecart": 0,
+     "min": 2,
+     "max": 2,
+     "parties": 1
+    },
+    "lame_colossale": {
+     "moyenne": 78,
+     "ecart": 0,
+     "min": 78,
+     "max": 78,
+     "parties": 1
+    },
+    "tourbillon_lames": {
+     "moyenne": 11,
+     "ecart": 3,
+     "min": 8,
+     "max": 14,
+     "parties": 2
+    },
+    "trident": {
+     "moyenne": 158,
+     "ecart": 58,
+     "min": 88,
+     "max": 230,
+     "parties": 3
+    }
+   }
+  },
+  "invocateur/prairie": {
+   "parties": 3,
+   "victoires": 0,
+   "survie": {
+    "moyenne": 1200,
+    "ecart": 0,
+    "min": 1200,
+    "max": 1200
+   },
+   "niveau": {
+    "moyenne": 10.7,
+    "ecart": 1.9,
+    "min": 8,
+    "max": 12
+   },
+   "tues": {
+    "moyenne": 508.7,
+    "ecart": 154.9,
+    "min": 293,
+    "max": 650
+   },
+   "degatsSubis": {
+    "moyenne": 0,
+    "ecart": 0,
+    "min": 0,
+    "max": 0
+   },
+   "puissanceParMinute": [
+    7,
+    10.7,
+    19,
+    23.3,
+    23.3,
+    16,
+    13.3,
+    16.3,
+    16.3,
+    20.3,
+    18,
+    23.3,
+    30.7,
+    19.3,
+    22,
+    22,
+    26.3,
+    21,
+    26.7,
+    33.7
+   ],
+   "dpsParArme": {
+    "esprit_blaze": {
+     "moyenne": 2,
+     "ecart": 0,
+     "min": 2,
+     "max": 2,
+     "parties": 1
+    },
+    "esprit_protecteur": {
+     "moyenne": 0,
+     "ecart": 0,
+     "min": 0,
+     "max": 0,
+     "parties": 1
+    },
+    "golems": {
+     "moyenne": 15.7,
+     "ecart": 1.2,
+     "min": 14,
+     "max": 17,
+     "parties": 3
+    },
+    "loups": {
+     "moyenne": 6.7,
+     "ecart": 0.9,
+     "min": 6,
+     "max": 8,
+     "parties": 3
+    },
+    "totem_racines": {
+     "moyenne": 0,
+     "ecart": 0,
+     "min": 0,
+     "max": 0,
+     "parties": 2
+    },
+    "vex": {
+     "moyenne": 7.5,
+     "ecart": 0.5,
+     "min": 7,
+     "max": 8,
+     "parties": 2
+    }
+   }
+  },
+  "mage/prairie": {
+   "parties": 3,
+   "victoires": 3,
+   "survie": {
+    "moyenne": 900,
+    "ecart": 0,
+    "min": 900,
+    "max": 900
+   },
+   "niveau": {
+    "moyenne": 27.3,
+    "ecart": 0.9,
+    "min": 26,
+    "max": 28
+   },
+   "tues": {
+    "moyenne": 3179,
+    "ecart": 11.9,
+    "min": 3164,
+    "max": 3193
+   },
+   "degatsSubis": {
+    "moyenne": 0,
+    "ecart": 0,
+    "min": 0,
+    "max": 0
+   },
+   "puissanceParMinute": [
+    7.7,
+    12.3,
+    26,
+    35,
+    43,
+    57,
+    95.3,
+    99.3,
+    141.3,
+    174,
+    248,
+    307,
+    356.3,
+    536.3,
+    783
+   ],
+   "dpsParArme": {
+    "boules_feu": {
+     "moyenne": 68,
+     "ecart": 16.1,
+     "min": 47,
+     "max": 86,
+     "parties": 3
+    },
+    "eclairs": {
+     "moyenne": 86,
+     "ecart": 0,
+     "min": 86,
+     "max": 86,
+     "parties": 1
+    },
+    "meteore": {
+     "moyenne": 124.5,
+     "ecart": 13.5,
+     "min": 111,
+     "max": 138,
+     "parties": 2
+    },
+    "nova_glace": {
+     "moyenne": 20,
+     "ecart": 7.8,
+     "min": 14,
+     "max": 31,
+     "parties": 3
+    },
+    "orbes_arcaniques": {
+     "moyenne": 18.3,
+     "ecart": 9.1,
+     "min": 10,
+     "max": 31,
+     "parties": 3
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,497 @@
+// Généré depuis la version TypeScript (src/donnees) par outils/importer-donnees.sh.
+// Tant que les deux versions coexistent, modifier src/donnees puis relancer l'import.
+#![enable(implicit_some)]
+{
+  "force": (
+    nom: "Poudre de blaze",
+    description: "Toutes les armes font plus de dégâts.",
+    icone: "item/blaze_powder",
+    niveaux: [(
+      description: "Dégâts +10 %",
+      modif: (
+        degats: 0.1,
+      ),
+    ), (
+      description: "Dégâts +10 %",
+      modif: (
+        degats: 0.1,
+      ),
+    ), (
+      description: "Dégâts +10 %",
+      modif: (
+        degats: 0.1,
+      ),
+    ), (
+      description: "Dégâts +10 %",
+      modif: (
+        degats: 0.1,
+      ),
+    ), (
+      description: "Dégâts +10 %",
+      modif: (
+        degats: 0.1,
+      ),
+    )],
+  ),
+  "frenesie": (
+    nom: "Redstone",
+    description: "Les armes se déclenchent plus souvent.",
+    icone: "item/redstone",
+    niveaux: [(
+      description: "Délai des armes −7 %",
+      modif: (
+        cadence: -0.07,
+      ),
+    ), (
+      description: "Délai des armes −7 %",
+      modif: (
+        cadence: -0.07,
+      ),
+    ), (
+      description: "Délai des armes −7 %",
+      modif: (
+        cadence: -0.07,
+      ),
+    ), (
+      description: "Délai des armes −7 %",
+      modif: (
+        cadence: -0.07,
+      ),
+    ), (
+      description: "Délai des armes −7 %",
+      modif: (
+        cadence: -0.07,
+      ),
+    )],
+  ),
+  "amplitude": (
+    nom: "Poudre de glowstone",
+    description: "Les attaques couvrent une plus grande zone.",
+    icone: "item/glowstone_dust",
+    niveaux: [(
+      description: "Zone +10 %",
+      modif: (
+        zone: 0.1,
+      ),
+    ), (
+      description: "Zone +10 %",
+      modif: (
+        zone: 0.1,
+      ),
+    ), (
+      description: "Zone +10 %",
+      modif: (
+        zone: 0.1,
+      ),
+    ), (
+      description: "Zone +10 %",
+      modif: (
+        zone: 0.1,
+      ),
+    ), (
+      description: "Zone +10 %",
+      modif: (
+        zone: 0.1,
+      ),
+    )],
+  ),
+  "multitir": (
+    nom: "Carquois",
+    description: "Toutes les armes lancent un projectile de plus.",
+    icone: "item/arrow",
+    niveaux: [(
+      description: "+1 projectile",
+      modif: (
+        projectiles: 1.0,
+      ),
+    )],
+  ),
+  "silex": (
+    nom: "Silex taillé",
+    description: "Des coups critiques plus fréquents.",
+    icone: "item/flint",
+    niveaux: [(
+      description: "Coups critiques +5 %",
+      modif: (
+        critique: 0.05,
+      ),
+    ), (
+      description: "Coups critiques +5 %",
+      modif: (
+        critique: 0.05,
+      ),
+    ), (
+      description: "Coups critiques +5 %",
+      modif: (
+        critique: 0.05,
+      ),
+    ), (
+      description: "Coups critiques +5 %",
+      modif: (
+        critique: 0.05,
+      ),
+    ), (
+      description: "Coups critiques +5 %",
+      modif: (
+        critique: 0.05,
+      ),
+    )],
+  ),
+  "longue_vue": (
+    nom: "Longue-vue",
+    description: "Les armes visent et portent plus loin.",
+    icone: "item/spyglass",
+    niveaux: [(
+      description: "Portée +10 %",
+      modif: (
+        portee: 0.1,
+      ),
+    ), (
+      description: "Portée +10 %",
+      modif: (
+        portee: 0.1,
+      ),
+    ), (
+      description: "Portée +10 %",
+      modif: (
+        portee: 0.1,
+      ),
+    ), (
+      description: "Portée +10 %",
+      modif: (
+        portee: 0.1,
+      ),
+    ), (
+      description: "Portée +10 %",
+      modif: (
+        portee: 0.1,
+      ),
+    )],
+  ),
+  "rapidite": (
+    nom: "Sucre",
+    description: "Vous vous déplacez plus vite.",
+    icone: "item/sugar",
+    niveaux: [(
+      description: "Vitesse +8 %",
+      modif: (
+        vitesse: 0.08,
+      ),
+    ), (
+      description: "Vitesse +8 %",
+      modif: (
+        vitesse: 0.08,
+      ),
+    ), (
+      description: "Vitesse +8 %",
+      modif: (
+        vitesse: 0.08,
+      ),
+    ), (
+      description: "Vitesse +8 %",
+      modif: (
+        vitesse: 0.08,
+      ),
+    ), (
+      description: "Vitesse +8 %",
+      modif: (
+        vitesse: 0.08,
+      ),
+    )],
+  ),
+  "vitalite": (
+    nom: "Pastèque scintillante",
+    description: "Augmente la santé maximale.",
+    icone: "item/glistering_melon_slice",
+    niveaux: [(
+      description: "+2 cœurs",
+      modif: (
+        pvMax: 4.0,
+      ),
+    ), (
+      description: "+2 cœurs",
+      modif: (
+        pvMax: 4.0,
+      ),
+    ), (
+      description: "+2 cœurs",
+      modif: (
+        pvMax: 4.0,
+      ),
+    ), (
+      description: "+2 cœurs",
+      modif: (
+        pvMax: 4.0,
+      ),
+    ), (
+      description: "+2 cœurs",
+      modif: (
+        pvMax: 4.0,
+      ),
+    )],
+  ),
+  "armure": (
+    nom: "Plastron en fer",
+    description: "Réduit les dégâts de chaque coup reçu.",
+    icone: "item/iron_chestplate",
+    niveaux: [(
+      description: "Dégâts reçus −1",
+      modif: (
+        armure: 1.0,
+      ),
+    ), (
+      description: "Dégâts reçus −1",
+      modif: (
+        armure: 1.0,
+      ),
+    ), (
+      description: "Dégâts reçus −1",
+      modif: (
+        armure: 1.0,
+      ),
+    ), (
+      description: "Dégâts reçus −1",
+      modif: (
+        armure: 1.0,
+      ),
+    ), (
+      description: "Dégâts reçus −1",
+      modif: (
+        armure: 1.0,
+      ),
+    )],
+  ),
+  "regeneration": (
+    nom: "Larme de ghast",
+    description: "Régénère lentement la santé.",
+    icone: "item/ghast_tear",
+    niveaux: [(
+      description: "+0,15 PV par seconde",
+      modif: (
+        regeneration: 0.15,
+      ),
+    ), (
+      description: "+0,15 PV par seconde",
+      modif: (
+        regeneration: 0.15,
+      ),
+    ), (
+      description: "+0,15 PV par seconde",
+      modif: (
+        regeneration: 0.15,
+      ),
+    ), (
+      description: "+0,15 PV par seconde",
+      modif: (
+        regeneration: 0.15,
+      ),
+    ), (
+      description: "+0,15 PV par seconde",
+      modif: (
+        regeneration: 0.15,
+      ),
+    )],
+  ),
+  "aimant": (
+    nom: "Œil de l'Ender",
+    description: "Attire les orbes d'expérience de plus loin.",
+    icone: "item/ender_eye",
+    niveaux: [(
+      description: "Rayon de collecte +30 %",
+      modif: (
+        collecte: 0.3,
+      ),
+    ), (
+      description: "Rayon de collecte +30 %",
+      modif: (
+        collecte: 0.3,
+      ),
+    ), (
+      description: "Rayon de collecte +30 %",
+      modif: (
+        collecte: 0.3,
+      ),
+    ), (
+      description: "Rayon de collecte +30 %",
+      modif: (
+        collecte: 0.3,
+      ),
+    ), (
+      description: "Rayon de collecte +30 %",
+      modif: (
+        collecte: 0.3,
+      ),
+    )],
+  ),
+  "cuirasse": (
+    nom: "Cuirasse en netherite",
+    description: "Guerrier : une armure presque impénétrable.",
+    icone: "item/netherite_chestplate",
+    exclusif: true,
+    niveaux: [(
+      description: "Dégâts reçus −2",
+      modif: (
+        armure: 2.0,
+      ),
+    ), (
+      description: "Dégâts reçus −2",
+      modif: (
+        armure: 2.0,
+      ),
+    ), (
+      description: "Dégâts reçus −2",
+      modif: (
+        armure: 2.0,
+      ),
+    )],
+  ),
+  "totem": (
+    nom: "Totem d'immortalité",
+    description: "Guerrier : à sa mort, le totem le ramène à la vie (puis disparaît).",
+    icone: "item/totem_of_undying",
+    exclusif: true,
+    consommable: (
+      reserveMax: 2.0,
+      libelle: "Totems en réserve",
+    ),
+    niveaux: [(
+      description: "+1 vie : vous ressuscitez avec la moitié de vos PV",
+      modif: (
+        vies: 1.0,
+      ),
+    )],
+  ),
+  "fleches_spectrales": (
+    nom: "Flèches spectrales",
+    description: "Archère : des tirs en plus, qui portent plus loin.",
+    icone: "item/spectral_arrow",
+    exclusif: true,
+    niveaux: [(
+      description: "+1 projectile, portée +10 %",
+      modif: (
+        portee: 0.1,
+        projectiles: 1.0,
+      ),
+    ), (
+      description: "+1 projectile, portée +10 %",
+      modif: (
+        portee: 0.1,
+        projectiles: 1.0,
+      ),
+    )],
+  ),
+  "patte_de_lapin": (
+    nom: "Patte de lapin",
+    description: "Archère : plus vive, elle ramasse l'expérience de plus loin.",
+    icone: "item/rabbit_foot",
+    exclusif: true,
+    niveaux: [(
+      description: "Vitesse +12 %, collecte +20 %",
+      modif: (
+        vitesse: 0.12,
+        collecte: 0.2,
+      ),
+    ), (
+      description: "Vitesse +12 %, collecte +20 %",
+      modif: (
+        vitesse: 0.12,
+        collecte: 0.2,
+      ),
+    ), (
+      description: "Vitesse +12 %, collecte +20 %",
+      modif: (
+        vitesse: 0.12,
+        collecte: 0.2,
+      ),
+    )],
+  ),
+  "meute": (
+    nom: "Appel de la meute",
+    description: "Invocateur : chaque invocation amène un allié de plus.",
+    icone: "item/lead",
+    exclusif: true,
+    niveaux: [(
+      description: "+1 allié par invocation",
+      modif: (
+        allies: 1.0,
+      ),
+    ), (
+      description: "+1 allié par invocation",
+      modif: (
+        allies: 1.0,
+      ),
+    )],
+  ),
+  "pacte": (
+    nom: "Étoile du Nether",
+    description: "Invocateur : des alliés plus forts, invoqués plus souvent.",
+    icone: "item/nether_star",
+    exclusif: true,
+    niveaux: [(
+      description: "Dégâts +10 %, délai −5 %",
+      modif: (
+        degats: 0.1,
+        cadence: -0.05,
+      ),
+    ), (
+      description: "Dégâts +10 %, délai −5 %",
+      modif: (
+        degats: 0.1,
+        cadence: -0.05,
+      ),
+    ), (
+      description: "Dégâts +10 %, délai −5 %",
+      modif: (
+        degats: 0.1,
+        cadence: -0.05,
+      ),
+    )],
+  ),
+  "grimoire": (
+    nom: "Grimoire enchanté",
+    description: "Mage : des sorts plus vastes et plus puissants.",
+    icone: "item/enchanted_book",
+    exclusif: true,
+    niveaux: [(
+      description: "Zone +15 %, dégâts +10 %",
+      modif: (
+        degats: 0.1,
+        zone: 0.15,
+      ),
+    ), (
+      description: "Zone +15 %, dégâts +10 %",
+      modif: (
+        degats: 0.1,
+        zone: 0.15,
+      ),
+    ), (
+      description: "Zone +15 %, dégâts +10 %",
+      modif: (
+        degats: 0.1,
+        zone: 0.15,
+      ),
+    )],
+  ),
+  "cristal": (
+    nom: "Éclat d'améthyste",
+    description: "Mage : les sorts se rechargent plus vite.",
+    icone: "item/amethyst_shard",
+    exclusif: true,
+    niveaux: [(
+      description: "Délai des armes −10 %",
+      modif: (
+        cadence: -0.1,
+      ),
+    ), (
+      description: "Délai des armes −10 %",
+      modif: (
+        cadence: -0.1,
+      ),
+    ), (
+      description: "Délai des armes −10 %",
+      modif: (
+        cadence: -0.1,
+      ),
+    )],
+  ),
+}

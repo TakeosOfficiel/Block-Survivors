@@ -16,6 +16,7 @@ const { app, BrowserWindow, Menu, ipcMain, shell } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const { autoUpdater } = require('electron-updater');
+const { passerARust } = require('./passage.cjs');
 
 /** Page du jeu livrée avec l'installation. */
 const PAGE_JEU = path.join(__dirname, '..', 'dist', 'index.html');
@@ -193,14 +194,19 @@ ipcMain.on('installer-mise-a-jour', () => {
 });
 // Le téléchargement traîne : le joueur lance le jeu, la mise à jour finira en arrière-plan
 ipcMain.on('lanceur-passer', () => lancerJeu());
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   if (!misesAJourActives()) {
     creerFenetre();
     return;
   }
   effacerAnciennesPages();
-  brancherMisesAJour();
   creerLanceur();
+  // Dernière version Electron : passage à la version Rust (coupé tant que BASCULE est faux)
+  if (await passerARust(etatLanceur)) {
+    app.quit();
+    return;
+  }
+  brancherMisesAJour();
   void chercherMiseAJour();
   setTimeout(() => { if (!telechargement) lancerJeu(); }, DELAI_RECHERCHE);
   setInterval(() => void chercherMiseAJour(), VERIFICATION_MISES_A_JOUR);

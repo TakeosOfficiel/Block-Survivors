@@ -31,6 +31,7 @@ import type { CiblesAllies, EquipeJoueurs, SourceEntites } from './types';
 import type { ArmeEquipee } from '../combat/armeEquipee';
 import type { Allie } from '../combat/invocations';
 import { PLAFONDS } from '../donnees/plafonds';
+import { alea } from '../utils/aleatoire';
 
 /**
  * Origine d'un coup : arme du joueur, allié invoqué (profite de la marque),
@@ -197,7 +198,7 @@ export class Ennemis implements SourceEntites {
     e.voitJoueur = true;
     e.ligneDeTir = true;
     e.cibleAllie = null;
-    e.minuterieVue = Math.random() * PERIODE_VUE;  // étale les vérifications
+    e.minuterieVue = alea() * PERIODE_VUE;  // étale les vérifications
     e.immunites.fill(0);
     effacerEtats(e);
     reinitialiserAnimation(e.animation);
@@ -260,7 +261,7 @@ export class Ennemis implements SourceEntites {
     for (let i = 0; i < this.pool.nombre; i++) {
       const e = this.pool.elements[i];
       if (e.mort >= 0 || (e.x - x) ** 2 + (e.z - z) ** 2 > p2) continue;
-      if (Math.random() * ++vus < 1) choisi = e;
+      if (alea() * ++vus < 1) choisi = e;
     }
     return choisi;
   }
@@ -293,7 +294,7 @@ export class Ennemis implements SourceEntites {
     if (talents) degats *= talents.multiplicateur(e, arme, nature);
     // Coup critique (armes du joueur) : dégâts multipliés et étincelles du jeu
     const chance = mods.critique + (talents && arme >= 0 && !periodique ? talents.bonusCritique(e, arme, nature) : 0);
-    const critique = arme >= 0 && !periodique && Math.random() < Math.min(PLAFONDS.critique, chance);
+    const critique = arme >= 0 && !periodique && alea() < Math.min(PLAFONDS.critique, chance);
     if (critique) {
       degats *= talents ? talents.facteurCritique(e, arme, nature, mods.degatsCritiques) : mods.degatsCritiques;
       this.particules.emettre(e.x, 1, e.z, GERBES.critique);
@@ -458,17 +459,17 @@ export class Ennemis implements SourceEntites {
     e.minuterieEtats = ETATS.brulure.periode;
     const h = this.hauteurs[e.indexType];
     if (e.brulure.cumuls > 0) this.particules.emettre(e.x, h * 0.45, e.z, GERBES[ETATS.brulure.gerbe]);
-    else if (e.poison.cumuls > 0 && Math.random() < ETATS.brulure.periode / ETATS.poison.periode) {
+    else if (e.poison.cumuls > 0 && alea() < ETATS.brulure.periode / ETATS.poison.periode) {
       this.particules.emettre(e.x, h * 0.5, e.z, GERBES[ETATS.poison.gerbe]);
     }
-    if ((e.ralentiTemps > 0 || e.enracine > 0) && Math.random() < ETATS.brulure.periode / ETATS.ralenti.periode) {
+    if ((e.ralentiTemps > 0 || e.enracine > 0) && alea() < ETATS.brulure.periode / ETATS.ralenti.periode) {
       this.particules.emettre(e.x, h * 0.5, e.z, GERBES[ETATS.ralenti.gerbe]);
     }
-    if (e.saignement.cumuls > 0 && Math.random() < ETATS.brulure.periode / ETATS.saignement.periode) {
+    if (e.saignement.cumuls > 0 && alea() < ETATS.brulure.periode / ETATS.saignement.periode) {
       this.particules.emettre(e.x, h * 0.5, e.z, GERBES[ETATS.saignement.gerbe]);
     }
     if (e.etourdi > 0) this.particules.emettre(e.x, h - 0.1, e.z, GERBES[ETATS.etourdi.gerbe]);
-    if ((e.marqueTemps > 0 || e.marqueChasseur > 0) && Math.random() < ETATS.brulure.periode / ETATS.marque.periode) {
+    if ((e.marqueTemps > 0 || e.marqueChasseur > 0) && alea() < ETATS.brulure.periode / ETATS.marque.periode) {
       this.particules.emettre(e.x, h - 0.1, e.z, GERBES[ETATS.marque.gerbe]);
     }
   }

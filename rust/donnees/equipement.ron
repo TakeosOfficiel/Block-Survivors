@@ -1,0 +1,503 @@
+// Généré depuis la version TypeScript (src/donnees) par outils/importer-donnees.sh.
+// Tant que les deux versions coexistent, modifier src/donnees puis relancer l'import.
+#![enable(implicit_some)]
+(
+  objets: {
+    "anneau_fer": (
+      nom: "Anneau de fer",
+      emplacement: bague,
+      rarete: commune,
+      monde: None,
+      description: ["Dégâts des armes +8 %.", "Dégâts des armes +12 %.", "Dégâts des armes +16 %."],
+      modif: (
+        degats: 0.08,
+      ),
+      icone: (
+        forme: bague,
+        metal: fer,
+        gemme: 13158600,
+      ),
+    ),
+    "anneau_or": (
+      nom: "Anneau d'or",
+      emplacement: bague,
+      rarete: commune,
+      monde: None,
+      description: ["Rayon de collecte +25 %, pommes +25 %.", "Rayon de collecte +38 %, pommes +38 %.", "Rayon de collecte +50 %, pommes +50 %."],
+      modif: (
+        collecte: 0.25,
+        soinsObjets: 0.25,
+      ),
+      icone: (
+        forme: bague,
+        metal: or,
+        gemme: 16767050,
+      ),
+    ),
+    "anneau_cuivre": (
+      nom: "Anneau de cuivre",
+      emplacement: bague,
+      rarete: commune,
+      monde: None,
+      description: ["Vitesse +6 %.", "Vitesse +9 %.", "Vitesse +12 %."],
+      modif: (
+        vitesse: 0.06,
+      ),
+      icone: (
+        forme: bague,
+        metal: cuivre,
+        gemme: 5230768,
+      ),
+    ),
+    "anneau_lapis": (
+      nom: "Anneau de lapis",
+      emplacement: bague,
+      rarete: rare,
+      monde: None,
+      description: ["Délai des armes −7 %.", "Délai des armes −11 %.", "Délai des armes −14 %."],
+      modif: (
+        cadence: -0.07,
+      ),
+      icone: (
+        forme: bague,
+        metal: or,
+        gemme: 3104736,
+      ),
+    ),
+    "anneau_dragon": (
+      nom: "Anneau du dragon",
+      emplacement: bague,
+      rarete: epique,
+      monde: None,
+      description: ["Dégâts +10 %, zone +8 %.", "Dégâts +15 %, zone +12 %.", "Dégâts +20 %, zone +16 %."],
+      modif: (
+        degats: 0.1,
+        zone: 0.08,
+      ),
+      icone: (
+        forme: bague,
+        metal: netherite,
+        gemme: 12603647,
+      ),
+    ),
+    "pendentif_eclaireur": (
+      nom: "Pendentif d'éclaireur",
+      emplacement: amulette,
+      rarete: commune,
+      monde: None,
+      description: ["Portée des armes +12 %.", "Portée des armes +18 %.", "Portée des armes +24 %."],
+      modif: (
+        portee: 0.12,
+      ),
+      icone: (
+        forme: pendentif,
+        metal: fer,
+        gemme: 9425151,
+      ),
+    ),
+    "pendentif_vie": (
+      nom: "Pendentif de vie",
+      emplacement: amulette,
+      rarete: rare,
+      monde: None,
+      description: ["Santé maximale +4 PV, régénération +0,1 PV/s.", "Santé maximale +6 PV, régénération +0,2 PV/s.", "Santé maximale +8 PV, régénération +0,2 PV/s."],
+      modif: (
+        pvMax: 4.0,
+        regeneration: 0.1,
+      ),
+      icone: (
+        forme: pendentif,
+        metal: or,
+        gemme: 16730714,
+      ),
+    ),
+    "amulette_neant": (
+      nom: "Amulette du néant",
+      emplacement: amulette,
+      rarete: epique,
+      monde: None,
+      description: ["Dégâts +12 %, délai des armes −5 %.", "Dégâts +18 %, délai des armes −8 %.", "Dégâts +24 %, délai des armes −10 %."],
+      modif: (
+        degats: 0.12,
+        cadence: -0.05,
+      ),
+      icone: (
+        forme: pendentif,
+        metal: netherite,
+        gemme: 2759242,
+      ),
+    ),
+    "bague_laboureur": (
+      nom: "Bague du laboureur",
+      emplacement: bague,
+      rarete: commune,
+      monde: prairie,
+      description: ["Régénération +0,3 PV/s.", "Régénération +0,4 PV/s.", "Régénération +0,5 PV/s."],
+      modif: (
+        regeneration: 0.25,
+      ),
+      icone: (
+        forme: bague,
+        metal: cuivre,
+        gemme: 8376384,
+      ),
+    ),
+    "bague_chasseur": (
+      nom: "Bague du chasseur",
+      emplacement: bague,
+      rarete: rare,
+      monde: prairie,
+      description: ["Dégâts contre les morts-vivants (zombies, squelettes) +20 %.", "Dégâts contre les morts-vivants (zombies, squelettes) +30 %.", "Dégâts contre les morts-vivants (zombies, squelettes) +40 %."],
+      modif: (
+        degatsMortsVivants: 0.2,
+      ),
+      icone: (
+        forme: bague,
+        metal: fer,
+        gemme: 15788224,
+      ),
+    ),
+    "collier_forgeron": (
+      nom: "Collier du forgeron",
+      emplacement: amulette,
+      rarete: rare,
+      monde: prairie,
+      description: ["Chaque coup reçu fait 1 dégât de moins.", "Chaque coup reçu fait 1,5 dégât de moins.", "Chaque coup reçu fait 2 dégât de moins."],
+      modif: (
+        armure: 1.0,
+      ),
+      icone: (
+        forme: pendentif,
+        metal: fer,
+        gemme: 6316128,
+      ),
+    ),
+    "medaillon_cloche": (
+      nom: "Médaillon de la cloche",
+      emplacement: amulette,
+      rarete: epique,
+      monde: prairie,
+      description: ["Toutes les 12 s, la cloche sonne : les ennemis proches sont repoussés et étourdis.", "Toutes les 8 s, la cloche sonne : les ennemis proches sont repoussés et étourdis.", "Toutes les 6 s, la cloche sonne : les ennemis proches sont repoussés et étourdis."],
+      effet: cloche(
+        intervalle: 12.0,
+        rayon: 5.0,
+        force: 10.0,
+        etourdi: 1.0,
+      ),
+      icone: (
+        forme: pendentif,
+        metal: or,
+        gemme: 16760864,
+      ),
+    ),
+    "amulette_heros": (
+      nom: "Amulette du héros du village",
+      emplacement: amulette,
+      rarete: legendaire,
+      monde: prairie,
+      description: ["Un totem d'immortalité en plus et +10 PV de santé maximale.", "Un totem d'immortalité en plus et +10 PV de santé maximale.", "Un totem d'immortalité en plus et +10 PV de santé maximale."],
+      modif: (
+        pvMax: 10.0,
+        vies: 1.0,
+      ),
+      icone: (
+        forme: pendentif,
+        metal: or,
+        gemme: 3203184,
+      ),
+    ),
+    "bague_arpenteur": (
+      nom: "Bague de l'arpenteur",
+      emplacement: bague,
+      rarete: commune,
+      monde: mine,
+      description: ["Dégâts contre les arthropodes (araignées, poissons d'argent) +30 %.", "Dégâts contre les arthropodes (araignées, poissons d'argent) +45 %.", "Dégâts contre les arthropodes (araignées, poissons d'argent) +60 %."],
+      modif: (
+        degatsArthropodes: 0.3,
+      ),
+      icone: (
+        forme: bague,
+        metal: fer,
+        gemme: 11550784,
+      ),
+    ),
+    "bague_amethyste": (
+      nom: "Bague d'améthyste",
+      emplacement: bague,
+      rarete: rare,
+      monde: mine,
+      description: ["Chance de coup critique +6 %.", "Chance de coup critique +9 %.", "Chance de coup critique +12 %."],
+      modif: (
+        critique: 0.06,
+      ),
+      icone: (
+        forme: bague,
+        metal: or,
+        gemme: 10510560,
+      ),
+    ),
+    "bague_quartz": (
+      nom: "Bague de quartz",
+      emplacement: bague,
+      rarete: rare,
+      monde: mine,
+      description: ["Dégâts des coups critiques +25 %.", "Dégâts des coups critiques +38 %.", "Dégâts des coups critiques +50 %."],
+      modif: (
+        degatsCritiques: 0.25,
+      ),
+      icone: (
+        forme: bague,
+        metal: fer,
+        gemme: 16052458,
+      ),
+    ),
+    "collier_toile": (
+      nom: "Collier de toile",
+      emplacement: amulette,
+      rarete: rare,
+      monde: mine,
+      description: ["Ralentissements +40 % plus longs, dégâts contre les ennemis ralentis +15 %.", "Ralentissements +60 % plus longs, dégâts contre les ennemis ralentis +22 %.", "Ralentissements +80 % plus longs, dégâts contre les ennemis ralentis +30 %."],
+      modif: (
+        dureeRalenti: 0.4,
+        degatsRalentis: 0.15,
+      ),
+      icone: (
+        forme: pendentif,
+        metal: fer,
+        gemme: 15263984,
+      ),
+    ),
+    "coeur_filon": (
+      nom: "Cœur du filon",
+      emplacement: amulette,
+      rarete: legendaire,
+      monde: mine,
+      description: ["8 % des ennemis tués lâchent un éclat de diamant qui explose autour d'eux.", "8 % des ennemis tués lâchent un éclat de diamant qui explose autour d'eux.", "8 % des ennemis tués lâchent un éclat de diamant qui explose autour d'eux."],
+      effet: filon(
+        chance: 0.08,
+        rayon: 2.4,
+        degats: 30.0,
+      ),
+      icone: (
+        forme: pendentif,
+        metal: or,
+        gemme: 4909280,
+      ),
+    ),
+    "bague_forteresse": (
+      nom: "Bague de la forteresse",
+      emplacement: bague,
+      rarete: commune,
+      monde: nether,
+      description: ["Dégâts contre les créatures du Nether +20 %.", "Dégâts contre les créatures du Nether +30 %.", "Dégâts contre les créatures du Nether +40 %."],
+      modif: (
+        degatsNether: 0.2,
+      ),
+      icone: (
+        forme: bague,
+        metal: netherite,
+        gemme: 10493984,
+      ),
+    ),
+    "bague_magma": (
+      nom: "Bague de magma",
+      emplacement: bague,
+      rarete: rare,
+      monde: nether,
+      description: ["12 % des coups d'arme enflamment l'ennemi.", "18 % des coups d'arme enflamment l'ennemi.", "24 % des coups d'arme enflamment l'ennemi."],
+      modif: (
+        chanceBrulure: 0.12,
+      ),
+      icone: (
+        forme: bague,
+        metal: cuivre,
+        gemme: 16740384,
+      ),
+    ),
+    "pendentif_basalte": (
+      nom: "Pendentif de basalte",
+      emplacement: amulette,
+      rarete: rare,
+      monde: nether,
+      description: ["Dégâts reçus −8 %.", "Dégâts reçus −12 %.", "Dégâts reçus −16 %."],
+      modif: (
+        degatsRecus: -0.08,
+      ),
+      icone: (
+        forme: pendentif,
+        metal: netherite,
+        gemme: 5263448,
+      ),
+    ),
+    "amulette_bastion": (
+      nom: "Amulette du bastion",
+      emplacement: amulette,
+      rarete: epique,
+      monde: nether,
+      description: ["Sous la moitié de vos PV, dégâts +20 %.", "Sous la moitié de vos PV, dégâts +30 %.", "Sous la moitié de vos PV, dégâts +40 %."],
+      effet: bastion(
+        seuil: 0.5,
+        bonus: 0.2,
+      ),
+      icone: (
+        forme: pendentif,
+        metal: or,
+        gemme: 16756736,
+      ),
+    ),
+    "coeur_magma": (
+      nom: "Cœur de magma",
+      emplacement: amulette,
+      rarete: legendaire,
+      monde: nether,
+      description: ["Perdre 20 % de vos PV d'un coup déclenche une nova de feu et 2 s d'invulnérabilité (une fois toutes les 30 s).", "Perdre 20 % de vos PV d'un coup déclenche une nova de feu et 2 s d'invulnérabilité (une fois toutes les 30 s).", "Perdre 20 % de vos PV d'un coup déclenche une nova de feu et 2 s d'invulnérabilité (une fois toutes les 30 s)."],
+      effet: magma(
+        seuil: 0.2,
+        rayon: 4.5,
+        degats: 40.0,
+        protection: 2.0,
+        recharge: 30.0,
+      ),
+      icone: (
+        forme: pendentif,
+        metal: netherite,
+        gemme: 16728080,
+      ),
+    ),
+    "bague_mycelium": (
+      nom: "Bague de mycélium",
+      emplacement: bague,
+      rarete: commune,
+      monde: champignons,
+      description: ["Régénération +0,2 PV/s, vitesse +4 %.", "Régénération +0,2 PV/s, vitesse +6 %.", "Régénération +0,3 PV/s, vitesse +8 %."],
+      modif: (
+        vitesse: 0.04,
+        regeneration: 0.15,
+      ),
+      icone: (
+        forme: bague,
+        metal: cuivre,
+        gemme: 10123936,
+      ),
+    ),
+    "bague_cepe": (
+      nom: "Bague du cèpe",
+      emplacement: bague,
+      rarete: rare,
+      monde: champignons,
+      description: ["Santé maximale +6 PV.", "Santé maximale +9 PV.", "Santé maximale +12 PV."],
+      modif: (
+        pvMax: 6.0,
+      ),
+      icone: (
+        forme: bague,
+        metal: or,
+        gemme: 10512944,
+      ),
+    ),
+    "bague_morille": (
+      nom: "Bague de la morille",
+      emplacement: bague,
+      rarete: rare,
+      monde: champignons,
+      description: ["Zone des armes +12 %.", "Zone des armes +18 %.", "Zone des armes +24 %."],
+      modif: (
+        zone: 0.12,
+      ),
+      icone: (
+        forme: bague,
+        metal: fer,
+        gemme: 14200944,
+      ),
+    ),
+    "amulette_spores": (
+      nom: "Amulette de spores",
+      emplacement: amulette,
+      rarete: epique,
+      monde: champignons,
+      description: ["20 % des ennemis tués libèrent des spores qui empoisonnent les ennemis proches.", "30 % des ennemis tués libèrent des spores qui empoisonnent les ennemis proches.", "40 % des ennemis tués libèrent des spores qui empoisonnent les ennemis proches."],
+      effet: spores(
+        chance: 0.2,
+        rayon: 2.5,
+        poison: 4.0,
+        duree: 3.0,
+      ),
+      icone: (
+        forme: pendentif,
+        metal: cuivre,
+        gemme: 7393360,
+      ),
+    ),
+    "couronne_champignon": (
+      nom: "Couronne du champignon géant",
+      emplacement: amulette,
+      rarete: legendaire,
+      monde: champignons,
+      description: ["Toutes les 25 s, un champignon géant éclate autour de vous : gros dégâts et poison.", "Toutes les 25 s, un champignon géant éclate autour de vous : gros dégâts et poison.", "Toutes les 25 s, un champignon géant éclate autour de vous : gros dégâts et poison."],
+      effet: couronne(
+        intervalle: 25.0,
+        rayon: 5.0,
+        degats: 50.0,
+        poison: 5.0,
+        duree: 4.0,
+      ),
+      icone: (
+        forme: pendentif,
+        metal: or,
+        gemme: 14690344,
+      ),
+    ),
+  },
+  raretes: {
+    commune: (
+      nom: "Commune",
+    ),
+    rare: (
+      nom: "Rare",
+    ),
+    epique: (
+      nom: "Épique",
+    ),
+    legendaire: (
+      nom: "Légendaire",
+    ),
+  },
+  regles: (
+    bagues: 2,
+    amulettes: 1,
+    niveaux: [1.0, 1.5, 2.0],
+    propositions: 3,
+    bois: (
+      poids: {
+        commune: 60.0,
+        rare: 32.0,
+        epique: 8.0,
+      },
+      parCoffre: {
+        commune: -5.0,
+        rare: 2.0,
+        epique: 3.0,
+      },
+      minimum: {
+        commune: 15.0,
+      },
+      maximum: {
+        rare: 50.0,
+        epique: 35.0,
+      },
+    ),
+    ender: (
+      poids: {
+        rare: 45.0,
+        epique: 40.0,
+        legendaire: 15.0,
+      },
+    ),
+    chanceRenfort: 0.25,
+    emeraudesConsolation: 15.0,
+    emeraudesRefus: (
+      bois: 3.0,
+      ender: 6.0,
+    ),
+  ),
+)

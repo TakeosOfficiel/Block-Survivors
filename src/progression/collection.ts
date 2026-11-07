@@ -10,6 +10,7 @@ import { IDS_OBJETS_EQUIPEMENT, OBJETS_EQUIPEMENT, type IdObjetEquipement } from
 import type { IdMonde, Modificateurs, PieceArmure } from '../donnees/types';
 import { ecrireStockage, lireStockage } from '../options';
 import { cleProfil } from '../profils';
+import { alea } from '../utils/aleatoire';
 
 const VERSION = 1;
 
@@ -90,9 +91,9 @@ export class Collection {
     const butin = BUTIN_BOSS[Math.min(rang, BUTIN_BOSS.length - 1)];
     const gagnees: PieceArmure[] = [];
     // Une pièce, puis peut-être une 2e ; jamais une pièce déjà gagnée
-    if (Math.random() >= butin.chance) return gagnees;
+    if (alea() >= butin.chance) return gagnees;
     for (let k = 0; k < 2; k++) {
-      if (k === 1 && Math.random() >= butin.chanceSeconde) break;
+      if (k === 1 && alea() >= butin.chanceSeconde) break;
       const piece = this.tirerPiece(monde, butin.poids);
       if (!piece) break;
       this.ajouter(monde, piece);
@@ -111,7 +112,7 @@ export class Collection {
   /** Pièce manquante tirée selon les poids (une pièce sans poids n'est pas tirée). */
   private tirerPiece(monde: IdMonde, poids: Partial<Record<PieceArmure, number>>): PieceArmure | null {
     const manquantes = PIECES_ARMURE.filter((p) => !this.possede(monde, p) && (poids[p] ?? 0) > 0);
-    let seuil = Math.random() * manquantes.reduce((t, p) => t + (poids[p] ?? 0), 0);
+    let seuil = alea() * manquantes.reduce((t, p) => t + (poids[p] ?? 0), 0);
     for (const p of manquantes) {
       seuil -= poids[p] ?? 0;
       if (seuil < 0) return p;

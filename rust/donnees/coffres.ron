@@ -1,0 +1,51 @@
+// Généré depuis la version TypeScript (src/donnees) par outils/importer-donnees.sh.
+// Tant que les deux versions coexistent, modifier src/donnees puis relancer l'import.
+#![enable(implicit_some)]
+(
+  coffres: {
+    "coffre": (
+      nom: "Coffre",
+      titre: "Coffre !",
+      apparence: (
+        modele: "coffre",
+        skin: "entity/chest/normal",
+        couleursSecours: {},
+        couleurSecoursParDefaut: 10119722,
+        rayonOmbre: 0.6,
+      ),
+      payant: true,
+      choix: 1.0,
+      son: "coffre",
+    ),
+    "coffre_ender": (
+      nom: "Coffre de l'Ender",
+      titre: "Coffre de l'Ender !",
+      apparence: (
+        modele: "coffre",
+        skin: "entity/chest/ender",
+        couleursSecours: {},
+        couleurSecoursParDefaut: 1915450,
+        rayonOmbre: 0.6,
+      ),
+      payant: false,
+      choix: 2.0,
+      son: "coffre_ender",
+    ),
+  },
+  regles: (
+    capacite: 8.0,
+    tues: (
+      premier: 100.0,
+      intervalle: 150.0,
+      croissance: 50.0,
+    ),
+    prix: (
+      base: 8.0,
+      increment: 5.0,
+    ),
+    distance: (7.0, 12.0),
+    rayonOuverture: 1.1,
+    dureeOuverture: 0.5,
+    resteOuvert: 1.2,
+  ),
+)

@@ -1,0 +1,32 @@
+# Service systemd du relais de coop (docs/RELAIS.md). À copier dans /etc/systemd/system/,
+# le binaire dans /opt/bs-relais/bs-relais. Écoute en local seulement : Cloudflare Tunnel
+# (cloudflared) l'expose en HTTPS/WSS, sans port ouvert sur le serveur.
+[Unit]
+Description=Relais de coop Block Survivors
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/opt/bs-relais/bs-relais 127.0.0.1:8787
+Restart=always
+RestartSec=2
+DynamicUser=yes
+# Durcissement : aucun fichier écrit, aucun droit particulier
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+CapabilityBoundingSet=
+LimitNOFILE=65536
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target

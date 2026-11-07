@@ -1,0 +1,124 @@
+# Version Rust en cours de migration (rust/, plan : docs/PLAN-RUST.md). Vérifie et
+# construit à chaque push qui touche rust/ : format, clippy, tests, build PC (Linux,
+# Windows) et chaîne de mise à jour
+# (Velopack + manifeste signé, Linux et Windows). Publie seulement les builds à tester
+# dans la pré-version « prototype-rust » de ce dépôt privé (rien pour les joueurs).
+name: Version Rust
+
+on:
+  # Branches seulement : un tag « rust-v* » passe par « Publication Rust », qui appelle ce
+  # workflow (workflow_call) avant de publier
+  push:
+    branches: ['**']
+    paths: ['rust/**', 'src/donnees/**', '.github/workflows/rust.yml']
+  pull_request:
+    paths: ['rust/**', 'src/donnees/**', '.github/workflows/rust.yml']
+  workflow_dispatch:
+  workflow_call:
+
+concurrency:
+  group: rust-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+defaults:
+  run:
+    working-directory: rust
+
+jobs:
+  verifications:
+    runs-on: ubuntu-latest
+    env:
+      # Sans infos de débogage : les binaires de test (Bevy) remplissaient le disque
+      # du runner (éditeur de liens tué par SIGBUS)
+      CARGO_PROFILE_DEV_DEBUG: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Place disque (outils inutiles ici)
+        working-directory: .
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL && df -h /
+      - name: Bibliothèques système (fenêtre, entrées, son)
+        run: sudo apt-get update -q && sudo apt-get install -y -q pkg-config libwayland-dev libxkbcommon-dev libudev-dev libasound2-dev libx11-dev libxcursor-dev libxrandr-dev libxi-dev
+      - name: Rust (version épinglée par rust-toolchain.toml)
+        run: rustup show
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: Format
+        run: cargo fmt --all --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Tests
+        run: cargo test --workspace
+      # Robot d'équilibrage : moyennes de 15 parties par personnage dans la tolérance de la version TS
+      - name: Robot
+        run: VERIFIER=1 cargo run --release -q -p bs-robot
+      # Tant que la version TypeScript reste la référence : rust/donnees doit en être la copie
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Données à jour (src/donnees → rust/donnees)
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        run: |
+          (cd .. && npm ci --ignore-scripts)
+          outils/importer-donnees.sh --verifier
+
+  windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: Build Windows (profil ship)
+        run: cargo build --profile ship -p block-survivors
+      # Prototype à lancer sur un vrai PC : images/s dans le titre de la fenêtre
+      - name: Publier dans la pré-version prototype-rust
+        if: github.event_name == 'push' && github.ref == 'refs/heads/rust'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp target/ship/block-survivors.exe block-survivors-windows.exe
+          gh release view prototype-rust > /dev/null 2>&1 || gh release create prototype-rust --prerelease --target rust \
+            --title "Prototype Rust (à tester)" --notes "Builds du prototype Rust (branche rust), remplacés à chaque push. Images/s affichées dans le titre de la fenêtre." || true
+          gh release upload prototype-rust block-survivors-windows.exe --clobber
+
+  # Chaîne de mise à jour de bout en bout : installer N, se mettre à jour seul, refuser les attaques
+  mise-a-jour-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Outils (Velopack, AppImage)
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q squashfs-tools zstd libfuse2
+          dotnet tool install -g vpk --version 1.2.161
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: Essai de mise à jour
+        run: outils/essai-maj.sh
+
+  mise-a-jour-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: dotnet tool install -g vpk --version 1.2.161
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: Essai de mise à jour
+        shell: pwsh
+        run: ./outils/essai-maj.ps1

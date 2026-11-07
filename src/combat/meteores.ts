@@ -18,6 +18,7 @@ import type { Point } from '../monde/carte';
 import { Pool } from '../utils/pool';
 import type { ArmeEquipee } from './armeEquipee';
 import type { ContexteCombat } from './contexte';
+import { alea } from '../utils/aleatoire';
 
 interface Meteore {
   arme: ArmeEquipee | null;
@@ -103,8 +104,8 @@ export class Meteores {
       }
       // Pluie de feu : 3 météores plus petits autour du groupe
       for (let q = 0; q < c.pluie.nombre; q++) {
-        const a = Math.random() * Math.PI * 2;
-        const r = q === 0 ? 0 : c.pluie.ecart * (0.6 + Math.random() * 0.4);
+        const a = alea() * Math.PI * 2;
+        const r = q === 0 ? 0 : c.pluie.ecart * (0.6 + alea() * 0.4);
         const depart = -(k * c.pluie.nombre + q) * c.pluie.decalage;
         lance = this.lancer(arme, groupe.x + Math.sin(a) * r, groupe.z + Math.cos(a) * r, depart, facteur * c.pluie.degats, c.pluie.taille) || lance;
       }
@@ -166,7 +167,7 @@ export class Meteores {
         feu.z = m.z;
         feu.temps = 0;
         feu.prochainTic = c.tic;
-        feu.graine = Math.random() * 10;
+        feu.graine = alea() * 10;
         feu.facteur = m.facteur * (lave ? 1 + c.laveFusion.degats : 1);
         feu.zone = m.taille;
         feu.duree = arme.stats.duree + (lave ? c.laveFusion.duree : 0);

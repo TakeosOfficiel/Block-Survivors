@@ -18,6 +18,7 @@ import { PlansCroises } from '../effets/plansCroises';
 import { Pool } from '../utils/pool';
 import type { ArmeEquipee } from './armeEquipee';
 import type { ContexteCombat } from './contexte';
+import { alea } from '../utils/aleatoire';
 
 interface Piege {
   arme: ArmeEquipee | null;
@@ -69,7 +70,7 @@ export class Pieges {
     p.z = j.z;
     p.temps = 0;
     p.prochainTic = 0;
-    p.graine = Math.random() * 10;
+    p.graine = alea() * 10;
     p.propagation = 0;
     particules.emettre(p.x, 0.3, p.z, GERBES.ronces, this.image);
     return true;

@@ -20,6 +20,7 @@ import { compilerModele } from '../modeles/compilation';
 import { creerPoseModele, ModeleInstancie, type PoseModele } from '../modeles/rendu';
 import type { Terrain } from '../monde/navigation';
 import { Pool } from '../utils/pool';
+import { alea } from '../utils/aleatoire';
 
 interface Coffre {
   indexType: number;
@@ -197,8 +198,8 @@ export class Coffres {
   /** Case accessible au hasard entre `min` et `max` blocs de (x, z). */
   private trouverCase(x: number, z: number, min: number, max: number): boolean {
     for (let essai = 0; essai < 24; essai++) {
-      const angle = Math.random() * Math.PI * 2;
-      const d = min + Math.random() * (max - min);
+      const angle = alea() * Math.PI * 2;
+      const d = min + alea() * (max - min);
       const cx = Math.floor(x + Math.sin(angle) * d) + 0.5;
       const cz = Math.floor(z + Math.cos(angle) * d) + 0.5;
       if (!this.accessible(cx, cz)) continue;

@@ -10,6 +10,11 @@ fichiers)**. C'est une réécriture complète, pas une conversion automatique. L
 avance par étapes jouables : à chaque étape, l'ancienne version reste celle que les
 joueurs téléchargent, jusqu'à ce que la nouvelle fasse au moins aussi bien.
 
+> **Décision du 01/11/2026 : plus de version navigateur.** Le jeu Rust sort seulement sur
+> PC (Windows, Linux). Le crate `bs-web`, les scripts de build web et la tâche web de la
+> CI sont retirés ; tout ce qui parle de WebAssembly, WebGPU/WebGL2 ou de poids du wasm
+> plus bas ne s'applique plus (gardé pour l'historique).
+
 ---
 
 ## 1. Ce qu'utilise Azeroth Survivors (relevé dans leur dépôt et leur jeu en ligne)

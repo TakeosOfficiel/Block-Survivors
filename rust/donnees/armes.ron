@@ -1,0 +1,1725 @@
+// Généré depuis la version TypeScript (src/donnees) par outils/importer-donnees.sh.
+// Tant que les deux versions coexistent, modifier src/donnees puis relancer l'import.
+#![enable(implicit_some)]
+{
+  "epee": (
+    nom: "Épée en fer",
+    description: "Frappe en arc de cercle l'ennemi le plus proche.",
+    icone: "item/iron_sword",
+    mecanique: balayage(
+      angle: 2.2,
+      effet: ["particle/sweep_0", "particle/sweep_1", "particle/sweep_2", "particle/sweep_3", "particle/sweep_4", "particle/sweep_5", "particle/sweep_6", "particle/sweep_7"],
+    ),
+    famille: melee,
+    stats: (
+      degats: 10.0,
+      cadence: 1.1,
+      nombre: 1.0,
+      portee: 0.0,
+      vitesse: 0.0,
+      zone: 2.6,
+      duree: 0.0,
+      perforation: 1.0,
+      recul: 6.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "Dégâts +5",
+      modif: (
+        degats: 5.0,
+      ),
+    ), (
+      description: "Portée du coup +0,6 bloc",
+      modif: (
+        zone: 0.6,
+      ),
+    ), (
+      description: "Frappe 20 % plus souvent",
+      modif: (
+        cadence: -0.2,
+      ),
+    ), (
+      description: "Dégâts +8",
+      modif: (
+        degats: 8.0,
+      ),
+    ), (
+      description: "Portée +0,8 bloc, recul accru",
+      modif: (
+        zone: 0.8,
+        recul: 4.0,
+      ),
+    )],
+    son: "balayage",
+    eveils: ((
+      nom: "Tranchant",
+      description: "Dégâts +40 %.",
+      icone: "item/netherite_sword",
+      part: (
+        degats: 0.4,
+      ),
+    ), (
+      nom: "Aura de feu",
+      description: "Chaque coup enflamme (4 dégâts/s pendant 3 s) ; dégâts +10 %.",
+      icone: "item/blaze_powder",
+      part: (
+        degats: 0.1,
+      ),
+      etat: (
+        type: brulure,
+        valeur: 4.0,
+        duree: 3.0,
+      ),
+    )),
+  ),
+  "arc": (
+    nom: "Arc",
+    description: "Tire sur l'ennemi le plus proche.",
+    icone: "item/bow",
+    mecanique: tir(
+      projectile: "fleche",
+      dispersion: 0.18,
+    ),
+    famille: projectile,
+    stats: (
+      degats: 10.0,
+      cadence: 1.1,
+      nombre: 1.0,
+      portee: 15.0,
+      vitesse: 22.0,
+      zone: 0.0,
+      duree: 0.0,
+      perforation: 1.0,
+      recul: 3.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "+1 flèche",
+      modif: (
+        nombre: 1.0,
+      ),
+    ), (
+      description: "Dégâts +4",
+      modif: (
+        degats: 4.0,
+      ),
+    ), (
+      description: "Les flèches traversent 1 ennemi de plus",
+      modif: (
+        perforation: 1.0,
+      ),
+    ), (
+      description: "Tire 25 % plus souvent",
+      modif: (
+        cadence: -0.25,
+      ),
+    ), (
+      description: "+1 flèche, dégâts +4",
+      modif: (
+        degats: 4.0,
+        nombre: 1.0,
+      ),
+    )],
+    son: "arc",
+    eveils: ((
+      nom: "Frappe",
+      description: "Dégâts +25 %, recul doublé.",
+      icone: "item/slime_ball",
+      part: (
+        degats: 0.25,
+        recul: 1.0,
+      ),
+    ), (
+      nom: "Flamme",
+      description: "Les flèches enflamment (4 dégâts/s pendant 3 s).",
+      icone: "item/blaze_rod",
+      etat: (
+        type: brulure,
+        valeur: 4.0,
+        duree: 3.0,
+      ),
+    )),
+  ),
+  "trident": (
+    nom: "Trident",
+    description: "Lancé à travers les ennemis. Avec Loyauté, il revient dans votre main.",
+    icone: "item/trident",
+    mecanique: retour(
+      projectile: "trident",
+      dispersion: 0.5,
+      loyaute: 3.0,
+    ),
+    stats: (
+      degats: 14.0,
+      cadence: 2.4,
+      nombre: 1.0,
+      portee: 9.0,
+      vitesse: 13.0,
+      zone: 0.0,
+      duree: 0.0,
+      perforation: 1.0,
+      recul: 4.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "Dégâts +6",
+      modif: (
+        degats: 6.0,
+      ),
+    ), (
+      description: "Loyauté : le trident revient dans votre main",
+      modif: (),
+    ), (
+      description: "+1 trident",
+      modif: (
+        nombre: 1.0,
+      ),
+    ), (
+      description: "Portée +3 blocs, lancé 20 % plus souvent",
+      modif: (
+        cadence: -0.5,
+        portee: 3.0,
+      ),
+    ), (
+      description: "+1 trident",
+      modif: (
+        nombre: 1.0,
+      ),
+    )],
+    son: "trident",
+    eveils: ((
+      nom: "Empalement",
+      description: "Dégâts +50 %.",
+      icone: "item/prismarine_shard",
+      part: (
+        degats: 0.5,
+      ),
+    ), (
+      nom: "Canalisation",
+      description: "+1 trident ; chaque coup étourdit 0,4 s (pas les boss).",
+      icone: "item/heart_of_the_sea",
+      ajout: (
+        nombre: 1.0,
+      ),
+      etat: (
+        type: etourdi,
+        valeur: 0.4,
+        duree: 0.4,
+      ),
+    )),
+  ),
+  "haches": (
+    nom: "Haches tournoyantes",
+    description: "Des haches tournent autour de vous.",
+    icone: "item/iron_axe",
+    mecanique: orbite(
+      projectile: "hache",
+    ),
+    famille: melee,
+    stats: (
+      degats: 6.0,
+      cadence: 0.6,
+      nombre: 2.0,
+      portee: 0.0,
+      vitesse: 3.4,
+      zone: 1.5,
+      duree: 0.0,
+      perforation: 1.0,
+      recul: 4.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "+1 hache",
+      modif: (
+        nombre: 1.0,
+      ),
+    ), (
+      description: "Dégâts +4",
+      modif: (
+        degats: 4.0,
+      ),
+    ), (
+      description: "Rayon +0,4 bloc",
+      modif: (
+        zone: 0.4,
+      ),
+    ), (
+      description: "+1 hache, rotation plus rapide",
+      modif: (
+        nombre: 1.0,
+        vitesse: 1.0,
+      ),
+    ), (
+      description: "Dégâts +6",
+      modif: (
+        degats: 6.0,
+      ),
+    )],
+    eveils: ((
+      nom: "Haches fendeuses",
+      description: "+1 hache, dégâts +15 %.",
+      icone: "item/netherite_axe",
+      ajout: (
+        nombre: 1.0,
+      ),
+      part: (
+        degats: 0.15,
+      ),
+    ), (
+      nom: "Haches givrées",
+      description: "Ralentissent de 35 % pendant 1,5 s ; rayon +20 %.",
+      icone: "block/packed_ice",
+      part: (
+        zone: 0.2,
+      ),
+      etat: (
+        type: ralenti,
+        valeur: 0.35,
+        duree: 1.5,
+      ),
+    )),
+  ),
+  "boules_feu": (
+    nom: "Boules de feu",
+    description: "Explosent au contact et brûlent la zone.",
+    icone: "item/fire_charge",
+    mecanique: explosif(
+      projectile: "boule_feu",
+    ),
+    famille: feu,
+    stats: (
+      degats: 12.0,
+      cadence: 2.2,
+      nombre: 1.0,
+      portee: 13.0,
+      vitesse: 10.0,
+      zone: 2.0,
+      duree: 0.0,
+      perforation: 1.0,
+      recul: 6.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "Rayon d'explosion +0,5 bloc",
+      modif: (
+        zone: 0.5,
+      ),
+    ), (
+      description: "+1 boule de feu",
+      modif: (
+        nombre: 1.0,
+      ),
+    ), (
+      description: "Dégâts +6",
+      modif: (
+        degats: 6.0,
+      ),
+    ), (
+      description: "Lancées 20 % plus souvent",
+      modif: (
+        cadence: -0.45,
+      ),
+    ), (
+      description: "Rayon +0,5 bloc, dégâts +4",
+      modif: (
+        degats: 4.0,
+        zone: 0.5,
+      ),
+    )],
+    son: "boule_feu",
+    eveils: ((
+      nom: "Boule de ghast",
+      description: "Explosion +40 % de zone, dégâts +20 %.",
+      icone: "item/ghast_tear",
+      part: (
+        degats: 0.2,
+        zone: 0.4,
+      ),
+    ), (
+      nom: "Rafale de blaze",
+      description: "+2 boules de feu, dégâts −20 %.",
+      icone: "item/blaze_powder",
+      ajout: (
+        nombre: 2.0,
+      ),
+      part: (
+        degats: -0.2,
+      ),
+    )),
+  ),
+  "eclairs": (
+    nom: "Éclairs",
+    description: "La foudre frappe des ennemis au hasard.",
+    icone: "block/lightning_rod",
+    mecanique: foudre(
+      couleur: 14674687,
+    ),
+    stats: (
+      degats: 16.0,
+      cadence: 3.0,
+      nombre: 1.0,
+      portee: 12.0,
+      vitesse: 0.0,
+      zone: 1.1,
+      duree: 0.0,
+      perforation: 1.0,
+      recul: 2.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "+1 éclair",
+      modif: (
+        nombre: 1.0,
+      ),
+    ), (
+      description: "Dégâts +6",
+      modif: (
+        degats: 6.0,
+      ),
+    ), (
+      description: "Zone d'impact +0,4 bloc",
+      modif: (
+        zone: 0.4,
+      ),
+    ), (
+      description: "Frappe 15 % plus souvent",
+      modif: (
+        cadence: -0.45,
+      ),
+    ), (
+      description: "+1 éclair",
+      modif: (
+        nombre: 1.0,
+      ),
+    )],
+    son: "tonnerre",
+    eveils: ((
+      nom: "Canalisation",
+      description: "+2 éclairs.",
+      icone: "block/lightning_rod",
+      ajout: (
+        nombre: 2.0,
+      ),
+    ), (
+      nom: "Foudre en boule",
+      description: "Zone +50 % ; étourdit 0,3 s (pas les boss).",
+      icone: "item/glowstone_dust",
+      part: (
+        zone: 0.5,
+      ),
+      etat: (
+        type: etourdi,
+        valeur: 0.3,
+        duree: 0.3,
+      ),
+    )),
+  ),
+  "onde_choc": (
+    nom: "Onde de choc",
+    description: "Frappe le sol : une fissure soulève les blocs vers le plus gros groupe.",
+    icone: "block/cracked_stone_bricks",
+    mecanique: fissure(
+      ecart: 0.5,
+      vitesse: 14.0,
+    ),
+    stats: (
+      degats: 14.0,
+      cadence: 4.0,
+      nombre: 1.0,
+      portee: 6.0,
+      vitesse: 0.0,
+      zone: 1.5,
+      duree: 1.0,
+      perforation: 1.0,
+      recul: 3.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "Dégâts +4",
+      modif: (
+        degats: 4.0,
+      ),
+    ), (
+      description: "Fissure plus longue : +2 blocs",
+      modif: (
+        portee: 2.0,
+      ),
+    ), (
+      description: "+1 fissure en éventail",
+      modif: (
+        nombre: 1.0,
+      ),
+    ), (
+      description: "Frappe 20 % plus souvent",
+      modif: (
+        cadence: -0.8,
+      ),
+    ), (
+      description: "+1 fissure ; les ennemis touchés sont ralentis de 30 % pendant 1 s",
+      modif: (
+        nombre: 1.0,
+        ralenti: 0.3,
+      ),
+    )],
+    son: "fissure",
+    eveils: ((
+      nom: "Faille",
+      description: "Portée +40 %, +1 fissure.",
+      icone: "block/cracked_deepslate_bricks",
+      ajout: (
+        nombre: 1.0,
+      ),
+      part: (
+        portee: 0.4,
+      ),
+    ), (
+      nom: "Secousse",
+      description: "Étourdit 0,6 s (pas les boss) ; dégâts +10 %.",
+      icone: "item/goat_horn",
+      part: (
+        degats: 0.1,
+      ),
+      etat: (
+        type: etourdi,
+        valeur: 0.6,
+        duree: 0.6,
+      ),
+    )),
+  ),
+  "lame_colossale": (
+    nom: "Lame colossale",
+    description: "Une épée géante s'abat sur le plus gros groupe d'ennemis.",
+    icone: "item/netherite_sword",
+    mecanique: chute(
+      image: "item/netherite_sword",
+      taille: 5.0,
+    ),
+    stats: (
+      degats: 40.0,
+      cadence: 7.0,
+      nombre: 1.0,
+      portee: 10.0,
+      vitesse: 0.0,
+      zone: 2.5,
+      duree: 2.0,
+      perforation: 1.0,
+      recul: 9.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "Dégâts +15",
+      modif: (
+        degats: 15.0,
+      ),
+    ), (
+      description: "Rayon d'impact +0,7 bloc",
+      modif: (
+        zone: 0.7,
+      ),
+    ), (
+      description: "Tombe 20 % plus souvent",
+      modif: (
+        cadence: -1.4,
+      ),
+    ), (
+      description: "+1 lame",
+      modif: (
+        nombre: 1.0,
+      ),
+    ), (
+      description: "Dégâts +25 ; le sol fissuré ralentit de 20 % pendant 2 s",
+      modif: (
+        degats: 25.0,
+        ralenti: 0.2,
+      ),
+    )],
+    eveils: ((
+      nom: "Lame de netherite",
+      description: "Dégâts +50 %, zone +15 %.",
+      icone: "item/netherite_ingot",
+      part: (
+        degats: 0.5,
+        zone: 0.15,
+      ),
+    ), (
+      nom: "Pluie d'acier",
+      description: "+1 lame, dégâts −10 %.",
+      icone: "item/iron_ingot",
+      ajout: (
+        nombre: 1.0,
+      ),
+      part: (
+        degats: -0.1,
+      ),
+    )),
+  ),
+  "tourbillon_lames": (
+    nom: "Tourbillon de lames",
+    description: "Tourne sur lui-même et frappe tout autour, plusieurs fois.",
+    icone: "item/golden_sword",
+    mecanique: tourbillon(
+      intervalle: 0.3,
+      effet: ["particle/sweep_0", "particle/sweep_1", "particle/sweep_2", "particle/sweep_3", "particle/sweep_4", "particle/sweep_5", "particle/sweep_6", "particle/sweep_7"],
+    ),
+    famille: melee,
+    stats: (
+      degats: 5.0,
+      cadence: 5.0,
+      nombre: 1.0,
+      portee: 0.0,
+      vitesse: 0.0,
+      zone: 2.2,
+      duree: 1.2,
+      perforation: 1.0,
+      recul: 2.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "Dégâts +3 par frappe",
+      modif: (
+        degats: 3.0,
+      ),
+    ), (
+      description: "Rayon +0,5 bloc",
+      modif: (
+        zone: 0.5,
+      ),
+    ), (
+      description: "Tourne 0,6 s de plus (2 frappes)",
+      modif: (
+        duree: 0.6,
+      ),
+    ), (
+      description: "Tourne 20 % plus souvent",
+      modif: (
+        cadence: -1.0,
+      ),
+    ), (
+      description: "Dégâts +3 ; aspire les ennemis vers lui",
+      modif: (
+        degats: 3.0,
+        recul: -5.0,
+      ),
+    )],
+    eveils: ((
+      nom: "Cyclone",
+      description: "Dure 1 s de plus, rayon +20 %.",
+      icone: "item/breeze_rod",
+      ajout: (
+        duree: 1.0,
+      ),
+      part: (
+        zone: 0.2,
+      ),
+    ), (
+      nom: "Lames ardentes",
+      description: "Chaque coup enflamme (3 dégâts/s pendant 3 s).",
+      icone: "item/fire_charge",
+      etat: (
+        type: brulure,
+        valeur: 3.0,
+        duree: 3.0,
+      ),
+    )),
+  ),
+  "heurt_bouclier": (
+    nom: "Heurt de bouclier",
+    description: "Coup de bouclier devant lui : repousse fort et interrompt les attaques.",
+    icone: "block/iron_trapdoor",
+    mecanique: heurt(
+      angle: 1.6,
+      renvoi: 6.0,
+    ),
+    famille: melee,
+    stats: (
+      degats: 8.0,
+      cadence: 3.0,
+      nombre: 1.0,
+      portee: 0.0,
+      vitesse: 0.0,
+      zone: 1.8,
+      duree: 0.0,
+      perforation: 1.0,
+      recul: 12.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "Repousse plus fort",
+      modif: (
+        recul: 6.0,
+      ),
+    ), (
+      description: "Dégâts +6",
+      modif: (
+        degats: 6.0,
+      ),
+    ), (
+      description: "Étourdit 0,5 s",
+      modif: (
+        etourdi: 0.5,
+      ),
+    ), (
+      description: "Frappe 20 % plus souvent",
+      modif: (
+        cadence: -0.6,
+      ),
+    ), (
+      description: "Dégâts +6 ; renvoie les projectiles ennemis",
+      modif: (
+        degats: 6.0,
+      ),
+    )],
+    son: "bouclier",
+    eveils: ((
+      nom: "Bouclier à pointes",
+      description: "Dégâts +50 %.",
+      icone: "item/flint",
+      part: (
+        degats: 0.5,
+      ),
+    ), (
+      nom: "Bouclier tonnerre",
+      description: "Étourdit 0,5 s de plus, cône +20 %.",
+      icone: "item/bell",
+      ajout: (
+        etourdi: 0.5,
+      ),
+      part: (
+        zone: 0.2,
+      ),
+    )),
+  ),
+  "tornade_feu": (
+    nom: "Tornade de feu",
+    description: "Une colonne de braises tourbillonne vers les ennemis et les aspire.",
+    icone: "item/blaze_powder",
+    mecanique: tornade(
+      texture: "block/magma",
+      feu: "block/fire_0",
+      brulure: "block/soul_soil",
+      vitesse: 3.5,
+      intervalle: 0.4,
+    ),
+    famille: feu,
+    stats: (
+      degats: 6.0,
+      cadence: 8.0,
+      nombre: 1.0,
+      portee: 0.0,
+      vitesse: 0.0,
+      zone: 1.5,
+      duree: 4.0,
+      perforation: 1.0,
+      recul: -2.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "La tornade dure 2 s de plus",
+      modif: (
+        duree: 2.0,
+      ),
+    ), (
+      description: "Dégâts +3",
+      modif: (
+        degats: 3.0,
+      ),
+    ), (
+      description: "Rayon +0,4 bloc",
+      modif: (
+        zone: 0.4,
+      ),
+    ), (
+      description: "Lancée 20 % plus souvent",
+      modif: (
+        cadence: -1.6,
+      ),
+    ), (
+      description: "+1 tornade",
+      modif: (
+        nombre: 1.0,
+      ),
+    )],
+    son: "tornade",
+    eveils: ((
+      nom: "Tornade dévorante",
+      description: "Rayon +30 %, dure 1 s de plus.",
+      icone: "item/fire_charge",
+      ajout: (
+        duree: 1.0,
+      ),
+      part: (
+        zone: 0.3,
+      ),
+    ), (
+      nom: "Tornades jumelles",
+      description: "+1 tornade.",
+      icone: "item/wind_charge",
+      ajout: (
+        nombre: 1.0,
+      ),
+    )),
+  ),
+  "nova_glace": (
+    nom: "Nova de glace",
+    description: "Un anneau d'éclats de glace jaillit autour de lui, blesse et ralentit.",
+    icone: "block/packed_ice",
+    mecanique: nova(
+      texture: "block/packed_ice",
+      expansion: 0.4,
+      sol: "block/powder_snow",
+      solAuRang: 6.0,
+      dureeSol: 2.0,
+    ),
+    stats: (
+      degats: 10.0,
+      cadence: 5.0,
+      nombre: 1.0,
+      portee: 0.0,
+      vitesse: 0.0,
+      zone: 4.0,
+      duree: 2.0,
+      perforation: 1.0,
+      recul: 2.0,
+      ralenti: 0.35,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "Rayon +1 bloc",
+      modif: (
+        zone: 1.0,
+      ),
+    ), (
+      description: "Dégâts +6",
+      modif: (
+        degats: 6.0,
+      ),
+    ), (
+      description: "Ralentit de 45 % pendant 2,5 s",
+      modif: (
+        duree: 0.5,
+        ralenti: 0.1,
+      ),
+    ), (
+      description: "Lancée 20 % plus souvent",
+      modif: (
+        cadence: -1.0,
+      ),
+    ), (
+      description: "Dégâts +4 ; laisse de la neige poudreuse qui ralentit 2 s",
+      modif: (
+        degats: 4.0,
+      ),
+    )],
+    son: "nova",
+    eveils: ((
+      nom: "Glace bleue",
+      description: "Ralentissement +20 points, zone +15 %.",
+      icone: "block/blue_ice",
+      ajout: (
+        ralenti: 0.2,
+      ),
+      part: (
+        zone: 0.15,
+      ),
+    ), (
+      nom: "Éclats de givre",
+      description: "Dégâts +50 %.",
+      icone: "item/snowball",
+      part: (
+        degats: 0.5,
+      ),
+    )),
+  ),
+  "meteore": (
+    nom: "Météore",
+    description: "Un bloc de magma tombe sur un groupe et laisse le sol en feu.",
+    icone: "block/magma",
+    mecanique: meteore(
+      texture: "block/magma",
+      feu: "block/fire_0",
+      degatsSol: 0.15,
+    ),
+    famille: feu,
+    stats: (
+      degats: 35.0,
+      cadence: 9.0,
+      nombre: 1.0,
+      portee: 12.0,
+      vitesse: 0.0,
+      zone: 2.5,
+      duree: 3.0,
+      perforation: 1.0,
+      recul: 6.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "Dégâts +15",
+      modif: (
+        degats: 15.0,
+      ),
+    ), (
+      description: "Le feu au sol dure 2 s de plus",
+      modif: (
+        duree: 2.0,
+      ),
+    ), (
+      description: "Rayon d'impact +0,5 bloc",
+      modif: (
+        zone: 0.5,
+      ),
+    ), (
+      description: "Tombe 20 % plus souvent",
+      modif: (
+        cadence: -1.8,
+      ),
+    ), (
+      description: "+1 météore",
+      modif: (
+        nombre: 1.0,
+      ),
+    )],
+    son: "boule_feu",
+    eveils: ((
+      nom: "Comète",
+      description: "Dégâts +40 %, zone +15 %.",
+      icone: "item/nether_star",
+      part: (
+        degats: 0.4,
+        zone: 0.15,
+      ),
+    ), (
+      nom: "Essaim de météores",
+      description: "+1 météore.",
+      icone: "item/magma_cream",
+      ajout: (
+        nombre: 1.0,
+      ),
+    )),
+  ),
+  "orbes_arcaniques": (
+    nom: "Orbes arcaniques",
+    description: "Des orbes d'améthyste tournent autour de lui puis foncent sur les ennemis.",
+    icone: "item/amethyst_shard",
+    mecanique: orbes(
+      texture: "block/amethyst_block",
+      contactAuRang: 4.0,
+      contact: 0.45,
+    ),
+    stats: (
+      degats: 9.0,
+      cadence: 4.0,
+      nombre: 3.0,
+      portee: 10.0,
+      vitesse: 12.0,
+      zone: 1.3,
+      duree: 2.0,
+      perforation: 1.0,
+      recul: 0.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "+1 orbe",
+      modif: (
+        nombre: 1.0,
+      ),
+    ), (
+      description: "Dégâts +4",
+      modif: (
+        degats: 4.0,
+      ),
+    ), (
+      description: "Orbitent 1 s de plus et blessent au contact",
+      modif: (
+        duree: 1.0,
+      ),
+    ), (
+      description: "Lancées 20 % plus souvent",
+      modif: (
+        cadence: -0.8,
+      ),
+    ), (
+      description: "+2 orbes",
+      modif: (
+        nombre: 2.0,
+      ),
+    )],
+    son: "orbes",
+    eveils: ((
+      nom: "Orbes du néant",
+      description: "Dégâts +40 %.",
+      icone: "item/ender_pearl",
+      part: (
+        degats: 0.4,
+      ),
+    ), (
+      nom: "Constellation",
+      description: "+2 orbes.",
+      icone: "item/amethyst_shard",
+      ajout: (
+        nombre: 2.0,
+      ),
+    )),
+  ),
+  "salve": (
+    nom: "Salve en éventail",
+    description: "Tire une gerbe de flèches en éventail vers les ennemis.",
+    icone: "item/crossbow_standby",
+    mecanique: tir(
+      projectile: "fleche",
+      dispersion: 0.26,
+    ),
+    famille: projectile,
+    stats: (
+      degats: 7.0,
+      cadence: 2.5,
+      nombre: 5.0,
+      portee: 9.0,
+      vitesse: 20.0,
+      zone: 0.0,
+      duree: 0.0,
+      perforation: 1.0,
+      recul: 2.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "+2 flèches",
+      modif: (
+        nombre: 2.0,
+      ),
+    ), (
+      description: "Dégâts +3",
+      modif: (
+        degats: 3.0,
+      ),
+    ), (
+      description: "Portée +3 blocs",
+      modif: (
+        portee: 3.0,
+      ),
+    ), (
+      description: "Tire 20 % plus souvent",
+      modif: (
+        cadence: -0.5,
+      ),
+    ), (
+      description: "+2 flèches, elles traversent 1 ennemi de plus",
+      modif: (
+        nombre: 2.0,
+        perforation: 1.0,
+      ),
+    )],
+    son: "arbalete",
+    eveils: ((
+      nom: "Multitir",
+      description: "+2 flèches.",
+      icone: "item/arrow",
+      ajout: (
+        nombre: 2.0,
+      ),
+    ), (
+      nom: "Flèches perforantes",
+      description: "Traversent 2 ennemis de plus, dégâts +10 %.",
+      icone: "item/spectral_arrow",
+      ajout: (
+        perforation: 2.0,
+      ),
+      part: (
+        degats: 0.1,
+      ),
+    )),
+  ),
+  "pluie_fleches": (
+    nom: "Pluie de flèches",
+    description: "Des flèches tombent du ciel sur le plus gros groupe.",
+    icone: "item/arrow",
+    mecanique: pluie(
+      projectile: "fleche",
+      impactsParSeconde: 7.5,
+    ),
+    famille: projectile,
+    stats: (
+      degats: 6.0,
+      cadence: 6.0,
+      nombre: 1.0,
+      portee: 14.0,
+      vitesse: 0.0,
+      zone: 2.5,
+      duree: 1.6,
+      perforation: 1.0,
+      recul: 1.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "Rayon +0,5 bloc",
+      modif: (
+        zone: 0.5,
+      ),
+    ), (
+      description: "Dégâts +3",
+      modif: (
+        degats: 3.0,
+      ),
+    ), (
+      description: "Dure 0,8 s de plus",
+      modif: (
+        duree: 0.8,
+      ),
+    ), (
+      description: "Tombe 20 % plus souvent",
+      modif: (
+        cadence: -1.2,
+      ),
+    ), (
+      description: "+1 zone",
+      modif: (
+        nombre: 1.0,
+      ),
+    )],
+    son: "arc",
+    eveils: ((
+      nom: "Déluge",
+      description: "Dure 1,5 s de plus, zone +20 %.",
+      icone: "item/feather",
+      ajout: (
+        duree: 1.5,
+      ),
+      part: (
+        zone: 0.2,
+      ),
+    ), (
+      nom: "Flèches de lenteur",
+      description: "Ralentissent de 40 % pendant 1,5 s.",
+      icone: "block/cobweb",
+      etat: (
+        type: ralenti,
+        valeur: 0.4,
+        duree: 1.5,
+      ),
+    )),
+  ),
+  "fleche_ricochet": (
+    nom: "Flèche ricocheuse",
+    description: "Une flèche spectrale rebondit d'ennemi en ennemi.",
+    icone: "item/spectral_arrow",
+    mecanique: ricochet(
+      projectile: "fleche_spectrale",
+      perte: 0.15,
+      distanceRebond: 5.0,
+    ),
+    famille: projectile,
+    stats: (
+      degats: 12.0,
+      cadence: 2.0,
+      nombre: 1.0,
+      portee: 12.0,
+      vitesse: 22.0,
+      zone: 0.0,
+      duree: 0.0,
+      perforation: 3.0,
+      recul: 2.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "+1 rebond",
+      modif: (
+        perforation: 1.0,
+      ),
+    ), (
+      description: "Dégâts +5",
+      modif: (
+        degats: 5.0,
+      ),
+    ), (
+      description: "+1 rebond",
+      modif: (
+        perforation: 1.0,
+      ),
+    ), (
+      description: "Tire 20 % plus souvent",
+      modif: (
+        cadence: -0.4,
+      ),
+    ), (
+      description: "+1 flèche",
+      modif: (
+        nombre: 1.0,
+      ),
+    )],
+    son: "arc",
+    eveils: ((
+      nom: "Rebond sans fin",
+      description: "2 rebonds de plus.",
+      icone: "item/echo_shard",
+      ajout: (
+        perforation: 2.0,
+      ),
+    ), (
+      nom: "Flèche du chasseur",
+      description: "Dégâts +45 %.",
+      icone: "item/ender_eye",
+      part: (
+        degats: 0.45,
+      ),
+    )),
+  ),
+  "fusee": (
+    nom: "Fusée explosive",
+    description: "Une fusée de feu d'artifice qui explose en gerbe colorée.",
+    icone: "item/firework_rocket",
+    mecanique: explosif(
+      projectile: "fusee",
+      gerbe: "artifice",
+      son: "artifice",
+      eclatsAuRang: 6.0,
+    ),
+    famille: projectile,
+    stats: (
+      degats: 18.0,
+      cadence: 3.5,
+      nombre: 1.0,
+      portee: 13.0,
+      vitesse: 14.0,
+      zone: 2.0,
+      duree: 0.0,
+      perforation: 1.0,
+      recul: 5.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "Rayon d'explosion +0,5 bloc",
+      modif: (
+        zone: 0.5,
+      ),
+    ), (
+      description: "Dégâts +8",
+      modif: (
+        degats: 8.0,
+      ),
+    ), (
+      description: "+1 fusée",
+      modif: (
+        nombre: 1.0,
+      ),
+    ), (
+      description: "Tirée 20 % plus souvent",
+      modif: (
+        cadence: -0.7,
+      ),
+    ), (
+      description: "L'explosion se divise en 4 petites explosions",
+      modif: (),
+    )],
+    son: "fusee",
+    eveils: ((
+      nom: "Étoile de feu",
+      description: "Explosion +30 % de zone, qui enflamme (3 dégâts/s pendant 3 s).",
+      icone: "item/firework_star",
+      part: (
+        zone: 0.3,
+      ),
+      etat: (
+        type: brulure,
+        valeur: 3.0,
+        duree: 3.0,
+      ),
+    ), (
+      nom: "Bouquet",
+      description: "+1 fusée.",
+      icone: "item/gunpowder",
+      ajout: (
+        nombre: 1.0,
+      ),
+    )),
+  ),
+  "piege_ronces": (
+    nom: "Piège de ronces",
+    description: "Pose des buissons de baies qui blessent et ralentissent.",
+    icone: "item/sweet_berries",
+    mecanique: piege(
+      image: "block/sweet_berry_bush_stage3",
+      intervalle: 0.5,
+      enracineAuRang: 6.0,
+    ),
+    stats: (
+      degats: 4.0,
+      cadence: 5.0,
+      nombre: 3.0,
+      portee: 0.0,
+      vitesse: 0.0,
+      zone: 1.5,
+      duree: 8.0,
+      perforation: 1.0,
+      recul: 0.0,
+      ralenti: 0.4,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "+1 piège en même temps",
+      modif: (
+        nombre: 1.0,
+      ),
+    ), (
+      description: "Dégâts +3",
+      modif: (
+        degats: 3.0,
+      ),
+    ), (
+      description: "Rayon +0,5 bloc, dure 4 s de plus",
+      modif: (
+        zone: 0.5,
+        duree: 4.0,
+      ),
+    ), (
+      description: "Posé 20 % plus souvent",
+      modif: (
+        cadence: -1.0,
+      ),
+    ), (
+      description: "Ralentit de 55 % et enracine un instant à l’entrée",
+      modif: (
+        ralenti: 0.15,
+      ),
+    )],
+    son: "ronces",
+    eveils: ((
+      nom: "Ronces empoisonnées",
+      description: "Empoisonnent (3 dégâts/s pendant 4 s).",
+      icone: "item/poisonous_potato",
+      etat: (
+        type: poison,
+        valeur: 3.0,
+        duree: 4.0,
+      ),
+    ), (
+      nom: "Grand roncier",
+      description: "+1 piège, zone +30 %.",
+      icone: "item/sweet_berries",
+      ajout: (
+        nombre: 1.0,
+      ),
+      part: (
+        zone: 0.3,
+      ),
+    )),
+  ),
+  "esprit_blaze": (
+    nom: "Esprit de blaze",
+    description: "Un blaze allié flotte près de lui et tire des salves de boules de feu.",
+    icone: "item/blaze_rod",
+    mecanique: invocation(
+      allie: "esprit_blaze",
+      brulureAuRang: 6.0,
+    ),
+    famille: allie,
+    stats: (
+      degats: 6.0,
+      cadence: 10.0,
+      nombre: 1.0,
+      portee: 10.0,
+      vitesse: 14.0,
+      zone: 0.0,
+      duree: 12.0,
+      perforation: 1.0,
+      recul: 1.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "+1 blaze par invocation",
+      modif: (
+        nombre: 1.0,
+      ),
+    ), (
+      description: "Dégâts +3",
+      modif: (
+        degats: 3.0,
+      ),
+    ), (
+      description: "Les blazes restent 4 s de plus",
+      modif: (
+        duree: 4.0,
+      ),
+    ), (
+      description: "Invoqués 20 % plus souvent",
+      modif: (
+        cadence: -2.0,
+      ),
+    ), (
+      description: "+1 blaze ; leurs tirs enflamment",
+      modif: (
+        nombre: 1.0,
+      ),
+    )],
+    son: "tornade",
+    eveils: ((
+      nom: "Blaze ardent",
+      description: "Les tirs enflamment (4 dégâts/s pendant 3 s).",
+      icone: "item/blaze_powder",
+      etat: (
+        type: brulure,
+        valeur: 4.0,
+        duree: 3.0,
+      ),
+    ), (
+      nom: "Blaze tireur",
+      description: "Portée +30 %, dégâts +20 %.",
+      icone: "item/blaze_rod",
+      part: (
+        degats: 0.2,
+        portee: 0.3,
+      ),
+    )),
+  ),
+  "totem_racines": (
+    nom: "Totem des racines",
+    description: "Un totem de palétuvier planté dans la horde attire, ralentit et enracine.",
+    icone: "block/mangrove_roots_side",
+    mecanique: invocation(
+      allie: "totem_racines",
+    ),
+    famille: allie,
+    stats: (
+      degats: 0.0,
+      cadence: 10.0,
+      nombre: 1.0,
+      portee: 0.0,
+      vitesse: 0.0,
+      zone: 3.0,
+      duree: 8.0,
+      perforation: 1.0,
+      recul: 0.0,
+      ralenti: 0.4,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "Rayon +0,7 bloc",
+      modif: (
+        zone: 0.7,
+      ),
+    ), (
+      description: "Le totem reste 4 s de plus",
+      modif: (
+        duree: 4.0,
+      ),
+    ), (
+      description: "Les racines blessent : 3 dégâts par seconde",
+      modif: (
+        degats: 1.5,
+      ),
+    ), (
+      description: "Planté 20 % plus souvent",
+      modif: (
+        cadence: -2.0,
+      ),
+    ), (
+      description: "+1 totem",
+      modif: (
+        nombre: 1.0,
+      ),
+    )],
+    son: "racines",
+    eveils: ((
+      nom: "Racines profondes",
+      description: "Zone +30 %, reste 2 s de plus.",
+      icone: "block/mangrove_roots_side",
+      ajout: (
+        duree: 2.0,
+      ),
+      part: (
+        zone: 0.3,
+      ),
+    ), (
+      nom: "Racines épineuses",
+      description: "Dégâts +4 à chaque pulsation.",
+      icone: "item/sweet_berries",
+      ajout: (
+        degats: 4.0,
+      ),
+    )),
+  ),
+  "esprit_protecteur": (
+    nom: "Esprit protecteur",
+    description: "Un allay le suit, lui donne un bouclier et soigne les alliés blessés.",
+    icone: "block/amethyst_cluster",
+    mecanique: invocation(
+      allie: "allay",
+    ),
+    stats: (
+      degats: 3.0,
+      cadence: 10.0,
+      nombre: 1.0,
+      portee: 0.0,
+      vitesse: 0.0,
+      zone: 0.15,
+      duree: 9999.0,
+      perforation: 1.0,
+      recul: 0.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "+1 PV de bouclier",
+      modif: (
+        degats: 1.0,
+      ),
+    ), (
+      description: "Soigne les alliés de 10 % de plus",
+      modif: (
+        zone: 0.1,
+      ),
+    ), (
+      description: "Soutien 20 % plus fréquent",
+      modif: (
+        cadence: -2.0,
+      ),
+    ), (
+      description: "+1 PV de bouclier",
+      modif: (
+        degats: 1.0,
+      ),
+    ), (
+      description: "+1 allay",
+      modif: (
+        nombre: 1.0,
+      ),
+    )],
+    son: "allay",
+    libelles: {
+      degats: "Bouclier",
+    },
+    statsAffichees: [degats, cadence, nombre],
+    eveils: ((
+      nom: "Chant protecteur",
+      description: "Bouclier +1 PV à chaque chant.",
+      icone: "block/note_block",
+      ajout: (
+        degats: 1.0,
+      ),
+    ), (
+      nom: "Chant rapide",
+      description: "Chante 20 % plus souvent.",
+      icone: "item/clock_00",
+      part: (
+        cadence: -0.2,
+      ),
+    )),
+  ),
+  "golems": (
+    nom: "Golem de fer",
+    description: "Invoque un golem qui écrase les ennemis.",
+    icone: "block/carved_pumpkin",
+    mecanique: invocation(
+      allie: "golem_fer",
+    ),
+    famille: allie,
+    stats: (
+      degats: 30.0,
+      cadence: 16.0,
+      nombre: 1.0,
+      portee: 0.0,
+      vitesse: 0.0,
+      zone: 1.4,
+      duree: 10.0,
+      perforation: 1.0,
+      recul: 10.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "Le golem reste 3 s de plus",
+      modif: (
+        duree: 3.0,
+      ),
+    ), (
+      description: "Dégâts +10",
+      modif: (
+        degats: 10.0,
+      ),
+    ), (
+      description: "Invoqué 20 % plus souvent",
+      modif: (
+        cadence: -3.2,
+      ),
+    ), (
+      description: "Le golem reste 3 s de plus",
+      modif: (
+        duree: 3.0,
+      ),
+    ), (
+      description: "+1 golem, dégâts +10",
+      modif: (
+        degats: 10.0,
+        nombre: 1.0,
+      ),
+    )],
+    son: "golem_invocation",
+    eveils: ((
+      nom: "Colosse",
+      description: "Dégâts +50 %, recul +50 %.",
+      icone: "block/iron_block",
+      part: (
+        degats: 0.5,
+        recul: 0.5,
+      ),
+    ), (
+      nom: "Golem vigilant",
+      description: "Reste 4 s de plus, dégâts +15 %.",
+      icone: "block/poppy",
+      ajout: (
+        duree: 4.0,
+      ),
+      part: (
+        degats: 0.15,
+      ),
+    )),
+  ),
+  "loups": (
+    nom: "Meute de loups",
+    description: "Des loups apprivoisés traquent et mordent les ennemis.",
+    icone: "item/bone",
+    mecanique: invocation(
+      allie: "loup",
+    ),
+    famille: allie,
+    stats: (
+      degats: 5.0,
+      cadence: 7.0,
+      nombre: 2.0,
+      portee: 0.0,
+      vitesse: 0.0,
+      zone: 0.6,
+      duree: 10.0,
+      perforation: 1.0,
+      recul: 2.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "Dégâts +3",
+      modif: (
+        degats: 3.0,
+      ),
+    ), (
+      description: "+1 loup par invocation",
+      modif: (
+        nombre: 1.0,
+      ),
+    ), (
+      description: "Les loups restent 4 s de plus",
+      modif: (
+        duree: 4.0,
+      ),
+    ), (
+      description: "Dégâts +3",
+      modif: (
+        degats: 3.0,
+      ),
+    ), (
+      description: "+1 loup par invocation, dégâts +3",
+      modif: (
+        degats: 3.0,
+        nombre: 1.0,
+      ),
+    )],
+    son: "loup_aboiement",
+    eveils: ((
+      nom: "Meute affamée",
+      description: "Dégâts +35 %.",
+      icone: "item/wolf_armor",
+      part: (
+        degats: 0.35,
+      ),
+    ), (
+      nom: "Loups des neiges",
+      description: "Les morsures ralentissent de 30 % pendant 1 s.",
+      icone: "block/powder_snow",
+      etat: (
+        type: ralenti,
+        valeur: 0.3,
+        duree: 1.0,
+      ),
+    )),
+  ),
+  "vex": (
+    nom: "Vex",
+    description: "Des esprits volants foncent sur les ennemis à travers le décor.",
+    icone: "item/echo_shard",
+    mecanique: invocation(
+      allie: "vex",
+    ),
+    famille: allie,
+    stats: (
+      degats: 4.0,
+      cadence: 6.0,
+      nombre: 2.0,
+      portee: 0.0,
+      vitesse: 0.0,
+      zone: 0.4,
+      duree: 8.0,
+      perforation: 1.0,
+      recul: 1.0,
+      ralenti: 0.0,
+      etourdi: 0.0,
+    ),
+    niveaux: [(
+      description: "+1 vex par invocation",
+      modif: (
+        nombre: 1.0,
+      ),
+    ), (
+      description: "Dégâts +3",
+      modif: (
+        degats: 3.0,
+      ),
+    ), (
+      description: "Invoqués 25 % plus souvent",
+      modif: (
+        cadence: -1.5,
+      ),
+    ), (
+      description: "Dégâts +2",
+      modif: (
+        degats: 2.0,
+      ),
+    ), (
+      description: "+1 vex par invocation, restent 3 s de plus",
+      modif: (
+        nombre: 1.0,
+        duree: 3.0,
+      ),
+    )],
+    son: "vex_invocation",
+    eveils: ((
+      nom: "Vex furieux",
+      description: "Dégâts +40 %.",
+      icone: "item/iron_sword",
+      part: (
+        degats: 0.4,
+      ),
+    ), (
+      nom: "Essaim de vex",
+      description: "+2 vex.",
+      icone: "item/totem_of_undying",
+      ajout: (
+        nombre: 2.0,
+      ),
+    )),
+  ),
+}

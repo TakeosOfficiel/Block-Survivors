@@ -1,0 +1,171 @@
+# Publication de la version Rust aux joueurs (plan, section 5). Jamais sur un simple push :
+# seulement sur un tag « rust-vX.Y.Z » (voie stable) ou « rust-vX.Y.Z-beta.N » (voie bêta),
+# ou à la main pour re-signer les manifestes (ils expirent au bout de 60 jours).
+#
+# 1. Toutes les vérifications de « Version Rust » (format, clippy, tests, robot, chaîne de
+#    mise à jour) : rien n'est publié si une seule échoue.
+# 2. Build « ship » Windows et Linux, avec les clés publiques des manifestes et l'adresse du
+#    relais (variables du dépôt BS_CLES_MAJ et BS_RELAIS), empaqueté par Velopack (vpk) :
+#    installeur et paquet complet, canal « win-<voie> » ou « linux-<voie> ».
+# 3. Signature des manifestes dans l'environnement protégé « publication » (validation à la
+#    main ; secret BS_CLE_PRIVEE), puis publication sur le dépôt public de versions, dans une
+#    release par canal (« rust-win-stable »…) : paquets et installeurs d'abord, manifeste
+#    (version.json) en dernier. Ces releases sont des pré-versions : la « dernière version »
+#    du dépôt reste celle d'Electron tant que la version Rust est en bêta.
+name: Publication Rust
+
+on:
+  push:
+    tags: ['rust-v*']
+  workflow_dispatch:
+    inputs:
+      resigner:
+        description: 'Re-signer les manifestes publiés (nouvelle série et expiration), sans rien construire'
+        type: boolean
+        default: true
+
+concurrency:
+  group: publication-rust
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  DEPOT: TakeosOfficiel/Block-Survivors-version
+  VPK: '1.2.161'
+  # Validité d'un manifeste (jours) ; re-signer avant (workflow lancé à la main)
+  VALIDITE: '60'
+
+jobs:
+  verifications:
+    if: github.event_name == 'push'
+    # Le job Windows appelé demande ce droit (rien n'y est publié hors branche rust)
+    permissions:
+      contents: write
+    uses: ./.github/workflows/rust.yml
+
+  construire:
+    needs: verifications
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            systeme: win
+            exe: block-survivors.exe
+          - os: ubuntu-latest
+            systeme: linux
+            exe: block-survivors
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version et voie (depuis le tag)
+        run: |
+          TAG=${GITHUB_REF_NAME#rust-v}
+          CARGO=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          if [ "${TAG%%-*}" != "$CARGO" ]; then echo "Tag $TAG ≠ version $CARGO de Cargo.toml"; exit 1; fi
+          case "$TAG" in *-beta.*) VOIE=beta ;; *) VOIE=stable ;; esac
+          echo "VERSION=$TAG" >> "$GITHUB_ENV"
+          echo "CANAL=${{ matrix.systeme }}-$VOIE" >> "$GITHUB_ENV"
+      - name: Bibliothèques système (Linux)
+        if: matrix.systeme == 'linux'
+        run: sudo apt-get update -q && sudo apt-get install -y -q pkg-config libwayland-dev libxkbcommon-dev libudev-dev libasound2-dev libx11-dev libxcursor-dev libxrandr-dev libxi-dev squashfs-tools zstd
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+          key: ship
+      - name: Build (profil ship)
+        env:
+          BS_CLES_MAJ: ${{ vars.BS_CLES_MAJ }}
+          BS_RELAIS_DEFAUT: ${{ vars.BS_RELAIS }}
+        run: |
+          if [ -z "$BS_CLES_MAJ" ]; then echo "Variable BS_CLES_MAJ absente : le jeu ne pourrait jamais se mettre à jour."; exit 1; fi
+          if [ -z "$BS_RELAIS_DEFAUT" ]; then echo "Variable BS_RELAIS absente : pas de relais pour la coop."; exit 1; fi
+          cargo build --profile ship -p block-survivors
+      - name: Empaqueter (Velopack)
+        run: |
+          dotnet tool install -g vpk --version "$VPK"
+          mkdir -p appli sortie
+          cp "target/ship/${{ matrix.exe }}" appli/
+          vpk pack -u BlockSurvivors -v "$VERSION" -p appli -e "${{ matrix.exe }}" \
+            -c "$CANAL" --packTitle "Block Survivors" --packAuthors TakeosOfficiel \
+            --delta None -o sortie
+          ls -la sortie
+      - uses: actions/upload-artifact@v4
+        with:
+          name: paquets-${{ matrix.systeme }}
+          path: rust/sortie/
+          retention-days: 7
+
+  publier:
+    needs: construire
+    runs-on: ubuntu-latest
+    environment: publication
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+          key: signer
+      - name: Outil de signature
+        run: cargo build --release -q -p bs-maj --bin bs-signer
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: paquets-*
+          path: rust/paquets
+      - name: Signer et publier, canal par canal
+        env:
+          BS_CLE_PRIVEE: ${{ secrets.BS_CLE_PRIVEE }}
+          BS_DELEGATION: ${{ vars.BS_DELEGATION }}
+          GH_TOKEN: ${{ secrets.VERSION_TOKEN }}
+        run: |
+          if [ -z "$BS_CLE_PRIVEE" ] || [ -z "$GH_TOKEN" ]; then echo "Secrets BS_CLE_PRIVEE ou VERSION_TOKEN absents."; exit 1; fi
+          VERSION=${GITHUB_REF_NAME#rust-v}
+          MIN_COOP=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          for dossier in paquets/paquets-*; do
+            flux=$(ls "$dossier"/releases.*.json)
+            CANAL=$(basename "$flux" .json); CANAL=${CANAL#releases.}
+            # Série : l'heure (croît d'une publication à l'autre)
+            target/release/bs-signer manifeste "$dossier" "$CANAL" "$(date +%s)" "$VALIDITE" "$MIN_COOP"
+            outils/publier-canal.sh "$DEPOT" "$CANAL" "$VERSION" "$MIN_COOP" "$dossier"
+          done
+
+  resigner:
+    if: github.event_name == 'workflow_dispatch' && inputs.resigner
+    runs-on: ubuntu-latest
+    environment: publication
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+          key: signer
+      - name: Outil de signature
+        run: cargo build --release -q -p bs-maj --bin bs-signer
+      - name: Re-signer chaque canal publié
+        env:
+          BS_CLE_PRIVEE: ${{ secrets.BS_CLE_PRIVEE }}
+          BS_DELEGATION: ${{ vars.BS_DELEGATION }}
+          GH_TOKEN: ${{ secrets.VERSION_TOKEN }}
+        run: |
+          for CANAL in win-stable linux-stable win-beta linux-beta; do
+            d=$(mktemp -d)
+            gh release download "rust-$CANAL" --repo "$DEPOT" --pattern "releases.$CANAL.json" --dir "$d" 2>/dev/null || { echo "$CANAL : rien de publié"; continue; }
+            MIN_COOP=$(gh release view "rust-$CANAL" --repo "$DEPOT" --json body --jq .body | sed -n 's/^Coop dès la version \(.*\)\.$/\1/p')
+            target/release/bs-signer manifeste "$d" "$CANAL" "$(date +%s)" "$VALIDITE" "${MIN_COOP:-0.0.0}"
+            gh release upload "rust-$CANAL" "$d/version.json" --repo "$DEPOT" --clobber
+            echo "$CANAL : manifeste re-signé"
+          done

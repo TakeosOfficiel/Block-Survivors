@@ -1,7 +1,8 @@
 # Reste à faire — maps Minecraft et suites
 
 État au 20/10/2026, version 0.16.0 (branche `claude/trusting-meitner-tgaseg`).
-Les cases cochées sont faites ; le reste est classé par priorité.
+Les cases cochées sont faites ; le reste est classé par priorité. Mention « (Rust) » :
+fait dans la version Rust (branche `rust`, état au 04/11/2026).
 
 ## Déjà fait (0.16.0)
 
@@ -27,44 +28,47 @@ Les cases cochées sont faites ; le reste est classé par priorité.
 
 ## Tirs et murs
 
-- [ ] Vérifier que les armes ajoutées par la refonte des classes respectent les murs : seuls les projectiles du joueur et des ennemis les testent aujourd'hui. À contrôler : `ricochets`, `tornades`, `tourbillons`, `orbesArcaniques`, `orbites`, `pluies`, `meteores`, `novas`, `foudre`, `balayages`, tirs des invocations (esprit de blaze)
-- [ ] Explosions et zones d'effet : décider si un mur protège (aujourd'hui non)
+- [ ] (Rust : fait ; un mur plein protège des coups portés au sol — mêlée, novas, explosions, arcs de foudre, zones des talents — mais pas de ce qui tombe du ciel : météores, pluies, impact de la foudre, lame colossale) Vérifier que les armes ajoutées par la refonte des classes respectent les murs : seuls les projectiles du joueur et des ennemis les testent aujourd'hui. À contrôler : `ricochets`, `tornades`, `tourbillons`, `orbesArcaniques`, `orbites`, `pluies`, `meteores`, `novas`, `foudre`, `balayages`, tirs des invocations (esprit de blaze)
+- [ ] (Rust : oui, sauf ce qui tombe du ciel) Explosions et zones d'effet : décider si un mur protège (aujourd'hui non)
 
 ## Maps : contenu et réglages
 
-- [ ] **Panneaux de configuration** posés dans la map : `[zone] Village`, `[ennemis] zombie squelette`, `[boss]` (point d'apparition des boss)
-- [ ] Zones d'ennemis par défaut pour une map importée (aujourd'hui : une seule population pour toute l'arène)
-- [ ] Rapport d'import visible en jeu : liste des blocs inconnus (aujourd'hui seulement dans la console)
-- [ ] Format `.litematic` (Litematica)
-- [ ] Monde entier (dossier de sauvegarde, régions `.mca`) avec choix de la zone
-- [ ] Bedrock (`.mcstructure`)
-- [ ] Importer une map depuis le jeu (glisser le fichier sur la fenêtre), sans passer par GitHub
+- [ ] **Panneaux de configuration** posés dans la map : `[zone] Village`, `[ennemis] zombie squelette` (Rust : fait, voir cartes/LISEZMOI.md), `[boss]` (Rust : fait, lieu d'arrivée et liste des boss, plus `[mini-boss]`)
+- [ ] Zones d'ennemis par défaut pour une map importée (aujourd'hui : une seule population pour toute l'arène) (Rust : fait, carrés de 12 blocs au sol du Nether → population « nether », sous terre → « mine », s'il n'y a ni zone du .json ni panneau `[ennemis]`)
+- [x] (Rust) Rapport d'import visible en jeu : liste des blocs inconnus (aujourd'hui seulement dans la console)
+- [x] (Rust) Format `.litematic` (Litematica)
+- [ ] Monde entier (dossier de sauvegarde, régions `.mca`) avec choix de la zone (Rust : fait en glissant le dossier du monde, zone de 96 × 96 autour du panneau `depart` ; pas de choix de la taille)
+- [x] (Rust) Bedrock (`.mcstructure`) : blocs courants traduits en blocs Java
+- [x] (Rust) Importer une map depuis le jeu (glisser le fichier sur la fenêtre), sans passer par GitHub
 
 ## Maps : affichage
 
-- [ ] Coffres, lits, panneaux, bannières, têtes : vrais modèles (aujourd'hui une boîte simple, ou rien)
-- [ ] Textures animées dans l'atlas (eau, lave, magma, portail) : aujourd'hui figées sur la première image
-- [ ] Eau qui coule (hauteurs 1 à 7) au lieu d'une eau pleine
-- [ ] Teinte selon le biome de la map (aujourd'hui toujours « plaines »)
-- [ ] Plantes et feuillage qui ondulent au vent (shaders), comme dans les arènes du jeu
-- [ ] Blocs lumineux (torches, lanternes, glowstone, lave) qui éclairent vraiment : indispensable pour les caves
-- [ ] Ombres du soleil sur tout le décor (la carte d'ombres ne couvre que l'arène et 6 blocs autour)
-- [ ] Textures gardées en cache pour jouer hors ligne (aujourd'hui téléchargées à chaque lancement)
+- [x] Coffres (simples, piégés, de l'Ender, de cuivre ; doubles, réunis aussi pour Bedrock) et lits : vrais modèles (jeu Rust)
+- [x] Panneaux (modèles vanilla) et têtes (squelette, wither, zombie, creeper, joueur) : vrais modèles (jeu Rust)
+- [x] Bannières (Rust : tissu en laine de leur couleur, sans motifs)
+- [x] (Rust) Motifs des bannières (Java ancien et 1.20.5+, Bedrock, mondes entiers), têtes de dragon et de piglin, chapeau des têtes de joueur et de zombie
+- [x] (Rust) Textures animées dans l'atlas (eau, lave, magma, portail) : aujourd'hui figées sur la première image
+- [x] (Rust) Eau qui coule (hauteurs 1 à 7) au lieu d'une eau pleine (surface plate par bloc, sans pente)
+- [x] (Rust) Teinte selon le biome de la map : biome de chaque colonne du .schem (fondu sur 5 × 5 comme Minecraft, gardé aussi au découpage d'un monde), ou champ `biome` du .json pour toute la map
+- [x] (Rust) Plantes et feuillage qui ondulent au vent (shaders), comme dans les arènes du jeu
+- [x] (Rust) Blocs lumineux (torches, lanternes, glowstone, lave) qui éclairent vraiment : indispensable pour les caves
+- [x] (Rust) Ombres du soleil sur tout le décor (la carte d'ombres ne couvre que l'arène et 6 blocs autour)
+- [x] (Rust) Textures gardées en cache pour jouer hors ligne (aujourd'hui téléchargées à chaque lancement)
 
 ## Relief et caves (gros chantier)
 
-- [ ] Plusieurs niveaux de sol : monter d'un bloc tout seul, escaliers et dalles comme rampes, sauter d'une falaise
-- [ ] Chemin des mobs en 3D (graphe de sols au lieu de la grille plate)
-- [ ] Hauteur pour les entités, projectiles et zones d'effet (aujourd'hui tout est à plat, hauteurs écrites en dur)
-- [ ] Coupe automatique des plafonds au-dessus du joueur (caves, maisons) et murs transparents entre la caméra et le joueur
-- [ ] Apparition des mobs à une distance de marche (pas à vol d'oiseau)
-- [ ] Largeur de passage par case : boss trop gros pour un tunnel de 2 blocs
-- [ ] Échelles et lianes
+- [ ] Plusieurs niveaux de sol : monter d'un bloc tout seul, escaliers et dalles comme rampes, sauter d'une falaise (Rust : fait, un seul sol par colonne, donc pas encore de pont au-dessus d'un chemin)
+- [ ] Chemin des mobs en 3D (graphe de sols au lieu de la grille plate) (Rust : fait sur la grille à hauteurs : marches montées, falaises seulement descendues)
+- [ ] Hauteur pour les entités, projectiles et zones d'effet (aujourd'hui tout est à plat, hauteurs écrites en dur) (Rust : fait, tout se pose sur le sol sous soi ; un tir passe une marche, une paroi de deux blocs l'arrête)
+- [ ] Coupe automatique des plafonds au-dessus du joueur (caves, maisons) et murs transparents entre la caméra et le joueur (Rust : fait, ce qui dépasse ses épaules entre la caméra et lui n'est pas dessiné, dans un disque de 3 blocs ; l'ombre reste)
+- [ ] Apparition des mobs à une distance de marche (pas à vol d'oiseau) (Rust : fait, un point qui oblige à un long détour à pied n'est pris qu'en dernier recours)
+- [ ] Largeur de passage par case : boss trop gros pour un tunnel de 2 blocs (Rust : fait, les gros ennemis prennent un passage où tient tout leur corps ; s'il n'y en a aucun, ils se faufilent quand même)
+- [ ] Échelles et lianes (Rust : fait, une colonne qui en porte fait monter d'autant de blocs, pour le joueur comme pour les mobs)
 
 ## Équilibrage
 
-- [ ] Durée d'une partie : passer de 15 à 20 minutes (montée de difficulté `dureeMontee`, boss, fin de partie)
-- [ ] Nombre de mobs selon la surface jouable de la map (petite map = moins de mobs à la fois)
+- [x] Durée d'une partie : 20 minutes (`dureeMontee` et `dureePartie` à 1200 s ; boss à 5, 10 et 15 min)
+- [x] (Rust) Nombre de mobs selon la surface jouable de la map (petite map = moins de mobs à la fois)
 
 ## Divers
 

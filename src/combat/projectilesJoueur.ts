@@ -15,6 +15,7 @@ import { Pool } from '../utils/pool';
 import type { ArmeEquipee } from './armeEquipee';
 import type { ContexteCombat } from './contexte';
 import { longueur } from '../utils/maths';
+import { alea } from '../utils/aleatoire';
 
 const MAX_TOUCHES = 32;
 
@@ -229,7 +230,7 @@ export class ProjectilesJoueur implements SourceEntites {
     // Éclats : petites explosions tout autour (dernier rang de la Fusée explosive)
     const e = CONFIG.projectiles.eclats;
     for (let k = 0; k < p.eclats; k++) {
-      const a = (k / p.eclats) * Math.PI * 2 + Math.random();
+      const a = (k / p.eclats) * Math.PI * 2 + alea();
       const x = p.x + Math.sin(a) * e.distance;
       const z = p.z + Math.cos(a) * e.distance;
       this.blesserZone(x, z, p.zone * e.rayon, p.degats * e.degats, p.recul * 0.5, p.indexArme);

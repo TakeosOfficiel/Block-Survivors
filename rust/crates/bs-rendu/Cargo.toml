@@ -1,0 +1,28 @@
+[package]
+name = "bs-rendu"
+description = "Rendu Bevy de la simulation : arène, joueur, ennemis, projectiles, caméra"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+bevy.workspace = true
+bs-commun.workspace = true
+bs-regles.workspace = true
+bs-donnees.workspace = true
+bs-monde.workspace = true
+bs-protocole.workspace = true
+bs-reseau.workspace = true
+bs-maj.workspace = true
+serde_json = { version = "1", features = ["preserve_order"] }
+# Provisoire (jusqu'à l'interface, étape 3) : choix des cartes et pilote automatique
+bs-robot.workspace = true
+bs-audio.workspace = true
+bs-sauvegarde.workspace = true
+# Skins importées : lecture et écriture PNG, data URL
+image = { version = "0.25", default-features = false, features = ["png", "webp"] }
+base64 = "0.22"
+
+[lints]
+workspace = true

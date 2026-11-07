@@ -1,0 +1,204 @@
+// Généré depuis la version TypeScript (src/donnees) par outils/importer-donnees.sh.
+// Tant que les deux versions coexistent, modifier src/donnees puis relancer l'import.
+#![enable(implicit_some)]
+(
+  joueur: (
+    invulnerabilite: 0.5,
+    rayon: 0.4,
+    reactivite: 25.0,
+    vitesseRotation: 14.0,
+    collecte: 2.5,
+    rayonRamassage: 0.9,
+  ),
+  apparitions: (
+    dureeMontee: 1200.0,
+    intervalle: (
+      debut: 2.0,
+      fin: 0.35,
+    ),
+    tailleGroupe: (
+      debut: 1.0,
+      fin: 5.0,
+    ),
+    maxSimultanes: (
+      debut: 12.0,
+      fin: 400.0,
+    ),
+    multiplicateurPv: (
+      debut: 1.0,
+      fin: 4.0,
+    ),
+    distanceMin: 8.0,
+    dispersionGroupe: 1.5,
+    surfaceReference: 3000.0,
+    facteurSurfaceMin: 0.3,
+  ),
+  boss: (
+    premierPassage: 300.0,
+    intervalle: 300.0,
+    avertissement: 5.0,
+    pvSelonTemps: false,
+  ),
+  mini_boss: (
+    premierPassage: 90.0,
+    intervalle: 75.0,
+    avertissement: 0.0,
+    pvSelonTemps: true,
+  ),
+  progression: (
+    xpPremierNiveau: 5.0,
+    dureePartie: 1200.0,
+    paliers: [(
+      jusquAuNiveau: 20,
+      increment: 10.0,
+    ), (
+      jusquAuNiveau: 40,
+      increment: 13.0,
+    ), (
+      jusquAuNiveau: None,
+      increment: 16.0,
+    )],
+    cartesParNiveau: 3,
+    relances: 3,
+    emplacementsArmes: 4,
+    emplacementsPassifs: 6,
+    soin: (
+      nom: "Pomme dorée",
+      description: "Rien à améliorer : vous reprenez des forces.",
+      icone: "item/golden_apple",
+      pv: 10.0,
+    ),
+    orbes: [(
+      valeurMin: 1.0,
+      image: 0,
+    ), (
+      valeurMin: 3.0,
+      image: 1,
+    ), (
+      valeurMin: 7.0,
+      image: 2,
+    ), (
+      valeurMin: 17.0,
+      image: 3,
+    ), (
+      valeurMin: 37.0,
+      image: 4,
+    ), (
+      valeurMin: 73.0,
+      image: 5,
+    )],
+    sansFin: (
+      pvParMinute: 0.25,
+      degatsParMinute: 0.1,
+      groupeParMinute: 0.5,
+      groupeMax: 12.0,
+    ),
+  ),
+  plafonds: (
+    delaiMin: 0.5,
+    projectilesBonus: 2.0,
+    critique: 0.6,
+    regeneration: 0.02,
+    bouclier: 0.25,
+    armure: 0.5,
+    surplusAllie: 0.1,
+  ),
+  profite_projectiles: {
+    "balayage": false,
+    "tir": true,
+    "retour": true,
+    "orbite": false,
+    "explosif": true,
+    "foudre": true,
+    "invocation": false,
+    "fissure": false,
+    "chute": false,
+    "tourbillon": false,
+    "heurt": false,
+    "tornade": false,
+    "nova": false,
+    "meteore": false,
+    "orbes": true,
+    "ricochet": true,
+    "pluie": false,
+    "piege": false,
+  },
+  etats: {
+    "brulure": (
+      gerbe: "brulure",
+      periode: 0.3,
+      couleur: (1.0, 0.45, 0.08),
+      force: 0.32,
+      cumulsMax: 3,
+      tic: 0.5,
+    ),
+    "poison": (
+      gerbe: "poison",
+      periode: 0.45,
+      couleur: (0.45, 0.72, 0.2),
+      force: 0.3,
+      cumulsMax: 5,
+      tic: 0.5,
+    ),
+    "saignement": (
+      gerbe: "saignement",
+      periode: 0.4,
+      couleur: (0.75, 0.05, 0.04),
+      force: 0.3,
+      cumulsMax: 3,
+      tic: 0.5,
+    ),
+    "ralenti": (
+      gerbe: "lenteur",
+      periode: 0.45,
+      couleur: (0.55, 0.69, 0.88),
+      force: 0.35,
+    ),
+    "etourdi": (
+      gerbe: "etourdi",
+      periode: 0.35,
+    ),
+    "marque": (
+      gerbe: "marque",
+      periode: 0.5,
+    ),
+  },
+  resistance_boss: (
+    ralenti: 0.5,
+    ralentiMax: 0.25,
+    enracinement: 0.25,
+  ),
+  multijoueur: (
+    joueursMax: 4,
+    parJoueur: (
+      apparitions: 0.6,
+      pvEnnemis: 0.25,
+      pvBoss: 0.7,
+    ),
+    reanimation: (
+      aTerre: 30.0,
+      rayon: 1.6,
+      duree: 3.0,
+      pv: 0.3,
+      protection: 2.0,
+    ),
+    choixCartes: (
+      delai: 20.0,
+      marge: 10.0,
+      protection: 0.25,
+      periodeBouclier: 0.35,
+    ),
+    reseau: (
+      instantanesParSeconde: 15.0,
+      rayonEnvoi: 34.0,
+      rayonVue: 20.0,
+      silenceEntrees: 1.0,
+      chiffresMax: 48,
+      periodeStats: 1.0,
+    ),
+    prediction: (
+      correction: 0.35,
+      teleportation: 3.0,
+    ),
+  ),
+)

@@ -35,6 +35,8 @@ import { apparenceDistante, cheminSkinJoueur } from './reseau/apparence';
 import { ServiceAmis } from './reseau/amis';
 import { EcranSalon, type LancementMultijoueur } from './reseau/ecranSalon';
 import { EcranProfils } from './ui/ecranProfils';
+import { parametresRobot, Robot } from './robot/robot';
+import { semerSimulation } from './utils/aleatoire';
 
 async function demarrer(): Promise<void> {
   suivreEchelleInterface();
@@ -156,6 +158,9 @@ async function demarrer(): Promise<void> {
     await textures.charger(texturesRequises(choix.arene, monde, apparenceDistante(info)));
   }
 
+  // Robot d'équilibrage : aléatoire de la simulation semé avant de créer la partie
+  const robot = parametresRobot();
+  if (robot) semerSimulation(robot.graine);
   jeu = new Jeu(rendu, textures, monde, choix, { sons, options, panneauOptions, sauvegarde, profil, collection, reseau: multijoueur?.session });
   jeu.appliquerOptions(options);
   ecran.etape('Préparation des modèles…');
@@ -168,6 +173,12 @@ async function demarrer(): Promise<void> {
   }
   ecran.masquer();
   amis.definirEtat('partie', null, multijoueur?.session.joueurs.length ?? 1);
+  if (robot) {
+    // Pas de boucle d'affichage : le robot fait avancer la partie lui-même, puis publie son bilan
+    const bilan = await new Robot(jeu.accesRobot()).jouer(robot);
+    Object.assign(window, { bilanRobot: bilan });
+    return;
+  }
   jeu.demarrer();
   if (photo) memoriserPhoto(choix.arene.id, photo);
 

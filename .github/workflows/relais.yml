@@ -1,0 +1,68 @@
+# Relais de coop (docs/RELAIS.md) : sur un tag « relais-vN » ou à la main, teste le relais,
+# le construit pour Linux et, si le serveur est configuré (variable RELAIS_SERVEUR,
+# secret RELAIS_CLE_SSH dans l'environnement protégé « publication »), le déploie par SSH.
+# Le relais ne change que si son protocole ou ses limites changent : il n'est pas publié
+# avec chaque version du jeu.
+name: Relais
+
+on:
+  push:
+    tags: ['relais-v*']
+  workflow_dispatch:
+
+concurrency:
+  group: relais
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: rust
+
+jobs:
+  construire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+          key: relais
+      - name: Tests du relais
+        run: cargo test -p bs-relais
+      - name: Build
+        run: cargo build --release -p bs-relais && strip target/release/bs-relais
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bs-relais
+          path: rust/target/release/bs-relais
+          retention-days: 30
+
+  deployer:
+    needs: construire
+    runs-on: ubuntu-latest
+    environment: publication
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: bs-relais
+          path: rust/relais
+      - name: Déployer sur le serveur
+        env:
+          SERVEUR: ${{ vars.RELAIS_SERVEUR }}
+          PORT: ${{ vars.RELAIS_PORT_SSH }}
+          CLE: ${{ secrets.RELAIS_CLE_SSH }}
+          EMPREINTE: ${{ vars.RELAIS_EMPREINTE_SSH }}
+        run: |
+          if [ -z "$SERVEUR" ] || [ -z "$CLE" ] || [ -z "$EMPREINTE" ]; then
+            echo "Serveur non configuré (RELAIS_SERVEUR, RELAIS_EMPREINTE_SSH, RELAIS_CLE_SSH) : rien de déployé."; exit 0
+          fi
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$CLE" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          # Empreinte du serveur fixée d'avance : pas de confiance au premier contact
+          printf '%s\n' "$EMPREINTE" > ~/.ssh/known_hosts
+          outils/relais/deployer.sh relais/bs-relais "$SERVEUR" "${PORT:-22}"

@@ -12,7 +12,8 @@
     "app": "tsc --noEmit && vite build && electron .",
     "app:dev": "node scripts/app-dev.mjs",
     "exe": "tsc --noEmit && vite build && electron-builder --win nsis --publish never",
-    "linux": "tsc --noEmit && vite build && electron-builder --linux AppImage --publish never"
+    "linux": "tsc --noEmit && vite build && electron-builder --linux AppImage --publish never",
+    "robot": "node scripts/robot.mjs"
   },
   "devDependencies": {
     "@noble/curves": "^2.0.1",

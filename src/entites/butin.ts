@@ -11,6 +11,7 @@ import type { Terrain } from '../monde/navigation';
 import type { Coffres } from './coffres';
 import type { Objets } from './objets';
 import type { DepotXp } from './orbes';
+import { alea } from '../utils/aleatoire';
 
 export class Butin {
   private readonly orbes: DepotXp;
@@ -44,7 +45,7 @@ export class Butin {
       return;
     }
     // Un seul tirage : chaque objet occupe sa part de la probabilité
-    let tirage = Math.random();
+    let tirage = alea();
     for (const id of IDS_OBJETS) {
       tirage -= OBJETS[id].chance;
       if (tirage < 0) {

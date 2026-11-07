@@ -82,6 +82,9 @@ jobs:
           workspaces: rust
       - name: Build Windows (profil ship)
         run: cargo build --profile ship -p block-survivors
+        env:
+          # Relais en ligne écrit dans le build (sinon le jeu cherche un relais local)
+          BS_RELAIS_DEFAUT: ${{ vars.BS_RELAIS }}
       # Prototype à lancer sur un vrai PC : images/s dans le titre de la fenêtre
       - name: Publier dans la pré-version prototype-rust
         if: github.event_name == 'push' && github.ref == 'refs/heads/rust'

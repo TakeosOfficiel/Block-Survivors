@@ -6,7 +6,7 @@
 import type { DefinitionApparitions } from './types';
 
 export const APPARITIONS: DefinitionApparitions = {
-  dureeMontee: 900,                          // 15 minutes
+  dureeMontee: 1200,                         // 20 minutes
   intervalle: { debut: 2, fin: 0.35 },
   tailleGroupe: { debut: 1, fin: 5 },
   maxSimultanes: { debut: 12, fin: 400 },

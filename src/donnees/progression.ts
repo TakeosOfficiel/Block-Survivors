@@ -4,7 +4,7 @@ import type { DefinitionProgression } from './types';
 export const PROGRESSION: DefinitionProgression = {
   // Niveau 2 à 5 XP, puis +10 par niveau jusqu'au 20, +13 jusqu'au 40, +16 ensuite
   xpPremierNiveau: 5,
-  dureePartie: 900,      // 15:00
+  dureePartie: 1200,     // 20:00
   paliers: [
     { jusquAuNiveau: 20, increment: 10 },
     { jusquAuNiveau: 40, increment: 13 },

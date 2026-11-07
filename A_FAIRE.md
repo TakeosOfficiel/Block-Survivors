@@ -67,7 +67,7 @@ fait dans la version Rust (branche `rust`, état au 04/11/2026).
 
 ## Équilibrage
 
-- [ ] Durée d'une partie : passer de 15 à 20 minutes (montée de difficulté `dureeMontee`, boss, fin de partie)
+- [x] Durée d'une partie : 20 minutes (`dureeMontee` et `dureePartie` à 1200 s ; boss à 5, 10 et 15 min)
 - [x] (Rust) Nombre de mobs selon la surface jouable de la map (petite map = moins de mobs à la fois)
 
 ## Divers

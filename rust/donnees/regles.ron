@@ -11,7 +11,7 @@
     rayonRamassage: 0.9,
   ),
   apparitions: (
-    dureeMontee: 900.0,
+    dureeMontee: 1200.0,
     intervalle: (
       debut: 2.0,
       fin: 0.35,
@@ -45,7 +45,7 @@
   ),
   progression: (
     xpPremierNiveau: 5.0,
-    dureePartie: 900.0,
+    dureePartie: 1200.0,
     paliers: [(
       jusquAuNiveau: 20,
       increment: 10.0,

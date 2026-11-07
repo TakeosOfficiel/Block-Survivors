@@ -42,11 +42,11 @@ async fn connecter(url: &str, premiere: Trame<'_>) -> (Socket, [u8; 6], u8) {
     }
 }
 
-/// Fin de partie : la simulation avance de 15 min avant la mesure (et on la chronomètre).
+/// Fin de partie : la simulation avance de 20 min avant la mesure (et on la chronomètre).
 fn simulation_de_fin() -> Simulation {
     let mut s = Simulation::nouvelle(42, Parametres::default());
     let debut = Instant::now();
-    let pas = 15 * 60 * 60;
+    let pas = 20 * 60 * 60;
     for k in 0..pas {
         let a = k as f32 * 0.004;
         s.avancer(Commande {

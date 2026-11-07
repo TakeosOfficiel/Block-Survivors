@@ -318,7 +318,10 @@ impl Recepteur {
     }
 
     /// Corrige la marche prédite d'après la position de l'hôte pour l'entrée `numero`.
-    fn corriger(&self, j: &mut bs_regles::etat::EtatJoueur, numero: u32, x: f32, z: f32) {
+    /// Les positions prédites gardées sont décalées d'autant : sinon les instantanés
+    /// suivants (avant que l'hôte ait vu les entrées corrigées) recorrigeraient le même
+    /// écart et le joueur oscillerait.
+    fn corriger(&mut self, j: &mut bs_regles::etat::EtatJoueur, numero: u32, x: f32, z: f32) {
         let (n, px, pz) = self.historique[numero as usize % HISTORIQUE];
         let (ex, ez) = if n == numero {
             (x - px, z - pz)
@@ -326,11 +329,17 @@ impl Recepteur {
             (x - j.x, z - j.z)
         };
         if ex.abs().max(ez.abs()) > TELEPORTATION {
-            j.x += ex;
-            j.z += ez;
-        } else {
-            j.x += ex * CORRECTION;
-            j.z += ez * CORRECTION;
+            j.x = x;
+            j.z = z;
+            self.historique = [(u32::MAX, 0.0, 0.0); HISTORIQUE];
+            return;
+        }
+        let (cx, cz) = (ex * CORRECTION, ez * CORRECTION);
+        j.x += cx;
+        j.z += cz;
+        for h in &mut self.historique {
+            h.1 += cx;
+            h.2 += cz;
         }
     }
 }

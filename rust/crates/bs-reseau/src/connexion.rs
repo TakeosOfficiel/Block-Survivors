@@ -131,7 +131,9 @@ fn boucle(adresse: &str, ordres: &Receiver<Ordre>, recus: &Sender<Recu>) {
     let mut ws = match tungstenite::connect(adresse) {
         Ok((ws, _)) => ws,
         Err(e) => {
-            let _ = recus.send(Recu::Fermee(Some(e.to_string())));
+            // Message lisible pour le joueur ; le détail technique reste entre parenthèses
+            let raison = format!("Serveur de coop injoignable ({e})");
+            let _ = recus.send(Recu::Fermee(Some(raison)));
             return;
         }
     };

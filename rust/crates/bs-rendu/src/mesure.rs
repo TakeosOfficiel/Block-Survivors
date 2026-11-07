@@ -18,6 +18,11 @@ pub struct Mesure {
 }
 
 impl Mesure {
+    /// Durée moyenne d'un pas de simulation depuis le dernier relevé (µs).
+    pub fn pas_moyen_us(&self) -> f64 {
+        self.duree_pas.as_secs_f64() * 1e6 / self.pas.max(1) as f64
+    }
+
     pub fn ajouter_pas(&mut self, d: Duration) {
         self.pas += 1;
         self.duree_pas += d;

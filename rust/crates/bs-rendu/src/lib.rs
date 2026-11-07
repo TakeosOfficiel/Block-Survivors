@@ -17,6 +17,7 @@ mod camera;
 mod carte_mc;
 mod chargement;
 mod coequipiers;
+mod console;
 mod coop;
 mod creatures;
 mod dessins;
@@ -305,6 +306,7 @@ impl Plugin for PluginJeu {
                     armes::construire,
                     hud::construire,
                     hud::etiquette::creer,
+                    console::creer,
                 ),
             )
             .add_systems(
@@ -359,6 +361,10 @@ impl Plugin for PluginJeu {
                     .after(camera::suivre)
                     .run_if(in_state(Phase::Partie)),
             )
+            .init_resource::<console::Console>()
+            .add_systems(PreUpdate, console::clavier.after(bevy::input::InputSystems))
+            .add_systems(Update, console::afficher.run_if(in_state(Phase::Partie)))
+            .add_systems(OnExit(Phase::Partie), console::quitter)
             .add_systems(
                 OnExit(Phase::Partie),
                 (camera::liberer_souris, transparence::arreter),

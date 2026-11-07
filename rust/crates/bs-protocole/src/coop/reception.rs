@@ -33,6 +33,10 @@ pub struct Recepteur {
     anciens: Vec<(u32, f32, f32, f32)>,
     /// Un instantané a été reçu depuis le début.
     pub recu: bool,
+    /// Instantanés appliqués depuis le début (panneau de mesures).
+    pub instantanes: u32,
+    /// Plus grand écart de prédiction mesuré (blocs) ; le panneau de mesures le remet à 0.
+    pub ecart_max: f32,
 }
 
 impl Recepteur {
@@ -52,6 +56,8 @@ impl Recepteur {
             cibles: Vec::with_capacity(bs_regles::ennemis::CAPACITE),
             anciens: Vec::with_capacity(bs_regles::ennemis::CAPACITE),
             recu: false,
+            instantanes: 0,
+            ecart_max: 0.0,
         }
     }
 
@@ -94,6 +100,7 @@ impl Recepteur {
             return false;
         }
         self.dernier_numero = numero;
+        self.instantanes += 1;
         let premier = !std::mem::replace(&mut self.recu, true);
         let d = p.d;
         let e = &mut p.etat;
@@ -328,6 +335,7 @@ impl Recepteur {
         } else {
             (x - j.x, z - j.z)
         };
+        self.ecart_max = self.ecart_max.max(libm::hypotf(ex, ez));
         if ex.abs().max(ez.abs()) > TELEPORTATION {
             j.x = x;
             j.z = z;

@@ -93,12 +93,13 @@ pub fn zones_par_defaut(
     };
     let nature_case = |ix: usize, iz: usize| {
         let (x, z) = (zone.x0 + ix as i32, zone.z0 + iz as i32);
-        let sol = nom(x, zone.niveau - 1, z);
+        let y = zone.niveaux[iz * zone.largeur + ix];
+        let sol = nom(x, y - 1, z);
         if du_nether(sol) {
             return Some(Nature::Nether);
         }
         let plafond = (2..=PLAFOND_MAX)
-            .map(|h| nom(x, zone.niveau + h, z))
+            .map(|h| nom(x, y + h, z))
             .find(|n| *n != "air" && !n.ends_with("cave_air"));
         (de_pierre(sol) && plafond.is_some_and(de_pierre)).then_some(Nature::Mine)
     };

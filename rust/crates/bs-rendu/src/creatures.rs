@@ -59,7 +59,7 @@ pub fn placer(
     {
         let rendu = rendus.creature(k);
         calculer_rotations(&rendu.modele, etat, &mut rendu.pose.rotations);
-        let y = hauteur_flottement(&rendu.modele, etat);
+        let y = hauteur_flottement(&rendu.modele, etat) + p.carte.hauteur_lissee(r.x, r.z);
         let pose = &mut rendu.pose;
         pose.position = Vec3::new(r.x, y, r.z);
         pose.angle = atan2(r.dir_x, r.dir_z);
@@ -69,7 +69,9 @@ pub fn placer(
         pose.surcouche = [0.0; 4];
         rendu.ajouter(commandes, q);
         let ombre = p.d.allies.creatures_talents[k].rayon_ombre;
-        ombres.0.push([r.x, r.z, ombre]);
+        ombres
+            .0
+            .push([r.x, r.z, ombre, p.carte.hauteur_lissee(r.x, r.z)]);
     }
     let Some(k) = index(p, CROCS) else {
         return;
@@ -92,7 +94,11 @@ pub fn placer(
         if let Some(b) = machoire_b {
             pose.rotations[b].z = ouverture * OUVERTURE;
         }
-        pose.position = Vec3::new(c.x, -PROFONDEUR * (1.0 - sortie), c.z);
+        pose.position = Vec3::new(
+            c.x,
+            p.carte.hauteur(c.x, c.z) - PROFONDEUR * (1.0 - sortie),
+            c.z,
+        );
         pose.angle = c.angle;
         pose.inclinaison = 0.0;
         pose.echelle_xz = 1.0;

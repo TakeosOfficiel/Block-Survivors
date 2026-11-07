@@ -257,7 +257,8 @@ impl Partie {
                 p.etat.joueur.x + 1.5 * bs_commun::maths::sin(angle),
                 p.etat.joueur.z + 1.5 * bs_commun::maths::cos(angle),
             );
-            let (x, z) = p.carte.resoudre_collision(x, z, p.d.regles.joueur.rayon);
+            let h = p.carte.hauteur(p.etat.joueur.x, p.etat.joueur.z);
+            let (x, z) = p.carte.resoudre_collision(x, z, p.d.regles.joueur.rayon, h);
             p.etat.joueur.x = x;
             p.etat.joueur.z = z;
             p.preparer_joueur();

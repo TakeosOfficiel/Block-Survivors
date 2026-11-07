@@ -88,11 +88,12 @@ impl Partie {
             * self.carte.vitesse_sol(j.x, j.z, false);
         j.vx += (dx * vitesse - j.vx) * k;
         j.vz += (dz * vitesse - j.vz) * k;
+        let h = self.carte.hauteur(j.x, j.z);
         j.x += j.vx * dt;
         j.z += j.vz * dt;
 
         // Décor et bords : on glisse le long des obstacles, la vitesse bloquée est annulée
-        let (cx, cz) = self.carte.resoudre_collision(j.x, j.z, base.rayon);
+        let (cx, cz) = self.carte.resoudre_collision(j.x, j.z, base.rayon, h);
         if cx != j.x {
             j.vx = 0.0;
         }

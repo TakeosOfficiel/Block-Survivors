@@ -88,8 +88,9 @@ impl Secousse {
 
 #[derive(Component)]
 pub struct CameraJeu {
-    /// Point suivi (lissé).
+    /// Point suivi (lissé), et hauteur de son sol.
     x: f32,
+    y: f32,
     z: f32,
     distance: f32,
     /// Zoom voulu de chaque vue (gardé d'un changement de vue à l'autre).
@@ -106,14 +107,15 @@ pub struct CameraJeu {
 #[derive(Component)]
 pub struct AideSouris;
 
-/// Point que la caméra doit suivre (le joueur, interpolé).
+/// Point que la caméra doit suivre (le joueur, interpolé) et hauteur de son sol.
 #[derive(Resource, Default)]
-pub struct Cible(pub Vec2);
+pub struct Cible(pub Vec2, pub f32);
 
 pub fn creer_camera(commandes: &mut Commands, depart: Vec2, ciel: Color) {
     commandes.spawn((
         CameraJeu {
             x: depart.x,
+            y: 0.0,
             z: depart.y,
             distance: DISTANCE,
             distance_cible: DISTANCE,
@@ -262,6 +264,7 @@ pub fn suivre(
             c.distance_cible
         };
         c.x = cible.0.x;
+        c.y = cible.1;
         c.z = cible.0.y;
         if let Projection::Perspective(p) = &mut *projection {
             p.fov = if c.troisieme {
@@ -294,6 +297,7 @@ pub fn suivre(
     let k = facteur_lissage(suivi, dt);
     c.x += (cible.0.x - c.x) * k;
     c.z += (cible.0.y - c.z) * k;
+    c.y += (cible.1 - c.y) * k;
     c.distance += (cible_distance - c.distance) * kz;
 
     if let Some(s) = crate::scene::scene() {
@@ -318,14 +322,14 @@ pub fn suivre(
         let horizontal = ct * c.distance;
         t.translation = Vec3::new(
             c.x + sl * horizontal + decalage.x,
-            (HAUTEUR_VISEE_TROISIEME + st * c.distance).max(0.3),
+            c.y + (HAUTEUR_VISEE_TROISIEME + st * c.distance).max(0.3),
             c.z + cl * horizontal + decalage.y,
         );
         t.rotation = Quat::from_euler(EulerRot::YXZ, c.lacet, -c.tangage, 0.0);
     } else {
         t.translation = Vec3::new(
             c.x + decalage.x,
-            HAUTEUR_VISEE + c.distance * sin_i,
+            c.y + HAUTEUR_VISEE + c.distance * sin_i,
             c.z + decalage.y + c.distance * cos_i,
         );
         t.rotation = Quat::from_rotation_x(-sin_i.asin());

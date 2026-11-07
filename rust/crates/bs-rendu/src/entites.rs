@@ -247,11 +247,17 @@ pub fn placer_entites(
     // Joueur
     let j = &p.etat.joueur;
     let ici = prec.joueur.lerp(Vec2::new(j.x, j.z), t);
+    let sol = |x: f32, z: f32| p.carte.hauteur_lissee(x, z);
     cible.0 = ici;
+    cible.1 = sol(ici.x, ici.y);
     let r = rendus.joueur();
     calculer_rotations(&r.modele, &anim.joueur, &mut r.pose.rotations);
     let pose = &mut r.pose;
-    pose.position = Vec3::new(ici.x, hauteur_flottement(&r.modele, &anim.joueur), ici.y);
+    pose.position = Vec3::new(
+        ici.x,
+        cible.1 + hauteur_flottement(&r.modele, &anim.joueur),
+        ici.y,
+    );
     if crate::scene::scene().is_some() {
         // Capture de scène : le héros de l'accueil prendra sa place
         pose.position.y -= 1000.0;
@@ -272,7 +278,7 @@ pub fn placer_entites(
         .apparence
         .rayon_ombre;
     // Capture de scène : l'ombre reste, le héros de l'accueil s'y tiendra
-    ombres.0.push([ici.x, ici.y, rayon]);
+    ombres.0.push([ici.x, ici.y, rayon, cible.1]);
     crate::coequipiers::placer(
         p,
         (&suivi, &coequipiers),
@@ -300,7 +306,12 @@ pub fn placer_entites(
         let r = rendus.ennemi(e.index_type);
         calculer_rotations(&r.modele, etat, &mut r.pose.rotations);
         let pose = &mut r.pose;
-        pose.position = Vec3::new(pos.x, hauteur_flottement(&r.modele, etat) * ech, pos.y);
+        let y_sol = sol(pos.x, pos.y);
+        pose.position = Vec3::new(
+            pos.x,
+            y_sol + hauteur_flottement(&r.modele, etat) * ech,
+            pos.y,
+        );
         pose.angle = e.angle;
         let mort = e.mort >= 0.0;
         pose.inclinaison = if mort {
@@ -340,7 +351,7 @@ pub fn placer_entites(
                 .push([pos.x, y, pos.y, e.pv / e.pv_max, BARRE_MINI_BOSS]);
         }
         r.ajouter(&mut commandes, &mut q);
-        ombres.0.push([pos.x, pos.y, rayon]);
+        ombres.0.push([pos.x, pos.y, rayon, y_sol]);
     }
 
     // Alliés
@@ -358,10 +369,12 @@ pub fn placer_entites(
         let r = rendus.allie(a.type_allie);
         calculer_rotations(&r.modele, etat, &mut r.pose.rotations);
         let pose = &mut r.pose;
-        let y = match a.def.vol {
-            Some(v) => v + (a.vie * 4.0).sin() * 0.12,
-            None => hauteur_flottement(&r.modele, etat),
-        };
+        let y_sol = sol(pos.x, pos.y);
+        let y = y_sol
+            + match a.def.vol {
+                Some(v) => v + (a.vie * 4.0).sin() * 0.12,
+                None => hauteur_flottement(&r.modele, etat),
+            };
         pose.position = Vec3::new(pos.x, y, pos.y);
         pose.angle = a.angle;
         pose.inclinaison = 0.0;
@@ -369,7 +382,9 @@ pub fn placer_entites(
         pose.echelle_y = a.echelle;
         pose.surcouche = if a.blessure > 0.0 { rouge() } else { [0.0; 4] };
         r.ajouter(&mut commandes, &mut q);
-        ombres.0.push([pos.x, pos.y, a.def.apparence.rayon_ombre]);
+        ombres
+            .0
+            .push([pos.x, pos.y, a.def.apparence.rayon_ombre, y_sol]);
         // Barre de vie dès la première blessure
         if a.pv < a.pv_max {
             let y = y + r.modele.hauteur + 0.35;
@@ -410,7 +425,7 @@ pub fn placer_entites(
             r.pose.rotations[k] = Vec3::new(x, 0.0, 0.0);
         }
         let pose = &mut r.pose;
-        pose.position = Vec3::new(c.x, HAUTEUR_COFFRE, c.z);
+        pose.position = Vec3::new(c.x, sol(c.x, c.z) + HAUTEUR_COFFRE, c.z);
         pose.angle = c.angle + PI;
         pose.inclinaison = 0.0;
         pose.echelle_xz = 1.0;

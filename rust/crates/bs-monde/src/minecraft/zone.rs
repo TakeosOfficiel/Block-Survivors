@@ -1,21 +1,25 @@
 //! Zone jouable d'une schématique (src/minecraft/importation.ts) : à partir du point de
-//! départ (panneau « depart », sinon le centre), toutes les cases au même niveau,
-//! reliées à pied, sur un sol plein avec deux blocs libres au-dessus. Ce qui l'entoure
-//! (collines, clôtures, champignons géants…) devient le décor. Puis la carte de
-//! collision du rectangle de la zone.
+//! départ (panneau « depart », sinon le centre), toutes les colonnes reliées à pied, sur
+//! un sol plein avec deux blocs libres au-dessus. On monte d'un bloc (ou d'une dalle)
+//! tout seul et l'on saute d'une falaise d'au plus `CHUTE` blocs ; une colonne n'a qu'un
+//! sol, le premier atteint. Ce qui reste hors d'atteinte (murs, clôtures, champignons
+//! géants…) devient le décor. Puis la carte de collision du rectangle de la zone.
 
 use std::collections::VecDeque;
 
 use super::proprietes::{Collision, Physique};
 use super::schematique::Schematique;
-use crate::carte::{BLOQUE_MARCHE, BLOQUE_TIR, CarteMonde};
+use crate::carte::{BLOQUE_MARCHE, BLOQUE_TIR, CarteMonde, MARCHE};
 
 const PRATICABLE: u8 = 1;
 const LIQUIDE: u8 = 2;
+/// Plus haute falaise dont on saute (blocs).
+const CHUTE: i32 = 6;
 
 #[derive(Debug, Clone)]
 pub struct Zone {
-    /// Niveau des pieds (y de la première case libre au-dessus du sol).
+    /// Niveau des pieds au départ (y de la première case libre au-dessus du sol) : la
+    /// hauteur 0 du jeu.
     pub niveau: i32,
     /// Rectangle englobant, en cases de la schématique.
     pub x0: i32,
@@ -24,6 +28,10 @@ pub struct Zone {
     pub profondeur: usize,
     /// Cases du rectangle atteintes (1 : sol praticable, 2 : liquide au sol).
     pub cases: Vec<u8>,
+    /// Niveau des pieds de chaque case atteinte (celui d'une voisine atteinte sinon).
+    pub niveaux: Vec<i32>,
+    /// Hauteur du sol de chaque case par rapport à `niveau` (dalles comprises).
+    pub sols: Vec<f32>,
     pub depart_x: i32,
     pub depart_z: i32,
 }
@@ -54,6 +62,28 @@ impl Volume<'_> {
             && self.libre(x, y, z)
             && self.libre(x, y + 1, z)
     }
+
+    /// Hauteur absolue du sol sous des pieds au niveau `y`.
+    fn sol(&self, x: i32, y: i32, z: i32) -> f32 {
+        (y - 1) as f32 + self.physique(x, y - 1, z).map_or(1.0, |p| p.dessus)
+    }
+
+    /// Niveau des pieds en arrivant en (x, z) depuis une voisine aux pieds en `y` et au
+    /// sol à `sol` : une marche plus haut, au même niveau ou en contrebas.
+    fn arrivee(&self, x: i32, z: i32, y: i32, sol: f32) -> Option<i32> {
+        if self.debout(x, y + 1, z) && self.sol(x, y + 1, z) <= sol + MARCHE {
+            return Some(y + 1);
+        }
+        for yy in (y - CHUTE..=y).rev() {
+            if !self.libre(x, yy + 1, z) {
+                return None;
+            }
+            if self.debout(x, yy, z) {
+                return (self.sol(x, yy, z) <= sol + MARCHE).then_some(yy);
+            }
+        }
+        None
+    }
 }
 
 pub fn trouver_zone(s: &Schematique, physiques: &[Physique]) -> Result<Zone, String> {
@@ -78,9 +108,10 @@ pub fn trouver_zone(s: &Schematique, physiques: &[Physique]) -> Result<Zone, Str
         "Aucun sol praticable au point de départ : pose un panneau « depart » au sol, dans l'arène.",
     )?;
 
-    // Parcours en largeur des cases reliées au même niveau (on traverse les étangs)
+    // Parcours en largeur des colonnes reliées à pied (on traverse les étangs)
     let (lu, pu) = (s.largeur, s.profondeur);
     let mut etat = vec![0u8; lu * pu];
+    let mut niveaux = vec![niveau; lu * pu];
     let mut file = VecDeque::new();
     let c0 = depart_z as usize * lu + depart_x as usize;
     etat[c0] = PRATICABLE;
@@ -91,22 +122,31 @@ pub fn trouver_zone(s: &Schematique, physiques: &[Physique]) -> Result<Zone, Str
         max_x = max_x.max(x);
         min_z = min_z.min(z);
         max_z = max_z.max(z);
+        let c = z as usize * lu + x as usize;
+        let y = niveaux[c];
+        let sol = if etat[c] == LIQUIDE {
+            (y - 1) as f32 + 1.0
+        } else {
+            v.sol(x, y, z)
+        };
         for (dx, dz) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
             let (nx, nz) = (x + dx, z + dz);
             if nx < 0 || nz < 0 || nx >= l || nz >= p {
                 continue;
             }
-            let c = nz as usize * lu + nx as usize;
-            if etat[c] != 0 {
+            let n = nz as usize * lu + nx as usize;
+            if etat[n] != 0 {
                 continue;
             }
-            if v.debout(nx, niveau, nz) {
-                etat[c] = PRATICABLE;
-            } else if v.collision(nx, niveau - 1, nz) == Some(Collision::Liquide)
-                && v.libre(nx, niveau, nz)
-                && v.libre(nx, niveau + 1, nz)
+            if let Some(yy) = v.arrivee(nx, nz, y, sol) {
+                etat[n] = PRATICABLE;
+                niveaux[n] = yy;
+            } else if v.collision(nx, y - 1, nz) == Some(Collision::Liquide)
+                && v.libre(nx, y, nz)
+                && v.libre(nx, y + 1, nz)
             {
-                etat[c] = LIQUIDE;
+                etat[n] = LIQUIDE;
+                niveaux[n] = y;
             } else {
                 continue;
             }
@@ -116,9 +156,42 @@ pub fn trouver_zone(s: &Schematique, physiques: &[Physique]) -> Result<Zone, Str
     let largeur = (max_x - min_x + 1) as usize;
     let profondeur = (max_z - min_z + 1) as usize;
     let mut cases = vec![0u8; largeur * profondeur];
+    let mut niv = vec![niveau; largeur * profondeur];
+    let mut sols = vec![0.0; largeur * profondeur];
     for z in 0..profondeur {
         for x in 0..largeur {
-            cases[z * largeur + x] = etat[(min_z as usize + z) * lu + min_x as usize + x];
+            let i = (min_z as usize + z) * lu + min_x as usize + x;
+            cases[z * largeur + x] = etat[i];
+            niv[z * largeur + x] = niveaux[i];
+        }
+    }
+    // Hors parcours : le niveau d'une voisine atteinte (pour les murets et les tirs)
+    for _ in 0..2 {
+        for z in 0..profondeur {
+            for x in 0..largeur {
+                let c = z * largeur + x;
+                if cases[c] != 0 {
+                    continue;
+                }
+                let voisins = [(1, 0), (-1, 0), (0, 1), (0, -1)].map(|(dx, dz)| {
+                    let (nx, nz) = (x as i64 + dx, z as i64 + dz);
+                    (nx >= 0 && nz >= 0 && nx < largeur as i64 && nz < profondeur as i64)
+                        .then(|| nz as usize * largeur + nx as usize)
+                });
+                if let Some(n) = voisins.into_iter().flatten().find(|&n| cases[n] != 0) {
+                    niv[c] = niv[n];
+                }
+            }
+        }
+    }
+    for z in 0..profondeur {
+        for x in 0..largeur {
+            let c = z * largeur + x;
+            let (wx, wz) = (min_x + x as i32, min_z + z as i32);
+            sols[c] = match cases[c] {
+                PRATICABLE => v.sol(wx, niv[c], wz) - niveau as f32,
+                _ => (niv[c] - niveau) as f32,
+            };
         }
     }
     Ok(Zone {
@@ -128,6 +201,8 @@ pub fn trouver_zone(s: &Schematique, physiques: &[Physique]) -> Result<Zone, Str
         largeur,
         profondeur,
         cases,
+        niveaux: niv,
+        sols,
         depart_x,
         depart_z,
     })
@@ -143,11 +218,10 @@ pub fn construire_carte(s: &Schematique, physiques: &[Physique], zone: &Zone) ->
         for ix in 0..zone.largeur {
             let c = iz * zone.largeur + ix;
             let (x, z) = (zone.x0 + ix as i32, zone.z0 + iz as i32);
-            let corps = [
-                v.physique(x, zone.niveau, z),
-                v.physique(x, zone.niveau + 1, z),
-            ];
-            let sol = v.physique(x, zone.niveau - 1, z);
+            let y = zone.niveaux[c];
+            carte.hauteurs[c] = zone.sols[c];
+            let corps = [v.physique(x, y, z), v.physique(x, y + 1, z)];
+            let sol = v.physique(x, y - 1, z);
             if zone.cases[c] != PRATICABLE {
                 carte.drapeaux[c] |= BLOQUE_MARCHE;
                 if corps

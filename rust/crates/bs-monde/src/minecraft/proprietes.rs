@@ -60,6 +60,8 @@ pub struct Physique {
     pub toile: bool,
     /// Dégâts par seconde (sol ou bloc traversé).
     pub degats: Option<f32>,
+    /// Haut de la forme d'un bloc plein, en blocs (0,5 : dalle du bas ; 1,5 : clôture).
+    pub dessus: f32,
 }
 
 impl Physique {
@@ -69,6 +71,7 @@ impl Physique {
             ralentit: None,
             toile: false,
             degats: None,
+            dessus: 1.0,
         }
     }
 }
@@ -180,7 +183,10 @@ pub fn physique_de(b: &BlocCuit) -> Physique {
     if haut - bas <= 3.0 {
         return avec(Collision::Vide);
     }
-    avec(Collision::Plein)
+    Physique {
+        dessus: (haut / 16.0).clamp(0.0, 1.5),
+        ..avec(Collision::Plein)
+    }
 }
 
 /// Le liquide du bloc pour l'affichage (eau des blocs « waterlogged » comprise).

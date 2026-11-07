@@ -247,7 +247,10 @@ impl Partie {
             o.x += dx / d * pas;
             o.z += dz / d * pas;
             // Une orbe lancée se brise sur le décor
-            if self.carte.touche_tir(o.x, o.z, RAYON_DECOR) {
+            if self
+                .carte
+                .touche_tir(o.x, o.z, RAYON_DECOR, self.carte.hauteur(o.x, o.z))
+            {
                 self.ev.gerbe("impactArcane", o.x, 1.0, o.z);
                 self.armes.traque.orbes.swap_remove(i);
                 continue;
@@ -430,7 +433,10 @@ impl Partie {
             f.x += dir_x * pas;
             f.z += dir_z * pas;
             // Arrêtée par le décor, comme les flèches tirées
-            if self.carte.touche_tir(f.x, f.z, RAYON_DECOR) {
+            if self
+                .carte
+                .touche_tir(f.x, f.z, RAYON_DECOR, self.carte.hauteur(f.x, f.z))
+            {
                 self.ev.gerbe("impactFleche", f.x, 1.2, f.z);
                 self.armes.traque.ricochets.swap_remove(i);
                 continue;

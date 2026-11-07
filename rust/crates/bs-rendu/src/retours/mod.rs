@@ -182,6 +182,8 @@ pub fn recevoir(
     if effets.vitrine {
         vitrine(&jeu, &mut retours);
     }
+    // Hauteurs des événements : au-dessus du sol sous eux
+    let sol = |x: f32, y: f32, z: f32| Vec3::new(x, y + jeu.partie.carte.hauteur_lissee(x, z), z);
     for ev in &jeu.partie.ev.liste {
         match *ev {
             Evenement::Gerbe {
@@ -190,9 +192,7 @@ pub fn recevoir(
                 x,
                 y,
                 z,
-            } => retours
-                .particules
-                .emettre(d, gerbe, icone, Vec3::new(x, y, z)),
+            } => retours.particules.emettre(d, gerbe, icone, sol(x, y, z)),
             Evenement::Degats {
                 x,
                 y,
@@ -201,7 +201,7 @@ pub fn recevoir(
                 style,
             } => {
                 if options.chiffres_degats && crate::scene::scene().is_none() {
-                    retours.chiffres.ajouter(Vec3::new(x, y, z), valeur, style);
+                    retours.chiffres.ajouter(sol(x, y, z), valeur, style);
                 }
             }
             Evenement::Secousse(force) => {

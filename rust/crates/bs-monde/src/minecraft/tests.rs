@@ -330,3 +330,62 @@ fn zone_du_nether_par_defaut() {
     assert_eq!(z.rect, [-2.5, -2.5, 2.5, 2.5]);
     assert!(z.ennemis.iter().any(|e| e.ennemi == "piglin_zombifie"));
 }
+
+/// Un couloir à relief : on monte deux marches d'un bloc, on saute d'une falaise de deux
+/// blocs, mais on ne gravit ni la falaise ni le pilier du bout.
+#[test]
+fn relief_marches_et_falaise() {
+    // Niveau des pieds de chaque colonne du couloir (z = 1), murs pleins de côté
+    let pieds = [1, 1, 1, 2, 3, 3, 1, 1, 5];
+    let (l, h, p) = (pieds.len(), 6, 3);
+    let mut blocs = vec![0u16; l * h * p];
+    for (x, &n) in pieds.iter().enumerate() {
+        for y in 0..h {
+            for z in 0..p {
+                let plein = y == 0 || (z != 1 && y < h) || (z == 1 && y < n);
+                if plein {
+                    blocs[(y * p + z) * l + x] = 1;
+                }
+            }
+        }
+    }
+    let s = Schematique {
+        largeur: l,
+        hauteur: h,
+        profondeur: p,
+        palette: ["air", "stone"].map(String::from).to_vec(),
+        blocs,
+        panneaux: vec![Panneau {
+            x: 1,
+            y: 1,
+            z: 1,
+            texte: "depart".into(),
+        }],
+        version_donnees: 0,
+        biome: None,
+        grille_biomes: None,
+    };
+    let blocs = cuire(&s.palette, &fichiers()).expect("cuisson");
+    let d = bs_donnees::Donnees::embarquees().expect("données");
+    let c = cartes()[0];
+    let a = importer(&d, definition(&d, &c).expect("définition"), &s, &blocs).expect("zone");
+    assert_eq!((a.zone.largeur, a.zone.profondeur), (8, 1));
+    assert_eq!(a.carte.hauteurs, [0.0, 0.0, 0.0, 1.0, 2.0, 2.0, 0.0, 0.0]);
+    assert!(a.carte.pas_possible(2, 3), "une marche d'un bloc");
+    assert!(a.carte.pas_possible(5, 6), "on saute de la falaise");
+    assert!(!a.carte.pas_possible(6, 5), "on ne la gravit pas");
+    // Champ de flux vers le bas du couloir : le haut y descend, le pied de la falaise
+    // ne remonte pas
+    let mut flux = crate::navigation::ChampDeFlux::nouveau(&a.carte);
+    let (x0, z0) = a.carte.centre(0);
+    flux.maj(&a.carte, x0, z0);
+    let (x4, z4) = a.carte.centre(4);
+    let (x7, z7) = a.carte.centre(7);
+    assert_eq!(flux.distance_marche(&a.carte, x4, z4), Some(4));
+    assert_eq!(flux.distance_marche(&a.carte, x7, z7), None);
+    // Collision : du pied de la falaise, la paroi arrête ; d'en haut, on descend
+    let (x, _) = a.carte.resoudre_collision(x0 + 5.6, z0, 0.3, 0.0);
+    assert!(x >= x0 + 5.8 - 1e-4, "repoussé contre la paroi : {x}");
+    let (x, _) = a.carte.resoudre_collision(x0 + 5.6, z0, 0.3, 2.0);
+    assert!((x - (x0 + 5.6)).abs() < 1e-4);
+}

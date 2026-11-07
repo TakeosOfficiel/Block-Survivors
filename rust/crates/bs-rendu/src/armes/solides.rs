@@ -64,6 +64,8 @@ fn cube(proportion: f32) -> Mesh {
 
 pub struct Solides {
     lots: Vec<(&'static str, Piece, Lot)>,
+    /// Relief de l'image : chaque pièce monte au niveau du sol sous elle.
+    relief: crate::relief::Relief,
 }
 
 /// Ce qu'il faut pour créer les lots.
@@ -112,7 +114,10 @@ impl Solides {
             }
             lots.push((chemin, piece, f.lot(chemin, piece, lumineux)));
         }
-        Self { lots }
+        Self {
+            lots,
+            relief: Default::default(),
+        }
     }
 
     /// Commence l'image : aucune pièce posée.
@@ -120,6 +125,7 @@ impl Solides {
         for (.., l) in &mut self.lots {
             l.commencer();
         }
+        self.relief = crate::relief::Relief::actuel();
     }
 
     /// Pose une pièce de texture `chemin`.
@@ -129,8 +135,9 @@ impl Solides {
         q: &mut Composants,
         chemin: &str,
         piece: Piece,
-        tf: Transform,
+        mut tf: Transform,
     ) {
+        tf.translation.y += self.relief.sol(tf.translation.x, tf.translation.z);
         let Some((.., lot)) = self
             .lots
             .iter_mut()

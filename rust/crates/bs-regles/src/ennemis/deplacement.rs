@@ -297,6 +297,7 @@ impl Partie {
             self.carte.vitesse_sol(e.x, e.z, def.traverse_toiles)
         };
         let e = &mut self.ennemis.pool[index];
+        let h = self.carte.hauteur(e.x, e.z);
         let vitesse = def.vitesse * (1.0 - e.ralenti) * sol;
         e.x += (e.dir_x * vitesse + e.vx) * dt + sep_x * k_separation;
         e.z += (e.dir_z * vitesse + e.vz) * dt + sep_z * k_separation;
@@ -323,7 +324,7 @@ impl Partie {
         } else {
             let (cx, cz) =
                 self.carte
-                    .resoudre_collision(e.x, e.z, def.rayon_decor.unwrap_or(def.rayon));
+                    .resoudre_collision(e.x, e.z, def.rayon_decor.unwrap_or(def.rayon), h);
             // Projeté contre un mur : le recul s'arrête net (Lame lourde)
             let choc = (cx - e.x) * (cx - e.x) + (cz - e.z) * (cz - e.z) > 1e-4
                 && e.vx * e.vx + e.vz * e.vz > CHOC_MUR * CHOC_MUR;

@@ -37,6 +37,7 @@ mod mesure;
 mod modeles;
 mod options;
 mod polices;
+mod relief;
 mod retours;
 mod sauvegarde;
 mod scene;
@@ -323,6 +324,7 @@ impl Plugin for PluginJeu {
             .add_systems(
                 Update,
                 (
+                    relief::suivre,
                     entites::placer_entites,
                     camera::capturer_souris,
                     camera::suivre,

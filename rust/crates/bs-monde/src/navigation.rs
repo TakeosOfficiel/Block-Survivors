@@ -1,6 +1,8 @@
 //! Champ de flux vers le joueur : distance en cases depuis sa position (parcours en
 //! largeur sur les cases franchissables), recalculée quand il change de case. Chaque
-//! ennemi descend ce champ pour contourner les obstacles.
+//! ennemi descend ce champ pour contourner les obstacles. Le relief compte : on ne
+//! passe d'une case à l'autre que par une marche assez basse (on saute des falaises,
+//! on ne les gravit pas).
 //!
 //! Un champ par largeur de passage (1 à 3 cases) : les gros ennemis suivent celui de leur
 //! taille, qui ne passe que là où un carré de cette largeur tient, et ne se faufilent par
@@ -111,7 +113,10 @@ impl ChampDeFlux {
                     continue;
                 }
                 let n = (nz * largeur + nx) as usize;
-                if distances[n] != INATTEIGNABLE || (self.degagement[n] as usize) < taille {
+                if distances[n] != INATTEIGNABLE
+                    || (self.degagement[n] as usize) < taille
+                    || !carte.pas_possible(n, c)
+                {
                     continue;
                 }
                 distances[n] = d;
@@ -180,12 +185,12 @@ impl ChampDeFlux {
             }
             let n = (nz * largeur + nx) as usize;
             let d = distances[n];
-            if d == INATTEIGNABLE || d >= meilleure_distance {
+            if d == INATTEIGNABLE || d >= meilleure_distance || !carte.pas_possible(c, n) {
                 continue;
             }
             if v >= 4
-                && (carte.drapeaux[(iz * largeur + nx) as usize] & BLOQUE_MARCHE != 0
-                    || carte.drapeaux[(nz * largeur + ix) as usize] & BLOQUE_MARCHE != 0)
+                && (!carte.pas_possible(c, (iz * largeur + nx) as usize)
+                    || !carte.pas_possible(c, (nz * largeur + ix) as usize))
             {
                 continue;
             }

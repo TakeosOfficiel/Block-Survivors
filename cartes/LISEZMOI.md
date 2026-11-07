@@ -18,10 +18,16 @@ On peut aussi y glisser le **dossier d'un monde** de Java (celui qui contient
 autour du panneau `depart` (sinon du point d'apparition), de 16 blocs sous le
 panneau à 48 au-dessus, et l'enregistre en `.schem` au nom du monde.
 
-**Zone jouable** : le sol plat où se trouve un panneau portant le mot
-`depart` (sinon, le centre de la schématique), et tout ce qui y est relié à
-pied au même niveau. Les murs, clôtures et reliefs qui l'entourent la
-délimitent ; tout le reste de la construction sert de décor.
+**Zone jouable** : le sol où se trouve un panneau portant le mot `depart`
+(sinon, le centre de la schématique), et tout ce qui y est relié à pied au
+même niveau. Les murs, clôtures et reliefs qui l'entourent la délimitent ;
+tout le reste de la construction sert de décor.
+
+Dans la version Rust, le relief fait partie de la zone : on monte tout seul
+une marche d'un bloc (ou d'une dalle), et l'on saute d'une falaise d'au plus
+6 blocs, sans pouvoir la remonter. Les mobs suivent les mêmes règles. Un mur
+de deux blocs, une clôture ou un muret (un bloc et demi) arrête toujours. Une
+colonne n'a qu'un sol : sous un pont, seul le premier niveau atteint compte.
 
 **Réglages** (facultatifs) : un fichier `.json` du même nom.
 

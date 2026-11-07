@@ -38,9 +38,9 @@ const GROSSISSEMENT_TAS: f32 = 0.15;
 /// Icônes posées à plat : on les tourne pour pointer vers +Z (renduProjectiles.ts).
 const ORIENTATION_ICONE: f32 = FRAC_PI_4;
 
-/// Ombres à dessiner cette image : (x, z, rayon), remplies par `entites`.
+/// Ombres à dessiner cette image : (x, z, rayon, hauteur du sol), remplies par `entites`.
 #[derive(Resource, Default)]
-pub struct Ombres(pub Vec<[f32; 3]>);
+pub struct Ombres(pub Vec<[f32; 4]>);
 
 struct TypeProjectile {
     pub(super) def: &'static Projectile,
@@ -88,11 +88,8 @@ pub fn placer(
     let j = &p.etat.joueur;
     // Vitrine : rangées devant le joueur (projectiles, orbes, objets)
     let rangee = |ligne: f32, k: usize, n: usize| {
-        Vec3::new(
-            j.x + (k as f32 - (n as f32 - 1.0) / 2.0) * 1.2,
-            0.0,
-            j.z + ligne,
-        )
+        let (x, z) = (j.x + (k as f32 - (n as f32 - 1.0) / 2.0) * 1.2, j.z + ligne);
+        Vec3::new(x, p.carte.hauteur_lissee(x, z), z)
     };
 
     for tp in projectiles.iter_mut() {
@@ -107,7 +104,7 @@ pub fn placer(
             FormeProjectile::FaceCamera => face,
             _ => Quat::from_rotation_y(angle),
         };
-        let pos = Vec3::new(x, def.hauteur, z);
+        let pos = Vec3::new(x, def.hauteur + p.carte.hauteur_lissee(x, z), z);
         tp.lot.ajouter(
             &mut commandes,
             &mut q,
@@ -183,7 +180,8 @@ pub fn placer(
             .find(|&k| o.valeur >= paliers[k].valeur_min)
             .unwrap_or(0);
         let ph = temps_jeu * 10.0 + o.phase;
-        let pos = Vec3::new(o.x, HAUTEUR_ORBE + (ph * 0.3).sin() * 0.06, o.z);
+        let sol = p.carte.hauteur_lissee(o.x, o.z);
+        let pos = Vec3::new(o.x, sol + HAUTEUR_ORBE + (ph * 0.3).sin() * 0.06, o.z);
         let c = Color::srgb(
             ((ph / 2.0).sin() + 1.0) * 0.5,
             1.0,
@@ -216,7 +214,12 @@ pub fn placer(
         l.commencer();
     }
     for o in &p.ramassables.objets {
-        let pos = Vec3::new(o.x, 0.55 + (temps_jeu * 2.0 + o.phase).sin() * 0.1, o.z);
+        let sol = p.carte.hauteur_lissee(o.x, o.z);
+        let pos = Vec3::new(
+            o.x,
+            sol + 0.55 + (temps_jeu * 2.0 + o.phase).sin() * 0.1,
+            o.z,
+        );
         let echelle = if o.valeur > 1.0 {
             1.0 + GROSSISSEMENT_TAS * (o.valeur - 1.0)
         } else {
@@ -246,9 +249,9 @@ pub fn placer(
     // Ombres rondes au sol (sauf si le soleil projette les vraies)
     lot_ombres.commencer();
     let rondes = if soleil.0 { &[][..] } else { &ombres.0[..] };
-    for &[x, z, rayon] in rondes {
+    for &[x, z, rayon, y] in rondes {
         let tf = Transform {
-            translation: Vec3::new(x, HAUTEUR_OMBRE, z),
+            translation: Vec3::new(x, y + HAUTEUR_OMBRE, z),
             scale: Vec3::new(rayon * 2.0, 1.0, rayon * 2.0),
             ..default()
         };

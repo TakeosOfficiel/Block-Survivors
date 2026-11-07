@@ -162,7 +162,8 @@ pub fn placer(
         let r = rendus.autre(k);
         calculer_rotations(&r.modele, etat, &mut r.pose.rotations);
         let pose = &mut r.pose;
-        pose.position = Vec3::new(ici.x, hauteur_flottement(&r.modele, etat), ici.y);
+        let y_sol = p.carte.hauteur_lissee(ici.x, ici.y);
+        pose.position = Vec3::new(ici.x, y_sol + hauteur_flottement(&r.modele, etat), ici.y);
         pose.angle = j.angle;
         pose.inclinaison = if j.mort {
             angle_chute(j.temps_mort, DUREE_MORT)
@@ -174,6 +175,8 @@ pub fn placer(
         let touche = j.invulnerabilite > invulnerabilite - DUREE_BLESSURE;
         pose.surcouche = if j.mort || touche { ROUGE } else { [0.0; 4] };
         r.ajouter(commandes, q);
-        ombres.0.push([ici.x, ici.y, c.0[k].apparence.rayon_ombre]);
+        ombres
+            .0
+            .push([ici.x, ici.y, c.0[k].apparence.rayon_ombre, y_sol]);
     }
 }

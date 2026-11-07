@@ -274,7 +274,13 @@ impl Partie {
                     || p.x > limite_x
                     || p.z < -limite_z
                     || p.z > limite_z
-                    || (!p.retour && self.carte.touche_tir(p.x, p.z, RAYON_DECOR));
+                    || (!p.retour
+                        && self.carte.touche_tir(
+                            p.x,
+                            p.z,
+                            RAYON_DECOR,
+                            self.carte.hauteur(p.x, p.z),
+                        ));
                 if sortie {
                     break;
                 }

@@ -76,7 +76,8 @@ impl Partie {
             if a.arme.is_none() || a.vitesse <= 0.0 || a.def.vol.is_some() {
                 continue;
             }
-            (a.x, a.z) = self.carte.resoudre_collision(a.x, a.z, a.def.rayon);
+            let h = self.carte.hauteur(a.x, a.z);
+            (a.x, a.z) = self.carte.resoudre_collision(a.x, a.z, a.def.rayon, h);
         }
     }
 
@@ -255,7 +256,8 @@ impl Partie {
             (a.x, a.z) = if a.def.vol.is_some() {
                 (nx, nz)
             } else {
-                self.carte.resoudre_collision(nx, nz, a.def.rayon)
+                let h = self.carte.hauteur(a.x, a.z);
+                self.carte.resoudre_collision(nx, nz, a.def.rayon, h)
             };
             a.vitesse_sol = vitesse;
         }

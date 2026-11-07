@@ -100,6 +100,8 @@ pub struct MaillageLueur {
     couleurs: Vec<[f32; 4]>,
     indices: Vec<u32>,
     etait_vide: bool,
+    /// Relief de l'image : chaque coin monte au niveau du sol sous lui.
+    relief: crate::relief::Relief,
 }
 
 impl MaillageLueur {
@@ -137,6 +139,7 @@ impl MaillageLueur {
             couleurs: Vec::new(),
             indices: Vec::new(),
             etait_vide: true,
+            relief: Default::default(),
         }
     }
 
@@ -146,6 +149,7 @@ impl MaillageLueur {
         self.formes.clear();
         self.couleurs.clear();
         self.indices.clear();
+        self.relief = crate::relief::Relief::actuel();
     }
 
     /// Quadrilatère quelconque : coins dans l'ordre du tour, coordonnées de forme et
@@ -159,7 +163,9 @@ impl MaillageLueur {
         reglage: f32,
     ) {
         let b = self.positions.len() as u32;
-        self.positions.extend(coins.map(|c| c.to_array()));
+        let relief = &self.relief;
+        self.positions
+            .extend(coins.map(|c| [c.x, c.y + relief.sol(c.x, c.z), c.z]));
         self.uvs.extend(uvs);
         self.formes.extend([[forme as u32 as f32, reglage]; 4]);
         self.couleurs.extend(couleurs);

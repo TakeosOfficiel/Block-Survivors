@@ -1,11 +1,20 @@
 //! Carte de l'arène, une case par bloc au sol : ce qui bloque la marche, ce qui arrête
 //! les projectiles, et les effets de sol (ralentissement, dégâts). Fournit les
 //! collisions cercle / blocs et les lignes de vue et de tir.
+//!
+//! Chaque case a la hauteur de son sol (blocs, par rapport au niveau de départ) : on
+//! monte tout seul d'au plus `MARCHE` (un bloc, une dalle), on saute de n'importe quelle
+//! falaise ; un projectile suit le relief à hauteur de corps et s'arrête sur une paroi.
 
 /// Case infranchissable à pied (bloc plein ou liquide à hauteur de corps).
 pub const BLOQUE_MARCHE: u8 = 1;
 /// Case qui arrête les projectiles (bloc plein, même un muret d'un bloc).
 pub const BLOQUE_TIR: u8 = 2;
+/// Plus grande marche que l'on monte sans s'arrêter (un bloc).
+pub const MARCHE: f32 = 1.05;
+/// Hauteur de vol d'un projectile au-dessus du sol qu'il survole : il passe une marche
+/// d'un bloc, pas un relief de deux.
+pub const VOL: f32 = 1.2;
 
 #[derive(Debug, Clone)]
 pub struct CarteMonde {
@@ -20,6 +29,8 @@ pub struct CarteMonde {
     /// Même chose sans les toiles (pour les araignées).
     pub ralentissement_hors_toiles: Vec<f32>,
     pub degats: Vec<f32>,
+    /// Hauteur du sol de chaque case (0 : niveau de départ).
+    pub hauteurs: Vec<f32>,
 }
 
 impl CarteMonde {
@@ -34,6 +45,7 @@ impl CarteMonde {
             ralentissement: vec![1.0; cases],
             ralentissement_hors_toiles: vec![1.0; cases],
             degats: vec![0.0; cases],
+            hauteurs: vec![0.0; cases],
         }
     }
 
@@ -53,6 +65,32 @@ impl CarteMonde {
             (index % self.largeur) as f32 - self.demi_x + 0.5,
             (index / self.largeur) as f32 - self.demi_z + 0.5,
         )
+    }
+
+    /// Hauteur du sol en (x, z) (0 hors de l'arène).
+    pub fn hauteur(&self, x: f32, z: f32) -> f32 {
+        self.cellule(x, z).map_or(0.0, |c| self.hauteurs[c])
+    }
+
+    /// Hauteur du sol lissée sur les bords des cases (pour l'affichage : on monte une
+    /// marche au lieu d'y sauter d'un coup).
+    pub fn hauteur_lissee(&self, x: f32, z: f32) -> f32 {
+        let h = self.hauteur(x, z);
+        let mut m = h;
+        for (dx, dz) in [(0.2, 0.0), (-0.2, 0.0), (0.0, 0.2), (0.0, -0.2)] {
+            let v = self.hauteur(x + dx, z + dz);
+            if v > m && v - h <= MARCHE {
+                m = v;
+            }
+        }
+        // Monte en douceur à l'approche d'une marche, tombe net d'une falaise
+        h + (m - h) * 0.5
+    }
+
+    /// Peut-on passer de la case `de` à la case `vers` à pied (marche assez basse) ?
+    pub fn pas_possible(&self, de: usize, vers: usize) -> bool {
+        self.drapeaux[vers] & BLOQUE_MARCHE == 0
+            && self.hauteurs[vers] <= self.hauteurs[de] + MARCHE
     }
 
     pub fn bloque_marche(&self, x: f32, z: f32) -> bool {
@@ -89,13 +127,10 @@ impl CarteMonde {
         )
     }
 
-    fn drapeau(&self, ix: i64, iz: i64) -> u8 {
-        self.drapeaux[iz as usize * self.largeur + ix as usize]
-    }
-
-    /// Repousse un cercle hors des cases infranchissables voisines et le garde dans
-    /// l'arène ; il glisse le long des obstacles.
-    pub fn resoudre_collision(&self, x: f32, z: f32, rayon: f32) -> (f32, f32) {
+    /// Repousse un cercle hors des cases infranchissables voisines (ou trop hautes pour
+    /// qui se tient à la hauteur `h`) et le garde dans l'arène ; il glisse le long des
+    /// obstacles.
+    pub fn resoudre_collision(&self, x: f32, z: f32, rayon: f32, h: f32) -> (f32, f32) {
         let limite_x = self.demi_x - rayon;
         let limite_z = self.demi_z - rayon;
         let mut px = x.clamp(-limite_x, limite_x);
@@ -103,7 +138,8 @@ impl CarteMonde {
         let (ix0, ix1, iz0, iz1) = self.cases_touchees(px, pz, rayon);
         for iz in iz0..=iz1 {
             for ix in ix0..=ix1 {
-                if self.drapeau(ix, iz) & BLOQUE_MARCHE == 0 {
+                let c = iz as usize * self.largeur + ix as usize;
+                if self.drapeaux[c] & BLOQUE_MARCHE == 0 && self.hauteurs[c] <= h + MARCHE {
                     continue;
                 }
                 // Point de la case le plus proche du centre du cercle
@@ -143,13 +179,15 @@ impl CarteMonde {
         (px, pz)
     }
 
-    /// Vrai si un cercle en (x, z) touche une case qui arrête les tirs (hors de
-    /// l'arène : faux, la sortie est gérée à part).
-    pub fn touche_tir(&self, x: f32, z: f32, rayon: f32) -> bool {
+    /// Vrai si un cercle en (x, z), au-dessus d'un sol à la hauteur `h`, touche une case
+    /// qui arrête les tirs ou un relief plus haut que lui (hors de l'arène : faux, la
+    /// sortie est gérée à part).
+    pub fn touche_tir(&self, x: f32, z: f32, rayon: f32, h: f32) -> bool {
         let (ix0, ix1, iz0, iz1) = self.cases_touchees(x, z, rayon);
         for iz in iz0..=iz1 {
             for ix in ix0..=ix1 {
-                if self.drapeau(ix, iz) & BLOQUE_TIR == 0 {
+                let c = iz as usize * self.largeur + ix as usize;
+                if self.drapeaux[c] & BLOQUE_TIR == 0 && self.hauteurs[c] < h + VOL {
                     continue;
                 }
                 let x0 = ix as f32 - self.demi_x;
@@ -171,18 +209,28 @@ impl CarteMonde {
         let pas = ((dx * dx + dz * dz).sqrt() * 4.0).ceil() as u32;
         (1..pas).all(|i| {
             let t = i as f32 / pas as f32;
-            !self.touche_tir(x0 + dx * t, z0 + dz * t, rayon)
+            let (x, z) = (x0 + dx * t, z0 + dz * t);
+            !self.touche_tir(x, z, rayon, self.hauteur(x, z))
         })
     }
 
-    /// Vrai si aucune case infranchissable ne coupe le segment (pas de 0,5 bloc).
+    /// Vrai si l'on va à pied en ligne droite de (x0, z0) à (x1, z1) : aucune case
+    /// infranchissable ni marche trop haute (pas de 0,5 bloc).
     pub fn ligne_de_vue(&self, x0: f32, z0: f32, x1: f32, z1: f32) -> bool {
         let dx = x1 - x0;
         let dz = z1 - z0;
         let pas = ((dx * dx + dz * dz).sqrt() * 2.0).ceil() as u32;
-        (1..pas).all(|i| {
-            let t = i as f32 / pas as f32;
-            !self.bloque_marche(x0 + dx * t, z0 + dz * t)
+        let Some(mut c) = self.cellule(x0, z0) else {
+            return false;
+        };
+        (1..=pas).all(|i| {
+            let t = i as f32 / pas.max(1) as f32;
+            let Some(n) = self.cellule(x0 + dx * t, z0 + dz * t) else {
+                return false;
+            };
+            let ok = n == c || self.pas_possible(c, n);
+            c = n;
+            ok
         })
     }
 }

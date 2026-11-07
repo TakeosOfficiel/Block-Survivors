@@ -139,7 +139,11 @@ impl Partie {
                 p.x += p.vx * dt / nb_pas as f32;
                 p.z += p.vz * dt / nb_pas as f32;
                 let sortie = p.x < -limite_x || p.x > limite_x || p.z < -limite_z || p.z > limite_z;
-                if sortie || self.carte.touche_tir(p.x, p.z, RAYON_DECOR) {
+                if sortie
+                    || self
+                        .carte
+                        .touche_tir(p.x, p.z, RAYON_DECOR, self.carte.hauteur(p.x, p.z))
+                {
                     fini = true;
                     break;
                 }

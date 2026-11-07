@@ -27,6 +27,8 @@ struct ParametresBloc {
     // lumière des blocs : coin de la boîte, active (1) ; taille de la boîte
     volume: vec4<f32>,
     taille: vec4<f32>,
+    // vue à travers : pieds du joueur, rayon dégagé (0 : aucun)
+    coupe: vec4<f32>,
 }
 
 @group(#{MATERIAL_BIND_GROUP}) @binding(0) var<uniform> p: ParametresBloc;
@@ -67,8 +69,27 @@ fn vertex(s: Sommet) -> Sortie {
     return o;
 }
 
+// Plafonds, toits et hauts de murs qui cachent le joueur : ce qui dépasse ses épaules
+// près de l'axe caméra → joueur, devant lui, n'est pas dessiné (cône qui s'élargit
+// jusqu'au rayon en arrivant sur lui).
+fn masque(monde: vec3<f32>) -> bool {
+    if p.coupe.w <= 0.0 || monde.y < p.coupe.y + 1.5 {
+        return false;
+    }
+    let oeil = view.world_position;
+    let axe = p.coupe.xyz + vec3(0.0, 1.0, 0.0) - oeil;
+    let l = length(axe);
+    let dir = axe / l;
+    let v = monde - oeil;
+    let t = dot(v, dir);
+    return t < l - 0.6 && length(v - dir * t) < p.coupe.w * clamp(t / l, 0.3, 1.0);
+}
+
 @fragment
 fn fragment(in: Sortie, @builtin(front_facing) devant: bool) -> @location(0) vec4<f32> {
+    if masque(in.world_position.xyz) {
+        discard;
+    }
     var uv = in.uv;
     if p.animation.z > 0.5 {
         uv = fract(uv);

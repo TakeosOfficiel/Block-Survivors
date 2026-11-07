@@ -60,7 +60,7 @@ fait dans la version Rust (branche `rust`, état au 04/11/2026).
 - [ ] Plusieurs niveaux de sol : monter d'un bloc tout seul, escaliers et dalles comme rampes, sauter d'une falaise (Rust : fait, un seul sol par colonne, donc pas encore de pont au-dessus d'un chemin)
 - [ ] Chemin des mobs en 3D (graphe de sols au lieu de la grille plate) (Rust : fait sur la grille à hauteurs : marches montées, falaises seulement descendues)
 - [ ] Hauteur pour les entités, projectiles et zones d'effet (aujourd'hui tout est à plat, hauteurs écrites en dur) (Rust : fait, tout se pose sur le sol sous soi ; un tir passe une marche, une paroi de deux blocs l'arrête)
-- [ ] Coupe automatique des plafonds au-dessus du joueur (caves, maisons) et murs transparents entre la caméra et le joueur
+- [ ] Coupe automatique des plafonds au-dessus du joueur (caves, maisons) et murs transparents entre la caméra et le joueur (Rust : fait, ce qui dépasse ses épaules entre la caméra et lui n'est pas dessiné, dans un disque de 3 blocs ; l'ombre reste)
 - [ ] Apparition des mobs à une distance de marche (pas à vol d'oiseau) (Rust : fait, un point qui oblige à un long détour à pied n'est pris qu'en dernier recours)
 - [ ] Largeur de passage par case : boss trop gros pour un tunnel de 2 blocs (Rust : fait, les gros ennemis prennent un passage où tient tout leur corps ; s'il n'y en a aucun, ils se faufilent quand même)
 - [ ] Échelles et lianes (Rust : fait, une colonne qui en porte fait monter d'autant de blocs, pour le joueur comme pour les mobs)

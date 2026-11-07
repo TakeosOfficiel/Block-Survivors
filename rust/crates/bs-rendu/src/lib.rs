@@ -47,6 +47,7 @@ mod soleil;
 mod sons;
 mod sources;
 mod textures;
+mod transparence;
 
 use bevy::prelude::*;
 use bs_donnees::Donnees;
@@ -352,7 +353,16 @@ impl Plugin for PluginJeu {
                     .chain()
                     .run_if(in_state(Phase::Partie)),
             )
-            .add_systems(OnExit(Phase::Partie), camera::liberer_souris)
+            .add_systems(
+                Update,
+                transparence::suivre
+                    .after(camera::suivre)
+                    .run_if(in_state(Phase::Partie)),
+            )
+            .add_systems(
+                OnExit(Phase::Partie),
+                (camera::liberer_souris, transparence::arreter),
+            )
             .add_systems(PostUpdate, lumiere::distribuer);
     }
 }

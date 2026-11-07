@@ -59,6 +59,8 @@ pub struct ParametresBloc {
     pub volume: Vec4,
     /// Taille de la boîte (blocs).
     pub taille: Vec4,
+    /// Vue à travers (`transparence`) : pieds du joueur, rayon dégagé (0 : aucun).
+    pub coupe: Vec4,
 }
 
 impl ParametresBloc {
@@ -78,6 +80,7 @@ impl ParametresBloc {
             animation: Vec4::new(1.0, 0.0, 0.0, 0.0),
             volume: Vec4::ZERO,
             taille: Vec4::ONE,
+            coupe: Vec4::ZERO,
         }
     }
 

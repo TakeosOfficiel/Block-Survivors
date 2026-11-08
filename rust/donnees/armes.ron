@@ -1,5 +1,4 @@
-// Généré depuis la version TypeScript (src/donnees) par outils/importer-donnees.sh.
-// Tant que les deux versions coexistent, modifier src/donnees puis relancer l'import.
+// Données du jeu : ce fichier est la source (la version TypeScript n'est plus suivie).
 #![enable(implicit_some)]
 {
   "epee": (
@@ -1599,9 +1598,9 @@
     ),
     famille: allie,
     stats: (
-      degats: 5.0,
+      degats: 4.0,
       cadence: 7.0,
-      nombre: 2.0,
+      nombre: 3.0,
       portee: 0.0,
       vitesse: 0.0,
       zone: 0.6,

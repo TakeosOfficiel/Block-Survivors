@@ -1,5 +1,4 @@
-// Généré depuis la version TypeScript (src/donnees) par outils/importer-donnees.sh.
-// Tant que les deux versions coexistent, modifier src/donnees puis relancer l'import.
+// Données du jeu : ce fichier est la source (la version TypeScript n'est plus suivie).
 #![enable(implicit_some)]
 {
   "force": (

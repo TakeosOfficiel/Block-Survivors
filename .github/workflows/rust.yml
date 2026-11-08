@@ -55,20 +55,9 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Tests
         run: cargo test --workspace
-      # Robot d'équilibrage : moyennes de 15 parties par personnage dans la tolérance de la version TS
+      # Robot d'équilibrage : moyennes de 15 parties par personnage dans la tolérance des références (docs/robot-15)
       - name: Robot
         run: VERIFIER=1 cargo run --release -q -p bs-robot
-      # Tant que la version TypeScript reste la référence : rust/donnees doit en être la copie
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - name: Données à jour (src/donnees → rust/donnees)
-        env:
-          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
-        run: |
-          (cd .. && npm ci --ignore-scripts)
-          outils/importer-donnees.sh --verifier
 
   windows:
     runs-on: windows-latest

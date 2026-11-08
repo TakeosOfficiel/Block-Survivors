@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# OBSOLÈTE : le jeu est seulement en Rust et rust/donnees est la source. Ne plus lancer ce
+# script (il écraserait les réglages faits depuis), gardé pour mémoire.
 # Régénère rust/donnees/*.ron depuis la version TypeScript (src/donnees) :
 # export JSON par Vite (outils/exporter-donnees.mjs), puis importeur Rust qui
 # vérifie chaque table contre ses types, écrit le RON et valide les références.

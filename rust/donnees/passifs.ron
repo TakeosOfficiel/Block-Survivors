@@ -493,4 +493,104 @@
       ),
     )],
   ),
+  "pomme_benie": (
+    nom: "Pomme d'or bénie",
+    description: "Paladin : la lumière referme ses blessures.",
+    icone: "item/golden_apple",
+    exclusif: true,
+    niveaux: [(
+      description: "Régénération +0,15 PV/s, PV max +2",
+      modif: (
+        regeneration: 0.15,
+        pvMax: 2.0,
+      ),
+    ), (
+      description: "Régénération +0,15 PV/s, PV max +2",
+      modif: (
+        regeneration: 0.15,
+        pvMax: 2.0,
+      ),
+    ), (
+      description: "Régénération +0,15 PV/s, PV max +2",
+      modif: (
+        regeneration: 0.15,
+        pvMax: 2.0,
+      ),
+    )],
+  ),
+  "egide": (
+    nom: "Égide dorée",
+    description: "Paladin : une armure sacrée qui châtie les morts-vivants.",
+    icone: "item/golden_chestplate",
+    exclusif: true,
+    niveaux: [(
+      description: "Dégâts reçus −6 %, dégâts contre les morts-vivants +15 %",
+      modif: (
+        degatsRecus: -0.06,
+        degatsMortsVivants: 0.15,
+      ),
+    ), (
+      description: "Dégâts reçus −6 %, dégâts contre les morts-vivants +15 %",
+      modif: (
+        degatsRecus: -0.06,
+        degatsMortsVivants: 0.15,
+      ),
+    ), (
+      description: "Dégâts reçus −6 %, dégâts contre les morts-vivants +15 %",
+      modif: (
+        degatsRecus: -0.06,
+        degatsMortsVivants: 0.15,
+      ),
+    )],
+  ),
+  "verrue_du_nether": (
+    nom: "Verrue du Nether",
+    description: "Alchimiste : des mixtures plus toxiques et plus brûlantes.",
+    icone: "item/nether_wart",
+    exclusif: true,
+    niveaux: [(
+      description: "Poison +20 %, brûlure +20 %",
+      modif: (
+        degatsPoison: 0.2,
+        degatsBrulure: 0.2,
+      ),
+    ), (
+      description: "Poison +20 %, brûlure +20 %",
+      modif: (
+        degatsPoison: 0.2,
+        degatsBrulure: 0.2,
+      ),
+    ), (
+      description: "Poison +20 %, brûlure +20 %",
+      modif: (
+        degatsPoison: 0.2,
+        degatsBrulure: 0.2,
+      ),
+    )],
+  ),
+  "chaudron": (
+    nom: "Chaudron",
+    description: "Alchimiste : des éclaboussures plus larges, qui engluent plus longtemps.",
+    icone: "item/cauldron",
+    exclusif: true,
+    niveaux: [(
+      description: "Zone +8 %, ralentissements +20 % de durée",
+      modif: (
+        zone: 0.08,
+        dureeRalenti: 0.2,
+      ),
+    ), (
+      description: "Zone +8 %, ralentissements +20 % de durée",
+      modif: (
+        zone: 0.08,
+        dureeRalenti: 0.2,
+      ),
+    ), (
+      description: "Zone +8 %, ralentissements +20 % de durée",
+      modif: (
+        zone: 0.08,
+        dureeRalenti: 0.2,
+      ),
+    )],
+  ),
 }

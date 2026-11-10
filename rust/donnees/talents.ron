@@ -2365,6 +2365,1296 @@
         ),
       )],
     )),
+    "paladin": ((
+      id: "croise",
+      nom: "Croisé",
+      description: "La lumière frappe fort et de haut.",
+      icone: "item/golden_axe",
+      fond: "block/sandstone_top",
+      branches: {
+        tronc: "Tronc",
+        gauche: "Hache",
+        centre: "Jugement",
+        droite: "Critiques",
+        libre: "Épée céleste",
+      },
+      noeuds: [(
+        id: "foi",
+        ligne: 0,
+        colonne: 2,
+        type: capacite,
+        branche: tronc,
+        nom: "Foi ardente",
+        icone: "item/golden_axe",
+        effet: "La Hache bénie fait +10 % de dégâts et frappe 10 % plus souvent.",
+        rangMax: 1,
+        gains: (
+          armes: [(
+            arme: "hache_benie",
+            part: (
+              degats: 0.1,
+              cadence: -0.1,
+            ),
+          )],
+        ),
+      ), (
+        id: "fil_dore",
+        ligne: 1,
+        colonne: 1,
+        type: bonus,
+        branche: tronc,
+        nom: "Fil doré",
+        icone: "item/gold_ingot",
+        effet: "Dégâts de mêlée +4 / 8 / 12 %.",
+        rangMax: 3,
+        gains: (
+          modif: (
+            degatsMelee: 0.04,
+          ),
+        ),
+      ), (
+        id: "ferveur",
+        ligne: 1,
+        colonne: 2,
+        type: bonus,
+        branche: tronc,
+        nom: "Ferveur",
+        icone: "item/glowstone_dust",
+        effet: "Délai des armes −3 / 6 / 9 %.",
+        rangMax: 3,
+        prerequis: ["foi"],
+        gains: (
+          modif: (
+            cadence: -0.03,
+          ),
+        ),
+      ), (
+        id: "hache",
+        ligne: 2,
+        colonne: 1,
+        type: bonus,
+        branche: gauche,
+        nom: "Hache enchantée",
+        icone: "item/enchanted_book",
+        effet: "La Hache bénie commence avec +1 / +2 rangs.",
+        rangMax: 2,
+        gains: (
+          rangsArme: "hache_benie",
+        ),
+      ), (
+        id: "ciel",
+        ligne: 2,
+        colonne: 2,
+        type: bonus,
+        branche: centre,
+        nom: "Ciel d'orage",
+        icone: "block/glowstone",
+        effet: "Dégâts du Jugement céleste +15 / 30 %.",
+        rangMax: 2,
+        gains: (
+          armes: [(
+            arme: "jugement",
+            part: (
+              degats: 0.15,
+            ),
+          )],
+        ),
+      ), (
+        id: "discernement",
+        ligne: 2,
+        colonne: 3,
+        type: bonus,
+        branche: droite,
+        nom: "Discernement",
+        icone: "item/spyglass",
+        effet: "Coups critiques +4 / 8 %.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            critique: 0.04,
+          ),
+        ),
+      ), (
+        id: "ample",
+        ligne: 3,
+        colonne: 1,
+        type: bonus,
+        branche: gauche,
+        nom: "Geste ample",
+        icone: "item/golden_sword",
+        effet: "Zone de mêlée +8 / 16 %.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            zoneMelee: 0.08,
+          ),
+        ),
+      ), (
+        id: "verdict",
+        ligne: 3,
+        colonne: 2,
+        type: choix,
+        branche: centre,
+        nom: "Colère / Lumière",
+        icone: "item/nether_star",
+        effet: "Au choix : Colère du ciel ou Lumière aveuglante.",
+        rangMax: 1,
+        options: ((
+          nom: "Colère du ciel",
+          icone: "item/nether_star",
+          effet: "Jugement céleste : +1 éclair.",
+          gains: (
+            armes: [(
+              arme: "jugement",
+              ajout: (
+                nombre: 1.0,
+              ),
+            )],
+          ),
+        ), (
+          nom: "Lumière aveuglante",
+          icone: "item/glowstone_dust",
+          effet: "Jugement céleste : étourdit 0,4 s (pas les boss) et zone +20 %.",
+          gains: (
+            armes: [(
+              arme: "jugement",
+              ajout: (
+                etourdi: 0.4,
+              ),
+              part: (
+                zone: 0.2,
+              ),
+            )],
+          ),
+        )),
+      ), (
+        id: "sentence",
+        ligne: 3,
+        colonne: 3,
+        type: bonus,
+        branche: droite,
+        nom: "Sentence",
+        icone: "block/target_top",
+        effet: "Dégâts critiques +0,25.",
+        rangMax: 1,
+        gains: (
+          modif: (
+            degatsCritiques: 0.25,
+          ),
+        ),
+      ), (
+        id: "celeste",
+        ligne: 4,
+        colonne: 0,
+        type: capacite,
+        branche: libre,
+        nom: "Lame céleste",
+        icone: "item/golden_sword",
+        effet: "Commence la partie avec l'Épée céleste.",
+        rangMax: 1,
+        libre: true,
+        gains: (
+          armeDepart: "epee_celeste",
+        ),
+      ), (
+        id: "exorcisme",
+        ligne: 4,
+        colonne: 1,
+        type: bonus,
+        branche: gauche,
+        nom: "Exorcisme",
+        icone: "item/rotten_flesh",
+        effet: "Dégâts contre les morts-vivants +10 / 20 %.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            degatsMortsVivants: 0.1,
+          ),
+        ),
+      ), (
+        id: "foudre",
+        ligne: 4,
+        colonne: 2,
+        type: bonus,
+        branche: centre,
+        nom: "Foudre sacrée",
+        icone: "block/lightning_rod",
+        effet: "Zone du Jugement céleste +15 / 30 %.",
+        rangMax: 2,
+        gains: (
+          armes: [(
+            arme: "jugement",
+            part: (
+              zone: 0.15,
+            ),
+          )],
+        ),
+      ), (
+        id: "acier",
+        ligne: 5,
+        colonne: 0,
+        type: bonus,
+        branche: libre,
+        nom: "Or trempé",
+        icone: "item/gold_nugget",
+        effet: "Dégâts de l'Épée céleste +15 / 30 %.",
+        rangMax: 2,
+        prerequis: ["celeste"],
+        gains: (
+          armes: [(
+            arme: "epee_celeste",
+            part: (
+              degats: 0.15,
+            ),
+          )],
+        ),
+      ), (
+        id: "coups_lourds",
+        ligne: 5,
+        colonne: 1,
+        type: bonus,
+        branche: gauche,
+        nom: "Coups lourds",
+        icone: "item/iron_nugget",
+        effet: "Dégâts de mêlée +6 / 12 % et recul +25 / 50 %.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            degatsMelee: 0.06,
+            recul: 0.25,
+          ),
+        ),
+      ), (
+        id: "lumiere",
+        ligne: 5,
+        colonne: 2,
+        type: bonus,
+        branche: centre,
+        nom: "Lumière divine",
+        icone: "item/glow_berries",
+        effet: "Toutes les armes font +4 / 8 % de dégâts.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            degats: 0.04,
+          ),
+        ),
+      ), (
+        id: "f_jugement",
+        ligne: 6,
+        colonne: 1,
+        type: final,
+        branche: gauche,
+        nom: "Hache du jugement",
+        icone: "item/golden_axe",
+        effet: "La Hache bénie fait +50 % de dégâts et frappe 20 % plus large.",
+        rangMax: 1,
+        gains: (
+          armes: [(
+            arme: "hache_benie",
+            part: (
+              degats: 0.5,
+              zone: 0.2,
+            ),
+          )],
+        ),
+      ), (
+        id: "f_tempete",
+        ligne: 6,
+        colonne: 2,
+        type: final,
+        branche: centre,
+        nom: "Tempête divine",
+        icone: "item/trident",
+        effet: "Jugement céleste : +2 éclairs et +25 % de dégâts.",
+        rangMax: 1,
+        gains: (
+          armes: [(
+            arme: "jugement",
+            ajout: (
+              nombre: 2.0,
+            ),
+            part: (
+              degats: 0.25,
+            ),
+          )],
+        ),
+      ), (
+        id: "f_croisade",
+        ligne: 6,
+        colonne: 3,
+        type: final,
+        branche: droite,
+        nom: "Croisade",
+        icone: "item/end_crystal",
+        effet: "Coups critiques +8 % et dégâts critiques +0,5.",
+        rangMax: 1,
+        gains: (
+          modif: (
+            critique: 0.08,
+            degatsCritiques: 0.5,
+          ),
+        ),
+      )],
+    ), (
+      id: "gardien",
+      nom: "Gardien",
+      description: "Tenir, guérir, et ne jamais tomber.",
+      icone: "item/golden_chestplate",
+      fond: "block/gold_block",
+      branches: {
+        tronc: "Tronc",
+        gauche: "Armure",
+        centre: "Soins",
+        droite: "Consécration",
+        libre: "Cloches",
+      },
+      noeuds: [(
+        id: "serment",
+        ligne: 0,
+        colonne: 2,
+        type: capacite,
+        branche: tronc,
+        nom: "Serment",
+        icone: "item/golden_chestplate",
+        effet: "Armure +1.",
+        rangMax: 1,
+        gains: (
+          modif: (
+            armure: 1.0,
+          ),
+        ),
+      ), (
+        id: "carrure",
+        ligne: 1,
+        colonne: 1,
+        type: bonus,
+        branche: tronc,
+        nom: "Carrure",
+        icone: "item/golden_apple",
+        effet: "PV max +2 / 4 / 6.",
+        rangMax: 3,
+        gains: (
+          modif: (
+            pvMax: 2.0,
+          ),
+        ),
+      ), (
+        id: "priere",
+        ligne: 1,
+        colonne: 2,
+        type: bonus,
+        branche: tronc,
+        nom: "Prière",
+        icone: "item/glistering_melon_slice",
+        effet: "Régénération +0,05 / 0,1 / 0,15 PV/s.",
+        rangMax: 3,
+        prerequis: ["serment"],
+        gains: (
+          modif: (
+            regeneration: 0.05,
+          ),
+        ),
+      ), (
+        id: "bouclier",
+        ligne: 2,
+        colonne: 1,
+        type: bonus,
+        branche: gauche,
+        nom: "Bouclier doré",
+        icone: "item/golden_helmet",
+        effet: "Dégâts reçus −4 / 8 %.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            degatsRecus: -0.04,
+          ),
+        ),
+      ), (
+        id: "mains",
+        ligne: 2,
+        colonne: 2,
+        type: bonus,
+        branche: centre,
+        nom: "Mains guérisseuses",
+        icone: "item/golden_carrot",
+        effet: "Soins des objets ramassés +15 / 30 %.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            soinsObjets: 0.15,
+          ),
+        ),
+      ), (
+        id: "sol_sacre",
+        ligne: 2,
+        colonne: 3,
+        type: bonus,
+        branche: droite,
+        nom: "Sol sacré",
+        icone: "block/raw_gold_block",
+        effet: "Rayon de la Consécration +10 / 20 %.",
+        rangMax: 2,
+        gains: (
+          armes: [(
+            arme: "consecration",
+            part: (
+              zone: 0.1,
+            ),
+          )],
+        ),
+      ), (
+        id: "plates",
+        ligne: 3,
+        colonne: 1,
+        type: bonus,
+        branche: gauche,
+        nom: "Plates d'or",
+        icone: "item/golden_leggings",
+        effet: "Armure +1 / +2.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            armure: 1.0,
+          ),
+        ),
+      ), (
+        id: "voeu",
+        ligne: 3,
+        colonne: 2,
+        type: choix,
+        branche: centre,
+        nom: "Aura / Ténacité",
+        icone: "item/totem_of_undying",
+        effet: "Au choix : Aura de vie ou Ténacité.",
+        rangMax: 1,
+        options: ((
+          nom: "Aura de vie",
+          icone: "item/glistering_melon_slice",
+          effet: "Régénération +0,25 PV/s.",
+          gains: (
+            modif: (
+              regeneration: 0.25,
+            ),
+          ),
+        ), (
+          nom: "Ténacité",
+          icone: "item/golden_apple",
+          effet: "PV max +6.",
+          gains: (
+            modif: (
+              pvMax: 6.0,
+            ),
+          ),
+        )),
+      ), (
+        id: "benediction",
+        ligne: 3,
+        colonne: 3,
+        type: bonus,
+        branche: droite,
+        nom: "Bénédiction",
+        icone: "block/gold_block",
+        effet: "La Consécration ralentit 10 points de plus.",
+        rangMax: 1,
+        gains: (
+          armes: [(
+            arme: "consecration",
+            ajout: (
+              ralenti: 0.1,
+            ),
+          )],
+        ),
+      ), (
+        id: "carillon",
+        ligne: 4,
+        colonne: 0,
+        type: capacite,
+        branche: libre,
+        nom: "Carillon",
+        icone: "item/bell",
+        effet: "Commence la partie avec les Cloches bénites.",
+        rangMax: 1,
+        libre: true,
+        gains: (
+          armeDepart: "cloches_benites",
+        ),
+      ), (
+        id: "repousse",
+        ligne: 4,
+        colonne: 1,
+        type: bonus,
+        branche: gauche,
+        nom: "Repousser le mal",
+        icone: "block/piston_top",
+        effet: "Recul +25 / 50 %.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            recul: 0.25,
+          ),
+        ),
+      ), (
+        id: "pelerin",
+        ligne: 4,
+        colonne: 2,
+        type: bonus,
+        branche: centre,
+        nom: "Pèlerin",
+        icone: "item/golden_boots",
+        effet: "Vitesse de déplacement +4 / 8 %.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            vitesse: 0.04,
+          ),
+        ),
+      ), (
+        id: "bronze",
+        ligne: 5,
+        colonne: 0,
+        type: bonus,
+        branche: libre,
+        nom: "Bronze sonore",
+        icone: "item/gold_ingot",
+        effet: "Dégâts des Cloches bénites +15 / 30 %.",
+        rangMax: 2,
+        prerequis: ["carillon"],
+        gains: (
+          armes: [(
+            arme: "cloches_benites",
+            part: (
+              degats: 0.15,
+            ),
+          )],
+        ),
+      ), (
+        id: "veilleur",
+        ligne: 5,
+        colonne: 1,
+        type: bonus,
+        branche: gauche,
+        nom: "Veilleur des morts",
+        icone: "item/bone",
+        effet: "Dégâts contre les morts-vivants +10 / 20 %.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            degatsMortsVivants: 0.1,
+          ),
+        ),
+      ), (
+        id: "grace",
+        ligne: 5,
+        colonne: 2,
+        type: bonus,
+        branche: centre,
+        nom: "Grâce",
+        icone: "item/honey_bottle",
+        effet: "Régénération +0,08 / 0,16 PV/s.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            regeneration: 0.08,
+          ),
+        ),
+      ), (
+        id: "f_rempart",
+        ligne: 6,
+        colonne: 1,
+        type: final,
+        branche: gauche,
+        nom: "Rempart sacré",
+        icone: "item/netherite_chestplate",
+        effet: "Dégâts reçus −15 % et armure +1.",
+        rangMax: 1,
+        gains: (
+          modif: (
+            degatsRecus: -0.15,
+            armure: 1.0,
+          ),
+        ),
+      ), (
+        id: "f_eternelle",
+        ligne: 6,
+        colonne: 2,
+        type: final,
+        branche: centre,
+        nom: "Lumière éternelle",
+        icone: "block/sunflower_front",
+        effet: "Régénération +0,4 PV/s et PV max +6.",
+        rangMax: 1,
+        gains: (
+          modif: (
+            regeneration: 0.4,
+            pvMax: 6.0,
+          ),
+        ),
+      ), (
+        id: "f_sanctuaire",
+        ligne: 6,
+        colonne: 3,
+        type: final,
+        branche: droite,
+        nom: "Sanctuaire",
+        icone: "block/beacon",
+        effet: "Consécration : rayon +40 % et dégâts +40 %.",
+        rangMax: 1,
+        gains: (
+          armes: [(
+            arme: "consecration",
+            part: (
+              zone: 0.4,
+              degats: 0.4,
+            ),
+          )],
+        ),
+      )],
+    )),
+    "alchimiste": ((
+      id: "toxicologue",
+      nom: "Toxicologue",
+      description: "Chaque goutte est un poison.",
+      icone: "item/fermented_spider_eye",
+      fond: "block/mossy_cobblestone",
+      branches: {
+        tronc: "Tronc",
+        gauche: "Fioles",
+        centre: "Poison",
+        droite: "Précision",
+        libre: "Alambic",
+      },
+      noeuds: [(
+        id: "formule",
+        ligne: 0,
+        colonne: 2,
+        type: capacite,
+        branche: tronc,
+        nom: "Formule secrète",
+        icone: "item/fermented_spider_eye",
+        effet: "Le poison fait +25 % de dégâts.",
+        rangMax: 1,
+        gains: (
+          modif: (
+            degatsPoison: 0.25,
+          ),
+        ),
+      ), (
+        id: "verre",
+        ligne: 1,
+        colonne: 1,
+        type: bonus,
+        branche: tronc,
+        nom: "Verre fin",
+        icone: "item/glass_bottle",
+        effet: "Dégâts des projectiles +4 / 8 / 12 %.",
+        rangMax: 3,
+        gains: (
+          modif: (
+            degatsProjectiles: 0.04,
+          ),
+        ),
+      ), (
+        id: "lancer",
+        ligne: 1,
+        colonne: 2,
+        type: bonus,
+        branche: tronc,
+        nom: "Bon lancer",
+        icone: "item/spyglass",
+        effet: "Portée +5 / 10 / 15 %.",
+        rangMax: 3,
+        prerequis: ["formule"],
+        gains: (
+          modif: (
+            portee: 0.05,
+          ),
+        ),
+      ), (
+        id: "fiole",
+        ligne: 2,
+        colonne: 1,
+        type: bonus,
+        branche: gauche,
+        nom: "Fiole enchantée",
+        icone: "item/enchanted_book",
+        effet: "La Fiole de poison commence avec +1 / +2 rangs.",
+        rangMax: 2,
+        gains: (
+          rangsArme: "fiole_poison",
+        ),
+      ), (
+        id: "venin",
+        ligne: 2,
+        colonne: 2,
+        type: bonus,
+        branche: centre,
+        nom: "Venin d'araignée",
+        icone: "item/spider_eye",
+        effet: "Dégâts du poison +15 / 30 %.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            degatsPoison: 0.15,
+          ),
+        ),
+      ), (
+        id: "dosage",
+        ligne: 2,
+        colonne: 3,
+        type: bonus,
+        branche: droite,
+        nom: "Dosage",
+        icone: "item/glowstone_dust",
+        effet: "Zone des armes +5 / 10 %.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            zone: 0.05,
+          ),
+        ),
+      ), (
+        id: "gicle",
+        ligne: 3,
+        colonne: 1,
+        type: bonus,
+        branche: gauche,
+        nom: "Giclée",
+        icone: "item/splash_potion",
+        effet: "Rayon de la Fiole de poison +12 / 24 %.",
+        rangMax: 2,
+        gains: (
+          armes: [(
+            arme: "fiole_poison",
+            part: (
+              zone: 0.12,
+            ),
+          )],
+        ),
+      ), (
+        id: "recette",
+        ligne: 3,
+        colonne: 2,
+        type: choix,
+        branche: centre,
+        nom: "Double dose / Concentré",
+        icone: "item/brewing_stand",
+        effet: "Au choix : Double dose ou Concentré.",
+        rangMax: 1,
+        options: ((
+          nom: "Double dose",
+          icone: "item/splash_potion",
+          effet: "Fiole de poison : +1 fiole.",
+          gains: (
+            armes: [(
+              arme: "fiole_poison",
+              ajout: (
+                nombre: 1.0,
+              ),
+            )],
+          ),
+        ), (
+          nom: "Concentré",
+          icone: "item/fermented_spider_eye",
+          effet: "Fiole de poison : +30 % de dégâts et poison +20 %.",
+          gains: (
+            armes: [(
+              arme: "fiole_poison",
+              part: (
+                degats: 0.3,
+              ),
+            )],
+            modif: (
+              degatsPoison: 0.2,
+            ),
+          ),
+        )),
+      ), (
+        id: "oeil",
+        ligne: 3,
+        colonne: 3,
+        type: bonus,
+        branche: droite,
+        nom: "Œil exercé",
+        icone: "block/target_top",
+        effet: "Coups critiques +6 %.",
+        rangMax: 1,
+        gains: (
+          modif: (
+            critique: 0.06,
+          ),
+        ),
+      ), (
+        id: "distiller",
+        ligne: 4,
+        colonne: 0,
+        type: capacite,
+        branche: libre,
+        nom: "Distillation",
+        icone: "item/brewing_stand",
+        effet: "Commence la partie avec l'Alambic.",
+        rangMax: 1,
+        libre: true,
+        gains: (
+          armeDepart: "alambic",
+        ),
+      ), (
+        id: "cadence",
+        ligne: 4,
+        colonne: 1,
+        type: bonus,
+        branche: gauche,
+        nom: "Gestes sûrs",
+        icone: "item/clock_00",
+        effet: "Délai des armes −4 / 8 %.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            cadence: -0.04,
+          ),
+        ),
+      ), (
+        id: "affaibli",
+        ligne: 4,
+        colonne: 2,
+        type: bonus,
+        branche: centre,
+        nom: "Affaiblissement",
+        icone: "item/potion",
+        effet: "Les ennemis ralentis subissent +8 / 16 % de dégâts.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            degatsRalentis: 0.08,
+          ),
+        ),
+      ), (
+        id: "vapeurs",
+        ligne: 5,
+        colonne: 0,
+        type: bonus,
+        branche: libre,
+        nom: "Vapeurs",
+        icone: "block/campfire_log_lit",
+        effet: "Rayon de l'Alambic +15 / 30 %.",
+        rangMax: 2,
+        prerequis: ["distiller"],
+        gains: (
+          armes: [(
+            arme: "alambic",
+            part: (
+              zone: 0.15,
+            ),
+          )],
+        ),
+      ), (
+        id: "bras",
+        ligne: 5,
+        colonne: 1,
+        type: bonus,
+        branche: gauche,
+        nom: "Bras de lanceur",
+        icone: "item/snowball",
+        effet: "Vitesse des projectiles +15 / 30 %.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            vitesseProjectiles: 0.15,
+          ),
+        ),
+      ), (
+        id: "toxines",
+        ligne: 5,
+        colonne: 2,
+        type: bonus,
+        branche: centre,
+        nom: "Toxines",
+        icone: "item/pufferfish",
+        effet: "Toutes les armes font +4 / 8 % de dégâts.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            degats: 0.04,
+          ),
+        ),
+      ), (
+        id: "f_averse",
+        ligne: 6,
+        colonne: 1,
+        type: final,
+        branche: gauche,
+        nom: "Averse toxique",
+        icone: "item/splash_potion",
+        effet: "Fiole de poison : +2 fioles.",
+        rangMax: 1,
+        gains: (
+          armes: [(
+            arme: "fiole_poison",
+            ajout: (
+              nombre: 2.0,
+            ),
+          )],
+        ),
+      ), (
+        id: "f_peste",
+        ligne: 6,
+        colonne: 2,
+        type: final,
+        branche: centre,
+        nom: "Peste",
+        icone: "block/wither_rose",
+        effet: "Le poison fait +60 % de dégâts.",
+        rangMax: 1,
+        gains: (
+          modif: (
+            degatsPoison: 0.6,
+          ),
+        ),
+      ), (
+        id: "f_laboratoire",
+        ligne: 6,
+        colonne: 3,
+        type: final,
+        branche: droite,
+        nom: "Laboratoire",
+        icone: "item/end_crystal",
+        effet: "Délai des armes −12 % et zone +10 %.",
+        rangMax: 1,
+        gains: (
+          modif: (
+            cadence: -0.12,
+            zone: 0.1,
+          ),
+        ),
+      )],
+    ), (
+      id: "pyrochimiste",
+      nom: "Pyrochimiste",
+      description: "Le feu brûle, la glu retient.",
+      icone: "item/blaze_powder",
+      fond: "block/magma",
+      branches: {
+        tronc: "Tronc",
+        gauche: "Feu",
+        centre: "Lenteur",
+        droite: "Acide",
+        libre: "Pluie de fioles",
+      },
+      noeuds: [(
+        id: "melange",
+        ligne: 0,
+        colonne: 2,
+        type: capacite,
+        branche: tronc,
+        nom: "Mélange instable",
+        icone: "item/blaze_powder",
+        effet: "Les brûlures font +20 % de dégâts.",
+        rangMax: 1,
+        gains: (
+          modif: (
+            degatsBrulure: 0.2,
+          ),
+        ),
+      ), (
+        id: "soufre",
+        ligne: 1,
+        colonne: 1,
+        type: bonus,
+        branche: tronc,
+        nom: "Soufre",
+        icone: "item/gunpowder",
+        effet: "Dégâts de feu +4 / 8 / 12 %.",
+        rangMax: 3,
+        gains: (
+          modif: (
+            degatsFeu: 0.04,
+          ),
+        ),
+      ), (
+        id: "glu",
+        ligne: 1,
+        colonne: 2,
+        type: bonus,
+        branche: tronc,
+        nom: "Glu",
+        icone: "item/slime_ball",
+        effet: "Les ralentissements durent +8 / 16 / 24 %.",
+        rangMax: 3,
+        prerequis: ["melange"],
+        gains: (
+          modif: (
+            dureeRalenti: 0.08,
+          ),
+        ),
+      ), (
+        id: "brasero",
+        ligne: 2,
+        colonne: 1,
+        type: bonus,
+        branche: gauche,
+        nom: "Braséro",
+        icone: "item/fire_charge",
+        effet: "Dégâts de la Fiole incendiaire +15 / 30 %.",
+        rangMax: 2,
+        gains: (
+          armes: [(
+            arme: "fiole_incendiaire",
+            part: (
+              degats: 0.15,
+            ),
+          )],
+        ),
+      ), (
+        id: "englue",
+        ligne: 2,
+        colonne: 2,
+        type: bonus,
+        branche: centre,
+        nom: "Englué",
+        icone: "block/honey_block_top",
+        effet: "Les ennemis ralentis subissent +8 / 16 % de dégâts.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            degatsRalentis: 0.08,
+          ),
+        ),
+      ), (
+        id: "corrosion",
+        ligne: 2,
+        colonne: 3,
+        type: bonus,
+        branche: droite,
+        nom: "Corrosion",
+        icone: "block/slime_block",
+        effet: "Rayon de la Flaque acide +12 / 24 %.",
+        rangMax: 2,
+        gains: (
+          armes: [(
+            arme: "flaque_acide",
+            part: (
+              zone: 0.12,
+            ),
+          )],
+        ),
+      ), (
+        id: "combustion",
+        ligne: 3,
+        colonne: 1,
+        type: bonus,
+        branche: gauche,
+        nom: "Combustion lente",
+        icone: "item/coal",
+        effet: "Les brûlures durent +20 / 40 %.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            dureeBrulure: 0.2,
+          ),
+        ),
+      ), (
+        id: "cocktail",
+        ligne: 3,
+        colonne: 2,
+        type: choix,
+        branche: centre,
+        nom: "Napalm / Mélasse",
+        icone: "item/lingering_potion",
+        effet: "Au choix : Napalm ou Mélasse.",
+        rangMax: 1,
+        options: ((
+          nom: "Napalm",
+          icone: "item/lingering_potion",
+          effet: "Fiole incendiaire : +1 fiole.",
+          gains: (
+            armes: [(
+              arme: "fiole_incendiaire",
+              ajout: (
+                nombre: 1.0,
+              ),
+            )],
+          ),
+        ), (
+          nom: "Mélasse",
+          icone: "block/honey_block_top",
+          effet: "Flaque acide : ralentit 10 points de plus et dure 1 s de plus.",
+          gains: (
+            armes: [(
+              arme: "flaque_acide",
+              ajout: (
+                ralenti: 0.1,
+                duree: 1.0,
+              ),
+            )],
+          ),
+        )),
+      ), (
+        id: "mordant",
+        ligne: 3,
+        colonne: 3,
+        type: bonus,
+        branche: droite,
+        nom: "Mordant",
+        icone: "item/slime_ball",
+        effet: "Flaque acide : +4 dégâts.",
+        rangMax: 1,
+        gains: (
+          armes: [(
+            arme: "flaque_acide",
+            ajout: (
+              degats: 4.0,
+            ),
+          )],
+        ),
+      ), (
+        id: "averse",
+        ligne: 4,
+        colonne: 0,
+        type: capacite,
+        branche: libre,
+        nom: "Ciel chargé",
+        icone: "item/dragon_breath",
+        effet: "Commence la partie avec la Pluie de fioles.",
+        rangMax: 1,
+        libre: true,
+        gains: (
+          armeDepart: "pluie_fioles",
+        ),
+      ), (
+        id: "meche",
+        ligne: 4,
+        colonne: 1,
+        type: bonus,
+        branche: gauche,
+        nom: "Mèche courte",
+        icone: "item/flint_and_steel",
+        effet: "Délai des armes de feu −5 / 10 %.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            cadenceFeu: -0.05,
+          ),
+        ),
+      ), (
+        id: "prudence",
+        ligne: 4,
+        colonne: 2,
+        type: bonus,
+        branche: centre,
+        nom: "Prudence",
+        icone: "item/potion",
+        effet: "PV max +2 / 4.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            pvMax: 2.0,
+          ),
+        ),
+      ), (
+        id: "nuages",
+        ligne: 5,
+        colonne: 0,
+        type: bonus,
+        branche: libre,
+        nom: "Nuages lourds",
+        icone: "item/phantom_membrane",
+        effet: "Rayon de la Pluie de fioles +15 / 30 %.",
+        rangMax: 2,
+        prerequis: ["averse"],
+        gains: (
+          armes: [(
+            arme: "pluie_fioles",
+            part: (
+              zone: 0.15,
+            ),
+          )],
+        ),
+      ), (
+        id: "tison",
+        ligne: 5,
+        colonne: 1,
+        type: bonus,
+        branche: gauche,
+        nom: "Tison",
+        icone: "item/blaze_rod",
+        effet: "Les brûlures font +15 / 30 % de dégâts.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            degatsBrulure: 0.15,
+          ),
+        ),
+      ), (
+        id: "fuite",
+        ligne: 5,
+        colonne: 2,
+        type: bonus,
+        branche: centre,
+        nom: "Pas pressés",
+        icone: "item/sugar",
+        effet: "Vitesse de déplacement +4 / 8 %.",
+        rangMax: 2,
+        gains: (
+          modif: (
+            vitesse: 0.04,
+          ),
+        ),
+      ), (
+        id: "f_enfer",
+        ligne: 6,
+        colonne: 1,
+        type: final,
+        branche: gauche,
+        nom: "Enfer liquide",
+        icone: "item/fire_charge",
+        effet: "Fiole incendiaire : +50 % de dégâts et rayon +25 %.",
+        rangMax: 1,
+        gains: (
+          armes: [(
+            arme: "fiole_incendiaire",
+            part: (
+              degats: 0.5,
+              zone: 0.25,
+            ),
+          )],
+        ),
+      ), (
+        id: "f_maree",
+        ligne: 6,
+        colonne: 2,
+        type: final,
+        branche: centre,
+        nom: "Marée visqueuse",
+        icone: "block/honey_block_top",
+        effet: "Les ennemis ralentis subissent +30 % de dégâts ; ralentissements +50 % de durée.",
+        rangMax: 1,
+        gains: (
+          modif: (
+            degatsRalentis: 0.3,
+            dureeRalenti: 0.5,
+          ),
+        ),
+      ), (
+        id: "f_acide",
+        ligne: 6,
+        colonne: 3,
+        type: final,
+        branche: droite,
+        nom: "Acide pur",
+        icone: "block/slime_block",
+        effet: "Flaque acide : +60 % de dégâts et rayon +20 %.",
+        rangMax: 1,
+        gains: (
+          armes: [(
+            arme: "flaque_acide",
+            part: (
+              degats: 0.6,
+              zone: 0.2,
+            ),
+          )],
+        ),
+      )],
+    )),
   },
   maitrise: (
     icone: "item/experience_bottle",

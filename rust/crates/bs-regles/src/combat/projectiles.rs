@@ -11,6 +11,7 @@ use bs_donnees::entites::Projectile as DefinitionProjectile;
 use super::arme::ArmeEquipee;
 use crate::classes::valeur;
 use crate::ennemis::Nature;
+use crate::evenements::EffetArme;
 use crate::partie::Partie;
 
 const CAPACITE: usize = 256;
@@ -313,6 +314,8 @@ impl Partie {
                         p.nature,
                     );
                     p.degats *= 1.0 - p.perte;
+                    self.ev
+                        .effet(p.arme, EffetArme::Impact { zone: 0.0 }, p.x, p.z);
                     if p.brulure > 0.0 {
                         self.bruler(e, 1.0, p.brulure, BRULURE_TIRS, Some(p.arme));
                     }
@@ -355,6 +358,8 @@ impl Partie {
     fn exploser_projectile(&mut self, p: &ProjectileJoueur) {
         self.blesser_zone(p.x, p.z, p.zone, p.degats, p.recul, p.arme);
         self.ev.gerbe(p.gerbe, p.x, p.def.hauteur, p.z);
+        self.ev
+            .effet(p.arme, EffetArme::Impact { zone: p.zone }, p.x, p.z);
         self.ev.son_hauteur(p.son_explosion, 1.3);
         // Éclats : petites explosions tout autour (dernier rang de la Fusée explosive)
         for k in 0..p.eclats {

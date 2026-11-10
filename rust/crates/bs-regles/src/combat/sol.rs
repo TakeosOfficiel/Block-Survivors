@@ -274,6 +274,8 @@ impl Partie {
                 }
                 self.ev.gerbe("impactLame", c.x, 0.3, c.z);
                 self.ev
+                    .effet(arme.index, EffetArme::Impact { zone: s.zone }, c.x, c.z);
+                self.ev
                     .gerbe_icone("eboulis", self.texture_sol(), c.x, 0.3, c.z);
                 self.ev.son("lame_colossale");
                 self.ev.secousse(0.35);

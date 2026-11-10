@@ -7,10 +7,12 @@ mod arcanes;
 mod dessin;
 mod feu;
 mod foudre;
+mod impacts;
 mod lueur;
 mod melee;
 mod outils;
 mod posees;
+mod sillages;
 mod sol;
 mod solides;
 mod vitrine;
@@ -51,6 +53,9 @@ pub struct VisuelsArmes {
     eclairs: Vec<Eclair>,
     braises: Vec<Braise>,
     blocs: Vec<BlocSouleve>,
+    impacts: Vec<impacts::Impact>,
+    /// Teinte (linéaire) de chaque arme du catalogue.
+    teintes: Vec<[f32; 3]>,
     arcanes: Arcanes,
     solides: Solides,
     /// Orientation de la caméra à la dernière image (`dessiner`, avant `placer_solides`).
@@ -65,7 +70,13 @@ pub struct VisuelsArmes {
 }
 
 impl VisuelsArmes {
-    fn coup(&mut self, genre: Genre, angle: f32, portee: f32, ouverture: f32) {
+    /// Teinte linéaire de l'arme `arme` (index du catalogue), acier par défaut.
+    fn teinte(&self, arme: usize) -> [f32; 3] {
+        self.teintes.get(arme).copied().unwrap_or(melee::ACIER)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn coup(&mut self, genre: Genre, angle: f32, portee: f32, ouverture: f32, rgb: [f32; 3]) {
         if self.coups.len() >= melee::CAPACITE {
             return;
         }
@@ -76,6 +87,7 @@ impl VisuelsArmes {
             portee,
             ouverture,
             sens: self.sens,
+            rgb,
             age: 0.0,
             decalage: Vec2::ZERO,
         });
@@ -123,6 +135,21 @@ pub fn construire(
     });
     let lueur = MaillageLueur::nouveau(&mut commandes, &mut maillages, materiau);
     let sol = jeu.partie.texture_sol();
+    let teintes = jeu
+        .partie
+        .d
+        .armes
+        .values()
+        .map(|a| {
+            let hex = match (&a.teinte, &a.mecanique) {
+                (Some(t), _) => *t,
+                (None, Mecanique::Foudre { couleur }) => *couleur,
+                _ => 0x8fb8ff,
+            };
+            let c = couleur_lineaire(hex);
+            [c[0], c[1], c[2]]
+        })
+        .collect();
     let solides = Solides::nouveaux(
         jeu.partie.d,
         sol,
@@ -141,6 +168,8 @@ pub fn construire(
         eclairs: Vec::with_capacity(foudre::CAPACITE),
         braises: Vec::with_capacity(feu::BRAISES),
         blocs: Vec::with_capacity(sol::BLOCS),
+        impacts: Vec::with_capacity(impacts::CAPACITE),
+        teintes,
         arcanes: Arcanes::nouvelles(),
         solides,
         sol,
@@ -163,15 +192,22 @@ pub fn recevoir(jeu: Res<PartieEnCours>, mut v: ResMut<VisuelsArmes>, effets: Re
                 angle,
                 portee,
                 ouverture,
-            } => v.coup(Genre::Balayage, angle, portee, ouverture),
+            } => {
+                let c = v.teinte(arme);
+                v.coup(Genre::Balayage, angle, portee, ouverture, c);
+            }
             EffetArme::Heurt {
                 angle,
                 portee,
                 ouverture,
-            } => v.coup(Genre::Heurt, angle, portee, ouverture),
+            } => {
+                let c = v.teinte(arme);
+                v.coup(Genre::Heurt, angle, portee, ouverture, c);
+            }
             EffetArme::Tourbillon { portee } => {
                 let angle = v.alea.unite() * std::f32::consts::TAU;
-                v.coup(Genre::Tourbillon, angle, portee, 0.0);
+                let c = v.teinte(arme);
+                v.coup(Genre::Tourbillon, angle, portee, 0.0, c);
             }
             EffetArme::Eclair { zone } => {
                 let couleur = match p.d.armes.get_index(arme).map(|(_, a)| &a.mecanique) {
@@ -184,6 +220,19 @@ pub fn recevoir(jeu: Res<PartieEnCours>, mut v: ResMut<VisuelsArmes>, effets: Re
                 if v.braises.len() < feu::BRAISES {
                     v.braises.push(Braise { x, z, age: 0.0 });
                 }
+            }
+            EffetArme::Impact { zone } => {
+                let rgb = v.teinte(arme);
+                let graine = v.alea.unite() * 100.0;
+                let i = impacts::Impact {
+                    x,
+                    z,
+                    zone,
+                    rgb,
+                    age: 0.0,
+                    graine,
+                };
+                impacts::ajouter(&mut v.impacts, i);
             }
             EffetArme::Soulevement { zone } => {
                 let VisuelsArmes { blocs, alea, .. } = &mut *v;

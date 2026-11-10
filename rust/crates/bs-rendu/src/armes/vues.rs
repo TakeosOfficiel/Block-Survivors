@@ -13,6 +13,7 @@ use bs_regles::combat::{Arsenal, SystemesArmes};
 use super::posees::{Fleche, Ronces};
 use super::sol::{Givre, Lame};
 use crate::PartieEnCours;
+use crate::arene::couleur_lineaire;
 use crate::sources::sources;
 
 /// Zone de l'arme `arme` de `arsenal` (1 si elle n'y est pas : vitrine).
@@ -67,6 +68,14 @@ pub fn texture_meteore(
     }
 }
 
+/// Teinte linéaire d'une arme, ou `defaut` si elle n'en a pas.
+fn teinte(a: &Arme, defaut: [f32; 3]) -> [f32; 3] {
+    a.teinte.map_or(defaut, |t| {
+        let c = couleur_lineaire(t);
+        [c[0], c[1], c[2]]
+    })
+}
+
 /// Lames géantes de la simulation et de l'étalage.
 pub fn lames<'a>(
     jeu: &'a PartieEnCours,
@@ -83,6 +92,7 @@ pub fn lames<'a>(
             image,
             taille: *taille,
             zone: s.zone,
+            teinte: teinte(a, [0.75, 0.85, 1.0]),
         })
     })
 }
@@ -110,6 +120,7 @@ pub fn givres<'a>(
             zone: s.zone,
             expansion: *expansion,
             duree_sol: *duree_sol,
+            teinte: teinte(a, [0.35, 0.75, 1.0]),
         })
     })
 }
@@ -134,6 +145,7 @@ pub fn fleches<'a>(
         Some(Fleche {
             fleche: f,
             image: &a.icone,
+            teinte: teinte(a, [0.85, 0.9, 1.0]),
         })
     })
 }
@@ -158,6 +170,7 @@ pub fn ronces<'a>(
             zone: s.zone,
             duree: s.duree,
             intervalle: *intervalle,
+            teinte: teinte(a, [0.35, 1.0, 0.3]),
         })
     })
 }

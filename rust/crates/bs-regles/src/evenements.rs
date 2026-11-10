@@ -38,6 +38,9 @@ pub enum EffetArme {
     Soulevement { zone: f32 },
     /// Trace brûlée laissée par une tornade.
     Brulure,
+    /// Coup porté par un projectile, une orbe, une flèche ou une arme qui tombe ;
+    /// `zone` > 0 : explosion de ce rayon.
+    Impact { zone: f32 },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

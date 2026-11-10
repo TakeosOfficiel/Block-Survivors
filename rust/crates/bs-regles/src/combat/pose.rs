@@ -8,6 +8,7 @@ use bs_donnees::armes::Mecanique;
 use super::tours;
 use crate::classes::valeur;
 use crate::ennemis::Nature;
+use crate::evenements::EffetArme;
 use crate::partie::Partie;
 
 const PLUIE_ZONES: usize = 8;
@@ -163,6 +164,8 @@ impl Partie {
                     self.toucher(e as usize, arme.index, &s, f.x, f.z, s.recul, 1.0);
                 }
                 self.ev.gerbe("impactFleche", f.x, 0.2, f.z);
+                self.ev
+                    .effet(arme.index, EffetArme::Impact { zone: 0.0 }, f.x, f.z);
                 if n > 0 {
                     self.ev.son("impact_fleche");
                 }

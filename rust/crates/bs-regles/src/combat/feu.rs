@@ -307,6 +307,14 @@ impl Partie {
                 self.renforcer_tornades(m.x, m.z);
             }
             self.ev.gerbe("impactMeteore", m.x, 0.4, m.z);
+            self.ev.effet(
+                arme.index,
+                EffetArme::Impact {
+                    zone: s.zone * m.taille,
+                },
+                m.x,
+                m.z,
+            );
             let texture = match &arme.def.mecanique {
                 Mecanique::Meteore { texture, .. } => texture.as_str(),
                 _ => "block/magma",

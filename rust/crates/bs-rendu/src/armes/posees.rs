@@ -23,9 +23,7 @@ const FLECHE: f32 = 0.95;
 /// Tirets du cercle de visée.
 const TIRETS: u32 = 18;
 
-const ACIER: [f32; 3] = [0.85, 0.9, 1.0];
 const VISEE: [f32; 3] = [1.0, 0.85, 0.55];
-const RONCES: [f32; 3] = [0.35, 1.0, 0.3];
 const BAIES: [f32; 3] = [1.0, 0.2, 0.25];
 
 /// Flèche et son image.
@@ -33,6 +31,8 @@ const BAIES: [f32; 3] = [1.0, 0.2, 0.25];
 pub struct Fleche<'a> {
     pub fleche: &'a FlecheTombante,
     pub image: &'a str,
+    /// Teinte de l'arme (linéaire).
+    pub teinte: [f32; 3],
 }
 
 /// Piège : ce qu'il faut pour le dessiner.
@@ -43,6 +43,8 @@ pub struct Ronces<'a> {
     pub zone: f32,
     pub duree: f32,
     pub intervalle: f32,
+    /// Teinte de l'arme (linéaire).
+    pub teinte: [f32; 3],
 }
 
 /// Fondu d'un objet qui vit `duree` secondes.
@@ -157,8 +159,8 @@ pub fn dessiner<'a>(
                 queue,
                 0.12,
                 0.02,
-                rgba(ACIER, 1.2),
-                rgba(ACIER, 0.0),
+                rgba(fl.teinte, 1.2),
+                rgba(fl.teinte, 0.0),
             );
             // Point visé
             au_sol(m, f.x, f.z, 0.3, rgba(VISEE, 0.6), Forme::Disque, 0.0);
@@ -172,7 +174,7 @@ pub fn dessiner<'a>(
                 f.x,
                 f.z,
                 r,
-                rgba(ACIER, 1.4 * (1.0 - t)),
+                rgba(fl.teinte, 1.4 * (1.0 - t)),
                 Forme::Anneau,
                 0.2,
             );
@@ -181,7 +183,7 @@ pub fn dessiner<'a>(
                 p,
                 droite * 0.5,
                 haut * 0.5,
-                rgba(ACIER, 1.6 * (1.0 - t)),
+                rgba(fl.teinte, 1.6 * (1.0 - t)),
                 Forme::Etincelle,
                 0.0,
             );
@@ -200,7 +202,7 @@ pub fn dessiner<'a>(
             p.x,
             p.z,
             zone,
-            rgba(RONCES, (0.5 + 0.9 * morsure) * f),
+            rgba(r.teinte, (0.5 + 0.9 * morsure) * f),
             Forme::Anneau,
             0.06,
         );
@@ -209,7 +211,7 @@ pub fn dessiner<'a>(
             p.x,
             p.z,
             zone,
-            rgba(RONCES, (0.08 + 0.25 * morsure) * f),
+            rgba(r.teinte, (0.08 + 0.25 * morsure) * f),
             Forme::Disque,
             0.0,
         );
@@ -227,8 +229,8 @@ pub fn dessiner<'a>(
                 bout,
                 0.1,
                 0.0,
-                rgba(RONCES, 1.2 * f),
-                rgba(RONCES, 0.4 * f),
+                rgba(r.teinte, 1.2 * f),
+                rgba(r.teinte, 0.4 * f),
             );
         }
         // Baies qui luisent dans les buissons

@@ -14,7 +14,8 @@ use bs_regles::combat::traque::Orbe;
 use super::arcanes::Apparition;
 use super::feu::Braise;
 use super::foudre::Eclair;
-use super::melee::{Coup, Genre};
+use super::impacts::{self, Impact};
+use super::melee::{self, Coup, Genre};
 use super::sol::{self, BlocSouleve};
 use super::{FOUDRE_DEFAUT, VisuelsArmes};
 use crate::{PAS, PartieEnCours};
@@ -39,7 +40,7 @@ pub struct Etalage {
     pub orbes: Vec<Orbe>,
     pub apparitions: Vec<Apparition>,
     minuteur: f32,
-    pose: bool,
+    pub pose: bool,
     /// Position du joueur à la dernière image : l'étalage le suit.
     origine: Vec2,
 }
@@ -195,6 +196,11 @@ impl Etalage {
             portee,
             ouverture,
             sens: 1.0,
+            rgb: if genre == Genre::Heurt {
+                melee::OR
+            } else {
+                melee::ACIER
+            },
             age,
             decalage,
         };
@@ -322,9 +328,23 @@ pub fn avancer(jeu: &PartieEnCours, v: &mut VisuelsArmes) {
     v.etalage.minuteur = 0.6;
     let angle = v.alea.unite() * TAU;
     match (v.alea.unite() * 3.0) as u32 {
-        0 => v.coup(Genre::Balayage, angle, 2.6, 2.4),
-        1 => v.coup(Genre::Heurt, angle, 3.0, 1.6),
-        _ => v.coup(Genre::Tourbillon, angle, 2.4, 0.0),
+        0 => v.coup(Genre::Balayage, angle, 2.6, 2.4, melee::ACIER),
+        1 => v.coup(Genre::Heurt, angle, 3.0, 1.6, melee::OR),
+        _ => v.coup(Genre::Tourbillon, angle, 2.4, 0.0, melee::ACIER),
     }
     v.eclair(j.x + 3.0, j.z - 3.0, 1.8, FOUDRE_DEFAUT);
+    // Impacts : un petit coup et une explosion, d'une arme au hasard
+    let n = v.teintes.len().max(1);
+    for (dx, dz, zone) in [(-3.0, 3.0, 0.0), (3.5, 4.0, 2.0)] {
+        let arme = (v.alea.unite() * n as f32) as usize;
+        let i = Impact {
+            x: j.x + dx,
+            z: j.z + dz,
+            zone,
+            rgb: v.teinte(arme),
+            age: 0.0,
+            graine: v.alea.unite() * 100.0,
+        };
+        impacts::ajouter(&mut v.impacts, i);
+    }
 }

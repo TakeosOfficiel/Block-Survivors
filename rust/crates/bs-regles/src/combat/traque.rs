@@ -12,6 +12,7 @@ use bs_donnees::armes::Mecanique;
 
 use super::tours;
 use crate::ennemis::Nature;
+use crate::evenements::EffetArme;
 use crate::partie::Partie;
 
 const ORBES_CAPACITE: usize = 32;
@@ -96,6 +97,13 @@ impl ArmesTraque {
     /// Flèches ricocheuses en vol, pour l'affichage : (x, z, direction x, direction z).
     pub fn ricochets(&self) -> impl Iterator<Item = [f32; 4]> + '_ {
         self.ricochets.iter().map(|f| [f.x, f.z, f.dir_x, f.dir_z])
+    }
+
+    /// Flèches ricocheuses avec l'index (dans l'arsenal) de leur arme.
+    pub fn ricochets_armes(&self) -> impl Iterator<Item = (usize, [f32; 4])> + '_ {
+        self.ricochets
+            .iter()
+            .map(|f| (f.arme, [f.x, f.z, f.dir_x, f.dir_z]))
     }
 }
 
@@ -228,6 +236,8 @@ impl Partie {
                     self.ralentir(c, ORBES_GIVREES.0, ORBES_GIVREES.1);
                 }
                 self.ev.gerbe("impactArcane", o.x, 1.0, o.z);
+                self.ev
+                    .effet(arme.index, EffetArme::Impact { zone: 0.0 }, o.x, o.z);
                 // Flux arcanique : l'orbe repart une fois vers un autre ennemi, plus faible
                 let flux =
                     crate::classes::valeur(self.talents.rang("flux_arcanique"), &FLUX_ARCANIQUE);
@@ -415,6 +425,8 @@ impl Partie {
                     f.nb_touches += 1;
                 }
                 self.ev.gerbe("impactFleche", f.x, 1.2, f.z);
+                self.ev
+                    .effet(arme.index, EffetArme::Impact { zone: 0.0 }, f.x, f.z);
                 self.ev.son("impact_fleche");
                 if f.rebonds <= 0.0 {
                     self.armes.traque.ricochets.swap_remove(i);

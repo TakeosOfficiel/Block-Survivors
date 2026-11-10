@@ -5,7 +5,7 @@ use bevy::prelude::*;
 
 use super::solides::Piece;
 use super::vues::{fleches, givres, lames, orbes, pluies, ronces, texture_meteore, zone};
-use super::{VisuelsArmes, arcanes, feu, foudre, melee, posees, sol};
+use super::{VisuelsArmes, arcanes, feu, foudre, impacts, melee, posees, sillages, sol};
 use crate::camera::Cible;
 use crate::modeles::rendu::Composants;
 use crate::options::Options;
@@ -116,6 +116,7 @@ pub fn dessiner(
     foudre::avancer(&mut v.eclairs, dt);
     feu::avancer(&mut v.braises, dt);
     sol::avancer(&mut v.blocs, dt);
+    impacts::avancer(&mut v.impacts, dt);
     let invocations =
         crate::sources::invocations(&jeu.partie, allies).map(|(cle, a)| (cle, Vec2::new(a.x, a.z)));
     let o = orbes(&jeu, allies, &v.etalage.orbes).map(|(o, _)| o);
@@ -124,7 +125,20 @@ pub fn dessiner(
     m.commencer();
     let e = &v.etalage;
     for coups in [&v.coups, &e.coups] {
-        melee::dessiner(m, coups, cible.0);
+        melee::dessiner(m, coups, cible.0, droite, haut);
+    }
+    impacts::dessiner(m, &v.impacts, oeil, droite, haut);
+    let teintes = &v.teintes;
+    let teinte = |a: usize| teintes.get(a).copied().unwrap_or(melee::ACIER);
+    let carte = &jeu.partie.carte;
+    for src in sources(&jeu.partie, allies) {
+        let sol = |x, z| carte.hauteur_lissee(x, z);
+        sillages::dessiner(m, &src, teinte, avance, sol, oeil, droite, haut);
+    }
+    if e.pose {
+        let j = &jeu.partie.etat.joueur;
+        let centre = Vec3::new(j.x, carte.hauteur_lissee(j.x, j.z), j.z);
+        sillages::vitrine(m, jeu.partie.d, teinte, centre, t, oeil, droite, haut);
     }
     for eclairs in [&v.eclairs, &e.eclairs] {
         foudre::dessiner(m, eclairs, oeil, droite, haut);

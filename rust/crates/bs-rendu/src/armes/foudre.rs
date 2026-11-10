@@ -110,8 +110,21 @@ pub fn dessiner(m: &mut MaillageLueur, eclairs: &[Eclair], oeil: Vec3, droite: V
         };
         let force = 2.2 * (1.0 - t).powf(0.7) * scintille;
         let c = [e.rgb[0], e.rgb[1], e.rgb[2], force];
+        // Halo large et pâle autour du trait, cœur blanc au centre
+        let halo = [e.rgb[0], e.rgb[1], e.rgb[2], force * 0.22];
+        let blanc = [1.0, 1.0, 1.0, force * 0.9];
         for w in e.points.windows(2) {
+            m.faisceau(oeil, w[0], w[1], LARGEUR * 5.0, LARGEUR * 5.0, halo, halo);
             m.faisceau(oeil, w[0], w[1], LARGEUR, LARGEUR, c, c);
+            m.faisceau(
+                oeil,
+                w[0],
+                w[1],
+                LARGEUR * 0.35,
+                LARGEUR * 0.35,
+                blanc,
+                blanc,
+            );
         }
         let cb = [e.rgb[0], e.rgb[1], e.rgb[2], force * 0.7];
         for b in &e.branches {
@@ -137,6 +150,10 @@ pub fn dessiner(m: &mut MaillageLueur, eclairs: &[Eclair], oeil: Vec3, droite: V
         let onde = e.zone * (0.3 + 0.7 * (1.0 - (1.0 - t).powi(3)));
         let ca = [e.rgb[0], e.rgb[1], e.rgb[2], 1.4 * (1.0 - t)];
         m.carre(sol, x * onde, z * onde, ca, Forme::Anneau, 0.12);
+        // Sol roussi qui s'éteint lentement
+        let roussi = e.zone * 0.8;
+        let cr = [e.rgb[0], e.rgb[1], e.rgb[2], 0.5 * (1.0 - t)];
+        m.carre(sol, x * roussi, z * roussi, cr, Forme::Disque, 0.0);
         let s = 1.8 * (1.0 - t).powi(2);
         let haut_sol = e.centre + Vec3::Y * 0.4;
         m.carre(

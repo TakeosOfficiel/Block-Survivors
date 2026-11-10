@@ -28,10 +28,7 @@ const FISSURES: f32 = 0.9;
 const ECLATS: u32 = 18;
 
 const POUSSIERE: [f32; 3] = [0.9, 0.75, 0.55];
-const CIBLE: [f32; 3] = [1.0, 0.25, 0.15];
-const ACIER: [f32; 3] = [0.75, 0.85, 1.0];
 const IMPACT: [f32; 3] = [1.0, 0.7, 0.35];
-const GLACE: [f32; 3] = [0.35, 0.75, 1.0];
 const GIVRE: [f32; 3] = [0.7, 0.9, 1.0];
 
 #[derive(Clone, Copy)]
@@ -88,6 +85,8 @@ pub struct Lame<'a> {
     pub image: &'a str,
     pub taille: f32,
     pub zone: f32,
+    /// Teinte de l'arme (linéaire).
+    pub teinte: [f32; 3],
 }
 
 /// Nova : ce qu'il faut pour la poser.
@@ -98,6 +97,8 @@ pub struct Givre<'a> {
     pub zone: f32,
     pub expansion: f32,
     pub duree_sol: f32,
+    /// Teinte de l'arme (linéaire).
+    pub teinte: [f32; 3],
 }
 
 /// Centre de l'image de la lame : la pointe descend vers la cible puis s'y plante et,
@@ -225,13 +226,13 @@ pub fn dessiner<'a>(
             // Cible qui se resserre, de plus en plus vive
             let r = l.zone * (1.0 + 0.4 * (1.0 - k));
             let a = 0.5 + 1.2 * k.max(0.0);
-            au_sol(m, c.x, c.z, r, rgba(CIBLE, a), Forme::Anneau, 0.07);
+            au_sol(m, c.x, c.z, r, rgba(l.teinte, a), Forme::Anneau, 0.07);
             au_sol(
                 m,
                 c.x,
                 c.z,
                 l.zone,
-                rgba(CIBLE, 0.3 * k),
+                rgba(l.teinte, 0.3 * k),
                 Forme::Disque,
                 0.0,
             );
@@ -245,8 +246,8 @@ pub fn dessiner<'a>(
                     queue,
                     0.5,
                     0.05,
-                    rgba(ACIER, 1.1),
-                    rgba(ACIER, 0.0),
+                    rgba(l.teinte, 1.1),
+                    rgba(l.teinte, 0.0),
                 );
             }
             continue;
@@ -271,7 +272,7 @@ pub fn dessiner<'a>(
                 c.x,
                 c.z,
                 r,
-                rgba(IMPACT, 2.0 * (1.0 - o)),
+                rgba(l.teinte, 2.0 * (1.0 - o)),
                 Forme::Anneau,
                 0.12,
             );
@@ -321,9 +322,9 @@ pub fn dessiner<'a>(
         let x = (n.temps / g.expansion).min(1.0);
         if x < 1.0 {
             let r = g.zone * (1.0 - (1.0 - x).powi(2));
-            au_sol(m, n.x, n.z, r, rgba(GLACE, 1.8), Forme::Anneau, 0.1);
+            au_sol(m, n.x, n.z, r, rgba(g.teinte, 1.8), Forme::Anneau, 0.1);
             au_sol(m, n.x, n.z, r * 1.05, rgba(GIVRE, 0.6), Forme::Anneau, 0.35);
-            au_sol(m, n.x, n.z, r, rgba(GLACE, 0.18), Forme::Disque, 0.0);
+            au_sol(m, n.x, n.z, r, rgba(g.teinte, 0.18), Forme::Disque, 0.0);
         }
         // Reflets au bout des éclats
         for k in 0..ECLATS {
@@ -370,7 +371,7 @@ pub fn dessiner<'a>(
             n.x,
             n.z,
             g.zone,
-            rgba(GLACE, 0.7 * f),
+            rgba(g.teinte, 0.7 * f),
             Forme::Anneau,
             0.05,
         );

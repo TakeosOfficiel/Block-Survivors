@@ -7,6 +7,7 @@ use std::f32::consts::TAU;
 use bevy::prelude::*;
 
 use super::lueur::{Forme, MaillageLueur};
+use super::outils::{au_sol, rgba};
 
 /// Coups affichés à la fois au plus.
 pub const CAPACITE: usize = 32;
@@ -29,8 +30,8 @@ const TOURBILLON_TRAINEE: f32 = 4.4;
 /// Segments d'un arc.
 const SEGMENTS: usize = 20;
 /// Couleurs (linéaires, intensité comprise).
-const ACIER: [f32; 3] = [0.3, 0.55, 1.0];
-const OR: [f32; 3] = [1.0, 0.62, 0.22];
+pub const ACIER: [f32; 3] = [0.3, 0.55, 1.0];
+pub const OR: [f32; 3] = [1.0, 0.62, 0.22];
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Genre {
@@ -47,6 +48,8 @@ pub struct Coup {
     pub ouverture: f32,
     /// Sens du geste (±1), alterné d'un coup à l'autre.
     pub sens: f32,
+    /// Teinte de l'arme (linéaire).
+    pub rgb: [f32; 3],
     pub age: f32,
     /// Écart au joueur (vitrine seulement).
     pub decalage: Vec2,
@@ -77,6 +80,11 @@ fn point(centre: Vec3, a: f32, r: f32) -> Vec3 {
 
 fn couleur(rgb: [f32; 3], a: f32) -> [f32; 4] {
     [rgb[0], rgb[1], rgb[2], a]
+}
+
+/// Blanchit une couleur (fil de la lame).
+fn blanchi(c: [f32; 3], k: f32) -> [f32; 3] {
+    c.map(|v| v + (1.0 - v) * k)
 }
 
 /// Traînée posée à plat : de l'angle `queue` à `tete`, entre les rayons `r0` et `r1`.
@@ -110,8 +118,9 @@ fn trainee(
     }
 }
 
-pub fn dessiner(m: &mut MaillageLueur, coups: &[Coup], joueur: Vec2) {
+pub fn dessiner(m: &mut MaillageLueur, coups: &[Coup], joueur: Vec2, droite: Vec3, haut: Vec3) {
     for c in coups {
+        let fil = blanchi(c.rgb, 0.65);
         let joueur = joueur + c.decalage;
         match c.genre {
             Genre::Balayage => {
@@ -124,7 +133,22 @@ pub fn dessiner(m: &mut MaillageLueur, coups: &[Coup], joueur: Vec2) {
                 let queue = tete - c.sens * c.ouverture * BALAYAGE_TRAINEE * avance;
                 let fondu = 1.0 - ((c.age - BALAYAGE_ALLER) / BALAYAGE_FONDU).clamp(0.0, 1.0);
                 let r0 = c.portee * BALAYAGE_INTERIEUR;
-                trainee(m, centre, queue, tete, r0, c.portee, ACIER, 1.1 * fondu);
+                trainee(m, centre, queue, tete, r0, c.portee, c.rgb, 1.1 * fondu);
+                // Fil de la lame, reflet au sol, étincelle au bout
+                let r1 = c.portee * 0.86;
+                trainee(m, centre, queue, tete, r1, c.portee, fil, 1.5 * fondu);
+                let sol = Vec3::new(joueur.x, 0.06, joueur.y);
+                trainee(m, sol, queue, tete, r0, c.portee * 1.1, c.rgb, 0.35 * fondu);
+                let bout = point(centre, tete, c.portee);
+                let e = 0.9 * fondu;
+                m.carre(
+                    bout,
+                    droite * e,
+                    haut * e,
+                    rgba(fil, 1.8 * fondu),
+                    Forme::Etincelle,
+                    0.0,
+                );
             }
             Genre::Tourbillon => {
                 let centre = Vec3::new(joueur.x, HAUTEUR_LAME, joueur.y);
@@ -133,7 +157,40 @@ pub fn dessiner(m: &mut MaillageLueur, coups: &[Coup], joueur: Vec2) {
                 let queue = tete - c.sens * TOURBILLON_TRAINEE;
                 let fondu = 1.0 - t * t;
                 let r0 = c.portee * 0.45;
-                trainee(m, centre, queue, tete, r0, c.portee, ACIER, 1.0 * fondu);
+                // Deux lames opposées, fil vif, cercle tranchant au sol
+                for d in [0.0, std::f32::consts::PI] {
+                    let (q, h) = (queue + d, tete + d);
+                    trainee(m, centre, q, h, r0, c.portee, c.rgb, 1.0 * fondu);
+                    trainee(m, centre, q, h, c.portee * 0.88, c.portee, fil, 1.3 * fondu);
+                    let bout = point(centre, h, c.portee);
+                    let e = 0.7 * fondu;
+                    m.carre(
+                        bout,
+                        droite * e,
+                        haut * e,
+                        rgba(fil, 1.5 * fondu),
+                        Forme::Etincelle,
+                        0.0,
+                    );
+                }
+                au_sol(
+                    m,
+                    joueur.x,
+                    joueur.y,
+                    c.portee,
+                    rgba(c.rgb, 0.9 * fondu),
+                    Forme::Anneau,
+                    0.06,
+                );
+                au_sol(
+                    m,
+                    joueur.x,
+                    joueur.y,
+                    c.portee,
+                    rgba(c.rgb, 0.15 * fondu),
+                    Forme::Disque,
+                    0.0,
+                );
             }
             Genre::Heurt => {
                 let centre = Vec3::new(joueur.x, HAUTEUR_ONDE, joueur.y);
@@ -144,7 +201,29 @@ pub fn dessiner(m: &mut MaillageLueur, coups: &[Coup], joueur: Vec2) {
                 let force = 2.4 * (1.0 - t).powf(1.5);
                 let demi = c.ouverture / 2.0;
                 // Éventail lumineux derrière l'onde, plus vif près d'elle
-                let cf = couleur(OR, force * 0.5);
+                let cf = couleur(c.rgb, force * 0.5);
+                // Choc : éclair au départ, poussière qui s'étale au sol
+                let flash = (1.0 - t * 4.0).max(0.0);
+                let devant = Vec2::new(c.angle.sin(), c.angle.cos()) * c.portee * 0.35;
+                let f = joueur + devant;
+                au_sol(
+                    m,
+                    f.x,
+                    f.y,
+                    c.portee * 0.6,
+                    rgba(fil, 2.0 * flash),
+                    Forme::Disque,
+                    0.0,
+                );
+                au_sol(
+                    m,
+                    f.x,
+                    f.y,
+                    r * 0.8,
+                    rgba(c.rgb, 0.8 * (1.0 - t)),
+                    Forme::Anneau,
+                    0.3,
+                );
                 for k in 0..SEGMENTS {
                     let (t0, t1) = (k as f32 / SEGMENTS as f32, (k + 1) as f32 / SEGMENTS as f32);
                     let (a0, a1) = (
@@ -173,7 +252,10 @@ pub fn dessiner(m: &mut MaillageLueur, coups: &[Coup], joueur: Vec2) {
                     );
                     // Bords de l'arc éteints
                     let bord = |t: f32| (1.0 - (t * 2.0 - 1.0).abs()).sqrt();
-                    let (c0, c1) = (couleur(OR, force * bord(t0)), couleur(OR, force * bord(t1)));
+                    let (c0, c1) = (
+                        couleur(fil, force * bord(t0)),
+                        couleur(fil, force * bord(t1)),
+                    );
                     m.quad(
                         [
                             point(centre, a0, r - e),

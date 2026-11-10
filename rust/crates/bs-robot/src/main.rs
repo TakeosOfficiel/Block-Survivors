@@ -4,7 +4,7 @@
 //!   cargo run --release -p bs-robot
 //!   GRAINES=10 PERSONNAGES=guerrier,archer INVINCIBLE=1 cargo run --release -p bs-robot
 //!
-//! Variables : GRAINES (15), PERSONNAGES (guerrier,archer,mage,invocateur), ARENES
+//! Variables : GRAINES (15), PERSONNAGES (guerrier,archer,mage,invocateur,paladin,alchimiste), ARENES
 //! (prairie), DUREE (1200 s de jeu), INVINCIBLE=1, REFERENCE (dossier des références
 //! TS : docs/robot-15, ou docs/robot-invincible ; docs/robot : 5 graines), SORTIE (dossier où écrire les bilans
 //! Rust, rien par défaut), VERIFIER=1 (échoue si une mesure sort de la tolérance).
@@ -31,7 +31,10 @@ fn du_groupe<'a>(liste: &'a [Bilan], cle: &str) -> Vec<&'a Bilan> {
 
 fn main() {
     let graines: u32 = variable("GRAINES", "15").parse().expect("GRAINES");
-    let personnages = variable("PERSONNAGES", "guerrier,archer,mage,invocateur");
+    let personnages = variable(
+        "PERSONNAGES",
+        "guerrier,archer,mage,invocateur,paladin,alchimiste",
+    );
     let arenes = variable("ARENES", "prairie");
     let duree: f64 = variable("DUREE", "1200").parse().expect("DUREE");
     let invincible = variable("INVINCIBLE", "") == "1";

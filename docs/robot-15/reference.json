@@ -338,6 +338,186 @@
      "parties": 4
     }
    }
+  },
+  "paladin/prairie": {
+   "parties": 15,
+   "victoires": 1,
+   "survie": {
+    "moyenne": 276.4,
+    "ecart": 255.6,
+    "min": 121.9,
+    "max": 1200.0
+   },
+   "niveau": {
+    "moyenne": 6.4,
+    "ecart": 6.9,
+    "min": 3.0,
+    "max": 32.0
+   },
+   "tues": {
+    "moyenne": 372.3,
+    "ecart": 1056.1,
+    "min": 44.0,
+    "max": 4321.0
+   },
+   "degatsSubis": {
+    "moyenne": 59.2,
+    "ecart": 79.0,
+    "min": 28.0,
+    "max": 353.0
+   },
+   "puissanceParMinute": [
+    3.5,
+    11.8,
+    13.8,
+    25.0,
+    16.3,
+    29.3,
+    38.0,
+    68.0,
+    89.0,
+    109.0,
+    128.0,
+    127.0,
+    175.0,
+    244.0,
+    250.0,
+    310.0,
+    390.0,
+    376.0,
+    724.0,
+    877.0
+   ],
+   "dpsParArme": {
+    "cloches_benites": {
+     "moyenne": 6.8,
+     "ecart": 4.9,
+     "min": 1.0,
+     "max": 14.0,
+     "parties": 4
+    },
+    "consecration": {
+     "moyenne": 4.5,
+     "ecart": 1.5,
+     "min": 3.0,
+     "max": 6.0,
+     "parties": 2
+    },
+    "epee_celeste": {
+     "moyenne": 47.3,
+     "ecart": 47.7,
+     "min": 9.0,
+     "max": 129.0,
+     "parties": 4
+    },
+    "hache_benie": {
+     "moyenne": 7.1,
+     "ecart": 5.9,
+     "min": 3.0,
+     "max": 28.0,
+     "parties": 15
+    },
+    "jugement": {
+     "moyenne": 16.8,
+     "ecart": 11.9,
+     "min": 8.0,
+     "max": 43.0,
+     "parties": 6
+    },
+    "sceau_lumiere": {
+     "moyenne": 6.2,
+     "ecart": 3.5,
+     "min": 2.0,
+     "max": 12.0,
+     "parties": 5
+    }
+   }
+  },
+  "alchimiste/prairie": {
+   "parties": 15,
+   "victoires": 0,
+   "survie": {
+    "moyenne": 260.0,
+    "ecart": 171.9,
+    "min": 93.4,
+    "max": 671.4
+   },
+   "niveau": {
+    "moyenne": 7.7,
+    "ecart": 4.4,
+    "min": 3.0,
+    "max": 18.0
+   },
+   "tues": {
+    "moyenne": 233.7,
+    "ecart": 276.7,
+    "min": 35.0,
+    "max": 959.0
+   },
+   "degatsSubis": {
+    "moyenne": 30.8,
+    "ecart": 21.2,
+    "min": 16.0,
+    "max": 93.0
+   },
+   "puissanceParMinute": [
+    7.9,
+    12.1,
+    16.4,
+    32.1,
+    37.0,
+    50.2,
+    46.5,
+    59.0,
+    93.5,
+    99.0,
+    111.0,
+    148.0
+   ],
+   "dpsParArme": {
+    "alambic": {
+     "moyenne": 3.0,
+     "ecart": 0.0,
+     "min": 3.0,
+     "max": 3.0,
+     "parties": 3
+    },
+    "fiole_incendiaire": {
+     "moyenne": 8.9,
+     "ecart": 5.4,
+     "min": 3.0,
+     "max": 20.0,
+     "parties": 7
+    },
+    "fiole_poison": {
+     "moyenne": 10.6,
+     "ecart": 4.6,
+     "min": 5.0,
+     "max": 23.0,
+     "parties": 15
+    },
+    "flaque_acide": {
+     "moyenne": 2.1,
+     "ecart": 0.8,
+     "min": 1.0,
+     "max": 3.0,
+     "parties": 7
+    },
+    "foudre_bouteille": {
+     "moyenne": 13.8,
+     "ecart": 8.7,
+     "min": 5.0,
+     "max": 29.0,
+     "parties": 6
+    },
+    "pluie_fioles": {
+     "moyenne": 3.8,
+     "ecart": 0.7,
+     "min": 3.0,
+     "max": 5.0,
+     "parties": 5
+    }
+   }
   }
  }
 }

@@ -5,6 +5,7 @@
     nom: "Épée en fer",
     description: "Frappe en arc de cercle l'ennemi le plus proche.",
     icone: "item/iron_sword",
+    teinte: 9419007,
     mecanique: balayage(
       angle: 2.2,
       effet: ["particle/sweep_0", "particle/sweep_1", "particle/sweep_2", "particle/sweep_3", "particle/sweep_4", "particle/sweep_5", "particle/sweep_6", "particle/sweep_7"],
@@ -76,6 +77,7 @@
     nom: "Arc",
     description: "Tire sur l'ennemi le plus proche.",
     icone: "item/bow",
+    teinte: 16773312,
     mecanique: tir(
       projectile: "fleche",
       dispersion: 0.18,
@@ -145,6 +147,7 @@
     nom: "Trident",
     description: "Lancé à travers les ennemis. Avec Loyauté, il revient dans votre main.",
     icone: "item/trident",
+    teinte: 4183776,
     mecanique: retour(
       projectile: "trident",
       dispersion: 0.5,
@@ -214,6 +217,7 @@
     nom: "Haches tournoyantes",
     description: "Des haches tournent autour de vous.",
     icone: "item/iron_axe",
+    teinte: 14674165,
     mecanique: orbite(
       projectile: "hache",
     ),
@@ -286,6 +290,7 @@
     nom: "Boules de feu",
     description: "Explosent au contact et brûlent la zone.",
     icone: "item/fire_charge",
+    teinte: 16742938,
     mecanique: explosif(
       projectile: "boule_feu",
     ),
@@ -355,6 +360,7 @@
     nom: "Éclairs",
     description: "La foudre frappe des ennemis au hasard.",
     icone: "block/lightning_rod",
+    teinte: 10475775,
     mecanique: foudre(
       couleur: 14674687,
     ),
@@ -423,6 +429,7 @@
     nom: "Onde de choc",
     description: "Frappe le sol : une fissure soulève les blocs vers le plus gros groupe.",
     icone: "block/cracked_stone_bricks",
+    teinte: 16751164,
     mecanique: fissure(
       ecart: 0.5,
       vitesse: 14.0,
@@ -496,6 +503,7 @@
     nom: "Lame colossale",
     description: "Une épée géante s'abat sur le plus gros groupe d'ennemis.",
     icone: "item/netherite_sword",
+    teinte: 11563263,
     mecanique: chute(
       image: "item/netherite_sword",
       taille: 5.0,
@@ -564,6 +572,7 @@
     nom: "Tourbillon de lames",
     description: "Tourne sur lui-même et frappe tout autour, plusieurs fois.",
     icone: "item/golden_sword",
+    teinte: 10473727,
     mecanique: tourbillon(
       intervalle: 0.3,
       effet: ["particle/sweep_0", "particle/sweep_1", "particle/sweep_2", "particle/sweep_3", "particle/sweep_4", "particle/sweep_5", "particle/sweep_6", "particle/sweep_7"],
@@ -634,6 +643,7 @@
     nom: "Heurt de bouclier",
     description: "Coup de bouclier devant lui : repousse fort et interrompt les attaques.",
     icone: "block/iron_trapdoor",
+    teinte: 16757575,
     mecanique: heurt(
       angle: 1.6,
       renvoi: 6.0,
@@ -702,6 +712,7 @@
     nom: "Tornade de feu",
     description: "Une colonne de braises tourbillonne vers les ennemis et les aspire.",
     icone: "item/blaze_powder",
+    teinte: 16734736,
     mecanique: tornade(
       texture: "block/magma",
       feu: "block/fire_0",
@@ -773,6 +784,7 @@
     nom: "Nova de glace",
     description: "Un anneau d'éclats de glace jaillit autour de lui, blesse et ralentit.",
     icone: "block/packed_ice",
+    teinte: 10152191,
     mecanique: nova(
       texture: "block/packed_ice",
       expansion: 0.4,
@@ -844,6 +856,7 @@
     nom: "Météore",
     description: "Un bloc de magma tombe sur un groupe et laisse le sol en feu.",
     icone: "block/magma",
+    teinte: 16730634,
     mecanique: meteore(
       texture: "block/magma",
       feu: "block/fire_0",
@@ -911,6 +924,7 @@
     nom: "Orbes arcaniques",
     description: "Des orbes d'améthyste tournent autour de lui puis foncent sur les ennemis.",
     icone: "item/amethyst_shard",
+    teinte: 12610559,
     mecanique: orbes(
       texture: "block/amethyst_block",
       contactAuRang: 4.0,
@@ -976,6 +990,7 @@
     nom: "Salve en éventail",
     description: "Tire une gerbe de flèches en éventail vers les ennemis.",
     icone: "item/crossbow_standby",
+    teinte: 16769162,
     mecanique: tir(
       projectile: "fleche",
       dispersion: 0.26,
@@ -1045,6 +1060,7 @@
     nom: "Pluie de flèches",
     description: "Des flèches tombent du ciel sur le plus gros groupe.",
     icone: "item/arrow",
+    teinte: 16765562,
     mecanique: pluie(
       projectile: "fleche",
       impactsParSeconde: 7.5,
@@ -1115,6 +1131,7 @@
     nom: "Flèche ricocheuse",
     description: "Une flèche spectrale rebondit d'ennemi en ennemi.",
     icone: "item/spectral_arrow",
+    teinte: 8256767,
     mecanique: ricochet(
       projectile: "fleche_spectrale",
       perte: 0.15,
@@ -1181,6 +1198,7 @@
     nom: "Fusée explosive",
     description: "Une fusée de feu d'artifice qui explose en gerbe colorée.",
     icone: "item/firework_rocket",
+    teinte: 16739029,
     mecanique: explosif(
       projectile: "fusee",
       gerbe: "artifice",
@@ -1251,6 +1269,7 @@
     nom: "Piège de ronces",
     description: "Pose des buissons de baies qui blessent et ralentissent.",
     icone: "item/sweet_berries",
+    teinte: 8117322,
     mecanique: piege(
       image: "block/sweet_berry_bush_stage3",
       intervalle: 0.5,
@@ -1322,6 +1341,7 @@
     nom: "Esprit de blaze",
     description: "Un blaze allié flotte près de lui et tire des salves de boules de feu.",
     icone: "item/blaze_rod",
+    teinte: 16752672,
     mecanique: invocation(
       allie: "esprit_blaze",
       brulureAuRang: 6.0,
@@ -1390,6 +1410,7 @@
     nom: "Totem des racines",
     description: "Un totem de palétuvier planté dans la horde attire, ralentit et enracine.",
     icone: "block/mangrove_roots_side",
+    teinte: 7265370,
     mecanique: invocation(
       allie: "totem_racines",
     ),
@@ -1457,6 +1478,7 @@
     nom: "Esprit protecteur",
     description: "Un allay le suit, lui donne un bouclier et soigne les alliés blessés.",
     icone: "block/amethyst_cluster",
+    teinte: 16770688,
     mecanique: invocation(
       allie: "allay",
     ),
@@ -1524,6 +1546,7 @@
     nom: "Golem de fer",
     description: "Invoque un golem qui écrase les ennemis.",
     icone: "block/carved_pumpkin",
+    teinte: 16760944,
     mecanique: invocation(
       allie: "golem_fer",
     ),
@@ -1593,6 +1616,7 @@
     nom: "Meute de loups",
     description: "Des loups apprivoisés traquent et mordent les ennemis.",
     icone: "item/bone",
+    teinte: 12577023,
     mecanique: invocation(
       allie: "loup",
     ),
@@ -1660,6 +1684,7 @@
     nom: "Vex",
     description: "Des esprits volants foncent sur les ennemis à travers le décor.",
     icone: "item/echo_shard",
+    teinte: 11462399,
     mecanique: invocation(
       allie: "vex",
     ),

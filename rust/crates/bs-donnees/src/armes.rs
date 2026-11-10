@@ -218,4 +218,7 @@ pub struct Arme {
     pub stats_affichees: Option<Vec<StatArme>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub eveils: Option<[Eveil; 2]>,
+    /// Couleur signature des lueurs de l'arme (0xRRGGBB) ; sans elle, celle de sa mécanique.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub teinte: Option<u32>,
 }

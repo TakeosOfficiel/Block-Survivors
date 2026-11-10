@@ -117,8 +117,25 @@ pub fn dessiner(
     feu::avancer(&mut v.braises, dt);
     sol::avancer(&mut v.blocs, dt);
     impacts::avancer(&mut v.impacts, dt);
-    let invocations =
-        crate::sources::invocations(&jeu.partie, allies).map(|(cle, a)| (cle, Vec2::new(a.x, a.z)));
+    let teintes = &v.teintes;
+    let invocations = sources(&jeu.partie, allies)
+        .enumerate()
+        .flat_map(|(n, s)| {
+            s.armes.invocations.pool.iter().map(move |a| {
+                let cle = ((n as u64) << 32) | u64::from(a.id);
+                (
+                    cle,
+                    a,
+                    a.arme.and_then(|i| s.arsenal.armes.get(i)).map(|x| x.index),
+                )
+            })
+        })
+        .map(|(cle, a, arme)| {
+            let rgb = arme
+                .and_then(|i| teintes.get(i).copied())
+                .unwrap_or(arcanes::ESPRIT);
+            (cle, Vec2::new(a.x, a.z), rgb)
+        });
     let o = orbes(&jeu, allies, &v.etalage.orbes).map(|(o, _)| o);
     v.arcanes.avancer(o, invocations, t, dt);
     let m = &mut v.lueur;

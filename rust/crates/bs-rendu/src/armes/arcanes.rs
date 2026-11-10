@@ -29,8 +29,13 @@ const CONNUS: usize = 64;
 
 const AMETHYSTE: [f32; 3] = [0.7, 0.35, 1.0];
 const COEUR: [f32; 3] = [1.0, 0.85, 1.0];
-const ESPRIT: [f32; 3] = [0.55, 0.85, 1.0];
-const RUNES: [f32; 3] = [0.75, 0.9, 1.0];
+/// Teinte des invocations sans arme connue.
+pub const ESPRIT: [f32; 3] = [0.55, 0.85, 1.0];
+
+/// Runes : la teinte, éclaircie.
+fn blanchi(c: [f32; 3]) -> [f32; 3] {
+    c.map(|v| v + (1.0 - v) * 0.45)
+}
 
 /// Trajet récent d'une orbe (le premier point est sa position actuelle).
 struct Sillage {
@@ -48,12 +53,14 @@ pub struct Apparition {
     pub z: f32,
     pub age: f32,
     pub depart: bool,
+    /// Teinte de l'arme qui invoque (linéaire).
+    pub rgb: [f32; 3],
 }
 
 #[derive(Default)]
 pub struct Arcanes {
     sillages: Vec<Sillage>,
-    connus: Vec<(u64, Vec2, bool)>,
+    connus: Vec<(u64, Vec2, bool, [f32; 3])>,
     pub apparitions: Vec<Apparition>,
 }
 
@@ -81,7 +88,7 @@ impl Arcanes {
     pub fn avancer<'a>(
         &mut self,
         orbes: impl Iterator<Item = &'a Orbe>,
-        allies: impl Iterator<Item = (u64, Vec2)>,
+        allies: impl Iterator<Item = (u64, Vec2, [f32; 3])>,
         temps: f32,
         dt: f32,
     ) {
@@ -124,33 +131,34 @@ impl Arcanes {
         for c in &mut self.connus {
             c.2 = false;
         }
-        for (id, p) in allies {
+        for (id, p, rgb) in allies {
             if let Some(c) = self.connus.iter_mut().find(|c| c.0 == id) {
                 c.1 = p;
                 c.2 = true;
             } else if self.connus.len() < CONNUS {
-                self.connus.push((id, p, true));
-                self.apparaitre(p, false);
+                self.connus.push((id, p, true, rgb));
+                self.apparaitre(p, false, rgb);
             }
         }
         let mut i = self.connus.len();
         while i > 0 {
             i -= 1;
             if !self.connus[i].2 {
-                let p = self.connus[i].1;
+                let (p, rgb) = (self.connus[i].1, self.connus[i].3);
                 self.connus.swap_remove(i);
-                self.apparaitre(p, true);
+                self.apparaitre(p, true, rgb);
             }
         }
     }
 
-    pub fn apparaitre(&mut self, p: Vec2, depart: bool) {
+    pub fn apparaitre(&mut self, p: Vec2, depart: bool, rgb: [f32; 3]) {
         if self.apparitions.len() < APPARITIONS {
             self.apparitions.push(Apparition {
                 x: p.x,
                 z: p.y,
                 age: 0.0,
                 depart,
+                rgb,
             });
         }
     }
@@ -230,7 +238,7 @@ impl Arcanes {
                     p,
                     droite * r,
                     haut * r,
-                    rgba(ESPRIT, 0.7 * (1.0 - k)),
+                    rgba(a.rgb, 0.7 * (1.0 - k)),
                     Forme::Disque,
                     0.0,
                 );
@@ -239,7 +247,7 @@ impl Arcanes {
                     a.x,
                     a.z,
                     0.6 + 1.2 * k,
-                    rgba(ESPRIT, 1.0 - k),
+                    rgba(a.rgb, 1.0 - k),
                     Forme::Anneau,
                     0.1,
                 );
@@ -251,7 +259,7 @@ impl Arcanes {
             // Colonne de lumière
             let h = 4.5 * (0.5 + 0.5 * e);
             let colonne = 0.75 * (1.0 - k);
-            let (bas, fin) = (rgba(ESPRIT, 1.5 * (1.0 - k)), rgba(ESPRIT, 0.0));
+            let (bas, fin) = (rgba(a.rgb, 1.5 * (1.0 - k)), rgba(a.rgb, 0.0));
             m.faisceau(
                 oeil,
                 pied,
@@ -264,13 +272,21 @@ impl Arcanes {
             // Cercle runique : anneau et étoile à six branches qui tourne
             let r = 0.5 + 1.1 * e;
             let f = 1.0 - k * k;
-            au_sol(m, a.x, a.z, r, rgba(RUNES, 1.3 * f), Forme::Anneau, 0.06);
+            au_sol(
+                m,
+                a.x,
+                a.z,
+                r,
+                rgba(blanchi(a.rgb), 1.3 * f),
+                Forme::Anneau,
+                0.06,
+            );
             au_sol(
                 m,
                 a.x,
                 a.z,
                 r * 0.7,
-                rgba(RUNES, 0.8 * f),
+                rgba(blanchi(a.rgb), 0.8 * f),
                 Forme::Anneau,
                 0.08,
             );
@@ -287,7 +303,7 @@ impl Arcanes {
                     sommet(i + 2),
                     0.05,
                     0.05,
-                    rgba(RUNES, 0.9 * f),
+                    rgba(blanchi(a.rgb), 0.9 * f),
                 );
             }
             // Étincelles qui montent en spirale

@@ -175,7 +175,13 @@ impl Etalage {
         }
         self.orbes
             .push(Orbe::figee(SANS_ARME, j.x, j.y, 0.123, 0.0, true));
-        let apparition = |x: f32, z: f32, age: f32, depart: bool| Apparition { x, z, age, depart };
+        let apparition = |x: f32, z: f32, age: f32, depart: bool| Apparition {
+            x,
+            z,
+            age,
+            depart,
+            rgb: super::arcanes::ESPRIT,
+        };
         self.apparitions.extend([
             apparition(j.x - 4.5, j.y + 2.5, 0.15, false),
             apparition(j.x + 3.0, j.y + 3.5, 0.4, false),

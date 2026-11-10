@@ -240,7 +240,7 @@ impl Partie {
             joueur: Joueur::default(),
             passifs: Passifs::nouveaux(neuf.personnage.bonus),
             arsenal: Arsenal::nouveau(),
-            talents: Talents::nouveaux(d.armes.len()),
+            talents: Talents::nouveaux(d),
             equipement: Equipement::nouveau(d),
             armes: SystemesArmes::nouveaux(d),
             flux: ChampDeFlux::nouveau(&self.carte),

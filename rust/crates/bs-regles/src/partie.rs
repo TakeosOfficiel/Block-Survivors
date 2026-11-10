@@ -113,7 +113,7 @@ impl Partie {
         let demi_cote = arene.largeur.max(arene.profondeur) / 2.0 + 1.0;
         let vue = VueCamera::nouvelle(etat.joueur.x, etat.joueur.z, 1280.0 / 720.0);
         let passifs = Passifs::nouveaux(etat.personnage.bonus);
-        let talents = Talents::nouveaux(d.armes.len());
+        let talents = Talents::nouveaux(d);
         let mut partie = Self {
             d,
             c: Catalogue::nouveau(d),

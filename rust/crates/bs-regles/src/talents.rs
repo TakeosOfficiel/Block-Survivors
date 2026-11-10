@@ -9,6 +9,7 @@
 //! sans le talent. Les dégâts des talents et des objets sont des « réactions » : ils ne
 //! relancent ni les talents ni les objets.
 
+use bs_donnees::Donnees;
 use bs_donnees::armes::{EtatEveil, Eveil, TypeEtat};
 use bs_donnees::equipement::EffetObjet;
 
@@ -32,7 +33,7 @@ pub struct Talents {
     pub armes: Vec<BonusArmeCumule>,
     /// Mécaniques propres de l'arbre actif et leur rang.
     pub mecaniques: Vec<(&'static str, u32)>,
-    /// État infligé par l'éveil de chaque arme (par index d'arme).
+    /// État infligé par chaque arme (par index d'arme) : celui de son éveil, sinon le sien.
     etats_eveils: Vec<Option<&'static EtatEveil>>,
     /// Dégâts causés par un talent ou un objet en cours : ils ne relancent rien.
     pub(crate) en_reaction: bool,
@@ -47,11 +48,12 @@ pub struct Talents {
 }
 
 impl Talents {
-    pub fn nouveaux(armes: usize) -> Self {
+    pub fn nouveaux(d: &'static Donnees) -> Self {
+        let armes = d.armes.len();
         Self {
             armes: vec![BonusArmeCumule::default(); armes],
             mecaniques: Vec::new(),
-            etats_eveils: vec![None; armes],
+            etats_eveils: d.armes.values().map(|a| a.etat.as_ref()).collect(),
             en_reaction: false,
             classes: Classes::default(),
             effets: Vec::with_capacity(EFFETS_MAX),
@@ -69,9 +71,11 @@ impl Talents {
             .map_or(0, |&(_, r)| r)
     }
 
-    /// L'arme d'index `arme` vient d'être éveillée.
+    /// L'arme d'index `arme` vient d'être éveillée : son état remplace celui de l'arme.
     pub fn definir_eveil(&mut self, arme: usize, eveil: &'static Eveil) {
-        self.etats_eveils[arme] = eveil.etat.as_ref();
+        if let Some(etat) = eveil.etat.as_ref() {
+            self.etats_eveils[arme] = Some(etat);
+        }
     }
 }
 
@@ -121,7 +125,7 @@ impl Partie {
         let Some(a) = arme else {
             return;
         };
-        // État de l'éveil de l'arme (Aura de feu, Haches givrées…)
+        // État de l'arme ou de son éveil (fioles, Aura de feu, Haches givrées…)
         if matches!(nature, Nature::Arme | Nature::Allie)
             && self.ennemis.pool[i].vivant()
             && let Some(etat) = self.talents.etats_eveils[a]

@@ -221,4 +221,8 @@ pub struct Arme {
     /// Couleur signature des lueurs de l'arme (0xRRGGBB) ; sans elle, celle de sa mécanique.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teinte: Option<u32>,
+    /// État infligé à chaque coup dès le rang 1 (fioles de l'Alchimiste) ; l'éveil qui en
+    /// donne un le remplace.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub etat: Option<EtatEveil>,
 }

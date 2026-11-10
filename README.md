@@ -247,6 +247,8 @@ arène choisit les siens.
 | Archère | Tireuse d'élite (portée, critiques, arc renforcé, +1 projectile) · Rôdeuse (vitesse, collecte, relances, régénération) |
 | Mage | Pyromancien (zone, boules de feu renforcées, critiques) · Arcaniste (cadence, soins, relances, Éclairs dès le départ) |
 | Invocateur | Maître-chien (loups renforcés, critiques, +1 allié) · Évocateur (vex renforcés, armure, golem dès le départ) |
+| Paladin | Croisé (hache bénie, Jugement céleste, critiques, Épée céleste au départ) · Gardien (armure, régénération, Consécration, Cloches bénites au départ) |
+| Alchimiste | Toxicologue (poison, fioles, Alambic au départ) · Pyrochimiste (brûlure, lenteur, flaque acide, Pluie de fioles au départ) |
 
 **Déblocages** : les trois classes sont jouables d'emblée ; la Mine s'ouvre en
 survivant 5:00 dans la Prairie, le Nether en survivant 5:00 dans la Mine. Tout
@@ -274,8 +276,10 @@ la skin ne change que l'apparence.
 
 ## Personnages
 
-Guerrier (épée), Archère (arc), Mage (boules de feu) ou Invocateur (meute de
-loups ; vex volants et golem de fer à gagner en cartes ou en talents).
+Guerrier (épée), Archère (arc), Mage (boules de feu), Invocateur (meute de
+loups ; vex volants et golem de fer à gagner en cartes ou en talents), Paladin
+(hache bénie, lumière dorée, robuste et lent, se soigne) ou Alchimiste (fioles de
+poison, de feu et de lenteur, fragile mais maître des foules).
 
 ## Arènes
 

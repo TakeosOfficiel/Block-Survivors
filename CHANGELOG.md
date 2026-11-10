@@ -5,6 +5,14 @@ Le lien « dernière version » pointe toujours sur la plus récente.
 
 Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections.
 
+## [0.51.0] — 2026-11-10
+
+### Nouveautés
+- **Deux nouvelles classes : le Paladin et l'Alchimiste.** Chacune a son arsenal de 6 armes, ses 2 bonus exclusifs et ses 2 arbres de talents.
+- **Paladin** : mêlée et lumière sacrée. Robuste et un peu lent, il démarre avec armure et régénération. Il frappe à la **Hache bénie** et peut appeler le **Jugement céleste** (foudre dorée), des **Cloches bénites** qui tournent autour de lui, la **Consécration** (anneau de lumière qui ralentit), l'**Épée céleste** qui tombe du ciel et le **Sceau de lumière**. Arbres : Croisé et Gardien.
+- **Alchimiste** : fioles, zones et états. Fragile mais maître des foules, il lance la **Fiole de poison** (empoisonne dès la première fiole), puis la **Fiole incendiaire**, la **Flaque acide**, la **Pluie de fioles** de lenteur, la **Foudre en bouteille** et l'**Alambic**, un piège qui empoisonne. Arbres : Toxicologue et Pyrochimiste.
+- La page Talents range les six classes sur deux lignes.
+
 ## [0.50.0] — 2026-10-23
 
 ### Nouveautés

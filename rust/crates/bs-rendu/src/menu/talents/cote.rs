@@ -47,8 +47,19 @@ pub(super) fn construire(commandes: &mut Commands, c: &Contexte, ic: &mut Icones
         ))
         .id();
     commandes.spawn((TextePixel::nouveau("Talents", IVOIRE, 3.0), ChildOf(cadre)));
-    // Classes : des liens, la choisie soulignée
-    let r = rangee(commandes, cadre, 20.0);
+    // Classes : des liens, la choisie soulignée ; passent à la ligne au-delà de quatre
+    let r = commandes
+        .spawn((
+            Node {
+                align_items: AlignItems::Center,
+                flex_wrap: FlexWrap::Wrap,
+                column_gap: Val::Px(20.0),
+                row_gap: Val::Px(8.0),
+                ..default()
+            },
+            ChildOf(cadre),
+        ))
+        .id();
     for (k, (id, perso)) in d.personnages.personnages.iter().enumerate() {
         let libre = prog.verrou(TypeDeblocage::Personnage, id).is_none();
         let choisie = k == c.etat.personnage;

@@ -1,6 +1,7 @@
 //! Équipement de la partie : 2 bagues et 1 amulette au plus. Les coffres en proposent
 //! (objets du monde et de tous les mondes, rareté tirée selon le coffre, ou renforcement
-//! d'un objet porté ; plus rien : un sac d'émeraudes). Emplacements pleins : on choisit
+//! d'un objet porté). Tout est porté au maximum : le coffre garde son intérêt, il offre
+//! un niveau, des soins complets ou un sac d'émeraudes. Emplacements pleins : on choisit
 //! ensuite l'objet à remplacer. Les bonus passent par les passifs, les effets propres
 //! par les talents (port de src/progression/equipement.ts, sans les textes).
 
@@ -29,6 +30,10 @@ pub enum ChoixEquipement {
     /// Ne rien remplacer : revenir aux propositions du coffre.
     Retour,
     Emeraudes(u32),
+    /// Équipement au maximum : passer au niveau suivant (cartes de niveau).
+    Niveau,
+    /// Équipement au maximum : PV au maximum.
+    Soin,
 }
 
 #[derive(Debug, Clone)]
@@ -185,10 +190,15 @@ impl Partie {
             eq.proposees.push(ChoixEquipement::Objet(k));
         }
         if self.equipement.proposees.is_empty() {
+            // Plus rien à trouver : des trésors à la place
             let nombre = r.emeraudes_consolation as u32;
-            self.equipement
-                .proposees
-                .push(ChoixEquipement::Emeraudes(nombre));
+            let tresors = [
+                ChoixEquipement::Niveau,
+                ChoixEquipement::Soin,
+                ChoixEquipement::Emeraudes(nombre),
+            ];
+            self.equipement.proposees.extend(tresors);
+            return &self.equipement.proposees;
         }
         // Ordre mélangé (la légendaire n'est pas toujours la première)
         for i in (1..self.equipement.proposees.len()).rev() {
@@ -253,6 +263,18 @@ impl Partie {
             }
             ChoixEquipement::Emeraudes(nombre) => {
                 self.etat.emeraudes += nombre;
+                return;
+            }
+            ChoixEquipement::Niveau => {
+                let j = &self.etat.joueur;
+                let manque = (j.xp_niveau - j.xp).max(0.0);
+                crate::etat::gagner_xp(d, &mut self.etat, manque);
+                return;
+            }
+            ChoixEquipement::Soin => {
+                let j = &mut self.etat.joueur;
+                self.etat.stats.pv_soignes += j.pv_max - j.pv;
+                j.pv = j.pv_max;
                 return;
             }
             ChoixEquipement::Retour => return,

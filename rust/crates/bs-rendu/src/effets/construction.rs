@@ -11,7 +11,7 @@ use bs_donnees::Donnees;
 use bs_donnees::entites::FormeProjectile;
 
 use super::geometrie::{
-    croisee, disque, modele_couche, peindre_fusee, plan, plan_sol, rectangle_uv,
+    croisee, disque, modele_couche, modele_debout, peindre_fusee, plan, plan_sol, rectangle_uv,
 };
 use super::{
     Effets, Lot, OPACITE_OMBRE, ORIENTATION_ICONE, TAILLE_ORBE, TEXTURE_OMBRE, TEXTURE_ORBES,
@@ -21,7 +21,7 @@ use crate::PartieEnCours;
 use crate::arene::couleur_lineaire;
 use crate::materiau::ParametresBloc;
 use crate::materiau_entite::MateriauEntite;
-use crate::modeles::geometrie::{Maillage, objet};
+use crate::modeles::geometrie::{Maillage, objet, objet_epais};
 use crate::textures::Textures;
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_4};
 
@@ -108,7 +108,7 @@ pub fn construire(
         let secours = couleur_lineaire(def.couleur_secours);
         let couleur = if tex.is_some() { [1.0; 4] } else { secours };
         let uv = rectangle_uv(def.uv, def.taille_texture);
-        let mut parametres = eclaire;
+        let mut parametres = if def.lumineux { brillant } else { eclaire };
         let m = match def.forme {
             FormeProjectile::Croisee => croisee(def.longueur, def.largeur, uv, couleur),
             FormeProjectile::FaceCamera => {
@@ -122,16 +122,22 @@ pub fn construire(
                 }
                 let couleur = if tex.is_some() { [1.0; 4] } else { secours };
                 match def.modele.as_deref().and_then(|m| d.modeles.get(m)) {
+                    Some(modele) if def.debout => modele_debout(modele, couleur, def.longueur),
                     Some(modele) => modele_couche(modele, couleur),
                     None => plan(def.longueur, def.longueur, uv, secours),
                 }
             }
             FormeProjectile::Relief => match pixels(&images, &tex) {
                 Some((px, l)) => {
-                    let mut m = objet(px, l, px.len() / 4 / l, def.longueur / l as f32);
-                    // Couché à plat, pointe vers l'avant (+Z)
-                    let r =
-                        Quat::from_rotation_y(ORIENTATION_ICONE) * Quat::from_rotation_z(FRAC_PI_2);
+                    let pixel = def.longueur / l as f32;
+                    let epaisseur = pixel * def.epaisseur.unwrap_or(1.0);
+                    let mut m = objet_epais(px, l, px.len() / 4 / l, pixel, epaisseur);
+                    // Dressé (tourne sur lui-même) ou couché à plat, pointe vers l'avant (+Z)
+                    let r = if def.debout {
+                        Quat::from_rotation_y(FRAC_PI_2)
+                    } else {
+                        Quat::from_rotation_y(ORIENTATION_ICONE) * Quat::from_rotation_z(FRAC_PI_2)
+                    };
                     tourner(&mut m, r);
                     m
                 }
@@ -221,7 +227,7 @@ pub fn construire(
 }
 
 /// Tourne tout le maillage (positions et normales).
-fn tourner(m: &mut Maillage, r: Quat) {
+pub(crate) fn tourner(m: &mut Maillage, r: Quat) {
     for p in &mut m.positions {
         *p = (r * Vec3::from_array(*p)).to_array();
     }

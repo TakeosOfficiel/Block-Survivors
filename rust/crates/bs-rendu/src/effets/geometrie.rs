@@ -87,6 +87,27 @@ pub fn croisee(longueur: f32, largeur: f32, uv: [f32; 4], couleur: [f32; 4]) -> 
 /// Modèle cubique fusionné (parties immobiles), couché dans le sens du vol : le haut
 /// du modèle vers +Z, centré en hauteur (trident, fusée lancés).
 pub fn modele_couche(def: &Modele, couleur: [f32; 4]) -> Maillage {
+    modele_tourne(def, couleur, Quat::from_rotation_x(FRAC_PI_2), 1.0)
+}
+
+/// Modèle cubique fusionné dressé, centré en hauteur, haut de `hauteur` blocs
+/// (cloche en orbite).
+pub fn modele_debout(def: &Modele, couleur: [f32; 4], hauteur: f32) -> Maillage {
+    let m = modele_tourne(def, couleur, Quat::IDENTITY, 1.0);
+    let (bas, haut) = bornes(&m);
+    let echelle = hauteur / (haut - bas).max(1e-3);
+    modele_tourne(def, couleur, Quat::IDENTITY, echelle)
+}
+
+/// Bas et haut (y) d'un maillage.
+fn bornes(m: &Maillage) -> (f32, f32) {
+    m.positions
+        .iter()
+        .fold((f32::MAX, f32::MIN), |(a, b), p| (a.min(p[1]), b.max(p[1])))
+}
+
+/// Parties fusionnées, centrées en hauteur, tournées par `couche`, mises à l'échelle.
+fn modele_tourne(def: &Modele, couleur: [f32; 4], couche: Quat, echelle: f32) -> Maillage {
     let mut m = Maillage::default();
     for cube_def in def.parties.values() {
         let debut = m.positions.len();
@@ -100,14 +121,10 @@ pub fn modele_couche(def: &Modele, couleur: [f32; 4]) -> Maillage {
             m.normales[k] = (rotation * Vec3::from_array(m.normales[k])).to_array();
         }
     }
-    let (bas, haut) = m
-        .positions
-        .iter()
-        .fold((f32::MAX, f32::MIN), |(a, b), p| (a.min(p[1]), b.max(p[1])));
-    let couche = Quat::from_rotation_x(FRAC_PI_2);
+    let (bas, haut) = bornes(&m);
     let milieu = Vec3::new(0.0, (bas + haut) / 2.0, 0.0);
     for p in &mut m.positions {
-        *p = (couche * (Vec3::from_array(*p) - milieu)).to_array();
+        *p = (couche * (Vec3::from_array(*p) - milieu) * echelle).to_array();
     }
     for n in &mut m.normales {
         *n = (couche * Vec3::from_array(*n)).to_array();

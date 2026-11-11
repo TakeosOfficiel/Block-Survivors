@@ -64,6 +64,7 @@ pub enum CarteJouee {
     Renfort { objet: String },
     Remplacer { objet: String, index: usize },
     Emeraudes { nombre: u32 },
+    Tresor { soin: bool },
 }
 
 impl CarteJouee {
@@ -99,6 +100,8 @@ impl CarteJouee {
                 index,
             },
             ChoixEquipement::Emeraudes(nombre) => Self::Emeraudes { nombre },
+            ChoixEquipement::Niveau => Self::Tresor { soin: false },
+            ChoixEquipement::Soin => Self::Tresor { soin: true },
             ChoixEquipement::Retour => return None,
         })
     }
@@ -135,6 +138,8 @@ impl CarteJouee {
                 })
             }
             Self::Emeraudes { nombre } => Some(ChoixEquipement::Emeraudes(*nombre)),
+            Self::Tresor { soin: false } => Some(ChoixEquipement::Niveau),
+            Self::Tresor { soin: true } => Some(ChoixEquipement::Soin),
             _ => None,
         };
         choix.map(|c| p.appliquer_equipement(c)).is_some()
@@ -148,6 +153,7 @@ impl CarteJouee {
                 | Self::Renfort { .. }
                 | Self::Remplacer { .. }
                 | Self::Emeraudes { .. }
+                | Self::Tresor { .. }
         )
     }
 }

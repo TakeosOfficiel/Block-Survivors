@@ -254,6 +254,15 @@ pub struct Projectile {
     pub trainee: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub decalage_trainee: Option<f32>,
+    /// Relief ou modèle dressé (debout, tournant sur lui-même) au lieu de couché.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub debout: bool,
+    /// Épaisseur du relief, en pixels du sprite (1 par défaut, comme les objets tenus).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub epaisseur: Option<f32>,
+    /// Non éclairé : brille par lui-même (feu, potions).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub lumineux: bool,
     pub couleur_secours: u32,
 }
 

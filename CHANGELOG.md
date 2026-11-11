@@ -12,6 +12,8 @@ Règle des numéros : `0.x.0` pour des nouveautés, `0.x.y` pour des corrections
 - **Paladin** : mêlée et lumière sacrée. Robuste et un peu lent, il démarre avec armure et régénération. Il frappe à la **Hache bénie** et peut appeler le **Jugement céleste** (foudre dorée), des **Cloches bénites** qui tournent autour de lui, la **Consécration** (anneau de lumière qui ralentit), l'**Épée céleste** qui tombe du ciel et le **Sceau de lumière**. Arbres : Croisé et Gardien.
 - **Alchimiste** : fioles, zones et états. Fragile mais maître des foules, il lance la **Fiole de poison** (empoisonne dès la première fiole), puis la **Fiole incendiaire**, la **Flaque acide**, la **Pluie de fioles** de lenteur, la **Foudre en bouteille** et l'**Alambic**, un piège qui empoisonne. Arbres : Toxicologue et Pyrochimiste.
 - La page Talents range les six classes sur deux lignes.
+- **Sorts en 3D** : la Cloche bénite est une vraie cloche en cubes ; fioles et boules de feu sont des objets en relief qui tournoient ; l'Épée céleste, les plantes des pièges et les fioles de la Pluie sont extrudées pixel par pixel au lieu d'images plates.
+- **Coffres plus rares et plus chers.** Une fois tout l'équipement au maximum, un coffre propose une **Fiole d'expérience** (niveau suivant tout de suite), une **Pomme d'or enchantée** (tous vos PV) ou un sac d'émeraudes.
 
 ## [0.50.0] — 2026-10-23
 

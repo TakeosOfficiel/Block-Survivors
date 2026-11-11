@@ -1,6 +1,7 @@
 //! Pièces solides des armes, dessinées avec le matériau des entités (et non en
 //! lueurs) : blocs texturés (météores, blocs soulevés, éclats de glace) et images
-//! dressées (lame géante qui tombe). Un lot par texture et par genre ; une texture
+//! dressées en relief, extrudées pixel par pixel (lame géante qui tombe, plantes des
+//! pièges, fioles de la pluie). Un lot par texture et par genre ; une texture
 //! animée (bande d'images, comme le magma) ne montre que sa première image.
 
 use bevy::mesh::VertexAttributeValues;
@@ -9,13 +10,15 @@ use bs_donnees::Donnees;
 use bs_donnees::armes::Mecanique;
 
 use crate::effets::Lot;
+use crate::effets::construction::{pixels, tourner};
 use crate::effets::geometrie::plan;
 use crate::materiau::ParametresBloc;
 use crate::materiau_entite::{MateriauEntite, tag_surcouche};
+use crate::modeles::geometrie::{Maillage, objet_epais};
 use crate::modeles::rendu::Composants;
 use crate::textures::Textures;
 
-/// Genre de pièce : bloc cubique, ou image dressée (côté 1, centrée).
+/// Genre de pièce : bloc cubique, ou image dressée en relief (côté 1, centrée).
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Piece {
     Cube,
@@ -62,6 +65,23 @@ fn cube(proportion: f32) -> Mesh {
     m
 }
 
+/// Épaisseur des images en relief, en pixels du sprite.
+const EPAISSEUR: f32 = 1.5;
+
+/// Image carrée extrudée (côté 1, normale +Z comme le plan qu'elle remplace) ; rien
+/// pour une texture animée en bande ou pas encore chargée.
+fn relief(images: &Assets<Image>, texture: &Option<Handle<Image>>) -> Option<Maillage> {
+    let (px, l) = pixels(images, texture)?;
+    let h = px.len() / 4 / l;
+    if h != l {
+        return None;
+    }
+    let pixel = 1.0 / l as f32;
+    let mut m = objet_epais(px, l, h, pixel, pixel * EPAISSEUR);
+    tourner(&mut m, Quat::from_rotation_y(std::f32::consts::FRAC_PI_2));
+    Some(m)
+}
+
 pub struct Solides {
     lots: Vec<(&'static str, Piece, Lot)>,
     /// Relief de l'image : chaque pièce monte au niveau du sol sous elle.
@@ -90,7 +110,9 @@ impl Fabrique<'_> {
             .map_or(1.0, |i| i.width() as f32 / i.height().max(1) as f32);
         let maillage = match piece {
             Piece::Cube => cube(proportion),
-            Piece::Image => plan(1.0, 1.0, [0.0, 0.0, 1.0, proportion], [1.0; 4]).en_mesh(),
+            Piece::Image => relief(self.images, &texture)
+                .unwrap_or_else(|| plan(1.0, 1.0, [0.0, 0.0, 1.0, proportion], [1.0; 4]))
+                .en_mesh(),
         };
         Lot::nouveau(
             "piece-arme",

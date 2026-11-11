@@ -120,6 +120,17 @@ pub fn cube(m: &mut Maillage, c: &Cube, taille_texture: [f32; 2], couleur: [f32;
 /// plan x = 0 centrée sur l'origine, droite du sprite vers +Z, haut vers +Y ; `pixel` =
 /// côté d'un pixel en blocs.
 pub fn objet(pixels: &[u8], largeur: usize, hauteur: usize, pixel: f32) -> Maillage {
+    objet_epais(pixels, largeur, hauteur, pixel, pixel)
+}
+
+/// Comme [`objet`], d'épaisseur `epaisseur` blocs (sorts plus massifs qu'un objet tenu).
+pub fn objet_epais(
+    pixels: &[u8],
+    largeur: usize,
+    hauteur: usize,
+    pixel: f32,
+    epaisseur: f32,
+) -> Maillage {
     let opaque = |x: isize, y: isize| {
         x >= 0
             && y >= 0
@@ -129,7 +140,7 @@ pub fn objet(pixels: &[u8], largeur: usize, hauteur: usize, pixel: f32) -> Maill
     };
     let mut m = Maillage::default();
     let blanc = [1.0; 4];
-    let e = pixel / 2.0;
+    let e = epaisseur / 2.0;
     let z = |colonne: f32| (colonne - largeur as f32 / 2.0) * pixel;
     let y = |ligne: f32| (hauteur as f32 / 2.0 - ligne) * pixel;
     let (z0, z1, y0, y1) = (z(0.0), z(largeur as f32), y(hauteur as f32), y(0.0));

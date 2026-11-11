@@ -6,7 +6,7 @@
 //! ses instances (Bevy les dessine en un appel). Chaque image, les instances sont
 //! reposées ; celles en trop sont cachées, jamais détruites.
 
-mod construction;
+pub(crate) mod construction;
 pub mod geometrie;
 mod lot;
 

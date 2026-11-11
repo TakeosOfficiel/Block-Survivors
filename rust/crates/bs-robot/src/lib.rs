@@ -305,6 +305,8 @@ fn noter_equipement(c: &ChoixEquipement) -> i32 {
         ChoixEquipement::Renfort(_) => 4,
         ChoixEquipement::Objet(_) => 3,
         ChoixEquipement::Remplacer { .. } => 1,
+        ChoixEquipement::Niveau => 2,
+        ChoixEquipement::Soin => 1,
         ChoixEquipement::Emeraudes(_) => 0,
         ChoixEquipement::Retour => -1,
     }

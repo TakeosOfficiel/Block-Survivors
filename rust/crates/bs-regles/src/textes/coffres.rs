@@ -1,5 +1,5 @@
 //! Textes des cartes de coffre (port de src/progression/equipement.ts) : objet, renfort,
-//! remplacement, retour et émeraudes, avec les bonus « avant → après ».
+//! remplacement, retour, émeraudes et trésors de l'équipement complet, avec les bonus « avant → après ».
 
 use bs_donnees::equipement::Emplacement;
 
@@ -129,14 +129,28 @@ impl Partie {
                     format!("Ne pas prendre {nom} : revenir aux objets du coffre."),
                 )
             }
+            ChoixEquipement::Niveau => carte(
+                Famille::Action,
+                "Fiole d'expérience",
+                Icone::Texture("item/experience_bottle"),
+                "Équipement au maximum".into(),
+                "Passer tout de suite au niveau suivant.".into(),
+            ),
+            ChoixEquipement::Soin => carte(
+                Famille::Action,
+                "Pomme d'or enchantée",
+                Icone::Texture("item/golden_apple"),
+                "Équipement au maximum".into(),
+                "Rendre tous vos PV.".into(),
+            ),
             ChoixEquipement::Emeraudes(n) => {
                 // Seule carte du coffre : consolation ; sinon, refus
                 let seule = self.equipement.proposees.len() == 1;
                 let (nom, etiquette, description) = if seule {
                     (
                         "Sac d'émeraudes",
-                        "Tout est au maximum",
-                        format!("Plus rien à trouver : {n} émeraudes."),
+                        "Équipement au maximum",
+                        format!("Repartir avec {n} émeraudes."),
                     )
                 } else {
                     (

@@ -1562,6 +1562,23 @@
       )],
     ),
   ),
+  "cloche": (
+    tailleTexture: (32.0, 32.0),
+    parties: {
+      "corps": (
+        taille: (6.0, 7.0, 6.0),
+        pivot: (0.0, 0.0, 0.0),
+        centre: (0.0, 5.5, 0.0),
+        uv: (0.0, 0.0),
+      ),
+      "bord": (
+        taille: (8.0, 2.0, 8.0),
+        pivot: (0.0, 0.0, 0.0),
+        centre: (0.0, 1.0, 0.0),
+        uv: (0.0, 13.0),
+      ),
+    },
+  ),
   "trident": (
     tailleTexture: (32.0, 32.0),
     parties: {

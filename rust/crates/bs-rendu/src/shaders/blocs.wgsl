@@ -100,6 +100,14 @@ fn fragment(in: Sortie, @builtin(front_facing) devant: bool) -> @location(0) vec
     if p.brouillard.z > 0.0 && c.a < p.brouillard.z {
         discard;
     }
+#ifdef TRANCHE
+    // Intérieur d'un bloc vu par une coupe : tranche pleine, sombre et sans relief
+    if !devant {
+        let profondeur_t = -(view.view_from_world * in.world_position).z;
+        let f_t = smoothstep(p.brouillard.x, p.brouillard.y, profondeur_t);
+        return vec4(mix(c.rgb * (p.ambiante.rgb * 0.55 + vec3(0.06)), p.ciel.rgb, f_t), 1.0);
+    }
+#endif
     var n = normalize(in.world_normal);
     if !devant {
         n = -n;

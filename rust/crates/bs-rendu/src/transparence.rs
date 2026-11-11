@@ -1,7 +1,8 @@
 //! Vue à travers les blocs : en partie, les matériaux des blocs reçoivent la position
 //! des pieds du joueur, et leur shader ne dessine pas ce qui le cache à la caméra
 //! au-dessus de ses épaules (plafond d'une cave, toit d'une maison, haut d'un mur).
-//! Les ombres restent celles des blocs entiers.
+//! Les ombres restent celles des blocs entiers. Les faces arrière ainsi découvertes
+//! sont dessinées en tranche pleine et sombre : on ne voit jamais sous la carte.
 
 use bevy::prelude::*;
 

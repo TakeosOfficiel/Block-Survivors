@@ -182,6 +182,12 @@ impl Material for MateriauBloc {
             ATTRIBUTE_VENT.at_shader_location(6),
         ];
         descriptor.vertex.buffers = vec![layout.0.get_layout(&attributs)?];
+        // Blocs pleins : leurs faces arrière ne se voient que par une coupe de la vue
+        // à travers ; on les dessine en tranche sombre (sinon on verrait sous la carte).
+        if !key.bind_group_data.double_face {
+            descriptor.primitive.cull_mode = None;
+            definir(descriptor, "TRANCHE");
+        }
         Ok(())
     }
 }

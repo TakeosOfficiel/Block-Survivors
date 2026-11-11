@@ -13,7 +13,7 @@ use bs_regles::combat::sol::{
 };
 
 use super::lueur::{Forme, MaillageLueur};
-use super::outils::{au_sol, hachage, rgba, trait_au_sol};
+use super::outils::{au_sol, blanchi, hachage, rgba, trait_au_sol};
 use super::solides::{Piece, Solides};
 use crate::modeles::rendu::Composants;
 
@@ -28,8 +28,6 @@ const FISSURES: f32 = 0.9;
 const ECLATS: u32 = 18;
 
 const POUSSIERE: [f32; 3] = [0.9, 0.75, 0.55];
-const IMPACT: [f32; 3] = [1.0, 0.7, 0.35];
-const GIVRE: [f32; 3] = [0.7, 0.9, 1.0];
 
 #[derive(Clone, Copy)]
 pub struct BlocSouleve {
@@ -260,7 +258,7 @@ pub fn dessiner<'a>(
             c.x,
             c.z,
             l.zone * 1.6,
-            rgba(IMPACT, 2.2 * flash),
+            rgba(blanchi(l.teinte, 0.45), 2.2 * flash),
             Forme::Disque,
             0.0,
         );
@@ -311,7 +309,7 @@ pub fn dessiner<'a>(
             lueur,
             droite * 1.6,
             haut * 1.6,
-            rgba(IMPACT, 0.5 * reste),
+            rgba(blanchi(l.teinte, 0.45), 0.5 * reste),
             Forme::Disque,
             0.0,
         );
@@ -323,7 +321,15 @@ pub fn dessiner<'a>(
         if x < 1.0 {
             let r = g.zone * (1.0 - (1.0 - x).powi(2));
             au_sol(m, n.x, n.z, r, rgba(g.teinte, 1.8), Forme::Anneau, 0.1);
-            au_sol(m, n.x, n.z, r * 1.05, rgba(GIVRE, 0.6), Forme::Anneau, 0.35);
+            au_sol(
+                m,
+                n.x,
+                n.z,
+                r * 1.05,
+                rgba(blanchi(g.teinte, 0.5), 0.6),
+                Forme::Anneau,
+                0.35,
+            );
             au_sol(m, n.x, n.z, r, rgba(g.teinte, 0.18), Forme::Disque, 0.0);
         }
         // Reflets au bout des éclats
@@ -341,7 +347,7 @@ pub fn dessiner<'a>(
                 pointe,
                 droite * 0.35,
                 haut * 0.35,
-                rgba(GIVRE, 1.5 * eclair + 0.25),
+                rgba(blanchi(g.teinte, 0.5), 1.5 * eclair + 0.25),
                 Forme::Etincelle,
                 0.0,
             );
@@ -362,7 +368,7 @@ pub fn dessiner<'a>(
             n.x,
             n.z,
             g.zone * 1.1,
-            rgba(GIVRE, 0.45 * f),
+            rgba(blanchi(g.teinte, 0.5), 0.45 * f),
             Forme::Disque,
             0.0,
         );
@@ -384,7 +390,7 @@ pub fn dessiner<'a>(
                 p,
                 droite * 0.22,
                 haut * 0.22,
-                rgba(GIVRE, 1.6 * scintille * f),
+                rgba(blanchi(g.teinte, 0.5), 1.6 * scintille * f),
                 Forme::Etincelle,
                 0.0,
             );

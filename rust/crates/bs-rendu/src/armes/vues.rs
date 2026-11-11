@@ -125,14 +125,20 @@ pub fn givres<'a>(
     })
 }
 
-/// Zones de pluie de flèches.
+/// Zones de pluie et teinte de leur arme.
 pub fn pluies<'a>(
     jeu: &'a PartieEnCours,
     allies: bool,
     etalage: &'a [ZonePluie],
-) -> impl Iterator<Item = &'a ZonePluie> {
-    objets(jeu, allies, etalage, |a| &a.posees.zones).map(|(_, z)| z)
+) -> impl Iterator<Item = (&'a ZonePluie, [f32; 3])> {
+    objets(jeu, allies, etalage, |a| &a.posees.zones).map(move |(arsenal, z)| {
+        let c = definition(jeu, arsenal, z.arme, "pluie").map(|(a, _)| teinte(a, VISEE));
+        (z, c.unwrap_or(VISEE))
+    })
 }
+
+/// Teinte d'une pluie sans arme connue.
+const VISEE: [f32; 3] = [1.0, 0.85, 0.55];
 
 /// Flèches de pluie (image : l'icône de l'arme).
 pub fn fleches<'a>(

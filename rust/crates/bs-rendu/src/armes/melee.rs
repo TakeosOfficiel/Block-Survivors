@@ -7,7 +7,7 @@ use std::f32::consts::TAU;
 use bevy::prelude::*;
 
 use super::lueur::{Forme, MaillageLueur};
-use super::outils::{au_sol, rgba};
+use super::outils::{au_sol, blanchi, rgba};
 
 /// Coups affichés à la fois au plus.
 pub const CAPACITE: usize = 32;
@@ -83,10 +83,6 @@ fn couleur(rgb: [f32; 3], a: f32) -> [f32; 4] {
 }
 
 /// Blanchit une couleur (fil de la lame).
-fn blanchi(c: [f32; 3], k: f32) -> [f32; 3] {
-    c.map(|v| v + (1.0 - v) * k)
-}
-
 /// Traînée posée à plat : de l'angle `queue` à `tete`, entre les rayons `r0` et `r1`.
 #[allow(clippy::too_many_arguments)]
 fn trainee(

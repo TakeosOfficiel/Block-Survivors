@@ -1,7 +1,7 @@
 //! Pas de la simulation (`FixedUpdate`) : le clavier conduit le joueur, ou le robot de
 //! démonstration tant que personne n'y a touché ; pas de pas tant que des cartes
 //! attendent un choix ni pendant la pause. Début de partie accéléré pour les captures
-//! (`BS_DEBUT`, `BS_COFFRE`, `BS_FIN`).
+//! (`BS_DEBUT`, `BS_ARSENAL`, `BS_COFFRE`, `BS_FIN`).
 
 use bevy::prelude::*;
 
@@ -34,6 +34,16 @@ pub(crate) fn avancer_debut(jeu: &mut PartieEnCours) {
     }
     if crate::scene::immobile() {
         encercler(jeu);
+    }
+    // Essai des visuels d'une classe : `BS_ARSENAL=1` donne tout son arsenal
+    if std::env::var_os("BS_ARSENAL").is_some() {
+        jeu.partie.etat.niveaux_en_attente = 0;
+        let ids = jeu.partie.etat.personnage.arsenal.clone();
+        for id in &ids {
+            if let Some(index) = jeu.partie.d.armes.get_index_of(id) {
+                jeu.partie.ameliorer_arme(index);
+            }
+        }
     }
     // Essai de l'écran des coffres : un coffre (de boss avec « ender ») à ouvrir
     if let Ok(v) = std::env::var("BS_COFFRE") {

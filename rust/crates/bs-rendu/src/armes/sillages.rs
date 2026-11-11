@@ -1,6 +1,7 @@
 //! Sillages : les projectiles du joueur (et des coéquipiers) laissent une queue de
 //! comète à la teinte de leur arme, avec un halo autour de la tête ; les flèches
-//! ricocheuses aussi ; les armes en orbite tracent un arc lumineux derrière elles.
+//! ricocheuses aussi ; les armes en orbite tracent un arc lumineux derrière elles et
+//! baignent dans un halo scintillant.
 //! Tout vient de l'état de la partie : chacun voit les sillages de tous.
 
 use bevy::prelude::*;
@@ -8,7 +9,7 @@ use bs_donnees::armes::Mecanique;
 use bs_regles::combat::tours;
 
 use super::lueur::{Forme, MaillageLueur};
-use super::outils::rgba;
+use super::outils::{blanchi, rgba};
 use crate::sources::Source;
 
 /// Hauteur des sillages (au niveau des projectiles).
@@ -19,10 +20,6 @@ const QUEUE_MAX: f32 = 2.4;
 /// Arc tracé derrière une arme en orbite (rad) et nombre de segments.
 const ARC_ORBITE: f32 = 1.3;
 const SEGMENTS_ORBITE: usize = 8;
-
-fn blanchi(c: [f32; 3], k: f32) -> [f32; 3] {
-    c.map(|v| v + (1.0 - v) * k)
-}
 
 /// Queue de comète de `tete` vers l'arrière (`dir` : sens du vol, au sol).
 #[allow(clippy::too_many_arguments)]
@@ -122,6 +119,26 @@ pub fn dessiner(
         for k in 0..tours(s.nombre) {
             let tete = a0 + k as f32 * std::f32::consts::TAU / s.nombre;
             let point = |a: f32| Vec3::new(j.x + a.sin() * s.zone, y, j.z + a.cos() * s.zone);
+            // Halo autour de l'objet, éclat blanc qui scintille au centre
+            let centre = point(tete);
+            m.carre(
+                centre,
+                droite * 0.9,
+                haut * 0.9,
+                rgba(c, 0.55),
+                Forme::Disque,
+                0.0,
+            );
+            let vif = 0.8 + 0.4 * (tete * 3.0).sin().abs();
+            let e = 0.55 * vif;
+            m.carre(
+                centre,
+                droite * e,
+                haut * e,
+                rgba(blanchi(c, 0.6), 1.2 * vif),
+                Forme::Etincelle,
+                0.0,
+            );
             for n in 0..SEGMENTS_ORBITE {
                 let (t0, t1) = (
                     n as f32 / SEGMENTS_ORBITE as f32,

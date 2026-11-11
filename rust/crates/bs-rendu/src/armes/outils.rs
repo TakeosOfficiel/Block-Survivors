@@ -9,6 +9,11 @@ pub fn rgba(c: [f32; 3], a: f32) -> [f32; 4] {
     [c[0], c[1], c[2], a]
 }
 
+/// `c` éclairci vers le blanc de la fraction `k`.
+pub fn blanchi(c: [f32; 3], k: f32) -> [f32; 3] {
+    c.map(|v| v + (1.0 - v) * k)
+}
+
 pub fn hachage(x: f32, z: f32, k: u32) -> f32 {
     let h = (x * 12.9898 + z * 78.233 + k as f32 * 37.719).sin() * 43_758.547;
     h - h.floor()

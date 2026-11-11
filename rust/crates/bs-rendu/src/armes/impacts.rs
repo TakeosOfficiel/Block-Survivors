@@ -8,7 +8,7 @@ use std::f32::consts::TAU;
 use bevy::prelude::*;
 
 use super::lueur::{Forme, MaillageLueur};
-use super::outils::{au_sol, hachage, rgba};
+use super::outils::{au_sol, blanchi, hachage, rgba};
 
 /// Impacts affichés à la fois au plus.
 pub const CAPACITE: usize = 160;
@@ -55,10 +55,6 @@ pub fn avancer(pool: &mut Vec<Impact>, dt: f32) {
 }
 
 /// Blanchit une couleur (cœur des éclats).
-fn blanchi(c: [f32; 3], k: f32) -> [f32; 3] {
-    c.map(|v| v + (1.0 - v) * k)
-}
-
 pub fn dessiner(m: &mut MaillageLueur, pool: &[Impact], oeil: Vec3, droite: Vec3, haut: Vec3) {
     for i in pool {
         let t = i.age / i.duree();

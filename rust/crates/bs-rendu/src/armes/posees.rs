@@ -1,7 +1,8 @@
 //! Armes posées : pluie de flèches (cercle de visée cerné de tirets qui tournent,
 //! flèches qui tombent en traits de lumière puis restent plantées, petit éclat à
-//! chaque impact) et pièges de ronces (buissons en croix qui poussent, cercle
-//! d'épines qui pulse à chaque morsure).
+//! chaque impact) et pièges (buissons, fleurs ou alambics en croix qui poussent, sceau
+//! runique qui tourne au sol, épines qui jaillissent à chaque morsure). Tout est à la
+//! teinte de l'arme : chaque classe a ses pièges et ses pluies dans sa couleur.
 
 use std::f32::consts::{PI, TAU};
 
@@ -12,7 +13,7 @@ use bs_regles::combat::pose::{
 };
 
 use super::lueur::{Forme, MaillageLueur};
-use super::outils::{au_sol, hachage, rgba, trait_au_sol};
+use super::outils::{au_sol, blanchi, hachage, rgba, trait_au_sol};
 use super::solides::{Piece, Solides};
 use crate::modeles::rendu::Composants;
 
@@ -23,8 +24,8 @@ const FLECHE: f32 = 0.95;
 /// Tirets du cercle de visée.
 const TIRETS: u32 = 18;
 
-const VISEE: [f32; 3] = [1.0, 0.85, 0.55];
-const BAIES: [f32; 3] = [1.0, 0.2, 0.25];
+/// Branches de l'étoile du sceau d'un piège.
+const BRANCHES: u32 = 6;
 
 /// Flèche et son image.
 #[derive(Clone, Copy)]
@@ -121,7 +122,7 @@ pub fn placer<'a>(
 #[allow(clippy::too_many_arguments)]
 pub fn dessiner<'a>(
     m: &mut MaillageLueur,
-    pluies: impl Iterator<Item = &'a ZonePluie>,
+    pluies: impl Iterator<Item = (&'a ZonePluie, [f32; 3])>,
     fleches: impl Iterator<Item = Fleche<'a>>,
     ronces: impl Iterator<Item = Ronces<'a>>,
     temps: f32,
@@ -129,13 +130,14 @@ pub fn dessiner<'a>(
     droite: Vec3,
     haut: Vec3,
 ) {
-    for z in pluies {
+    for (z, teinte) in pluies {
+        let visee = blanchi(teinte, 0.35);
         let vie = z.duree + PLUIE_CHUTE + PLUIE_CERCLE_RESTE + PLUIE_CERCLE_FONDU;
         let f = fondu(z.temps, vie, 0.2, PLUIE_CERCLE_FONDU);
         // La visée se resserre en arrivant
         let r = z.rayon * (1.0 + 0.3 * (1.0 - (z.temps / 0.3).min(1.0)));
-        au_sol(m, z.x, z.z, r, rgba(VISEE, 0.9 * f), Forme::Anneau, 0.05);
-        au_sol(m, z.x, z.z, r, rgba(VISEE, 0.12 * f), Forme::Disque, 0.0);
+        au_sol(m, z.x, z.z, r, rgba(visee, 0.9 * f), Forme::Anneau, 0.05);
+        au_sol(m, z.x, z.z, r, rgba(teinte, 0.14 * f), Forme::Disque, 0.0);
         let centre = Vec2::new(z.x, z.z);
         let tour = temps * 0.6;
         for k in 0..TIRETS {
@@ -143,7 +145,7 @@ pub fn dessiner<'a>(
             let a1 = a0 + TAU / TIRETS as f32 * 0.5;
             let p0 = centre + Vec2::new(a0.sin(), a0.cos()) * r * 0.86;
             let p1 = centre + Vec2::new(a1.sin(), a1.cos()) * r * 0.86;
-            trait_au_sol(m, p0, p1, 0.06, 0.06, rgba(VISEE, 0.7 * f));
+            trait_au_sol(m, p0, p1, 0.06, 0.06, rgba(visee, 0.7 * f));
         }
     }
 
@@ -163,7 +165,7 @@ pub fn dessiner<'a>(
                 rgba(fl.teinte, 0.0),
             );
             // Point visé
-            au_sol(m, f.x, f.z, 0.3, rgba(VISEE, 0.6), Forme::Disque, 0.0);
+            au_sol(m, f.x, f.z, 0.3, rgba(fl.teinte, 0.6), Forme::Disque, 0.0);
             continue;
         }
         let t = (f.age - PLUIE_CHUTE) / 0.2;
@@ -215,6 +217,7 @@ pub fn dessiner<'a>(
             Forme::Disque,
             0.0,
         );
+        sceau(m, p.x, p.z, zone, r.teinte, f, morsure, temps);
         // Épines qui jaillissent du bord à chaque morsure
         let n = ((zone * 5.0) as u32).clamp(8, 20);
         for k in 0..n {
@@ -233,7 +236,7 @@ pub fn dessiner<'a>(
                 rgba(r.teinte, 0.4 * f),
             );
         }
-        // Baies qui luisent dans les buissons
+        // Lueurs qui palpitent dans les buissons
         for (k, (pos, taille)) in buissons(p.x, p.z, r.zone).enumerate() {
             let b = pos + Vec3::new(0.0, taille * 0.45 * f, 0.0);
             let vacille = 0.7 + 0.3 * (temps * 3.0 + k as f32).sin();
@@ -241,10 +244,58 @@ pub fn dessiner<'a>(
                 b,
                 droite * 0.35,
                 haut * 0.35,
-                rgba(BAIES, 0.6 * f * vacille),
+                rgba(blanchi(r.teinte, 0.3), 0.7 * f * vacille),
                 Forme::Disque,
                 0.0,
             );
         }
+    }
+}
+
+/// Sceau runique d'un piège : anneau intérieur et étoile qui tournent lentement, runes
+/// sur le cercle ; tout s'avive à chaque morsure.
+#[allow(clippy::too_many_arguments)]
+fn sceau(
+    m: &mut MaillageLueur,
+    x: f32,
+    z: f32,
+    zone: f32,
+    teinte: [f32; 3],
+    f: f32,
+    morsure: f32,
+    temps: f32,
+) {
+    let vif = (0.45 + 0.8 * morsure) * f;
+    let clair = blanchi(teinte, 0.4);
+    let interieur = zone * 0.62;
+    au_sol(
+        m,
+        x,
+        z,
+        interieur,
+        rgba(clair, 0.8 * vif),
+        Forme::Anneau,
+        0.04,
+    );
+    let centre = Vec2::new(x, z);
+    let tour = temps * 0.5 + hachage(x, z, 3) * TAU;
+    let sommet = |k: u32| {
+        let a = tour + k as f32 * TAU / BRANCHES as f32;
+        centre + Vec2::new(a.sin(), a.cos()) * interieur
+    };
+    // Étoile : chaque sommet relié à celui d'après le suivant
+    for k in 0..BRANCHES {
+        let (a, b) = (sommet(k), sommet(k + 2));
+        trait_au_sol(m, a, b, 0.05, 0.05, rgba(teinte, 0.9 * vif));
+    }
+    // Runes entre les deux cercles, qui tournent dans l'autre sens
+    let runes = 8;
+    for k in 0..runes {
+        let a = -tour * 0.7 + k as f32 * TAU / runes as f32;
+        let d = (interieur + zone) * 0.5;
+        let p = Vec3::new(x + a.sin() * d, 0.08, z + a.cos() * d);
+        let t = Vec3::new(a.cos(), 0.0, -a.sin()) * 0.22;
+        let n = Vec3::new(a.sin(), 0.0, a.cos()) * 0.22;
+        m.carre(p, t, n, rgba(clair, 1.1 * vif), Forme::Etincelle, 0.0);
     }
 }

@@ -1,6 +1,7 @@
 # Publication de la version Rust aux joueurs (plan, section 5). Jamais sur un simple push :
 # seulement sur un tag « rust-vX.Y.Z » (voie stable) ou « rust-vX.Y.Z-beta.N » (voie bêta),
-# ou à la main pour re-signer les manifestes (ils expirent au bout de 60 jours).
+# ou à la main : publier une version sans tag (entrée « version », ex. 0.1.0-beta.1), ou
+# re-signer les manifestes (ils expirent au bout de 60 jours).
 #
 # 1. Toutes les vérifications de « Version Rust » (format, clippy, tests, robot, chaîne de
 #    mise à jour) : rien n'est publié si une seule échoue.
@@ -19,6 +20,10 @@ on:
     tags: ['rust-v*']
   workflow_dispatch:
     inputs:
+      version:
+        description: 'Publier cette version sans tag (ex. 0.1.0-beta.1) ; vide : re-signer seulement'
+        type: string
+        default: ''
       resigner:
         description: 'Re-signer les manifestes publiés (nouvelle série et expiration), sans rien construire'
         type: boolean
@@ -39,7 +44,7 @@ env:
 
 jobs:
   verifications:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || inputs.version != ''
     # Le job Windows appelé demande ce droit (rien n'y est publié hors branche rust)
     permissions:
       contents: write
@@ -63,9 +68,11 @@ jobs:
         working-directory: rust
     steps:
       - uses: actions/checkout@v4
-      - name: Version et voie (depuis le tag)
+      - name: Version et voie (depuis le tag ou l'entrée « version »)
+        env:
+          ENTREE: ${{ inputs.version }}
         run: |
-          TAG=${GITHUB_REF_NAME#rust-v}
+          TAG=${ENTREE:-${GITHUB_REF_NAME#rust-v}}
           CARGO=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
           if [ "${TAG%%-*}" != "$CARGO" ]; then echo "Tag $TAG ≠ version $CARGO de Cargo.toml"; exit 1; fi
           case "$TAG" in *-beta.*) VOIE=beta ;; *) VOIE=stable ;; esac
@@ -127,9 +134,10 @@ jobs:
           BS_CLE_PRIVEE: ${{ secrets.BS_CLE_PRIVEE }}
           BS_DELEGATION: ${{ vars.BS_DELEGATION }}
           GH_TOKEN: ${{ secrets.VERSION_TOKEN }}
+          ENTREE: ${{ inputs.version }}
         run: |
           if [ -z "$BS_CLE_PRIVEE" ] || [ -z "$GH_TOKEN" ]; then echo "Secrets BS_CLE_PRIVEE ou VERSION_TOKEN absents."; exit 1; fi
-          VERSION=${GITHUB_REF_NAME#rust-v}
+          VERSION=${ENTREE:-${GITHUB_REF_NAME#rust-v}}
           MIN_COOP=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
           for dossier in paquets/paquets-*; do
             flux=$(ls "$dossier"/releases.*.json)
@@ -140,7 +148,7 @@ jobs:
           done
 
   resigner:
-    if: github.event_name == 'workflow_dispatch' && inputs.resigner
+    if: github.event_name == 'workflow_dispatch' && inputs.resigner && inputs.version == ''
     runs-on: ubuntu-latest
     environment: publication
     defaults:
